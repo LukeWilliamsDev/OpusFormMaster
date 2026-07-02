@@ -4,6 +4,44 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono-num: "JetBrains Mono", monospace;
+
+  --color-ink: #1A1A1A;
+  --color-ink-50: #2A2A2A;
+  --color-ink-100: #111111;
+
+  --color-paper: #F5F5F5;
+
+  --color-steel-100: #EAEAEA;
+  --color-steel-200: #D1D1D1;
+  --color-steel-300: #B5B5B5;
+  --color-steel-400: #9B9B9B;
+  --color-steel-600: #555555;
+
+  --color-amber: #F26A1B;
+  --color-amber-50: #FFF1E9;
+  --color-amber-600: #D3540F;
+
+  --color-forest: #2E6F40;
+  --color-forest-50: #EBF5EE;
+
+  --color-rust: #C2410C;
+  --color-rust-50: #FFF7ED;
+
+  --color-denim: #2563EB;
+  --color-denim-50: #EFF6FF;
+}
+
+@layer utilities {
+  .font-mono-num {
+    font-family: "JetBrains Mono", monospace;
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 /*
  * Design system definition.
  *

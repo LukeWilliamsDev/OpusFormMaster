@@ -92,6 +92,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Opus Form — Concrete Specialists Dashboard" },
+      { name: "description", content: "Opus Form Builder creates custom, interactive web forms from your HTML designs." },
+      { property: "og:description", content: "Opus Form Builder creates custom, interactive web forms from your HTML designs." },
+      { name: "twitter:description", content: "Opus Form Builder creates custom, interactive web forms from your HTML designs." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d06beebf-a172-4515-b3db-36f7e7ece0c7/id-preview-76af9c9a--3fa759f6-d7c2-4bcd-96ae-c5fc177db054.lovable.app-1783006855930.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d06beebf-a172-4515-b3db-36f7e7ece0c7/id-preview-76af9c9a--3fa759f6-d7c2-4bcd-96ae-c5fc177db054.lovable.app-1783006855930.png" },
     ],
     links: [
       {

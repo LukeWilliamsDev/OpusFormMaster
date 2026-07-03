@@ -40,6 +40,34 @@
     font-family: "JetBrains Mono", monospace;
     font-variant-numeric: tabular-nums;
   }
+  .concrete-texture {
+    background-image:
+      repeating-linear-gradient(135deg, rgba(255,255,255,0.025) 0px, rgba(255,255,255,0.025) 1px, transparent 1px, transparent 14px),
+      radial-gradient(circle at 20% 20%, rgba(242,106,27,0.10), transparent 45%),
+      radial-gradient(circle at 85% 80%, rgba(37,99,235,0.08), transparent 40%);
+  }
+  .safety-stripe {
+    background-image: repeating-linear-gradient(45deg, #F26A1B 0 10px, #1A1A1A 10px 20px);
+  }
+  .skeleton {
+    background: linear-gradient(90deg, #EAEAEA 25%, #F5F5F5 37%, #EAEAEA 63%);
+    background-size: 400px 100%;
+  }
+  .animate-fadeUp {
+    animation: fadeUp 0.28s ease-out both;
+  }
+  .animate-shimmer {
+    animation: shimmer 1.6s linear infinite;
+  }
+}
+
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
 }
 
 /*

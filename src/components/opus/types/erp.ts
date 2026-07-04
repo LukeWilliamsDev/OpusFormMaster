@@ -1,0 +1,64 @@
+import { LucideIcon } from 'lucide-react';
+
+export interface Job {
+  id: string;
+  jobRef: string;
+  siteName: string;
+  mainContractor: string;
+  postcode: string;
+  currentPours: number;
+  contractMaxPours: number;
+  status: 'active' | 'completed' | 'on-hold' | 'pending' | 'in-progress';
+  scheduleValue: number;
+}
+
+export interface Worker {
+  id: string;
+  name: string;
+  role: 'Supervisor' | 'Operative' | 'Telehandler' | 'Groundworker';
+  tickets: {
+    type: string; // e.g., 'CPCS', 'NPORS'
+    expiryDate: string;
+    isValid: boolean;
+  }[];
+}
+
+export interface WeatherRisk {
+  postcode: string;
+  condition: 'Rain' | 'Frost' | 'Clear' | 'Wind';
+  riskLevel: 'Low' | 'Medium' | 'High';
+  temperature?: number;
+}
+
+export interface LaborRate {
+  type: 'Supervisor' | 'Operative';
+  rate: number;
+}
+
+export interface MeasuredItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  rate: number | 'Included';
+  isIncluded: boolean;
+}
+
+export interface SundryItem {
+  id: string;
+  description: string;
+  cost: number;
+}
+
+export interface Quote {
+  id: string;
+  clientName: string;
+  projectSite: string;
+  postcode: string;
+  items: MeasuredItem[];
+  sundries: SundryItem[];
+  comments: string[];
+  isCISApplied: boolean;
+  cisRate: 0.2 | 0.3;
+  isDRCApplied: boolean;
+}

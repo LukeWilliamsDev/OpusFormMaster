@@ -77,27 +77,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Opus Form — Concrete Specialists Dashboard" },
+      { title: "Opus Form — Portal Login" },
       {
         name: "description",
         content:
-          "Opus Form operations dashboard for UK concrete specialists — schedule pours, manage site crews, and generate VAT-compliant quotes & invoices.",
+          "Opus Form portal — secure access to the concrete specialists ERP: pipeline, jobs, pours and VAT-compliant quotes & invoices.",
       },
       { name: "author", content: "Opus Form" },
-      { property: "og:title", content: "Opus Form — Concrete Specialists Dashboard" },
+      { property: "og:title", content: "Opus Form — Portal Login" },
       {
         property: "og:description",
         content:
-          "UK concrete specialists dashboard — pour schedules, site logistics and VAT invoicing.",
+          "Secure operations portal for UK concrete specialists — pipeline, jobs, and invoicing.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Opus Form — Concrete Specialists Dashboard" },
-      { name: "description", content: "Opus Form Builder creates custom, interactive web forms from your HTML designs." },
-      { property: "og:description", content: "Opus Form Builder creates custom, interactive web forms from your HTML designs." },
-      { name: "twitter:description", content: "Opus Form Builder creates custom, interactive web forms from your HTML designs." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d06beebf-a172-4515-b3db-36f7e7ece0c7/id-preview-76af9c9a--3fa759f6-d7c2-4bcd-96ae-c5fc177db054.lovable.app-1783006855930.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/d06beebf-a172-4515-b3db-36f7e7ece0c7/id-preview-76af9c9a--3fa759f6-d7c2-4bcd-96ae-c5fc177db054.lovable.app-1783006855930.png" },
+      { name: "twitter:title", content: "Opus Form — Portal Login" },
+      { name: "twitter:description", content: "Secure Opus Form operations portal." },
     ],
     links: [
       {
@@ -108,7 +104,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],

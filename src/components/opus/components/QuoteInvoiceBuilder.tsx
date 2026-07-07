@@ -57,6 +57,91 @@ interface ValuationBuilderProps {
 
 const INITIAL_ITEMS: MeasuredItem[] = [];
 
+const SEED_QUOTES: Quote[] = [
+  {
+    id: 'seed-1',
+    reference: 'JOB-2041',
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
+    clientInfo: {
+      entity: 'Kier Construction Ltd',
+      email: 'procurement@kier.co.uk',
+      site: 'Battersea Power Station — Phase 3B Slab',
+      postcode: 'SW11 8DD',
+    },
+    items: [
+      { id: 'i1', description: 'Supply & pour reinforced slab (C32/40)', quantity: 420, unit: 'm²', rate: 68 },
+      { id: 'i2', description: 'Power float finish to slab', quantity: 420, unit: 'm²', rate: 12 },
+      { id: 'i3', description: 'Supervisor day rate', quantity: 6, unit: 'days', rate: 280 },
+      { id: 'i4', description: 'Operative day rate', quantity: 18, unit: 'days', rate: 240 },
+    ],
+    vatRate: 20,
+    totals: { netTotal: 39840, vatAmount: 7968, grossTotal: 47808 },
+    isSavedLocal: true,
+    isSent: true,
+  },
+  {
+    id: 'seed-2',
+    reference: 'JOB-2058',
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
+    clientInfo: {
+      entity: 'Balfour Beatty',
+      email: 'ops.london@balfourbeatty.com',
+      site: 'Old Oak Common HS2 — Concourse Deck',
+      postcode: 'NW10 6DZ',
+    },
+    items: [
+      { id: 'i1', description: 'Formwork erection to soffit', quantity: 280, unit: 'm²', rate: 42 },
+      { id: 'i2', description: 'Rebar fixing (labour only)', quantity: 8.5, unit: 't', rate: 480 },
+      { id: 'i3', description: 'Concrete placement & vibration', quantity: 165, unit: 'm³', rate: 55 },
+      { id: 'i4', description: 'Supervisor day rate', quantity: 5, unit: 'days', rate: 280 },
+    ],
+    vatRate: 20,
+    totals: { netTotal: 28355, vatAmount: 5671, grossTotal: 34026 },
+    isSavedLocal: true,
+  },
+  {
+    id: 'seed-3',
+    reference: 'JOB-2072',
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
+    clientInfo: {
+      entity: 'Berkeley Homes',
+      email: 'quantities@berkeleygroup.co.uk',
+      site: 'Woodberry Down — Block E Raft Foundation',
+      postcode: 'N4 2TG',
+    },
+    items: [
+      { id: 'i1', description: 'Excavate & prepare raft base', quantity: 320, unit: 'm²', rate: 22 },
+      { id: 'i2', description: 'Blinding concrete 75mm', quantity: 320, unit: 'm²', rate: 14 },
+      { id: 'i3', description: 'Raft slab pour C40/50', quantity: 210, unit: 'm³', rate: 58 },
+      { id: 'i4', description: 'Power float & cure', quantity: 320, unit: 'm²', rate: 11 },
+      { id: 'i5', description: 'Telehandler operative', quantity: 4, unit: 'days', rate: 260 },
+    ],
+    vatRate: 20,
+    totals: { netTotal: 32780, vatAmount: 6556, grossTotal: 39336 },
+    isSavedLocal: true,
+  },
+  {
+    id: 'seed-4',
+    reference: 'JOB-1988',
+    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
+    clientInfo: {
+      entity: 'Sisk Group',
+      email: 'estimating@johnsiskandson.com',
+      site: 'Canary Wharf — Wood Wharf Plot A2 Cores',
+      postcode: 'E14 5AB',
+    },
+    items: [
+      { id: 'i1', description: 'Core wall formwork (jump form)', quantity: 640, unit: 'm²', rate: 88 },
+      { id: 'i2', description: 'Rebar fixing', quantity: 22, unit: 't', rate: 495 },
+      { id: 'i3', description: 'Concrete placement (pump)', quantity: 380, unit: 'm³', rate: 62 },
+    ],
+    vatRate: 20,
+    totals: { netTotal: 90630, vatAmount: 18126, grossTotal: 108756 },
+    isSavedLocal: true,
+    isSent: true,
+  },
+];
+
 export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, quoteToLoadId, onQuoteLoaded }) => {
   const [clientInfo, setClientInfo] = useState({
     entity: '',
@@ -93,10 +178,21 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     const stored = localStorage.getItem('opus_saved_quotes');
     if (stored) {
       try {
-        setSavedQuotes(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setSavedQuotes(parsed);
+        } else {
+          setSavedQuotes(SEED_QUOTES);
+          localStorage.setItem('opus_saved_quotes', JSON.stringify(SEED_QUOTES));
+        }
       } catch (e) {
         console.error("Failed to parse saved quotes", e);
+        setSavedQuotes(SEED_QUOTES);
+        localStorage.setItem('opus_saved_quotes', JSON.stringify(SEED_QUOTES));
       }
+    } else {
+      setSavedQuotes(SEED_QUOTES);
+      localStorage.setItem('opus_saved_quotes', JSON.stringify(SEED_QUOTES));
     }
   }, []);
 

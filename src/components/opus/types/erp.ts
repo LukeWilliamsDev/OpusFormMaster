@@ -10,16 +10,28 @@ export interface Job {
   contractMaxPours: number;
   status: 'active' | 'completed' | 'on-hold' | 'pending' | 'in-progress';
   scheduleValue: number;
+  assignedWorkers?: string[];
+}
+
+export interface Ticket {
+  id: string;
+  type: 'CSCS' | 'NPORS' | 'CPCS' | 'Telehandler' | 'Supervisor' | string;
+  expiryDate: string; // YYYY-MM-DD
+  ticketNumber: string;
+  isValid?: boolean;
 }
 
 export interface Worker {
   id: string;
   name: string;
   role: 'Supervisor' | 'Operative' | 'Telehandler' | 'Groundworker';
-  tickets: {
-    type: string; // e.g., 'CPCS', 'NPORS'
-    expiryDate: string;
-    isValid: boolean;
+  tickets: Ticket[];
+  phone?: string;
+  uploadedCertificates?: {
+    id: string;
+    name: string;
+    size: string;
+    uploadedAt: string;
   }[];
 }
 
@@ -61,4 +73,12 @@ export interface Quote {
   isCISApplied: boolean;
   cisRate: 0.2 | 0.3;
   isDRCApplied: boolean;
+}
+
+export interface ScheduledShift {
+  id: string;
+  workerId: string;
+  jobId: string;
+  date: string; // YYYY-MM-DD
+  isRemoved?: boolean;
 }

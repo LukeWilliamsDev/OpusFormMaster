@@ -260,9 +260,10 @@ Opus Form Operations
       <div className="bg-[#222428] border-b border-white/5 py-8 px-4 sm:px-6 relative z-50">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
           <div>
-            <h1 className="text-xl font-black uppercase tracking-widest font-archivo text-white leading-tight">
-              Quote
-            </h1>
+            <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
+              <div className="w-1 h-4 bg-[#b0b8c4] rounded-sm" />
+              Quotes
+            </div>
           </div>
         </div>
       </div>
@@ -277,9 +278,9 @@ Opus Form Operations
               <div className="p-4">
                 <div className="flex items-center gap-[10px]">
                   <div className="flex items-center gap-2 bg-[#1e1e1e] border border-[#383838] rounded-lg p-2.5 px-3 flex-1">
-                    <span className="text-[9px] font-bold tracking-widest text-[#555] uppercase whitespace-nowrap">Ref</span>
+                    <span className="text-[9px] font-black tracking-widest text-[#888] uppercase whitespace-nowrap">Ref</span>
                     <input 
-                      className="bg-transparent border-none outline-none text-[#b0b8c4] text-xs font-semibold tracking-wider w-full"
+                      className="bg-transparent border-none outline-none text-[#b0b8c4] text-xs font-black tracking-widest uppercase w-full"
                       value={quoteReference}
                       onChange={e => setQuoteReference(e.target.value)}
                       placeholder="JOB-0000"
@@ -287,7 +288,7 @@ Opus Form Operations
                   </div>
                   <button 
                     onClick={handleSave}
-                    className="flex items-center gap-[7px] bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-2.5 px-4 text-[#e0e0e0] text-[10px] font-extrabold tracking-wider hover:bg-[#383838] transition-colors whitespace-nowrap"
+                    className="flex items-center gap-[7px] bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-2.5 px-4 text-white text-[10px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors whitespace-nowrap"
                   >
                     <Save className="w-3.5 h-3.5" />
                     <span>{lastSaved ? 'SAVED' : 'SAVE'}</span>
@@ -297,7 +298,7 @@ Opus Form Operations
               <div className="h-[1px] bg-[#2e2e2e] mx-4"></div>
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-[11px] font-extrabold tracking-wider uppercase text-[#e0e0e0]">
+                  <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
                     <History className="w-3.5 h-3.5 text-[#b0b8c4] shrink-0" />
                     Saved History
                   </div>
@@ -305,7 +306,7 @@ Opus Form Operations
                 <div className="flex flex-col gap-[5px] max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                   {savedQuotes.filter(q => q.isSavedLocal && q.isSent !== true).length === 0 ? (
                     <div className="bg-[#1e1e1e] border border-dashed border-[#2a2a2a] rounded-lg p-7 px-4 text-center">
-                      <div className="text-[9px] font-bold tracking-widest text-[#333] uppercase">No saved quotes found</div>
+                      <div className="text-[9px] font-black tracking-widest text-[#777] uppercase">No saved quotes found</div>
                     </div>
                   ) : (
                     savedQuotes
@@ -318,15 +319,15 @@ Opus Form Operations
                         >
                           <div>
                             <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] font-bold text-[#e0e0e0]">{q.reference}</span>
-                              <span className="text-[10px] text-[#555]">{q.date}</span>
+                              <span className="text-[11px] font-black uppercase tracking-widest text-white">{q.reference}</span>
+                              <span className="text-[10px] text-[#888]">{q.date}</span>
                             </div>
-                            <div className="text-[10px] text-[#555] mt-[2px] uppercase">
+                            <div className="text-[10px] text-[#888] mt-[2px] uppercase">
                               {q.clientInfo?.entity || 'Unnamed Client'}
                             </div>
                           </div>
                           <div className="flex items-center gap-2.5">
-                            <span className="text-[11px] font-semibold text-[#888]">
+                            <span className="text-[11px] font-black uppercase tracking-widest text-[#888]">
                               £{q.totals?.grossTotal?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
                             </span>
                             <button 
@@ -350,7 +351,7 @@ Opus Form Operations
               <div className="bg-[#242424] border border-[#333] overflow-hidden rounded-t-xl">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-[11px] font-extrabold tracking-wider uppercase text-[#e0e0e0]">
+                  <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
                     <Building2 className="w-3.5 h-3.5 text-[#b0b8c4] shrink-0" />
                     Client Information
                   </div>
@@ -358,11 +359,11 @@ Opus Form Operations
                 
                 <div className="flex flex-col gap-2.5">
                   <div className="flex flex-col gap-1">
-                    <span className="text-[9px] font-bold tracking-widest text-[#555] uppercase">Client</span>
+                    <span className="text-[9px] font-black tracking-widest text-[#888] uppercase">Client</span>
                     <div className="flex items-center gap-[7px] bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-2.5 px-3 focus-within:border-[#444] transition-colors">
                       <input 
                         type="text"
-                        className="w-full bg-transparent border-none outline-none text-[#e0e0e0] text-[11px] placeholder:text-[#333]"
+                        className="w-full bg-transparent border-none outline-none text-white text-[11px] placeholder:text-[#888]"
                         value={clientInfo.entity}
                         onChange={e => setClientInfo({ ...clientInfo, entity: e.target.value })}
                         placeholder="e.g. ABC CONSTRUCTIONS LTD"
@@ -370,12 +371,12 @@ Opus Form Operations
                     </div>
                   </div>
                   <div className="flex flex-col gap-1">
-                    <span className="text-[9px] font-bold tracking-widest text-[#555] uppercase">Email</span>
+                    <span className="text-[9px] font-black tracking-widest text-[#888] uppercase">Email</span>
                     <div className="flex items-center gap-[7px] bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-2.5 px-3 focus-within:border-[#444] transition-colors">
                       <Mail className="w-3.5 h-3.5 text-[#3a3a3a] shrink-0" />
                       <input 
                         type="email"
-                        className="w-full bg-transparent border-none outline-none text-[#e0e0e0] text-[11px] placeholder:text-[#333]"
+                        className="w-full bg-transparent border-none outline-none text-white text-[11px] placeholder:text-[#888]"
                         value={clientInfo.email}
                         onChange={e => setClientInfo({ ...clientInfo, email: e.target.value })}
                         placeholder="accounts@client.com"
@@ -384,12 +385,12 @@ Opus Form Operations
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold tracking-widest text-[#555] uppercase">Project</span>
+                      <span className="text-[9px] font-black tracking-widest text-[#888] uppercase">Project</span>
                       <div className="flex items-center gap-[7px] bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-2.5 px-3 focus-within:border-[#444] transition-colors">
                         <LayoutGrid className="w-3.5 h-3.5 text-[#3a3a3a] shrink-0" />
                         <input 
                           type="text"
-                          className="w-full bg-transparent border-none outline-none text-[#e0e0e0] text-[11px] placeholder:text-[#333]"
+                          className="w-full bg-transparent border-none outline-none text-white text-[11px] placeholder:text-[#888]"
                           value={clientInfo.site}
                           onChange={e => setClientInfo({ ...clientInfo, site: e.target.value })}
                           placeholder="Project Titan"
@@ -397,12 +398,12 @@ Opus Form Operations
                       </div>
                     </div>
                     <div className="flex flex-col gap-1">
-                      <span className="text-[9px] font-bold tracking-widest text-[#555] uppercase">Postcode</span>
+                      <span className="text-[9px] font-black tracking-widest text-[#888] uppercase">Postcode</span>
                       <div className="flex items-center gap-[7px] bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-2.5 px-3 focus-within:border-[#444] transition-colors">
                         <MapPin className="w-3.5 h-3.5 text-[#3a3a3a] shrink-0" />
                         <input 
                           type="text"
-                          className="w-full bg-transparent border-none outline-none text-[#e0e0e0] text-[11px] placeholder:text-[#333]"
+                          className="w-full bg-transparent border-none outline-none text-white text-[11px] placeholder:text-[#888]"
                           value={clientInfo.postcode}
                           onChange={e => setClientInfo({ ...clientInfo, postcode: e.target.value })}
                           placeholder="SW1A 1AA"
@@ -415,13 +416,13 @@ Opus Form Operations
               <div className="h-[1px] bg-[#2e2e2e] mx-4"></div>
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-[11px] font-extrabold tracking-wider uppercase text-[#e0e0e0]">
+                  <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
                     <ClipboardList className="w-3.5 h-3.5 text-[#b0b8c4] shrink-0" />
                     Line Items
                   </div>
                   <button 
                     onClick={addItem}
-                    className="flex items-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-1.5 px-3 text-[#e0e0e0] text-[10px] font-extrabold tracking-wider hover:bg-[#383838] transition-colors"
+                    className="flex items-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-1.5 px-3 text-white text-[10px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
                   >
                     <Plus className="w-3 h-3" />
                     ADD LINE
@@ -435,7 +436,7 @@ Opus Form Operations
                         <div className="flex-1">
                           <input 
                             type="text"
-                            className="w-full bg-transparent border-none outline-none text-[#e0e0e0] text-[11px] placeholder:text-[#333] font-bold"
+                            className="w-full bg-transparent border-none outline-none text-white text-[11px] placeholder:text-[#888] font-black"
                             value={item.description}
                             onChange={e => updateItem(item.id, { description: e.target.value })}
                             placeholder="Description of item..."
@@ -450,22 +451,22 @@ Opus Form Operations
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="flex flex-col gap-1">
-                          <span className="text-[8px] font-bold tracking-widest text-[#555] uppercase">Qty</span>
+                          <span className="text-[8px] font-black tracking-widest text-[#888] uppercase">Qty</span>
                           <div className="flex items-center bg-[#242424] border border-[#2e2e2e] rounded-lg h-10 px-3">
                             <input 
                               type="number"
-                              className="w-full bg-transparent border-none outline-none text-[#e0e0e0] text-[11px]"
+                              className="w-full bg-transparent border-none outline-none text-white text-[11px]"
                               value={item.quantity}
                               onChange={e => updateItem(item.id, { quantity: Number(e.target.value) })}
                             />
                           </div>
                         </div>
                         <div className="flex flex-col gap-1">
-                          <span className="text-[8px] font-bold tracking-widest text-[#555] uppercase">Unit</span>
+                          <span className="text-[8px] font-black tracking-widest text-[#888] uppercase">Unit</span>
                           <div className="flex items-center bg-[#242424] border border-[#2e2e2e] rounded-lg h-10 px-3 gap-2">
                             <input 
                               type="text"
-                              className="w-full bg-transparent border-none outline-none text-[#e0e0e0] text-[11px] uppercase placeholder:text-[#555]"
+                              className="w-full bg-transparent border-none outline-none text-white text-[11px] uppercase placeholder:text-[#888]"
                               value={item.unit}
                               onChange={e => updateItem(item.id, { unit: e.target.value })}
                               placeholder="e.g. m²"
@@ -480,9 +481,9 @@ Opus Form Operations
                                     onClick={() => {
                                       updateItem(item.id, { unit: isSelected ? '' : u });
                                     }}
-                                    className={`px-2.5 py-1 rounded text-[10px] font-bold tracking-wide transition-all ${
+                                    className={`px-2.5 py-1 rounded text-[10px] font-black tracking-wide transition-all ${
                                       isSelected 
-                                        ? 'bg-[#5c7285] text-white shadow-sm font-extrabold' 
+                                        ? 'bg-[#5c7285] text-white shadow-sm font-black' 
                                         : 'bg-[#1a1a1a] text-[#a0a0a0] border border-[#383838] hover:bg-[#333] hover:text-white'
                                     }`}
                                   >
@@ -494,11 +495,11 @@ Opus Form Operations
                           </div>
                         </div>
                         <div className="flex flex-col gap-1">
-                          <span className="text-[8px] font-bold tracking-widest text-[#555] uppercase">Rate (£)</span>
+                          <span className="text-[8px] font-black tracking-widest text-[#888] uppercase">Rate (£)</span>
                           <div className="flex items-center bg-[#242424] border border-[#2e2e2e] rounded-lg h-10 px-3 gap-2">
                             <input 
                               type="text"
-                              className="w-full bg-transparent border-none outline-none text-[#e0e0e0] text-[11px] placeholder:text-[#555]"
+                              className="w-full bg-transparent border-none outline-none text-white text-[11px] placeholder:text-[#888]"
                               value={item.rate}
                               onChange={e => updateItem(item.id, { rate: e.target.value })}
                               placeholder="0.00"
@@ -509,9 +510,9 @@ Opus Form Operations
                                 const isIncluded = typeof item.rate === 'string' && (item.rate.toUpperCase() === 'INCLUDED' || item.rate.toUpperCase() === 'INCL');
                                 updateItem(item.id, { rate: isIncluded ? 0 : 'INCLUDED' });
                               }}
-                              className={`px-2.5 py-1 rounded text-[10px] font-bold tracking-wide transition-all shrink-0 ${
+                              className={`px-2.5 py-1 rounded text-[10px] font-black tracking-wide transition-all shrink-0 ${
                                 typeof item.rate === 'string' && (item.rate.toUpperCase() === 'INCLUDED' || item.rate.toUpperCase() === 'INCL')
-                                  ? 'bg-[#5c7285] text-white shadow-sm font-extrabold'
+                                  ? 'bg-[#5c7285] text-white shadow-sm font-black'
                                   : 'bg-[#1a1a1a] text-[#a0a0a0] border border-[#383838] hover:bg-[#333] hover:text-white'
                               }`}
                             >
@@ -525,8 +526,8 @@ Opus Form Operations
                   
                   {items.length === 0 && (
                     <div className="bg-[#1e1e1e] border border-dashed border-[#2a2a2a] rounded-lg p-7 px-4 text-center mt-4">
-                      <div className="text-[9px] font-bold tracking-widest text-[#333] uppercase mb-2.5">No billable items defined</div>
-                      <span className="text-[10px] font-bold tracking-wide text-[#b0b8c4] underline cursor-pointer uppercase" onClick={addItem}>Initialize First Line</span>
+                      <div className="text-[9px] font-black tracking-widest text-[#777] uppercase mb-2.5">No billable items defined</div>
+                      <span className="text-[10px] font-black tracking-wide text-[#b0b8c4] underline cursor-pointer uppercase" onClick={addItem}>Initialize First Line</span>
                     </div>
                   )}
                 </div>
@@ -536,13 +537,13 @@ Opus Form Operations
             <div className="bg-[#242424] border border-[#333] border-t-0 overflow-hidden rounded-none">
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-[11px] font-extrabold tracking-wider uppercase text-[#e0e0e0]">
+                  <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
                     <FileText className="w-3.5 h-3.5 text-[#b0b8c4] shrink-0" />
                     Terms & Conditions
                   </div>
                   <button 
                     onClick={() => setTerms([...terms, ''])}
-                    className="bg-transparent border border-[#333] rounded-md w-[26px] h-[26px] flex items-center justify-center cursor-pointer text-[#555] hover:bg-[#2e2e2e] hover:text-[#e0e0e0] transition-colors"
+                    className="bg-transparent border border-[#333] rounded-md w-[26px] h-[26px] flex items-center justify-center cursor-pointer text-[#888] hover:bg-[#2e2e2e] hover:text-white transition-colors"
                   >
                     <Plus className="w-3 h-3" />
                   </button>
@@ -563,7 +564,7 @@ Opus Form Operations
                       />
                       <button 
                         onClick={() => setTerms(terms.filter((_, i) => i !== index))}
-                        className="bg-transparent border-none cursor-pointer text-[#333] text-[11px] p-[1px] shrink-0 hover:text-red-500 transition-colors mt-[1px]"
+                        className="bg-transparent border-none cursor-pointer text-[#888] text-[11px] p-[1px] shrink-0 hover:text-red-500 transition-colors mt-[1px]"
                       >
                         ✕
                       </button>
@@ -576,14 +577,14 @@ Opus Form Operations
             <div className="bg-[#242424] border border-[#333] border-t-0 overflow-hidden rounded-b-xl">
               <div className="flex items-center justify-between gap-3.5 p-4">
                 <div className="space-y-1">
-                  <h4 className="text-[10px] font-extrabold tracking-wider uppercase text-[#e0e0e0]">Authorization Required</h4>
-                  <p className="text-[9px] text-[#555] tracking-wide uppercase leading-normal">
+                  <h4 className="text-[10px] font-black tracking-widest uppercase text-white">Authorization Required</h4>
+                  <p className="text-[9px] text-[#888] tracking-wide uppercase leading-normal">
                     Confirm that all billable items, units, and standard terms have been verified.
                   </p>
                 </div>
                 <button 
                   onClick={handleSend}
-                  className="flex items-center gap-2 bg-[#4a5568] border-none rounded-lg p-[11px] px-4 text-[#e0e0e0] text-[10px] font-extrabold tracking-wider cursor-pointer uppercase hover:bg-[#5a6578] transition-colors whitespace-nowrap"
+                  className="flex items-center gap-2 bg-[#5C7285] hover:brightness-110 border-none rounded-lg p-[11px] px-4 text-white text-[10px] font-black uppercase tracking-widest cursor-pointer shadow-lg shadow-[#5C7285]/20 transition-all whitespace-nowrap"
                 >
                   <Send className="w-3.5 h-3.5" />
                   Authorize & Send
@@ -639,20 +640,20 @@ Opus Form Operations
                     <div className="h-1 bg-[#426E91] mt-2 w-full"></div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[28px] sm:text-[32px] font-extrabold text-[#F4F4F0] tracking-[0.04em] leading-none mb-3">QUOTE</div>
+                    <div className="text-[28px] sm:text-[32px] font-black text-[#F4F4F0] tracking-[0.04em] leading-none mb-3">QUOTE</div>
                     <table className="ml-auto border-collapse">
                       <tbody className="text-[11px] tracking-[0.05em]">
                         <tr>
                           <td className="text-[#A8A8A0] py-0.5 px-4">REFERENCE</td>
-                          <td className="text-[#F4F4F0] font-semibold text-right">#{quoteReference}</td>
+                          <td className="text-[#F4F4F0] font-black text-right">#{quoteReference}</td>
                         </tr>
                         <tr>
                           <td className="text-[#A8A8A0] py-0.5 px-4">DATE</td>
-                          <td className="text-[#F4F4F0] font-semibold text-right">{new Date().toLocaleDateString('en-GB')}</td>
+                          <td className="text-[#F4F4F0] font-black text-right">{new Date().toLocaleDateString('en-GB')}</td>
                         </tr>
                         <tr>
                           <td className="text-[#A8A8A0] py-0.5 px-4">VALID UNTIL</td>
-                          <td className="text-[#F4F4F0] font-semibold text-right">
+                          <td className="text-[#F4F4F0] font-black text-right">
                             {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB')}
                           </td>
                         </tr>
@@ -676,11 +677,11 @@ Opus Form Operations
                   {/* BILL TO / PROJECT */}
                   <div className="mb-7 grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Client</div>
+                      <div className="text-[9px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Client</div>
                       <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
                         {clientInfo.entity ? (
                           <div className="space-y-1">
-                            <p className="font-bold text-gray-900 uppercase text-sm">{clientInfo.entity}</p>
+                            <p className="font-black text-gray-900 uppercase text-sm">{clientInfo.entity}</p>
                             <p className="text-gray-600 uppercase tracking-wide">{clientInfo.email || '...'}</p>
                           </div>
                         ) : (
@@ -689,11 +690,11 @@ Opus Form Operations
                       </div>
                     </div>
                     <div>
-                      <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Project</div>
+                      <div className="text-[9px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Project</div>
                       <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
                         {clientInfo.site ? (
                           <div className="space-y-1">
-                            <p className="font-bold text-gray-900 uppercase text-sm">{clientInfo.site}</p>
+                            <p className="font-black text-gray-900 uppercase text-sm">{clientInfo.site}</p>
                             <p className="text-gray-600 uppercase tracking-wide">{clientInfo.postcode || '...'}</p>
                           </div>
                         ) : (
@@ -708,11 +709,11 @@ Opus Form Operations
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-[#26262B]">
-                          <th className="text-[9px] font-bold tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[42%]">Description of Structural Elements</th>
-                          <th className="text-[9px] font-bold tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Volume / Qty</th>
-                          <th className="text-[9px] font-bold tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[10%]">Unit</th>
-                          <th className="text-[9px] font-bold tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Unit Rate</th>
-                          <th className="text-[9px] font-bold tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Net Value</th>
+                          <th className="text-[9px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[42%]">Description of Structural Elements</th>
+                          <th className="text-[9px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Volume / Qty</th>
+                          <th className="text-[9px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[10%]">Unit</th>
+                          <th className="text-[9px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Unit Rate</th>
+                          <th className="text-[9px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Net Value</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -726,7 +727,7 @@ Opus Form Operations
                                 ? 'INCLUDED' 
                                 : `£${Number(item.rate || 0).toFixed(2)}`}
                             </td>
-                            <td className="p-3 text-xs text-right text-[#333] font-bold">
+                            <td className="p-3 text-xs text-right text-[#333] font-black">
                               {typeof item.rate === 'string' && (item.rate.toUpperCase() === 'INCLUDED' || item.rate.toUpperCase() === 'INCL') 
                                 ? 'INCLUDED' 
                                 : `£${(item.quantity * Number(item.rate || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
@@ -747,13 +748,13 @@ Opus Form Operations
                     <div className="w-[280px]">
                       <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]">
                         <span className="uppercase tracking-widest">NET SUBTOTAL</span>
-                        <span className="font-semibold text-[#333]">£{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <span className="font-black text-[#333]">£{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                       </div>
                       <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]">
                         <span className="uppercase tracking-widest text-[10px]">UK STANDARD VAT ({vatRate}%)</span>
-                        <span className="font-semibold text-[#333]">£{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                        <span className="font-black text-[#333]">£{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                       </div>
-                      <div className="flex justify-between p-3.5 px-3 bg-[#26262B] text-[#F4F4F0] font-extrabold text-[15px]">
+                      <div className="flex justify-between p-3.5 px-3 bg-[#26262B] text-[#F4F4F0] font-black text-[15px]">
                         <span className="uppercase tracking-widest">Concrete Works Total</span>
                         <span>£{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                       </div>
@@ -764,7 +765,7 @@ Opus Form Operations
                 {/* FOOTER BODY */}
                 <div className="px-12 pt-7">
                   <div className="bg-[#F4F3F0] border-l-[3px] border-[#526E8C] p-4 mb-6">
-                    <div className="text-[9px] font-extrabold tracking-[0.12em] uppercase text-[#526E8C] mb-2.5">Standard Terms & Pour Conditions</div>
+                    <div className="text-[9px] font-black tracking-[0.12em] uppercase text-[#526E8C] mb-2.5">Standard Terms & Pour Conditions</div>
                     <ul className="list-disc pl-3.5 space-y-1.5">
                       {terms.map((term, index) => term.trim() && (
                         <li key={index} className="text-[10.5px] text-[#555] leading-relaxed">{term}</li>
@@ -773,27 +774,27 @@ Opus Form Operations
                   </div>
 
                   <div className="mb-8">
-                    <div className="text-[9px] font-bold tracking-[0.14em] uppercase text-[#888] mb-2">Banking Details</div>
+                    <div className="text-[9px] font-black tracking-[0.14em] uppercase text-[#888] mb-2">Banking Details</div>
                     <div className="grid grid-cols-2 gap-x-10 gap-y-2">
                       <div className="text-[10px]">
                         <div className="text-[9px] text-[#AAA] uppercase tracking-[0.06em]">Bank</div>
-                        <div className="font-semibold text-[#333]">Barclays Business Banking</div>
+                        <div className="font-black text-[#333]">Barclays Business Banking</div>
                       </div>
                       <div className="text-[10px]">
                         <div className="text-[9px] text-[#AAA] uppercase tracking-[0.06em]">Account Name</div>
-                        <div className="font-semibold text-[#333]">Opus Form Ltd</div>
+                        <div className="font-black text-[#333]">Opus Form Ltd</div>
                       </div>
                       <div className="text-[10px]">
                         <div className="text-[9px] text-[#AAA] uppercase tracking-[0.06em]">Sort Code</div>
-                        <div className="font-semibold text-[#333]">20-00-00</div>
+                        <div className="font-black text-[#333]">20-00-00</div>
                       </div>
                       <div className="text-[10px]">
                         <div className="text-[9px] text-[#AAA] uppercase tracking-[0.06em]">Account No.</div>
-                        <div className="font-semibold text-[#333]">13319268</div>
+                        <div className="font-black text-[#333]">13319268</div>
                       </div>
                       <div className="text-[10px]">
                         <div className="text-[9px] text-[#AAA] uppercase tracking-[0.06em]">IBAN</div>
-                        <div className="font-semibold text-[#333]">GB29 NWBK 6016 1331 9268 19</div>
+                        <div className="font-black text-[#333]">GB29 NWBK 6016 1331 9268 19</div>
                       </div>
                     </div>
                   </div>

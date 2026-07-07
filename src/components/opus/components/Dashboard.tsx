@@ -18,13 +18,16 @@ import {
   Wind,
   Sun,
   AlertTriangle,
-  CloudSun
+  CloudSun,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Job } from '../types/erp';
+import { Job, Worker, ScheduledShift } from '../types/erp';
+import { INITIAL_ROSTER, INITIAL_SHIFTS } from '../data/roster';
 import { QuoteInvoiceBuilder } from './QuoteInvoiceBuilder';
 import { PipelineRegistry } from './PipelineRegistry';
 import { JobDetails } from './JobDetails';
+import { LaborRosterCalendar } from './LaborRosterCalendar';
 import { getWeatherForJob } from '../utils/weather';
 
 interface DashboardProps {
@@ -47,11 +50,30 @@ const METRICS = [
 ];
 
 export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
-  const [currentView, setCurrentView] = useState<'ledger' | 'quote-builder' | 'pipeline-registry' | 'job-details'>('ledger');
+  const [currentView, setCurrentView] = useState<'ledger' | 'quote-builder' | 'pipeline-registry' | 'job-details' | 'calendar' | 'staff'>('ledger');
   const [selectedQuoteId, setSelectedQuoteId] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<Job['status'] | 'all'>('all');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const [workers, setWorkers] = useState<Worker[]>(() => {
+    const stored = localStorage.getItem('opus_workers');
+    return stored ? JSON.parse(stored) : INITIAL_ROSTER;
+  });
+  
+  const [shifts, setShifts] = useState<ScheduledShift[]>(() => {
+    const stored = localStorage.getItem('opus_shifts');
+    return stored ? JSON.parse(stored) : INITIAL_SHIFTS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('opus_workers', JSON.stringify(workers));
+  }, [workers]);
+
+  useEffect(() => {
+    localStorage.setItem('opus_shifts', JSON.stringify(shifts));
+  }, [shifts]);
+
   const [jobs, setJobs] = useState<Job[]>(() => {
     const stored = localStorage.getItem('opus_jobs');
     if (stored) {
@@ -74,6 +96,26 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
     window.scrollTo({ top: 0, behavior: 'instant' });
   }, [currentView, selectedJobId, selectedQuoteId]);
 
+  const followups = [
+    { name: 'Riverside P2', keyword: 'Riverside', fallbackId: '1', reason: 'Site Access Auth' },
+    { name: 'Marina Dev', keyword: 'Marina', fallbackId: '5', reason: 'Design Variation' },
+    { name: 'Oakwood Hub', keyword: 'Oakwood', fallbackId: '2', reason: 'Materials Delay' }
+  ];
+
+  const getJobActionRequired = (job: Job) => {
+    const weather = getWeatherForJob(job);
+    const followup = followups.find(f => job.siteName.toLowerCase().includes(f.keyword.toLowerCase()));
+    
+    if (weather.isImpactful || followup) {
+      return {
+        hasAction: true,
+        weather: weather.isImpactful ? weather : null,
+        followup: followup || null
+      };
+    }
+    return { hasAction: false, weather: null, followup: null };
+  };
+
   const filteredJobs = jobs.filter(job => filterStatus === 'all' || job.status === filterStatus);
 
   const handleUpdateJob = (updatedJob: Job) => {
@@ -94,12 +136,24 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden md:flex items-center space-x-6">
+            <div className="hidden lg:flex items-center space-x-6">
               <button 
                 onClick={() => setCurrentView('ledger')}
                 className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${currentView === 'ledger' ? 'text-brand-accent' : 'text-brand-white/70 hover:text-brand-white'}`}
               >
                 Dashboard
+              </button>
+              <button 
+                onClick={() => setCurrentView('calendar')}
+                className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${currentView === 'calendar' ? 'text-brand-accent' : 'text-brand-white/70 hover:text-brand-white'}`}
+              >
+                Calendar
+              </button>
+              <button 
+                onClick={() => setCurrentView('staff')}
+                className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors ${currentView === 'staff' ? 'text-brand-accent' : 'text-brand-white/70 hover:text-brand-white'}`}
+              >
+                Staff
               </button>
               <button 
                 onClick={() => setCurrentView('quote-builder')}
@@ -119,14 +173,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           <div className="flex items-center space-x-3">
             <button 
               onClick={onLogout}
-              className="hidden md:flex items-center space-x-2 px-4 py-2 border border-white/10 rounded hover:bg-white/5 transition-all group active:scale-95"
+              className="hidden lg:flex items-center space-x-2 px-4 py-2 border border-white/10 rounded hover:bg-white/5 transition-all group active:scale-95"
             >
               <span className="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-brand-white">Terminate Session</span>
               <LogOut className="w-4 h-4 text-white/40 group-hover:text-brand-white" />
             </button>
             <button 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 text-brand-white hover:bg-white/5 rounded transition-colors"
+              className="lg:hidden p-2 text-brand-white hover:bg-white/5 rounded transition-colors"
             >
               {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
@@ -143,14 +197,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] md:hidden"
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] lg:hidden"
             />
             <motion.div 
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed top-0 right-0 bottom-0 w-3/4 max-w-sm bg-[#1A1B1E] border-l border-white/5 z-[70] md:hidden p-6 flex flex-col shadow-2xl"
+              className="fixed top-0 right-0 bottom-0 w-3/4 max-w-sm bg-[#1A1B1E] border-l border-white/5 z-[70] lg:hidden p-6 flex flex-col shadow-2xl"
             >
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center group cursor-pointer" onClick={() => { setCurrentView('ledger'); setIsMobileMenuOpen(false); }}>
@@ -172,6 +226,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                     className={`block w-full text-left py-3 text-sm font-bold uppercase tracking-widest border-b border-white/5 transition-colors ${currentView === 'ledger' ? 'text-brand-accent' : 'text-white/40 hover:text-white'}`}
                   >
                     Dashboard
+                  </button>
+                  <button 
+                    onClick={() => { setCurrentView('calendar'); setIsMobileMenuOpen(false); }} 
+                    className={`block w-full text-left py-3 text-sm font-bold uppercase tracking-widest border-b border-white/5 transition-colors ${currentView === 'calendar' ? 'text-brand-accent' : 'text-white/40 hover:text-white'}`}
+                  >
+                    Calendar
+                  </button>
+                  <button 
+                    onClick={() => { setCurrentView('staff'); setIsMobileMenuOpen(false); }} 
+                    className={`block w-full text-left py-3 text-sm font-bold uppercase tracking-widest border-b border-white/5 transition-colors ${currentView === 'staff' ? 'text-brand-accent' : 'text-white/40 hover:text-white'}`}
+                  >
+                    Staff
                   </button>
                   <button 
                     onClick={() => { setCurrentView('quote-builder'); setIsMobileMenuOpen(false); }} 
@@ -216,132 +282,45 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           }}
           onBack={() => setCurrentView('ledger')}
         />
+      ) : currentView === 'calendar' || currentView === 'staff' ? (
+        <main className="pt-24 pb-12 px-4 sm:px-6 max-w-7xl mx-auto">
+          <LaborRosterCalendar 
+            view={currentView}
+            jobs={jobs}
+            workers={workers}
+            setWorkers={setWorkers}
+            shifts={shifts}
+            setShifts={setShifts}
+            onBack={() => setCurrentView('ledger')}
+            onNavigate={(view) => setCurrentView(view)}
+          />
+        </main>
       ) : currentView === 'job-details' && selectedJobId && jobs.find(j => j.id === selectedJobId) ? (
         <JobDetails 
           job={jobs.find(j => j.id === selectedJobId)!}
+          workers={workers}
           onBack={() => setCurrentView('ledger')}
           onUpdateJob={handleUpdateJob}
         />
       ) : (
-        <main className="pt-24 pb-12 px-4 sm:px-6 max-w-7xl mx-auto space-y-8">
-        {/* Dynamic Alerts Group */}
-        <div className="space-y-2.5">
-          {/* Active Site Weather Warnings */}
-          {(() => {
-            // Find active/pending jobs with impactful weather
-            const activeJobs = jobs.filter(j => j.status === 'in-progress' || j.status === 'pending');
-            const warnedJobs = activeJobs.map(job => {
-              const weatherInfo = getWeatherForJob(job);
-              return { job, weather: weatherInfo };
-            }).filter(item => item.weather.isImpactful);
-
-            if (warnedJobs.length === 0) return null;
-
-            return (
-              <motion.div 
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="w-full bg-[#3a2024]/40 border border-[#522b30] rounded-lg overflow-hidden group transition-all"
-              >
-                <div className="flex flex-col md:flex-row md:items-center px-4 py-3 gap-3 md:gap-6">
-                  <div className="flex items-center text-[10px] font-black text-[#ff8591] uppercase tracking-widest shrink-0">
-                    <CloudSun className="w-4 h-4 mr-3 animate-pulse text-[#ff8591]" />
-                    Weather Alerts ({warnedJobs.length})
-                  </div>
-                  
-                  <div className="h-4 w-px bg-[#522b30]/50 shrink-0 hidden md:block"></div>
-                  
-                  <div className="flex flex-wrap items-center gap-2 flex-1">
-                    {warnedJobs.map(({ job, weather }) => {
-                      let WeatherIcon = CloudRain;
-                      if (weather.condition === 'Frost') WeatherIcon = Snowflake;
-                      if (weather.condition === 'Wind') WeatherIcon = Wind;
-                      
-                      return (
-                        <button
-                          key={job.id}
-                          onClick={() => {
-                            setSelectedJobId(job.id);
-                            setCurrentView('job-details');
-                          }}
-                          title={weather.advice}
-                          className="px-2.5 py-1 rounded bg-[#ff8591]/5 hover:bg-[#ff8591]/15 border border-[#ff8591]/10 hover:border-[#ff8591]/30 text-[8px] font-black text-[#ff8591] uppercase tracking-widest transition-colors flex items-center gap-1.5 focus:outline-none"
-                        >
-                          <WeatherIcon className="w-3 h-3 text-[#ff8591]" />
-                          <span>{job.siteName}: {weather.condition} ({weather.temperature}°C)</span>
-                        </button>
-                      );
-                    })}
-                    <div className="text-[8px] font-bold text-white/30 uppercase tracking-widest md:ml-auto">
-                      Click site to adjust pour plans
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })()}
-
-          {/* Alert & Follow-Up Strip */}
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="w-full bg-[#3a2e20]/40 border border-[#52412b] rounded-lg overflow-hidden group transition-all"
-          >
-            <div className="flex flex-col md:flex-row md:items-center px-4 py-3 gap-3 md:gap-6">
-              <div className="flex items-center text-[10px] font-black text-[#f59e0b] uppercase tracking-widest shrink-0">
-                <AlertCircle className="w-4 h-4 mr-3 animate-pulse text-[#f59e0b]" />
-                Follow-Ups Pending (3)
-              </div>
-              
-              <div className="h-4 w-px bg-[#52412b]/50 shrink-0 hidden md:block"></div>
-              
-              <div className="flex flex-wrap items-center gap-2 flex-1">
-                {[
-                  { name: 'Riverside P2', keyword: 'Riverside', fallbackId: '1' },
-                  { name: 'Marina Dev', keyword: 'Marina', fallbackId: '5' },
-                  { name: 'Oakwood Hub', keyword: 'Oakwood', fallbackId: '2' }
-                ].map((followup) => {
-                  const targetJobId = jobs.find(j => j.siteName.toLowerCase().includes(followup.keyword.toLowerCase()))?.id || followup.fallbackId;
-                  
-                  return (
-                    <button
-                      key={followup.name}
-                      onClick={() => {
-                        setSelectedJobId(targetJobId);
-                        setCurrentView('job-details');
-                      }}
-                      className="px-2.5 py-1 rounded bg-[#f59e0b]/5 hover:bg-[#f59e0b]/15 border border-[#f59e0b]/10 hover:border-[#f59e0b]/30 text-[8px] font-black text-[#f59e0b] uppercase tracking-widest transition-colors flex items-center gap-1.5 focus:outline-none"
-                    >
-                      <ArrowUpRight className="w-3 h-3 text-[#f59e0b]" />
-                      <span>{followup.name}</span>
-                    </button>
-                  );
-                })}
-                <div className="text-[8px] font-bold text-white/30 uppercase tracking-widest md:ml-auto">
-                  Click site to authorize follow-up action
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
+        <main className="pt-20 pb-8 px-4 sm:px-6 max-w-6xl mx-auto space-y-6">
         {/* Contract & Job Ledger */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-            <div className="flex items-center gap-2.5 text-[11px] font-extrabold tracking-widest uppercase text-[#e0e0e0]">
-              <div className="w-[3px] h-4 bg-[#b0b8c4] rounded-[2px]" />
+        <div className="space-y-4 max-w-6xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 border-b border-[#2a2a2a] pb-3">
+            <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
+              <div className="w-1 h-4 bg-[#b0b8c4] rounded-sm" />
               Active Job Ledger
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="flex items-center bg-[#242424] border border-[#333] rounded-lg p-[3px] gap-[2px]">
+            <div className="w-full sm:w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-1 sm:pb-0">
+              <div className="flex items-center bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-1 gap-1 shadow-inner min-w-max">
                 {(['all', 'in-progress', 'pending', 'completed'] as const).map((status) => (
                   <button
                     key={status}
                     onClick={() => setFilterStatus(status)}
-                    className={`rounded-md px-3 py-1.5 text-[10px] font-bold tracking-wider uppercase whitespace-nowrap transition-colors duration-150 ${
+                    className={`rounded-md px-3 py-1.5 text-[9px] font-black tracking-widest uppercase whitespace-nowrap transition-all duration-200 ${
                       filterStatus === status 
-                        ? 'bg-[#333] text-[#e0e0e0]' 
-                        : 'text-[#666] hover:text-[#aaa]'
+                        ? 'bg-[#333] text-white shadow-md border border-[#444]' 
+                        : 'text-[#777] hover:text-[#aaa] hover:bg-[#252525]'
                     }`}
                   >
                     {status.replace('-', ' ')}
@@ -351,31 +330,33 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             </div>
           </div>
 
-          <div className="bg-[#242424] border border-[#333] rounded-xl overflow-hidden">
+          <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl">
             {/* Table Header - hidden on mobile, shown on tablet/desktop */}
-            <div className="hidden md:grid md:grid-cols-[110px_1fr_140px_110px] lg:grid-cols-[110px_1fr_140px_110px_110px] px-4 py-2.5 border-b border-[#2e2e2e]">
-              <span className="text-[9px] font-bold tracking-widest uppercase text-[#555]">Job Ref</span>
-              <span className="text-[9px] font-bold tracking-widest uppercase text-[#555]">Site / Contractor</span>
-              <span className="text-[9px] font-bold tracking-widest uppercase text-[#555]">Pour Status</span>
-              <span className="text-[9px] font-bold tracking-widest uppercase text-[#555] hidden lg:block">Schedule Value</span>
-              <span className="text-[9px] font-bold tracking-widest uppercase text-[#555] text-right">Action</span>
+            <div className="hidden md:grid md:grid-cols-[120px_2fr_1fr_140px_100px] gap-4 px-4 py-3 border-b border-[#2e2e2e] bg-[#222]">
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Job Ref</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Site / Contractor</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Site Warnings</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Job Status</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888] text-right">Action</span>
             </div>
 
-            <div className="divide-y divide-[#2a2a2a]">
+            <div className="divide-y divide-[#2e2e2e]">
               <AnimatePresence mode="popLayout">
                 {filteredJobs.length === 0 ? (
-                  <div className="px-4 py-12 text-center text-[10px] font-bold uppercase tracking-widest text-[#555]">
+                  <div className="px-4 py-12 text-center text-[11px] font-black uppercase tracking-widest text-[#555]">
                     No active jobs found
                   </div>
                 ) : (
-                  filteredJobs.map((job) => (
+                  filteredJobs.map((job) => {
+                    const action = getJobActionRequired(job);
+                    return (
                     <motion.div 
                       key={job.id}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       layout
-                      className="flex flex-col md:grid md:grid-cols-[110px_1fr_140px_110px] lg:grid-cols-[110px_1fr_140px_110px_110px] px-4 py-4 md:py-0 md:min-h-[64px] items-center hover:bg-[#292929] transition-colors duration-120 gap-3 md:gap-0"
+                      className="flex flex-col md:grid md:grid-cols-[120px_2fr_1fr_140px_100px] gap-4 px-4 py-4 md:py-0 md:min-h-[64px] items-center hover:bg-[#242424] transition-colors duration-150"
                     >
                       {/* Job Ref */}
                       <div className="flex justify-between items-center w-full md:w-auto md:contents">
@@ -384,16 +365,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                             setSelectedJobId(job.id);
                             setCurrentView('job-details');
                           }}
-                          className="text-[11px] font-bold text-[#b0b8c4] hover:text-white tracking-wide hover:underline transition-colors text-left focus:outline-none"
+                          className="text-[10.5px] font-black text-[#8a9bb0] hover:text-white tracking-widest hover:underline transition-colors text-left focus:outline-none"
                         >
                           {job.jobRef}
                         </button>
                         {/* Mobile-only status badge */}
                         <div className="md:hidden">
-                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[8px] font-extrabold tracking-wider uppercase border ${
-                            job.status === 'in-progress' ? 'bg-[#1e2a3a] border-[#2a4060] text-[#6090c0]' :
-                            job.status === 'pending' ? 'bg-[#2a2a1e] border-[#44440a] text-[#888844]' :
-                            'bg-[#1a2e1a] border-[#2a5a2a] text-[#4a9a4a]'
+                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[8px] font-black tracking-widest uppercase border ${
+                            job.status === 'in-progress' ? 'bg-[#1e2a3a]/80 border-[#2a4060] text-[#6090c0]' :
+                            job.status === 'pending' ? 'bg-[#2a2a1e]/80 border-[#44440a] text-[#888844]' :
+                            'bg-[#1a2e1a]/80 border-[#2a5a2a] text-[#4a9a4a]'
                           }`}>
                             {job.status === 'in-progress' ? 'In Progress' : job.status}
                           </span>
@@ -401,56 +382,83 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                       </div>
 
                       {/* Site / Contractor */}
-                      <div className="w-full md:w-auto">
-                        <div className="text-[12px] font-extrabold text-[#e0e0e0] tracking-wide uppercase">
-                          {job.siteName}
+                      <div className="w-full md:w-auto space-y-1.5 py-1">
+                        <div className="space-y-0.5">
+                          <div className="text-[11px] font-black text-white tracking-wider uppercase">
+                            {job.siteName}
+                          </div>
+                          <div className="text-[9px] font-bold text-[#777] tracking-widest uppercase">
+                            {job.mainContractor}
+                          </div>
                         </div>
-                        <div className="text-[10px] text-[#555] tracking-widest uppercase mt-0.5">
-                          {job.mainContractor}
+                        {/* Mobile Action Required Badges */}
+                        <div className="md:hidden flex flex-wrap items-center gap-1.5 mt-2">
+                          {(action.weather || action.followup) && (
+                            <>
+                              {action.weather && (
+                                <span className="inline-flex items-center gap-1 rounded bg-[#3a2024]/40 px-1.5 py-0.5 border border-[#ff8591]/20 text-[8.5px] font-black tracking-widest uppercase text-[#ff8591]">
+                                  <CloudSun className="w-2.5 h-2.5" />
+                                  {action.weather.condition} ({action.weather.temperature}°C)
+                                </span>
+                              )}
+                              {action.followup && (
+                                <span className="inline-flex items-center gap-1 rounded bg-[#3a2e20]/40 px-1.5 py-0.5 border border-[#f59e0b]/20 text-[8.5px] font-black tracking-widest uppercase text-[#f59e0b]">
+                                  <AlertCircle className="w-2.5 h-2.5" />
+                                  {action.followup.reason}
+                                </span>
+                              )}
+                            </>
+                          )}
                         </div>
                       </div>
 
-                      {/* Pour Status (Desktop/Tablet-only) */}
+                      {/* Desktop Action Required Badges Column */}
+                      <div className="hidden md:flex flex-col items-start gap-1.5 py-1">
+                        {(action.weather || action.followup) && (
+                          <>
+                            {action.weather && (
+                              <span className="inline-flex items-center gap-1 rounded bg-[#3a2024]/40 px-1.5 py-0.5 border border-[#ff8591]/20 text-[8.5px] font-black tracking-widest uppercase text-[#ff8591]">
+                                <CloudSun className="w-2.5 h-2.5" />
+                                {action.weather.condition} ({action.weather.temperature}°C)
+                              </span>
+                            )}
+                            {action.followup && (
+                              <span className="inline-flex items-center gap-1 rounded bg-[#3a2e20]/40 px-1.5 py-0.5 border border-[#f59e0b]/20 text-[8.5px] font-black tracking-widest uppercase text-[#f59e0b]">
+                                <AlertCircle className="w-2.5 h-2.5" />
+                                {action.followup.reason}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+
+                      {/* Job Status (Desktop/Tablet-only) */}
                       <div className="hidden md:block">
-                        <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[9px] font-extrabold tracking-wider uppercase border ${
-                          job.status === 'in-progress' ? 'bg-[#1e2a3a] border-[#2a4060] text-[#6090c0]' :
-                          job.status === 'pending' ? 'bg-[#2a2a1e] border-[#44440a] text-[#888844]' :
-                          'bg-[#1a2e1a] border-[#2a5a2a] text-[#4a9a4a]'
+                        <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[8.5px] font-black tracking-widest uppercase border ${
+                          job.status === 'in-progress' ? 'bg-[#1e2a3a]/80 border-[#3a5a8a] text-[#8ab4f8] shadow-[0_0_10px_rgba(138,180,248,0.1)]' :
+                          job.status === 'pending' ? 'bg-[#2a2a1e]/80 border-[#66661a] text-[#c0c040] shadow-[0_0_10px_rgba(192,192,64,0.1)]' :
+                          'bg-[#1a2e1a]/80 border-[#3a7a3a] text-[#81c995] shadow-[0_0_10px_rgba(129,201,149,0.1)]'
                         }`}>
                           {job.status === 'in-progress' ? 'In Progress' : job.status}
                         </span>
                       </div>
 
-                      {/* Schedule Value (Desktop-only) */}
-                      <div className="hidden lg:block">
-                        <span className="text-[13px] font-bold text-[#e0e0e0]">
-                          £{job.scheduleValue.toLocaleString()}
-                        </span>
-                      </div>
-
                       {/* Action (Manage) */}
                       <div className="flex justify-between items-center w-full md:w-auto md:justify-end">
-                        {/* Mobile-only Schedule Value */}
-                        <div className="lg:hidden text-[11px] font-bold text-[#e0e0e0]">
-                          <span className="text-[9px] text-[#555] uppercase tracking-wider font-extrabold mr-1">Value: </span>
-                          £{job.scheduleValue.toLocaleString()}
-                        </div>
-                        
                         <button 
                           onClick={() => {
                             setSelectedJobId(job.id);
                             setCurrentView('job-details');
                           }}
-                          className="group flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase text-[#555] hover:text-[#b0b8c4] transition-colors duration-150 focus:outline-none"
+                          className="group flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333] border border-[#3c3c3c] rounded-lg text-[8px] font-black tracking-widest uppercase text-[#aaa] hover:text-white transition-all duration-200 focus:outline-none"
                         >
                           <span>Manage</span>
-                          <svg className="w-2.5 h-2.5 transform group-hover:translate-x-0.5 transition-transform text-[#555] group-hover:text-[#b0b8c4]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="9 18 15 12 9 6"/>
-                          </svg>
+                          <ChevronRight className="w-3 h-3 text-[#777] group-hover:text-white transition-colors" />
                         </button>
                       </div>
                     </motion.div>
-                  ))
+                    );
+                  })
                 )}
               </AnimatePresence>
             </div>

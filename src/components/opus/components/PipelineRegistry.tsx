@@ -68,189 +68,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
         console.error('Failed to parse saved quotes', e);
       }
     }
-    
-    if (!stored || loadedQuotes.length === 0) {
-      const mockQuotes: Quote[] = [
-        {
-          id: 'mock-q1',
-          reference: 'QTE-4921-X',
-          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
-          clientInfo: {
-            entity: 'Balfour Beatty',
-            email: 'procurement@balfourbeatty.com',
-            site: 'Riverside Extension Phase 3',
-            postcode: 'SW1A 1AA'
-          },
-          items: [
-            { id: '1', description: 'Concrete Pour Type A3', quantity: 120, unit: 'm³', rate: 145, isIncluded: false },
-            { id: '2', description: 'Rebar Reinforcement Install', quantity: 250, unit: 'm²', rate: 45, isIncluded: false }
-          ],
-          vatRate: 20,
-          totals: { netTotal: 28650, vatAmount: 5730, grossTotal: 34380 }
-        },
-        {
-          id: 'mock-q2',
-          reference: 'QTE-8812-Y',
-          date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
-          clientInfo: {
-            entity: 'Laing O\'Rourke',
-            email: 'estimates@laingorourke.com',
-            site: 'Oakwood Commercial Foundations',
-            postcode: 'M1 1AE'
-          },
-          items: [
-            { id: '1', description: 'C30 Concrete Base Slabs', quantity: 1, unit: 'SUM', rate: 'Included', isIncluded: true },
-            { id: '2', description: 'Sub-base excavation and levelling', quantity: 450, unit: 'm²', rate: 85, isIncluded: false }
-          ],
-          vatRate: 20,
-          totals: { netTotal: 38250, vatAmount: 7650, grossTotal: 45900 }
-        },
-        {
-          id: 'mock-q3',
-          reference: 'QTE-3391-Z',
-          date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
-          clientInfo: {
-            entity: 'Kier Group',
-            email: 'contracts@kier.co.uk',
-            site: 'Brentwood Depot Slab',
-            postcode: 'CM14 4BA'
-          },
-          items: [
-            { id: '1', description: 'High-Strength Concrete Pours', quantity: 380, unit: 'm³', rate: 160, isIncluded: false }
-          ],
-          vatRate: 20,
-          totals: { netTotal: 60800, vatAmount: 12160, grossTotal: 72960 }
-        },
-        {
-          id: 'mock-q4',
-          reference: 'QTE-1102-A',
-          date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
-          clientInfo: {
-            entity: 'Skanska',
-            email: 'estimates.uk@skanska.co.uk',
-            site: 'Central Square Basement',
-            postcode: 'B1 1BB'
-          },
-          items: [
-            { id: '1', description: 'RC Foundation Slab Pour', quantity: 500, unit: 'm³', rate: 135, isIncluded: false },
-            { id: '2', description: 'Formwork and Shuttering Prep', quantity: 1, unit: 'SUM', rate: 12000, isIncluded: false }
-          ],
-          vatRate: 20,
-          totals: { netTotal: 79500, vatAmount: 15900, grossTotal: 95400 }
-        },
-        {
-          id: 'mock-q5',
-          reference: 'QTE-9938-B',
-          date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
-          clientInfo: {
-            entity: 'Morgan Sindall',
-            email: 'procurement@morgansindall.com',
-            site: 'Marina Development Quay Wall',
-            postcode: 'EH1 1YZ'
-          },
-          items: [
-            { id: '1', description: 'Marine-Grade Concrete Pour', quantity: 220, unit: 'm³', rate: 195, isIncluded: false }
-          ],
-          vatRate: 20,
-          totals: { netTotal: 42900, vatAmount: 8580, grossTotal: 51480 }
-        }
-      ];
-      setQuotes(mockQuotes);
-      localStorage.setItem('opus_saved_quotes', JSON.stringify(mockQuotes));
-    } else {
-      setQuotes(loadedQuotes);
-    }
-  };
-
-  const handleManualSeed = () => {
-    const mockQuotes: Quote[] = [
-      {
-        id: 'mock-q1-' + Date.now(),
-        reference: 'QTE-4921-X',
-        date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
-        clientInfo: {
-          entity: 'Balfour Beatty',
-          email: 'procurement@balfourbeatty.com',
-          site: 'Riverside Extension Phase 3',
-          postcode: 'SW1A 1AA'
-        },
-        items: [
-          { id: '1', description: 'Concrete Pour Type A3', quantity: 120, unit: 'm³', rate: 145, isIncluded: false },
-          { id: '2', description: 'Rebar Reinforcement Install', quantity: 250, unit: 'm²', rate: 45, isIncluded: false }
-        ],
-        vatRate: 20,
-        totals: { netTotal: 28650, vatAmount: 5730, grossTotal: 34380 }
-      },
-      {
-        id: 'mock-q2-' + Date.now(),
-        reference: 'QTE-8812-Y',
-        date: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
-        clientInfo: {
-          entity: 'Laing O\'Rourke',
-          email: 'estimates@laingorourke.com',
-          site: 'Oakwood Commercial Foundations',
-          postcode: 'M1 1AE'
-        },
-        items: [
-          { id: '1', description: 'C30 Concrete Base Slabs', quantity: 1, unit: 'SUM', rate: 'Included', isIncluded: true },
-          { id: '2', description: 'Sub-base excavation and levelling', quantity: 450, unit: 'm²', rate: 85, isIncluded: false }
-        ],
-        vatRate: 20,
-        totals: { netTotal: 38250, vatAmount: 7650, grossTotal: 45900 }
-      },
-      {
-        id: 'mock-q3-' + Date.now(),
-        reference: 'QTE-3391-Z',
-        date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
-        clientInfo: {
-          entity: 'Kier Group',
-          email: 'contracts@kier.co.uk',
-          site: 'Brentwood Depot Slab',
-          postcode: 'CM14 4BA'
-        },
-        items: [
-          { id: '1', description: 'High-Strength Concrete Pours', quantity: 380, unit: 'm³', rate: 160, isIncluded: false }
-        ],
-        vatRate: 20,
-        totals: { netTotal: 60800, vatAmount: 12160, grossTotal: 72960 }
-      },
-      {
-        id: 'mock-q4-' + Date.now(),
-        reference: 'QTE-1102-A',
-        date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
-        clientInfo: {
-          entity: 'Skanska',
-          email: 'estimates.uk@skanska.co.uk',
-          site: 'Central Square Basement',
-          postcode: 'B1 1BB'
-        },
-        items: [
-          { id: '1', description: 'RC Foundation Slab Pour', quantity: 500, unit: 'm³', rate: 135, isIncluded: false },
-          { id: '2', description: 'Formwork and Shuttering Prep', quantity: 1, unit: 'SUM', rate: 12000, isIncluded: false }
-        ],
-        vatRate: 20,
-        totals: { netTotal: 79500, vatAmount: 15900, grossTotal: 95400 }
-      },
-      {
-        id: 'mock-q5-' + Date.now(),
-        reference: 'QTE-9938-B',
-        date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB'),
-        clientInfo: {
-          entity: 'Morgan Sindall',
-          email: 'procurement@morgansindall.com',
-          site: 'Marina Development Quay Wall',
-          postcode: 'EH1 1YZ'
-        },
-        items: [
-          { id: '1', description: 'Marine-Grade Concrete Pour', quantity: 220, unit: 'm³', rate: 195, isIncluded: false }
-        ],
-        vatRate: 20,
-        totals: { netTotal: 42900, vatAmount: 8580, grossTotal: 51480 }
-      }
-    ];
-    setQuotes(mockQuotes);
-    localStorage.setItem('opus_saved_quotes', JSON.stringify(mockQuotes));
-    triggerToast('Quote Management populated with 5 test estimates ⚡');
+    setQuotes(loadedQuotes);
   };
 
   useEffect(() => {
@@ -338,47 +156,34 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
       <div className="border-b border-white/5 bg-[#222428] py-8 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
-            <h1 className="text-xl font-black uppercase tracking-widest font-archivo text-white leading-tight">
+            <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
+              <div className="w-1 h-4 bg-[#b0b8c4] rounded-sm" />
               Quote Management
-            </h1>
+            </div>
           </div>
 
           {/* Controls Section */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-            <button
-              onClick={handleManualSeed}
-              className="px-4 py-3 bg-[#5C7285]/10 border border-[#5C7285]/30 hover:bg-[#5C7285]/20 text-brand-accent text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center justify-center space-x-2 whitespace-nowrap"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Seed Test Quotes</span>
-            </button>
           </div>
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 mt-10">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 mt-10 pb-8 space-y-6">
         <div className="space-y-4">
-          <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-            <div className="flex items-center gap-2.5 text-[11px] font-extrabold tracking-widest uppercase text-[#e0e0e0]">
-              <div className="w-[3px] h-4 bg-[#b0b8c4] rounded-[2px]" />
-              Pipeline Estimates Ledger
-            </div>
-          </div>
-
-          <div className="bg-[#242424] border border-[#333] rounded-xl overflow-hidden">
+          <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl">
             {/* Table Header - hidden on mobile, shown on tablet/desktop */}
-            <div className="hidden md:grid md:grid-cols-[110px_1fr_120px_110px_180px] px-4 py-2.5 border-b border-[#2e2e2e]">
-              <span className="text-[9px] font-bold tracking-widest uppercase text-[#555]">Quote Ref</span>
-              <span className="text-[9px] font-bold tracking-widest uppercase text-[#555]">Main Contractor / Site</span>
-              <span className="text-[9px] font-bold tracking-widest uppercase text-[#555]">Estimated Value</span>
-              <span className="text-[9px] font-bold tracking-widest uppercase text-[#555]">Date Issued</span>
-              <span className="text-[9px] font-bold tracking-widest uppercase text-[#555] text-right">Pipeline Actions</span>
+            <div className="hidden md:grid md:grid-cols-[120px_3fr_140px_100px_180px] gap-4 px-4 py-3 border-b border-[#2e2e2e] bg-[#222]">
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Quote Ref</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Main Contractor / Site</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Estimated Value</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Date Issued</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888] text-right">Pipeline Actions</span>
             </div>
 
-            <div className="divide-y divide-[#2a2a2a]">
+            <div className="divide-y divide-[#2e2e2e]">
               <AnimatePresence mode="popLayout">
                 {filteredQuotes.length === 0 ? (
-                  <div className="px-4 py-12 text-center text-[10px] font-bold uppercase tracking-widest text-[#555]">
+                  <div className="px-4 py-12 text-center text-[11px] font-black uppercase tracking-widest text-[#555]">
                     No matching pipeline estimates found
                   </div>
                 ) : (
@@ -389,62 +194,62 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       layout
-                      className="flex flex-col md:grid md:grid-cols-[110px_1fr_120px_110px_180px] px-4 py-4 md:py-0 md:min-h-[64px] items-center hover:bg-[#292929] transition-colors duration-120 gap-3 md:gap-0"
+                      className="flex flex-col md:grid md:grid-cols-[120px_3fr_140px_100px_180px] gap-4 px-4 py-4 md:py-0 md:min-h-[64px] items-center hover:bg-[#242424] transition-colors duration-150"
                     >
                       {/* Quote Ref */}
                       <div className="flex justify-between items-center w-full md:w-auto md:contents">
                         <button 
                           onClick={() => onEditQuote(quote.id)}
-                          className="text-[11px] font-bold text-[#b0b8c4] hover:text-white tracking-wide flex items-center gap-1 hover:underline transition-colors"
+                          className="text-[10.5px] font-black text-[#8a9bb0] hover:text-white tracking-widest flex items-center gap-1.5 hover:underline transition-colors focus:outline-none"
                         >
                           <span>{quote.reference || `QTE-${quote.id.substring(0, 4).toUpperCase()}`}</span>
                           <ExternalLink className="w-3 h-3 text-[#555]" />
                         </button>
                         {/* Mobile-only date */}
-                        <span className="md:hidden text-[9px] font-bold text-[#555] uppercase tracking-wider">
+                        <span className="md:hidden text-[8px] font-black text-[#555] uppercase tracking-widest">
                           {quote.date || 'Pending'}
                         </span>
                       </div>
 
                       {/* Site / Contractor */}
-                      <div className="w-full md:w-auto">
-                        <div className="text-[12px] font-extrabold text-[#e0e0e0] tracking-wide uppercase">
+                      <div className="w-full md:w-auto space-y-0.5">
+                        <div className="text-[11px] font-black text-white tracking-wider uppercase">
                           {quote.clientInfo?.entity || 'No Contractor Data'}
                         </div>
-                        <div className="text-[10px] text-[#555] tracking-widest uppercase mt-0.5">
+                        <div className="text-[9px] font-bold text-[#777] tracking-widest uppercase">
                           {quote.clientInfo?.site || 'No site info'} ({quote.clientInfo?.postcode || 'N/A'})
                         </div>
                       </div>
 
                       {/* Estimated Value */}
                       <div className="w-full md:w-auto flex justify-between md:block">
-                        <span className="md:hidden text-[9px] text-[#555] uppercase tracking-wider font-extrabold">Value:</span>
-                        <span className="text-[13px] font-bold text-[#e0e0e0]">
+                        <span className="md:hidden text-[8.5px] text-[#555] uppercase tracking-widest font-black">Value:</span>
+                        <span className="text-[11px] font-black text-[#e0e0e0] tracking-wide">
                           £{(quote.totals?.grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
 
                       {/* Date Issued */}
-                      <div className="hidden md:block text-[11px] text-[#777] font-medium uppercase tracking-wide">
+                      <div className="hidden md:block text-[9px] text-[#777] font-bold uppercase tracking-widest">
                         {quote.date || 'Pending'}
                       </div>
 
                       {/* Pipeline Actions */}
                       <div className="flex items-center justify-between w-full md:w-auto md:justify-end gap-3 pt-3 md:pt-0 border-t border-[#2a2a2a] md:border-0">
-                        <span className="md:hidden text-[9px] text-[#555] uppercase tracking-wider font-extrabold">Actions:</span>
+                        <span className="md:hidden text-[8.5px] text-[#555] uppercase tracking-widest font-black">Actions:</span>
                         
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
                           <button
                             onClick={() => setConvertingQuote(quote)}
-                            className="px-3 py-1.5 bg-[#5C7285] hover:bg-[#6c8295] text-white text-[9px] font-bold uppercase tracking-wider rounded transition-colors"
+                            className="px-2.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333] border border-[#3c3c3c] text-[#aaa] hover:text-white text-[8px] font-black uppercase tracking-widest rounded-lg transition-all focus:outline-none"
                           >
                             Convert to Job
                           </button>
                           <button
                             onClick={() => setSelectedQuoteToDelete(quote)}
-                            className="px-3 py-1.5 bg-[#451e22] hover:bg-[#5c2329] text-[#ff8591] text-[9px] font-bold uppercase tracking-wider rounded transition-colors"
+                            className="p-1.5 bg-[#2a2a2a] hover:bg-[#451e22] border border-[#3c3c3c] hover:border-[#5c2329] text-[#aaa] hover:text-[#ff8591] rounded-lg transition-all focus:outline-none"
                           >
-                            Delete
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
                       </div>
@@ -473,10 +278,10 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
             </div>
             
             <div className="p-6 space-y-4">
-              <p className="text-xs font-medium text-white/60 leading-relaxed uppercase tracking-wide">
+              <p className="text-sm font-medium text-white/80 leading-relaxed">
                 Are you absolutely sure you want to permanently delete the estimate <span className="font-bold text-white">{selectedQuoteToDelete.reference}</span> for <span className="font-bold text-white">{selectedQuoteToDelete.clientInfo?.entity}</span>?
               </p>
-              <div className="p-4 bg-white/5 border border-white/5 rounded-lg text-[9px] font-bold text-red-400 uppercase tracking-widest leading-relaxed">
+              <div className="p-4 bg-white/5 border border-white/5 rounded-lg text-xs font-medium text-red-400 leading-relaxed">
                 This action is irreversible and will permanently delete this record from the archive and data stores.
               </div>
             </div>
@@ -515,22 +320,21 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
             </div>
             
             <div className="p-6 space-y-4">
-              <p className="text-xs font-medium text-white/60 leading-relaxed uppercase tracking-wide">
+              <p className="text-sm font-medium text-white/80 leading-relaxed">
                 You are about to authorize estimate <span className="font-bold text-white">{convertingQuote.reference}</span> and convert it into a live contract under the Active Job Ledger.
               </p>
-
-              <div className="bg-white/5 border border-white/5 rounded-lg p-4 space-y-2.5">
-                <div className="flex justify-between">
-                  <span className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Main Contractor:</span>
-                  <span className="text-[9px] font-black text-white uppercase">{convertingQuote.clientInfo?.entity}</span>
+              <div className="bg-white/5 border border-white/5 rounded-lg p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium text-white/50">Main Contractor:</span>
+                  <span className="text-sm font-semibold text-white">{convertingQuote.clientInfo?.entity}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Site Name:</span>
-                  <span className="text-[9px] font-black text-white uppercase max-w-[180px] text-right truncate">{convertingQuote.clientInfo?.site}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-medium text-white/50">Site Name:</span>
+                  <span className="text-sm font-semibold text-white max-w-[180px] text-right truncate">{convertingQuote.clientInfo?.site}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[8px] font-bold text-white/30 uppercase tracking-widest">Schedule Value:</span>
-                  <span className="text-[9px] font-black text-[#5C7285] uppercase">£{(convertingQuote.totals?.grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <div className="flex justify-between items-center pt-2 border-t border-white/10">
+                  <span className="text-xs font-medium text-white/50">Schedule Value:</span>
+                  <span className="text-sm font-bold text-[#5C7285]">£{(convertingQuote.totals?.grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
               </div>
             </div>

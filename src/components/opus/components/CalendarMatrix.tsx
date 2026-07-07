@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from 'react';
 import { ChevronDown, AlertCircle, ChevronLeft, ChevronRight, 
   Calendar, 

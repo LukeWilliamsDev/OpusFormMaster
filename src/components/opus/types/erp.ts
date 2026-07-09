@@ -27,12 +27,14 @@ export interface Worker {
   role: 'Supervisor' | 'Operative' | 'Telehandler' | 'Groundworker';
   tickets: Ticket[];
   phone?: string;
+  email?: string;
   uploadedCertificates?: {
     id: string;
     name: string;
     size: string;
     uploadedAt: string;
   }[];
+  isArchived?: boolean;
 }
 
 export interface WeatherRisk {

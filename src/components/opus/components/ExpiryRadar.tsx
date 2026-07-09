@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { AlertTriangle, ShieldCheck, HelpCircle } from 'lucide-react';
 

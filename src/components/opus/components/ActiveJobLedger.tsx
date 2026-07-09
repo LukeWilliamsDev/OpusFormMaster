@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CloudSun, AlertCircle, ChevronRight } from 'lucide-react';

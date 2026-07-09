@@ -50,74 +50,6 @@ interface PipelineRegistryProps {
   onBack: () => void;
 }
 
-const SEED_QUOTES: Quote[] = [
-  {
-    id: 'seed-1', reference: 'JOB-2041',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(),
-    clientInfo: { entity: 'Kier Construction Ltd', email: 'procurement@kier.co.uk', site: 'Battersea Power Station — Phase 3B Slab', postcode: 'SW11 8DD' },
-    items: [
-      { id: 'i1', description: 'Supply & pour reinforced slab (C32/40)', quantity: 420, unit: 'm²', rate: 68 },
-      { id: 'i2', description: 'Power float finish to slab', quantity: 420, unit: 'm²', rate: 12 },
-      { id: 'i3', description: 'Supervisor day rate', quantity: 6, unit: 'days', rate: 280 },
-      { id: 'i4', description: 'Operative day rate', quantity: 18, unit: 'days', rate: 240 },
-    ],
-    vatRate: 20, totals: { netTotal: 39840, vatAmount: 7968, grossTotal: 47808 },
-    isSavedLocal: true, isSent: true,
-  },
-  {
-    id: 'seed-2', reference: 'JOB-2058',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 6).toISOString(),
-    clientInfo: { entity: 'Balfour Beatty', email: 'ops.london@balfourbeatty.com', site: 'Old Oak Common HS2 — Concourse Deck', postcode: 'NW10 6DZ' },
-    items: [
-      { id: 'i1', description: 'Formwork erection to soffit', quantity: 280, unit: 'm²', rate: 42 },
-      { id: 'i2', description: 'Rebar fixing (labour only)', quantity: 8.5, unit: 't', rate: 480 },
-      { id: 'i3', description: 'Concrete placement & vibration', quantity: 165, unit: 'm³', rate: 55 },
-      { id: 'i4', description: 'Supervisor day rate', quantity: 5, unit: 'days', rate: 280 },
-    ],
-    vatRate: 20, totals: { netTotal: 28355, vatAmount: 5671, grossTotal: 34026 },
-    isSavedLocal: true,
-  },
-  {
-    id: 'seed-3', reference: 'JOB-2072',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
-    clientInfo: { entity: 'Berkeley Homes', email: 'quantities@berkeleygroup.co.uk', site: 'Woodberry Down — Block E Raft Foundation', postcode: 'N4 2TG' },
-    items: [
-      { id: 'i1', description: 'Excavate & prepare raft base', quantity: 320, unit: 'm²', rate: 22 },
-      { id: 'i2', description: 'Blinding concrete 75mm', quantity: 320, unit: 'm²', rate: 14 },
-      { id: 'i3', description: 'Raft slab pour C40/50', quantity: 210, unit: 'm³', rate: 58 },
-      { id: 'i4', description: 'Power float & cure', quantity: 320, unit: 'm²', rate: 11 },
-      { id: 'i5', description: 'Telehandler operative', quantity: 4, unit: 'days', rate: 260 },
-    ],
-    vatRate: 20, totals: { netTotal: 32780, vatAmount: 6556, grossTotal: 39336 },
-    isSavedLocal: true,
-  },
-  {
-    id: 'seed-4', reference: 'JOB-1988',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14).toISOString(),
-    clientInfo: { entity: 'Sisk Group', email: 'estimating@johnsiskandson.com', site: 'Canary Wharf — Wood Wharf Plot A2 Cores', postcode: 'E14 5AB' },
-    items: [
-      { id: 'i1', description: 'Core wall formwork (jump form)', quantity: 640, unit: 'm²', rate: 88 },
-      { id: 'i2', description: 'Rebar fixing', quantity: 22, unit: 't', rate: 495 },
-      { id: 'i3', description: 'Concrete placement (pump)', quantity: 380, unit: 'm³', rate: 62 },
-    ],
-    vatRate: 20, totals: { netTotal: 90630, vatAmount: 18126, grossTotal: 108756 },
-    isSavedLocal: true, isSent: true,
-  },
-  {
-    id: 'seed-5', reference: 'JOB-2091',
-    date: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    clientInfo: { entity: 'Mace Group', email: 'preconstruction@macegroup.com', site: 'Earls Court Masterplan — Basement B2 Slab', postcode: 'SW5 9TA' },
-    items: [
-      { id: 'i1', description: 'Kicker & retaining wall formwork', quantity: 180, unit: 'm²', rate: 76 },
-      { id: 'i2', description: 'Basement slab pour C40/50', quantity: 240, unit: 'm³', rate: 61 },
-      { id: 'i3', description: 'Supervisor day rate', quantity: 4, unit: 'days', rate: 280 },
-      { id: 'i4', description: 'Operative day rate', quantity: 12, unit: 'days', rate: 240 },
-    ],
-    vatRate: 20, totals: { netTotal: 32200, vatAmount: 6440, grossTotal: 38640 },
-    isSavedLocal: true,
-  },
-];
-
 export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote, onBack }) => {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -127,23 +59,18 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
 
   // Load quotes from localStorage
   const loadQuotes = () => {
-    const stored = localStorage.getItem('opus_saved_quotes');
-    let loadedQuotes: Quote[] = [];
-    if (stored) {
-      try {
-        loadedQuotes = JSON.parse(stored);
-      } catch (e) {
-        console.error('Failed to parse saved quotes', e);
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('opus_saved_quotes');
+      let loadedQuotes: Quote[] = [];
+      if (stored) {
+        try {
+          loadedQuotes = JSON.parse(stored);
+        } catch (e) {
+          console.error('Failed to parse saved quotes', e);
+        }
       }
+      setQuotes(loadedQuotes);
     }
-    // Merge in seed samples if not already present
-    const existingRefs = new Set(loadedQuotes.map(q => q.reference));
-    const missingSeeds = SEED_QUOTES.filter(s => !existingRefs.has(s.reference));
-    if (missingSeeds.length > 0) {
-      loadedQuotes = [...missingSeeds, ...loadedQuotes];
-      localStorage.setItem('opus_saved_quotes', JSON.stringify(loadedQuotes));
-    }
-    setQuotes(loadedQuotes);
   };
 
   useEffect(() => {
@@ -159,7 +86,9 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
     if (!selectedQuoteToDelete) return;
     const updated = quotes.filter(q => q.id !== selectedQuoteToDelete.id);
     setQuotes(updated);
-    localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+    }
     setSelectedQuoteToDelete(null);
     triggerToast('Quote deleted successfully', 'success');
   };
@@ -169,7 +98,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
 
     // Load active jobs
     let currentJobs: Job[] = [];
-    const storedJobs = localStorage.getItem('opus_jobs');
+    const storedJobs = typeof window !== 'undefined' ? localStorage.getItem('opus_jobs') : null;
     if (storedJobs) {
       try {
         currentJobs = JSON.parse(storedJobs);
@@ -203,12 +132,16 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
 
     // Prepend new job and save
     const updatedJobs = [newJob, ...currentJobs];
-    localStorage.setItem('opus_jobs', JSON.stringify(updatedJobs));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('opus_jobs', JSON.stringify(updatedJobs));
+    }
 
     // Remove quote from registry and save
     const updatedQuotes = quotes.filter(q => q.id !== convertingQuote.id);
     setQuotes(updatedQuotes);
-    localStorage.setItem('opus_saved_quotes', JSON.stringify(updatedQuotes));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('opus_saved_quotes', JSON.stringify(updatedQuotes));
+    }
 
     // Cleanup state
     setConvertingQuote(null);
@@ -248,17 +181,17 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
           <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl">
             {/* Table Header - hidden on mobile, shown on tablet/desktop */}
             <div className="hidden md:grid md:grid-cols-[120px_3fr_140px_100px_180px] gap-4 px-4 py-3 border-b border-[#2e2e2e] bg-[#222]">
-              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Quote Ref</span>
-              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Main Contractor / Site</span>
-              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Estimated Value</span>
-              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Date Issued</span>
-              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888] text-right">Pipeline Actions</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-gray-400">Quote Ref</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-gray-400">Main Contractor / Site</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-gray-400 text-right">Estimated Value</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-gray-400">Date Issued</span>
+              <span className="text-[8.5px] font-black tracking-widest uppercase text-gray-400 text-right">Pipeline Actions</span>
             </div>
 
             <div className="divide-y divide-[#2e2e2e]">
               <AnimatePresence mode="popLayout">
                 {filteredQuotes.length === 0 ? (
-                  <div className="px-4 py-12 text-center text-[11px] font-black uppercase tracking-widest text-[#555]">
+                  <div className="px-4 py-12 text-center text-xs font-bold uppercase tracking-wider text-gray-500">
                     No matching pipeline estimates found
                   </div>
                 ) : (
@@ -275,54 +208,54 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
                       <div className="flex justify-between items-center w-full md:w-auto md:contents">
                         <button 
                           onClick={() => onEditQuote(quote.id)}
-                          className="text-[10.5px] font-black text-[#8a9bb0] hover:text-white tracking-widest flex items-center gap-1.5 hover:underline transition-colors focus:outline-none"
+                          className="text-xs font-mono font-semibold text-[#8a9bb0] hover:text-white flex items-center gap-1.5 hover:underline transition-colors focus:outline-none"
                         >
                           <span>{quote.reference || `QTE-${quote.id.substring(0, 4).toUpperCase()}`}</span>
-                          <ExternalLink className="w-3 h-3 text-[#555]" />
+                          <ExternalLink className="w-3 h-3 text-gray-500" />
                         </button>
                         {/* Mobile-only date */}
-                        <span className="md:hidden text-[8px] font-black text-[#555] uppercase tracking-widest">
+                        <span className="md:hidden text-[8px] font-black text-gray-500 uppercase tracking-widest">
                           {quote.date || 'Pending'}
                         </span>
                       </div>
 
                       {/* Site / Contractor */}
-                      <div className="w-full md:w-auto space-y-0.5">
-                        <div className="text-[11px] font-black text-white tracking-wider uppercase">
+                      <div className="w-full md:w-auto space-y-1 py-1.5">
+                        <div className="text-sm font-semibold text-white">
                           {quote.clientInfo?.entity || 'No Contractor Data'}
                         </div>
-                        <div className="text-[9px] font-bold text-[#777] tracking-widest uppercase">
+                        <div className="text-xs font-medium text-gray-400">
                           {quote.clientInfo?.site || 'No site info'} ({quote.clientInfo?.postcode || 'N/A'})
                         </div>
                       </div>
 
                       {/* Estimated Value */}
-                      <div className="w-full md:w-auto flex justify-between md:block">
-                        <span className="md:hidden text-[8.5px] text-[#555] uppercase tracking-widest font-black">Value:</span>
-                        <span className="text-[11px] font-black text-[#e0e0e0] tracking-wide">
+                      <div className="w-full md:w-auto flex justify-between md:block md:text-right">
+                        <span className="md:hidden text-[8.5px] text-gray-500 uppercase tracking-widest font-black">Value:</span>
+                        <span className="text-xs font-mono font-semibold text-[#e0e0e0] tracking-wide">
                           £{(quote.totals?.grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
 
                       {/* Date Issued */}
-                      <div className="hidden md:block text-[9px] text-[#777] font-bold uppercase tracking-widest">
+                      <div className="hidden md:block text-xs text-gray-400 font-medium">
                         {quote.date || 'Pending'}
                       </div>
 
                       {/* Pipeline Actions */}
                       <div className="flex items-center justify-between w-full md:w-auto md:justify-end gap-3 pt-3 md:pt-0 border-t border-[#2a2a2a] md:border-0">
-                        <span className="md:hidden text-[8.5px] text-[#555] uppercase tracking-widest font-black">Actions:</span>
+                        <span className="md:hidden text-[8.5px] text-gray-500 uppercase tracking-widest font-black">Actions:</span>
                         
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => setConvertingQuote(quote)}
-                            className="px-2.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333] border border-[#3c3c3c] text-[#aaa] hover:text-white text-[8px] font-black uppercase tracking-widest rounded-lg transition-all focus:outline-none"
+                            className="px-2.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333] border border-[#3c3c3c] text-gray-400 hover:text-white text-[8px] font-black uppercase tracking-widest rounded-lg transition-all focus:outline-none"
                           >
                             Convert to Job
                           </button>
                           <button
                             onClick={() => setSelectedQuoteToDelete(quote)}
-                            className="p-1.5 bg-[#2a2a2a] hover:bg-[#451e22] border border-[#3c3c3c] hover:border-[#5c2329] text-[#aaa] hover:text-[#ff8591] rounded-lg transition-all focus:outline-none"
+                            className="p-1.5 bg-[#2a2a2a] hover:bg-[#451e22] border border-[#3c3c3c] hover:border-[#5c2329] text-gray-400 hover:text-[#ff8591] rounded-lg transition-all focus:outline-none"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

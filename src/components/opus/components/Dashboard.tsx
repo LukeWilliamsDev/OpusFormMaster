@@ -19,7 +19,8 @@ import {
   Sun,
   AlertTriangle,
   CloudSun,
-  Calendar
+  Calendar,
+  Database
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Job, Worker, ScheduledShift } from '../types/erp';
@@ -29,6 +30,8 @@ import { PipelineRegistry } from './PipelineRegistry';
 import { JobDetails } from './JobDetails';
 import { LaborRosterCalendar } from './LaborRosterCalendar';
 import { getWeatherForJob } from '../utils/weather';
+import { ExpiryRadar } from './ExpiryRadar';
+import { ActiveJobLedger } from './ActiveJobLedger';
 
 interface DashboardProps {
   onLogout: () => void;
@@ -57,44 +60,149 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const [workers, setWorkers] = useState<Worker[]>(() => {
-    const stored = localStorage.getItem('opus_workers');
-    return stored ? JSON.parse(stored) : INITIAL_ROSTER;
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('opus_workers');
+      return stored ? JSON.parse(stored) : INITIAL_ROSTER;
+    }
+    return INITIAL_ROSTER;
   });
   
   const [shifts, setShifts] = useState<ScheduledShift[]>(() => {
-    const stored = localStorage.getItem('opus_shifts');
-    return stored ? JSON.parse(stored) : INITIAL_SHIFTS;
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('opus_shifts');
+      return stored ? JSON.parse(stored) : INITIAL_SHIFTS;
+    }
+    return INITIAL_SHIFTS;
   });
 
   useEffect(() => {
-    localStorage.setItem('opus_workers', JSON.stringify(workers));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('opus_workers', JSON.stringify(workers));
+    }
   }, [workers]);
 
   useEffect(() => {
-    localStorage.setItem('opus_shifts', JSON.stringify(shifts));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('opus_shifts', JSON.stringify(shifts));
+    }
   }, [shifts]);
 
   const [jobs, setJobs] = useState<Job[]>(() => {
-    const stored = localStorage.getItem('opus_jobs');
-    if (stored) {
-      try {
-        return JSON.parse(stored);
-      } catch (e) {
-        console.error('Failed to parse jobs', e);
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('opus_jobs');
+      if (stored) {
+        try {
+          return JSON.parse(stored);
+        } catch (e) {
+          console.error('Failed to parse jobs', e);
+        }
       }
     }
     return INITIAL_JOBS;
   });
 
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const scrollPositionRef = React.useRef<number>(0);
+
   // Keep jobs synchronized to localStorage
   useEffect(() => {
-    localStorage.setItem('opus_jobs', JSON.stringify(jobs));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('opus_jobs', JSON.stringify(jobs));
+    }
   }, [jobs]);
 
-  // Scroll to top when view or selected item changes
+  // Scroll to top when view or selected item changes, with scroll retention for ledger -> job details and back
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (currentView === 'ledger' && scrollPositionRef.current > 0) {
+      const savedPosition = scrollPositionRef.current;
+      scrollPositionRef.current = 0;
+      setTimeout(() => {
+        window.scrollTo({ top: savedPosition, behavior: 'instant' });
+      }, 50);
+    } else if (currentView !== 'job-details') {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    }
   }, [currentView, selectedJobId, selectedQuoteId]);
+
+  // Proactive automatic upgrade for legacy/small mock data
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('opus_shifts');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length < 10) {
+            localStorage.setItem('opus_shifts', JSON.stringify(INITIAL_SHIFTS));
+            setShifts(INITIAL_SHIFTS);
+            localStorage.setItem('opus_jobs', JSON.stringify(INITIAL_JOBS));
+            setJobs(INITIAL_JOBS);
+          }
+        } catch (e) {
+          console.error('Failed to parse stored shifts for upgrade check', e);
+        }
+      }
+    }
+  }, []);
+
+  const handleReloadDemoData = () => {
+    if (window.confirm("Are you sure you want to restore the default active jobs, full crew list, and rich deployment histories? This will replace your current browser session state.")) {
+      localStorage.removeItem('opus_workers');
+      localStorage.removeItem('opus_shifts');
+      localStorage.removeItem('opus_jobs');
+      setWorkers(INITIAL_ROSTER);
+      setShifts(INITIAL_SHIFTS);
+      setJobs(INITIAL_JOBS);
+      alert("Demo dataset successfully loaded! Explore the staff profiles to view active deployments and the new 'Deployment History' records.");
+    }
+  };
+
+  const expiringTickets = React.useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const list: {
+      workerId: string;
+      workerName: string;
+      workerRole: string;
+      ticketId: string;
+      ticketType: string;
+      expiryDate: string;
+      ticketNumber: string;
+      diffDays: number;
+      isExpired: boolean;
+      isExpiringSoon: boolean;
+    }[] = [];
+    
+    workers.forEach(worker => {
+      worker.tickets?.forEach(ticket => {
+        const expiry = new Date(ticket.expiryDate);
+        expiry.setHours(0, 0, 0, 0);
+        
+        const diffTime = expiry.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        const isExpired = diffDays < 0;
+        const isExpiringSoon = diffDays >= 0 && diffDays <= 30;
+        
+        if (isExpired || isExpiringSoon) {
+          list.push({
+            workerId: worker.id,
+            workerName: worker.name,
+            workerRole: worker.role,
+            ticketId: ticket.id,
+            ticketType: ticket.type,
+            expiryDate: ticket.expiryDate,
+            ticketNumber: ticket.ticketNumber,
+            diffDays,
+            isExpired,
+            isExpiringSoon
+          });
+        }
+      });
+    });
+    
+    return list.sort((a, b) => a.diffDays - b.diffDays);
+  }, [workers]);
 
   const followups = [
     { name: 'Riverside P2', keyword: 'Riverside', fallbackId: '1', reason: 'Site Access Auth' },
@@ -171,6 +279,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
           </div>
 
           <div className="flex items-center space-x-3">
+            <button 
+              onClick={handleReloadDemoData}
+              className="hidden lg:flex items-center space-x-2 px-4 py-2 border border-[#333] hover:border-brand-accent/50 rounded bg-[#222]/40 hover:bg-[#252525] transition-all group active:scale-95"
+              title="Reset application to complete initial demo dataset with active and historical shifts"
+            >
+              <Database className="w-4 h-4 text-brand-accent/80 group-hover:text-brand-accent" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/70 group-hover:text-white">Seed Demo Data</span>
+            </button>
             <button 
               onClick={onLogout}
               className="hidden lg:flex items-center space-x-2 px-4 py-2 border border-white/10 rounded hover:bg-white/5 transition-all group active:scale-95"
@@ -251,17 +367,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                   >
                     Quote Management
                   </button>
-                  <a href="#" className="block py-3 text-sm font-bold uppercase tracking-widest text-white/40 hover:text-brand-white transition-colors border-b border-white/5">Analytics</a>
                 </div>
               </div>
 
-              <button 
-                onClick={onLogout}
-                className="mt-auto flex items-center justify-center space-x-3 w-full py-4 border border-white/10 rounded text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all"
-              >
-                <LogOut className="w-4 h-4" />
-                <span>Terminate Session</span>
-              </button>
+              <div className="mt-auto space-y-2 w-full">
+                <button 
+                  onClick={() => { setIsMobileMenuOpen(false); handleReloadDemoData(); }}
+                  className="flex items-center justify-center space-x-3 w-full py-4 border border-[#333] hover:border-brand-accent/30 rounded text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all text-brand-accent"
+                >
+                  <Database className="w-4 h-4" />
+                  <span>Seed Demo Data</span>
+                </button>
+                <button 
+                  onClick={onLogout}
+                  className="flex items-center justify-center space-x-3 w-full py-4 border border-white/10 rounded text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span>Terminate Session</span>
+                </button>
+              </div>
             </motion.div>
           </>
         )}
@@ -293,179 +417,50 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
             setShifts={setShifts}
             onBack={() => setCurrentView('ledger')}
             onNavigate={(view) => setCurrentView(view)}
+            selectedWorkerId={selectedWorkerId}
+            onSelectWorker={setSelectedWorkerId}
           />
         </main>
-      ) : currentView === 'job-details' && selectedJobId && jobs.find(j => j.id === selectedJobId) ? (
-        <JobDetails 
-          job={jobs.find(j => j.id === selectedJobId)!}
-          workers={workers}
-          onBack={() => setCurrentView('ledger')}
-          onUpdateJob={handleUpdateJob}
-        />
       ) : (
-        <main className="pt-20 pb-8 px-4 sm:px-6 max-w-6xl mx-auto space-y-6">
-        {/* Contract & Job Ledger */}
-        <div className="space-y-4 max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 border-b border-[#2a2a2a] pb-3">
-            <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
-              <div className="w-1 h-4 bg-[#b0b8c4] rounded-sm" />
-              Active Job Ledger
-            </div>
-            <div className="w-full sm:w-auto overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pb-1 sm:pb-0">
-              <div className="flex items-center bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-1 gap-1 shadow-inner min-w-max">
-                {(['all', 'in-progress', 'pending', 'completed'] as const).map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => setFilterStatus(status)}
-                    className={`rounded-md px-3 py-1.5 text-[9px] font-black tracking-widest uppercase whitespace-nowrap transition-all duration-200 ${
-                      filterStatus === status 
-                        ? 'bg-[#333] text-white shadow-md border border-[#444]' 
-                        : 'text-[#777] hover:text-[#aaa] hover:bg-[#252525]'
-                    }`}
-                  >
-                    {status.replace('-', ' ')}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
+        <>
+          <main className="pt-20 pb-8 px-4 sm:px-6 max-w-6xl mx-auto space-y-8">
+            {/* Top Row: 30-Day Expiry Radar Widget */}
+            <ExpiryRadar 
+              expiringTickets={expiringTickets} 
+              onSelectWorker={(workerId) => {
+                scrollPositionRef.current = window.scrollY;
+                setSelectedWorkerId(workerId);
+                setCurrentView('staff');
+              }}
+            />
 
-          <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl">
-            {/* Table Header - hidden on mobile, shown on tablet/desktop */}
-            <div className="hidden md:grid md:grid-cols-[120px_2fr_1fr_140px_100px] gap-4 px-4 py-3 border-b border-[#2e2e2e] bg-[#222]">
-              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Job Ref</span>
-              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Site / Contractor</span>
-              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Site Warnings</span>
-              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888]">Job Status</span>
-              <span className="text-[8.5px] font-black tracking-widest uppercase text-[#888] text-right">Action</span>
-            </div>
+            {/* Bottom Row: Active Job Ledger */}
+            <ActiveJobLedger 
+              filteredJobs={filteredJobs}
+              filterStatus={filterStatus}
+              setFilterStatus={setFilterStatus}
+              onSelectJob={(id) => {
+                scrollPositionRef.current = window.scrollY;
+                setSelectedJobId(id);
+                setCurrentView('job-details');
+              }}
+              getJobActionRequired={getJobActionRequired}
+            />
+          </main>
 
-            <div className="divide-y divide-[#2e2e2e]">
-              <AnimatePresence mode="popLayout">
-                {filteredJobs.length === 0 ? (
-                  <div className="px-4 py-12 text-center text-[11px] font-black uppercase tracking-widest text-[#555]">
-                    No active jobs found
-                  </div>
-                ) : (
-                  filteredJobs.map((job) => {
-                    const action = getJobActionRequired(job);
-                    return (
-                    <motion.div 
-                      key={job.id}
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      layout
-                      className="flex flex-col md:grid md:grid-cols-[120px_2fr_1fr_140px_100px] gap-4 px-4 py-4 md:py-0 md:min-h-[64px] items-center hover:bg-[#242424] transition-colors duration-150"
-                    >
-                      {/* Job Ref */}
-                      <div className="flex justify-between items-center w-full md:w-auto md:contents">
-                        <button 
-                          onClick={() => {
-                            setSelectedJobId(job.id);
-                            setCurrentView('job-details');
-                          }}
-                          className="text-[10.5px] font-black text-[#8a9bb0] hover:text-white tracking-widest hover:underline transition-colors text-left focus:outline-none"
-                        >
-                          {job.jobRef}
-                        </button>
-                        {/* Mobile-only status badge */}
-                        <div className="md:hidden">
-                          <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[8px] font-black tracking-widest uppercase border ${
-                            job.status === 'in-progress' ? 'bg-[#1e2a3a]/80 border-[#2a4060] text-[#6090c0]' :
-                            job.status === 'pending' ? 'bg-[#2a2a1e]/80 border-[#44440a] text-[#888844]' :
-                            'bg-[#1a2e1a]/80 border-[#2a5a2a] text-[#4a9a4a]'
-                          }`}>
-                            {job.status === 'in-progress' ? 'In Progress' : job.status}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Site / Contractor */}
-                      <div className="w-full md:w-auto space-y-1.5 py-1">
-                        <div className="space-y-0.5">
-                          <div className="text-[11px] font-black text-white tracking-wider uppercase">
-                            {job.siteName}
-                          </div>
-                          <div className="text-[9px] font-bold text-[#777] tracking-widest uppercase">
-                            {job.mainContractor}
-                          </div>
-                        </div>
-                        {/* Mobile Action Required Badges */}
-                        <div className="md:hidden flex flex-wrap items-center gap-1.5 mt-2">
-                          {(action.weather || action.followup) && (
-                            <>
-                              {action.weather && (
-                                <span className="inline-flex items-center gap-1 rounded bg-[#3a2024]/40 px-1.5 py-0.5 border border-[#ff8591]/20 text-[8.5px] font-black tracking-widest uppercase text-[#ff8591]">
-                                  <CloudSun className="w-2.5 h-2.5" />
-                                  {action.weather.condition} ({action.weather.temperature}°C)
-                                </span>
-                              )}
-                              {action.followup && (
-                                <span className="inline-flex items-center gap-1 rounded bg-[#3a2e20]/40 px-1.5 py-0.5 border border-[#f59e0b]/20 text-[8.5px] font-black tracking-widest uppercase text-[#f59e0b]">
-                                  <AlertCircle className="w-2.5 h-2.5" />
-                                  {action.followup.reason}
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Desktop Action Required Badges Column */}
-                      <div className="hidden md:flex flex-col items-start gap-1.5 py-1">
-                        {(action.weather || action.followup) && (
-                          <>
-                            {action.weather && (
-                              <span className="inline-flex items-center gap-1 rounded bg-[#3a2024]/40 px-1.5 py-0.5 border border-[#ff8591]/20 text-[8.5px] font-black tracking-widest uppercase text-[#ff8591]">
-                                <CloudSun className="w-2.5 h-2.5" />
-                                {action.weather.condition} ({action.weather.temperature}°C)
-                              </span>
-                            )}
-                            {action.followup && (
-                              <span className="inline-flex items-center gap-1 rounded bg-[#3a2e20]/40 px-1.5 py-0.5 border border-[#f59e0b]/20 text-[8.5px] font-black tracking-widest uppercase text-[#f59e0b]">
-                                <AlertCircle className="w-2.5 h-2.5" />
-                                {action.followup.reason}
-                              </span>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      {/* Job Status (Desktop/Tablet-only) */}
-                      <div className="hidden md:block">
-                        <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[8.5px] font-black tracking-widest uppercase border ${
-                          job.status === 'in-progress' ? 'bg-[#1e2a3a]/80 border-[#3a5a8a] text-[#8ab4f8] shadow-[0_0_10px_rgba(138,180,248,0.1)]' :
-                          job.status === 'pending' ? 'bg-[#2a2a1e]/80 border-[#66661a] text-[#c0c040] shadow-[0_0_10px_rgba(192,192,64,0.1)]' :
-                          'bg-[#1a2e1a]/80 border-[#3a7a3a] text-[#81c995] shadow-[0_0_10px_rgba(129,201,149,0.1)]'
-                        }`}>
-                          {job.status === 'in-progress' ? 'In Progress' : job.status}
-                        </span>
-                      </div>
-
-                      {/* Action (Manage) */}
-                      <div className="flex justify-between items-center w-full md:w-auto md:justify-end">
-                        <button 
-                          onClick={() => {
-                            setSelectedJobId(job.id);
-                            setCurrentView('job-details');
-                          }}
-                          className="group flex items-center justify-center gap-1.5 px-2.5 py-1.5 bg-[#2a2a2a] hover:bg-[#333] border border-[#3c3c3c] rounded-lg text-[8px] font-black tracking-widest uppercase text-[#aaa] hover:text-white transition-all duration-200 focus:outline-none"
-                        >
-                          <span>Manage</span>
-                          <ChevronRight className="w-3 h-3 text-[#777] group-hover:text-white transition-colors" />
-                        </button>
-                      </div>
-                    </motion.div>
-                    );
-                  })
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-        </div>
-      </main>
-    )}
+          {/* Job Details Drawer Overlay */}
+          <AnimatePresence>
+            {currentView === 'job-details' && selectedJobId && jobs.find(j => j.id === selectedJobId) && (
+              <JobDetails 
+                job={jobs.find(j => j.id === selectedJobId)!}
+                workers={workers}
+                onBack={() => setCurrentView('ledger')}
+                onUpdateJob={handleUpdateJob}
+              />
+            )}
+          </AnimatePresence>
+        </>
+      )}
 
       {/* Footer Attribution */}
       <footer className="py-12 border-t border-white/5">

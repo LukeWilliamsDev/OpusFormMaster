@@ -1,10 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { OpusFormApp } from "@/components/opus/OpusFormApp";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  beforeLoad: () => {
+    throw redirect({ to: "/portal" });
+  },
 });
-
-function Index() {
-  return <OpusFormApp />;
-}

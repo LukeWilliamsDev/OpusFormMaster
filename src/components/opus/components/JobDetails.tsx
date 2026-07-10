@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { Job, Worker } from '../types/erp';
 import { getWeatherForJob } from '../utils/weather';
-import { OSMMap } from './OSMMap';
+import { OSMMap } from './OSMMap.client';
 import { SiteAllocationGatekeeper } from './SiteAllocationGatekeeper';
 
 interface Supplier {

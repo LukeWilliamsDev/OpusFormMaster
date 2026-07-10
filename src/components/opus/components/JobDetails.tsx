@@ -8,7 +8,10 @@ import {
 } from 'lucide-react';
 import { Job, Worker } from '../types/erp';
 import { getWeatherForJob } from '../utils/weather';
-import { OSMMap } from './OSMMap.client';
+import { ClientOnly } from '@tanstack/react-router';
+const OSMMap = React.lazy(() =>
+  import('./OSMMap.client').then((m) => ({ default: m.OSMMap }))
+);
 import { SiteAllocationGatekeeper } from './SiteAllocationGatekeeper';
 
 interface Supplier {
@@ -487,15 +490,19 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
             </div>
 
             <div className="h-[280px] w-full bg-[#111] relative border-b border-[#2e2e2e] flex items-center justify-center overflow-hidden">
-              <OSMMap
-                center={mapCenter}
-                siteCoords={siteCoords}
-                siteName={job.siteName}
-                postcode={job.postcode}
-                suppliers={suppliers}
-                selectedSupplierId={selectedSupplierId}
-                onSelectSupplier={setSelectedSupplierId}
-              />
+              <ClientOnly fallback={<div className="text-white/40 text-xs">Loading map…</div>}>
+                <React.Suspense fallback={<div className="text-white/40 text-xs">Loading map…</div>}>
+                  <OSMMap
+                    center={mapCenter}
+                    siteCoords={siteCoords}
+                    siteName={job.siteName}
+                    postcode={job.postcode}
+                    suppliers={suppliers}
+                    selectedSupplierId={selectedSupplierId}
+                    onSelectSupplier={setSelectedSupplierId}
+                  />
+                </React.Suspense>
+              </ClientOnly>
             </div>
 
             {/* Suppliers near site */}

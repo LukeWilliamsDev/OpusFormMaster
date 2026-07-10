@@ -490,15 +490,19 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
             </div>
 
             <div className="h-[280px] w-full bg-[#111] relative border-b border-[#2e2e2e] flex items-center justify-center overflow-hidden">
-              <OSMMap
-                center={mapCenter}
-                siteCoords={siteCoords}
-                siteName={job.siteName}
-                postcode={job.postcode}
-                suppliers={suppliers}
-                selectedSupplierId={selectedSupplierId}
-                onSelectSupplier={setSelectedSupplierId}
-              />
+              <ClientOnly fallback={<div className="text-white/40 text-xs">Loading map…</div>}>
+                <React.Suspense fallback={<div className="text-white/40 text-xs">Loading map…</div>}>
+                  <OSMMap
+                    center={mapCenter}
+                    siteCoords={siteCoords}
+                    siteName={job.siteName}
+                    postcode={job.postcode}
+                    suppliers={suppliers}
+                    selectedSupplierId={selectedSupplierId}
+                    onSelectSupplier={setSelectedSupplierId}
+                  />
+                </React.Suspense>
+              </ClientOnly>
             </div>
 
             {/* Suppliers near site */}

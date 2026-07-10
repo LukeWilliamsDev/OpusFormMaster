@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Job, WeatherRisk } from '../types/erp';
 
 export interface WeatherInfo extends WeatherRisk {

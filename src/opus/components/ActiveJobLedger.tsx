@@ -28,7 +28,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 border-b border-[#2a2a2a] pb-3">
         <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white font-archivo">
           <div className="w-1 h-4 bg-[#b0b8c4] rounded-sm" />
-          Active Job Ledger
+          Job Ledger
         </div>
         <div className="w-full sm:w-auto">
           <div className="flex flex-wrap items-center bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-1 gap-1 shadow-inner">

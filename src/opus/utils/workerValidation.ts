@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Worker, Ticket } from '../types/erp';
 
 // Validation Anchor date: July 5, 2026

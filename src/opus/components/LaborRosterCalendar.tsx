@@ -1,10 +1,6 @@
 // @ts-nocheck
 import React, { useState } from 'react';
-import { 
-  Users,   Calendar,   Search,   Plus,   Trash2,   ShieldAlert,   CheckCircle,   AlertTriangle,   ChevronLeft,   Clock,   MapPin,   UserPlus,  UserCheck,  X,  Phone,  FileText,  UploadCloud,  Download,  FilePlus
-} from 'lucide-react';
-import { Job, Worker, Ticket } from '../types/erp';
-import { validateWorkerForDeployment } from '../utils/workerValidation';
+import { Job, Worker } from '../types/erp';
 import { RosterView } from './RosterView';
 import { CalendarMatrix } from './CalendarMatrix';
 

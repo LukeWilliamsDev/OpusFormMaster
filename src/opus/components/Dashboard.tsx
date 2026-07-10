@@ -4,23 +4,10 @@ import {
   Menu, 
   X, 
   LogOut, 
-  ChevronRight, 
-  AlertCircle, 
-  ArrowUpRight,
   ClipboardList,
   Target,
   Truck,
   Wallet,
-  MoreVertical,
-  Plus,
-  FileText,
-  CloudRain,
-  Snowflake,
-  Wind,
-  Sun,
-  AlertTriangle,
-  CloudSun,
-  Calendar,
   Database
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';

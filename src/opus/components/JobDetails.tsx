@@ -1,17 +1,11 @@
-// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { 
-  X, Calendar, Layers, MapPin, DollarSign, TrendingUp, AlertTriangle, 
-  Plus, CheckCircle2, Activity, CloudSun, CloudRain, Snowflake, Wind, 
-  Sun, Thermometer, Shield, FileText, Clock, Phone, Wrench, Truck, 
-  ExternalLink, Compass, ClipboardList, Info
+  X, MapPin, Activity, CloudSun, CloudRain, Snowflake, Wind, 
+  Sun, Thermometer, ClipboardList, Truck, Phone
 } from 'lucide-react';
 import { Job, Worker } from '../types/erp';
 import { getWeatherForJob } from '../utils/weather';
-import { ClientOnly } from '@tanstack/react-router';
-const OSMMap = React.lazy(() =>
-  import('./OSMMap.client').then((m) => ({ default: m.OSMMap }))
-);
+import { OSMMap } from './OSMMap';
 import { SiteAllocationGatekeeper } from './SiteAllocationGatekeeper';
 
 interface Supplier {
@@ -490,19 +484,15 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
             </div>
 
             <div className="h-[280px] w-full bg-[#111] relative border-b border-[#2e2e2e] flex items-center justify-center overflow-hidden">
-              <ClientOnly fallback={<div className="text-white/40 text-xs">Loading map…</div>}>
-                <React.Suspense fallback={<div className="text-white/40 text-xs">Loading map…</div>}>
-                  <OSMMap
-                    center={mapCenter}
-                    siteCoords={siteCoords}
-                    siteName={job.siteName}
-                    postcode={job.postcode}
-                    suppliers={suppliers}
-                    selectedSupplierId={selectedSupplierId}
-                    onSelectSupplier={setSelectedSupplierId}
-                  />
-                </React.Suspense>
-              </ClientOnly>
+              <OSMMap
+                center={mapCenter}
+                siteCoords={siteCoords}
+                siteName={job.siteName}
+                postcode={job.postcode}
+                suppliers={suppliers}
+                selectedSupplierId={selectedSupplierId}
+                onSelectSupplier={setSelectedSupplierId}
+              />
             </div>
 
             {/* Suppliers near site */}

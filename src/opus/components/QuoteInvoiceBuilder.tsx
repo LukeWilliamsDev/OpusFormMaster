@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { 
   Plus, 
@@ -92,12 +91,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
   // Load saved quotes on mount
   useEffect(() => {
-    const stored = localStorage.getItem('opus_saved_quotes');
-    if (stored) {
-      try {
-        setSavedQuotes(JSON.parse(stored));
-      } catch (e) {
-        console.error("Failed to parse saved quotes", e);
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('opus_saved_quotes');
+      if (stored) {
+        try {
+          setSavedQuotes(JSON.parse(stored));
+        } catch (e) {
+          console.error("Failed to parse saved quotes", e);
+        }
       }
     }
   }, []);
@@ -156,7 +157,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
     const updated = [newQuote, ...savedQuotes.filter(q => q.reference !== quoteReference)];
     setSavedQuotes(updated);
-    localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+    }
     setLastSaved(new Date().toLocaleTimeString());
 
     // Do NOT reset inputs. Just clear the "Saved" message on button after a short delay
@@ -174,7 +177,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   };
 
   useEffect(() => {
-    if (quoteToLoadId) {
+    if (quoteToLoadId && typeof window !== 'undefined') {
       const stored = localStorage.getItem('opus_saved_quotes');
       if (stored) {
         try {
@@ -195,7 +198,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     e.stopPropagation();
     const updated = savedQuotes.filter(q => q.id !== id);
     setSavedQuotes(updated);
-    localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+    }
   };
 
   const handleSend = () => {
@@ -216,7 +221,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
     const updated = [sentQuote, ...savedQuotes.filter(q => q.reference !== quoteReference)];
     setSavedQuotes(updated);
-    localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+    }
 
     const subject = encodeURIComponent(`Quote: ${quoteReference} - ${clientInfo.site || 'Project'}`);
     const body = encodeURIComponent(`
@@ -257,20 +264,8 @@ Opus Form Operations
   };
 
   return (
-    <div className="min-h-screen bg-[#1A1B1E] text-white font-sans selection:bg-brand-accent/30 flex flex-col pt-16 pb-20">
-      {/* Workspace Sub-Header Navigation */}
-      <div className="bg-[#222428] border-b border-white/5 py-8 px-4 sm:px-6 relative z-50">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
-              <div className="w-1 h-4 bg-[#b0b8c4] rounded-sm" />
-              Quotes
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 py-12">
+    <div className="flex flex-col flex-1 w-full text-white pb-20">
+      <main className="flex-1 w-full mt-0">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           
           {/* Left: Input Controls */}

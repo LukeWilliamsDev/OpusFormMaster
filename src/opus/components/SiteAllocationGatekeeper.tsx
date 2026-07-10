@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState } from 'react';
 import { Shield, AlertTriangle } from 'lucide-react';
 import { Job, Worker } from '../types/erp';

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -152,7 +151,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
   const filteredQuotes = quotes.filter(quote => !quote.isSavedLocal || quote.isSent === true);
 
   return (
-    <div className="min-h-screen bg-[#1A1B1E] text-brand-white font-sans selection:bg-brand-accent/30 selection:text-white pb-24 pt-16">
+    <div className="flex flex-col flex-1 w-full text-brand-white pb-24">
       {/* Toast Notification */}
       {showToast && (
         <div className="fixed top-20 right-6 z-[200] bg-brand-charcoal border-l-4 border-brand-accent p-4 rounded shadow-2xl flex items-center space-x-3 animate-in slide-in-from-right duration-300">
@@ -161,23 +160,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
         </div>
       )}
 
-      {/* Sub-Header Section */}
-      <div className="border-b border-white/5 bg-[#222428] py-8 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div>
-            <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
-              <div className="w-1 h-4 bg-[#b0b8c4] rounded-sm" />
-              Quote Management
-            </div>
-          </div>
-
-          {/* Controls Section */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-          </div>
-        </div>
-      </div>
-
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 mt-10 pb-8 space-y-6">
+      <main className="mt-0 pb-8 space-y-6">
         <div className="space-y-4">
           <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl">
             {/* Table Header - hidden on mobile, shown on tablet/desktop */}

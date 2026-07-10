@@ -8,7 +8,10 @@ import {
 } from 'lucide-react';
 import { Job, Worker } from '../types/erp';
 import { getWeatherForJob } from '../utils/weather';
-import { OSMMap } from './OSMMap.client';
+import { ClientOnly } from '@tanstack/react-router';
+const OSMMap = React.lazy(() =>
+  import('./OSMMap.client').then((m) => ({ default: m.OSMMap }))
+);
 import { SiteAllocationGatekeeper } from './SiteAllocationGatekeeper';
 
 interface Supplier {

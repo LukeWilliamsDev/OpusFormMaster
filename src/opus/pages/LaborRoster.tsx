@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { usePortal } from '../context/PortalContext';

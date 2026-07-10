@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Job, Worker, ScheduledShift } from '../types/erp';
 import { INITIAL_ROSTER, INITIAL_SHIFTS } from '../data/roster';

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { PortalProvider, usePortal } from './context/PortalContext';

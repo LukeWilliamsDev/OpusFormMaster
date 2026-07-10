@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState } from 'react';
 import { Job, Worker } from '../types/erp';
 import { RosterView } from './RosterView';

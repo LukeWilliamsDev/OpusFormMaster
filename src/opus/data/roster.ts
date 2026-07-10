@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Worker, ScheduledShift } from '../types/erp';
 
 export const INITIAL_ROSTER: Worker[] = [

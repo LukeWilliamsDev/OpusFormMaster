@@ -1,5 +1,7 @@
 // @ts-nocheck
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import type { Session, User } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
 import { Job, Worker, ScheduledShift } from '../types/erp';
 import { INITIAL_ROSTER, INITIAL_SHIFTS } from '../data/roster';
 
@@ -11,6 +13,8 @@ const INITIAL_JOBS: Job[] = [
   { id: '5', jobRef: 'OP-9921-B', siteName: 'Marina Development', mainContractor: 'Morgan Sindall', postcode: 'EH1 1YZ', currentPours: 12, contractMaxPours: 10, status: 'in-progress', scheduleValue: 54000 },
 ];
 
+export type AppRole = 'admin' | 'dispatcher' | 'operative';
+
 interface PortalContextType {
   workers: Worker[];
   setWorkers: React.Dispatch<React.SetStateAction<Worker[]>>;
@@ -20,19 +24,22 @@ interface PortalContextType {
   setJobs: React.Dispatch<React.SetStateAction<Job[]>>;
   handleReloadDemoData: () => void;
   isAuthenticated: boolean;
-  login: () => void;
-  logout: () => void;
+  authLoading: boolean;
+  session: Session | null;
+  user: User | null;
+  role: AppRole | null;
+  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
+  signOut: () => Promise<void>;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
 }
 
 const PortalContext = createContext<PortalContextType | undefined>(undefined);
 
 export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return sessionStorage.getItem('opus_authenticated') === 'true';
-    }
-    return false;
-  });
+  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [role, setRole] = useState<AppRole | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const [workers, setWorkers] = useState<Worker[]>(() => {
     if (typeof window !== 'undefined') {
@@ -82,6 +89,51 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [jobs]);
 
+  // Bootstrap session + subscribe to auth changes
+  useEffect(() => {
+    // Register listener FIRST so we never miss an event.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      if (!newSession) {
+        setRole(null);
+      }
+    });
+
+    // Then hydrate the initial session.
+    supabase.auth.getSession().then(({ data: { session: initial } }) => {
+      setSession(initial);
+      setUser(initial?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Fetch role from profiles whenever the user changes
+  useEffect(() => {
+    if (!user) {
+      setRole(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        console.error('Failed to load role', error);
+        setRole('operative');
+      } else {
+        setRole((data?.role as AppRole) ?? 'operative');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
+
   // Proactive automatic upgrade for legacy/small mock data
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -114,18 +166,23 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  const login = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.setItem('opus_authenticated', 'true');
-    }
-    setIsAuthenticated(true);
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return { error: error?.message ?? null };
   };
 
-  const logout = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('opus_authenticated');
-    }
-    setIsAuthenticated(false);
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setSession(null);
+    setUser(null);
+    setRole(null);
+  };
+
+  const resetPassword = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/portal`,
+    });
+    return { error: error?.message ?? null };
   };
 
   return (
@@ -137,9 +194,14 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       jobs,
       setJobs,
       handleReloadDemoData,
-      isAuthenticated,
-      login,
-      logout
+      isAuthenticated: !!session,
+      authLoading,
+      session,
+      user,
+      role,
+      signIn,
+      signOut,
+      resetPassword,
     }}>
       {children}
     </PortalContext.Provider>

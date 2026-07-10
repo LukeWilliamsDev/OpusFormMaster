@@ -11,24 +11,25 @@ import { motion, AnimatePresence } from 'motion/react';
 import { usePortal } from '../context/PortalContext';
 
 export const PortalLayout: React.FC = () => {
-  const { handleReloadDemoData, logout } = usePortal();
+  const { handleReloadDemoData, signOut, role } = usePortal();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogoutClick = () => {
-    logout();
+  const handleLogoutClick = async () => {
+    await signOut();
     navigate('/portal');
   };
 
-  const navItems = [
-    { name: 'Dashboard', path: '/portal/dashboard' },
-    { name: 'Job Ledger', path: '/portal/ledger' },
-    { name: 'Calendar', path: '/portal/roster?view=calendar' },
-    { name: 'Staff', path: '/portal/roster?view=staff' },
-    { name: 'Quote', path: '/portal/pipeline?view=quote-builder' },
-    { name: 'Quote Management', path: '/portal/pipeline?view=pipeline-registry' },
+  const allNav = [
+    { name: 'Dashboard', path: '/portal/dashboard', roles: ['admin', 'dispatcher'] },
+    { name: 'Job Ledger', path: '/portal/ledger', roles: ['admin', 'dispatcher'] },
+    { name: 'Calendar', path: '/portal/roster?view=calendar', roles: ['admin', 'dispatcher', 'operative'] },
+    { name: 'Staff', path: '/portal/roster?view=staff', roles: ['admin', 'dispatcher'] },
+    { name: 'Quote', path: '/portal/pipeline?view=quote-builder', roles: ['admin', 'dispatcher'] },
+    { name: 'Quote Management', path: '/portal/pipeline?view=pipeline-registry', roles: ['admin', 'dispatcher'] },
   ];
+  const navItems = allNav.filter(item => !role || item.roles.includes(role));
 
   const checkIsActive = (path: string) => {
     const [itemPath, itemQuery] = path.split('?');

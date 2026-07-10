@@ -10,10 +10,27 @@ import { LaborRosterPage } from './pages/LaborRoster';
 import { JobLedgerPage } from './pages/JobLedger';
 import { PipelinePage } from './pages/Pipeline';
 
-// Guard wrapper to protect dashboard routes
+// Session gate — any /portal/* view requires a valid Supabase session.
 const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated } = usePortal();
+  const { isAuthenticated, authLoading } = usePortal();
+  if (authLoading) {
+    return <div className="min-h-screen bg-[#1A1B1E]" />;
+  }
   return isAuthenticated ? <PortalLayout /> : <Navigate to="/portal" replace />;
+};
+
+// Role gate — restricts a subtree to a role allowlist. Blocked users go to the
+// first surface their role can see.
+const RoleGuard: React.FC<{ allow: Array<'admin' | 'dispatcher' | 'operative'>; children: React.ReactNode }> = ({ allow, children }) => {
+  const { role, authLoading } = usePortal();
+  if (authLoading || role === null) {
+    return <div className="min-h-screen bg-[#1A1B1E]" />;
+  }
+  if (!allow.includes(role)) {
+    const fallback = role === 'operative' ? '/portal/roster?view=calendar' : '/portal/dashboard';
+    return <Navigate to={fallback} replace />;
+  }
+  return <>{children}</>;
 };
 
 // Sub-component to wire navigation on the Landing Page
@@ -33,13 +50,22 @@ export default function App() {
 
           {/* Secure Portal Application Views */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/portal/dashboard" element={<DashboardPage />} />
-            <Route path="/portal/roster" element={<LaborRosterPage />} />
-            <Route path="/portal/ledger" element={<JobLedgerPage />} />
-            <Route path="/portal/pipeline" element={<PipelinePage />} />
+            <Route path="/portal/dashboard" element={
+              <RoleGuard allow={['admin', 'dispatcher']}><DashboardPage /></RoleGuard>
+            } />
+            <Route path="/portal/ledger" element={
+              <RoleGuard allow={['admin', 'dispatcher']}><JobLedgerPage /></RoleGuard>
+            } />
+            <Route path="/portal/pipeline" element={
+              <RoleGuard allow={['admin', 'dispatcher']}><PipelinePage /></RoleGuard>
+            } />
+            {/* Roster is available to every signed-in role; operatives see their shift view. */}
+            <Route path="/portal/roster" element={
+              <RoleGuard allow={['admin', 'dispatcher', 'operative']}><LaborRosterPage /></RoleGuard>
+            } />
             
-            {/* Fallback internal routes */}
-            <Route path="/portal/*" element={<Navigate to="/portal/dashboard" replace />} />
+            {/* Fallback internal routes — send operatives to their calendar. */}
+            <Route path="/portal/*" element={<RoleAwareFallback />} />
           </Route>
 
           {/* Global Fallback to landing */}
@@ -49,3 +75,9 @@ export default function App() {
     </PortalProvider>
   );
 }
+
+const RoleAwareFallback: React.FC = () => {
+  const { role } = usePortal();
+  const target = role === 'operative' ? '/portal/roster?view=calendar' : '/portal/dashboard';
+  return <Navigate to={target} replace />;
+};

@@ -14,7 +14,7 @@ import {
 import { usePortal } from '../context/PortalContext';
 
 export const PortalAuthPage: React.FC = () => {
-  const { isAuthenticated, login } = usePortal();
+  const { isAuthenticated, signIn, resetPassword } = usePortal();
   const navigate = useNavigate();
 
   const [formMode, setFormMode] = useState<'login' | 'forgot'>('login');
@@ -47,7 +47,7 @@ export const PortalAuthPage: React.FC = () => {
     return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [formMode]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
     if (!email || !password) {
@@ -55,20 +55,30 @@ export const PortalAuthPage: React.FC = () => {
       return;
     }
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      login();
-      navigate('/portal/dashboard');
-    }, 1000);
+    const { error } = await signIn(email.trim(), password);
+    setIsSubmitting(false);
+    if (error) {
+      setFormError(error);
+      return;
+    }
+    navigate('/portal/dashboard');
   };
 
-  const handleForgot = (e: React.FormEvent) => {
+  const handleForgot = async (e: React.FormEvent) => {
     e.preventDefault();
+    const form = e.currentTarget as HTMLFormElement;
+    const emailInput = form.querySelector<HTMLInputElement>('input[type="email"]');
+    const target = emailInput?.value?.trim();
+    if (!target) return;
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setFormMode('login');
-    }, 1000);
+    const { error } = await resetPassword(target);
+    setIsSubmitting(false);
+    if (error) {
+      setFormError(error);
+      return;
+    }
+    setFormError(null);
+    setFormMode('login');
   };
 
   return (

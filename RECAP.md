@@ -1,17 +1,16 @@
 # Session Recap - 2026-07-11
 
 ## Progress Made
-- **Codebase Research**: Explored the Opus Form construction ERP project architecture (`JobLedger`, `LaborRoster`, `ExpiryRadar`, `QuoteInvoiceBuilder`).
-- **Feature Recommendations**: Formulated five tailored product feature recommendations (Proximity Scheduler, Weather Pour Advisory, CSCS Card OCR, CIS/DRC Invoice export, and Digital Timesheets).
-- **Custom Rules Setup**: Implemented end-of-session rules in `.agents/AGENTS.md`.
-- **Workflow Refactoring**: Created the new `/start` command workflow in `.agents/skills/start/SKILL.md` to handle initialization and git synchronization.
+- **Git & Environment Setup:** Installed Git via winget on Windows and initialized the local repository tracking `Dev` branch of `opus-form-builder`.
+- **Legacy Cleanup:** Deleted the unused legacy component `src/opus/components/Dashboard.tsx` to clean up the codebase.
+- **Standalone Supabase Configuration:** Configured `.env` and `supabase/config.toml` to point to the standalone project ref `fgpthpxmiroyebrzjdzo`.
+- **Database Migration:** Sequentially applied all 6 migration SQL files to the standalone database.
+- **User Provisioning:** Created 4 admin accounts (`roya@optusform.co.uk`, `liam@optusform.co.uk`, `anais@optusform.co.uk`, `admin@optusform.co.uk`) with shared password `Swithers123` and promoted them to the `admin` role.
+- **GitHub Sync:** Staged, committed, and pushed all setup modifications back to the remote `Dev` branch.
 
 ## Labor Roster State
-- **Current Roster**: Configured with roles including `Supervisor`, `Operative`, `Telehandler`, and `Groundworker`.
-- **Active Deployments**: Linked to active concrete pours and project locations (e.g., Riverside Phase 2, Central Square).
-- **Critical Shifts**: Governed by worker credentials (CSCS, CPCS, NPORS) monitored by the `ExpiryRadar`.
-*(Note: Workspace source files were dynamically shifted during the session; state will be verified upon the next `/start` initialization).*
+- **Administrative Team:** Upgraded roles for the administrative crew (`roya`, `liam`, `anais`, `admin`) to `admin` in `public.profiles`.
+- **Operational Database:** Switched scheduling data storage from browser local storage to secure Supabase tables (`workers`, `shifts`, `jobs`).
 
 ## Open Issues
-- **Workspace Directories**: Align path locations for `OpusFormCodebase` folder structure on the next startup.
-- **Remote Synchronization**: Confirm development branch configuration for automated GitHub pull integration.
+- **Quote Syncing:** Estimate/quoting registry (currently using `localStorage`) needs to be fully migrated to Supabase tables.

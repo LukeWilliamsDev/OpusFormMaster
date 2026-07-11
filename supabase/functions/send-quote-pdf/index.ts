@@ -104,14 +104,20 @@ serve(async (req) => {
       })
     }
 
+    // Resolve logoUrl host (rewrite local dev localhost hosts to GitHub Dev branch asset)
+    let resolvedLogoUrl = logoUrl
+    if (resolvedLogoUrl && (resolvedLogoUrl.includes("localhost") || resolvedLogoUrl.includes("127.0.0.1"))) {
+      resolvedLogoUrl = "https://raw.githubusercontent.com/LukeWilliamsDev/lovable-opus-form/Dev/public/opus-form-primary.svg"
+    }
+
     // Compose HTML message body
     const emailHtml = `
       <div style="background-color: #1a1b1f; padding: 40px 20px; font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; line-height: 1.6; color: #d1d5db;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #242428; border: 1px solid #2e2e33; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
           <!-- Header -->
           <div style="background-color: #26262B; padding: 30px 40px; border-bottom: 3px solid #526E8C; text-align: center;">
-            ${logoUrl ? `
-              <img src="${logoUrl}" alt="OPUS FORM" width="180" style="display: inline-block; border: 0; outline: none; text-decoration: none;" />
+            ${resolvedLogoUrl ? `
+              <img src="${resolvedLogoUrl}" alt="OPUS FORM" width="180" style="display: inline-block; border: 0; outline: none; text-decoration: none;" />
             ` : `
               <div style="font-family: Arial, sans-serif; font-size: 24px; font-weight: 900; color: #F4F4F0; letter-spacing: 4px;">OPUS FORM</div>
             `}
@@ -123,29 +129,29 @@ serve(async (req) => {
               Quote Estimate Details
             </div>
             
-            <p style="margin: 0 0 16px; color: #ffffff; font-size: 16px; font-weight: 700;">Dear ${clientName || 'Valued Client'},</p>
+            <p style="margin: 0 0 16px; color: #e5e7eb; font-size: 16px; font-weight: 700;">Dear ${clientName || 'Valued Client'},</p>
             <p style="margin: 0 0 24px; color: #9ca3af;">Please find attached the formal concrete works quote estimate <strong>#${quoteRef}</strong> for your review.</p>
             
             <!-- Summary Table -->
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 32px; border: 1px solid #2e2e33; border-radius: 8px; overflow: hidden;">
               <tr style="background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">
                 <td style="padding: 14px 16px; font-weight: bold; color: #9ca3af; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">Net Subtotal</td>
-                <td style="padding: 14px 16px; text-align: right; font-weight: 900; color: #ffffff;">£${Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb;">£${Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
               </tr>
               <tr style="background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">
                 <td style="padding: 14px 16px; font-weight: bold; color: #9ca3af; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">UK Standard VAT (20%)</td>
-                <td style="padding: 14px 16px; text-align: right; font-weight: 900; color: #ffffff;">£${Number(vatAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb;">£${Number(vatAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
               </tr>
               <tr style="background-color: #26262B;">
-                <td style="padding: 16px; font-weight: 900; color: #ffffff; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;">Concrete Works Total</td>
-                <td style="padding: 16px; text-align: right; font-weight: 900; color: #ffffff; font-size: 16px;">£${Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                <td style="padding: 16px; font-weight: 900; color: #e5e7eb; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;">Concrete Works Total</td>
+                <td style="padding: 16px; text-align: right; font-weight: 900; color: #e5e7eb; font-size: 16px;">£${Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
               </tr>
             </table>
             
             <p style="margin: 0 0 24px; color: #9ca3af;">The attached PDF contains the complete bill of quantities, structural scopes, standard terms, and banking details.</p>
             
             <div style="border-top: 1px solid #2e2e33; padding-top: 24px; margin-top: 32px;">
-              <p style="margin: 0 0 4px; color: #ffffff; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Opus Form Billing</p>
+              <p style="margin: 0 0 4px; color: #e5e7eb; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Opus Form Billing</p>
               <a href="mailto:billing@opusform.co.uk" style="color: #526E8C; text-decoration: none; font-size: 12px; font-weight: 700;">billing@opusform.co.uk</a>
             </div>
           </div>

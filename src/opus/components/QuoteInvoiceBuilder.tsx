@@ -90,6 +90,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   const [activeStep, setActiveStep] = useState<number>(1);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; title: string; message: string; } | null>(null);
   const [items, setItems] = useState<MeasuredItem[]>(INITIAL_ITEMS);
   const [terms, setTerms] = useState<string[]>([
     "Assumed total pours up to 1, additional pours shall be charged minimum of £3,500",
@@ -303,7 +304,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       await html2pdf().from(element).set(opt).save();
       document.body.removeChild(tempContainer);
     } catch (err) {
-      alert("Error generating PDF download: " + err.message);
+      setNotification({ type: 'error', title: 'PDF GENERATION FAILURE', message: "Error generating PDF download: " + err.message });
     }
   };
 
@@ -451,10 +452,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
         localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
       }
 
-      alert("Quote PDF successfully generated and emailed via Resend.");
+      setNotification({ type: 'success', title: 'QUOTE TRANSMITTED', message: "Quote PDF successfully generated and emailed via Resend." });
     } catch (err) {
       console.error("Failed to send quote PDF:", err);
-      alert("Error sending quote email: " + (err.message || JSON.stringify(err)));
+      setNotification({ type: 'error', title: 'TRANSMISSION ERROR', message: "Error sending quote email: " + (err.message || JSON.stringify(err)) });
     } finally {
       setIsSendingEmail(false);
     }
@@ -1252,6 +1253,44 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
               <button
                 type="button"
                 onClick={() => setValidationErrors([])}
+                className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#444] rounded-lg py-2 text-[9px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors"
+              >
+                DISMISS
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Custom Notification Toast/Modal */}
+      <AnimatePresence>
+        {notification && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className={`bg-[#242424] border ${notification.type === 'success' ? 'border-[#5C7285]/40' : 'border-red-500/20'} rounded-xl max-w-sm w-full p-5 shadow-2xl relative`}
+            >
+              <button 
+                onClick={() => setNotification(null)}
+                className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              
+              <div className={`flex items-center gap-2 ${notification.type === 'success' ? 'text-[#859bb0]' : 'text-red-400'} border-b border-[#2e2e2e] pb-3 mb-4`}>
+                <div className={`w-2 h-2 rounded-full ${notification.type === 'success' ? 'bg-[#5C7285]' : 'bg-red-500'} animate-pulse`} />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">{notification.title}</span>
+              </div>
+              
+              <p className="text-[10px] text-gray-300 uppercase tracking-widest leading-relaxed mb-5">
+                {notification.message}
+              </p>
+              
+              <button
+                type="button"
+                onClick={() => setNotification(null)}
                 className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#444] rounded-lg py-2 text-[9px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors"
               >
                 DISMISS

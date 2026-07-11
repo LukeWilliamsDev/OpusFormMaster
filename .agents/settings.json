@@ -1,0 +1,8 @@
+{
+  "on_startup": {
+    "run_workflow": "/start"
+  },
+  "on_shutdown": {
+    "run_workflow": "/end"
+  }
+}

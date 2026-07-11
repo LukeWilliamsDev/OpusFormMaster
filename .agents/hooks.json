@@ -1,0 +1,18 @@
+{
+  "project_name": "Opus Form",
+  "hooks": {
+    "on_startup": {
+      "command": "/start"
+    },
+    "on_shutdown": {
+      "command": "/end"
+    }
+  },
+  "git_integration": {
+    "auto_sync": true,
+    "default_branch": "dev"
+  },
+  "memory_management": {
+    "auto_archive_recap": true
+  }
+}

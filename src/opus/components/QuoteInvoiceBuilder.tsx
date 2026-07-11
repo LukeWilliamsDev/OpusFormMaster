@@ -265,6 +265,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           scrollY: 0,
           onclone: (_document: Document, clonedElement: HTMLElement) => {
             const cloneDoc = clonedElement.ownerDocument;
+            if (cloneDoc && cloneDoc.body) {
+              cloneDoc.body.style.margin = '0';
+              cloneDoc.body.style.padding = '0';
+              cloneDoc.body.style.background = 'transparent';
+            }
             let cssText = '';
             for (let i = 0; i < document.styleSheets.length; i++) {
               const sheet = document.styleSheets[i];
@@ -285,7 +290,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             cloneDoc.head.appendChild(styleEl);
           }
         },
-        jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+        jsPDF: { unit: 'px', format: [794, 1122], orientation: 'portrait', hotfixes: ['px_scaling'] },
         pagebreak: { mode: 'avoid' }
       };
 
@@ -359,6 +364,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           scrollY: 0,
           onclone: (_document: Document, clonedElement: HTMLElement) => {
             const cloneDoc = clonedElement.ownerDocument;
+            if (cloneDoc && cloneDoc.body) {
+              cloneDoc.body.style.margin = '0';
+              cloneDoc.body.style.padding = '0';
+              cloneDoc.body.style.background = 'transparent';
+            }
             
             // Gather all CSS rules from the main document synchronously
             let cssText = '';
@@ -387,7 +397,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             cloneDoc.head.appendChild(styleEl);
           }
         },
-        jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+        jsPDF: { unit: 'px', format: [794, 1122], orientation: 'portrait', hotfixes: ['px_scaling'] },
         pagebreak: { mode: 'avoid' }
       };
 

@@ -1,10 +1,15 @@
 // @ts-nocheck
 import { Worker, Ticket } from '../types/erp';
 
-// Validation Anchor date: July 5, 2026
-const anchorDate = new Date('2026-07-05');
+// Validation anchor: today (evaluated at call time so expiry checks stay live)
+const getAnchorDate = () => {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
+};
 
 export const validateWorkerForDeployment = (worker: Worker, roleNeeded: string): { isValid: boolean; reason: string | null } => {
+  const anchorDate = getAnchorDate();
   // Must possess a valid CSCS safety ticket
   const cscsTicket = worker.tickets.find(t => t.type === 'CSCS');
   if (!cscsTicket) {
@@ -39,6 +44,7 @@ export const validateWorkerForDeployment = (worker: Worker, roleNeeded: string):
 };
 
 export const getTicketStatus = (ticket: Ticket) => {
+  const anchorDate = getAnchorDate();
   const expDate = new Date(ticket.expiryDate);
   if (expDate < anchorDate) {
     return 'EXPIRED';

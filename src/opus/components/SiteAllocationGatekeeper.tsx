@@ -18,7 +18,12 @@ export const SiteAllocationGatekeeper: React.FC<SiteAllocationGatekeeperProps> =
   const assignedWorkerIds = job.assignedWorkers || [];
   const availableWorkers = workersList.filter(w => !assignedWorkerIds.includes(w.id));
 
-  const anchorDate = new Date('2026-07-05');
+  // Evaluate against the current date so expiry checks stay live.
+  const anchorDate = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })();
 
   const validateWorkerDeployment = (worker: Worker): { isValid: boolean; reason: string | null } => {
     // 1. Must possess a valid, unexpired "CSCS" safety ticket
@@ -114,7 +119,7 @@ export const SiteAllocationGatekeeper: React.FC<SiteAllocationGatekeeperProps> =
           Deployment Gatekeeper Matrix
         </div>
         <span className="text-[9px] font-black tracking-widest text-[#555] uppercase">
-          Anchor: 05 JUL 2026
+          Anchor: {anchorDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()}
         </span>
       </div>
 

@@ -1,74 +1,78 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import nodemailer from "npm:nodemailer@6.9.13"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface RequestPayload {
+  toEmail: string;
+  clientName?: string;
+  quoteRef: string;
+  pdfBase64?: string;      // Base64 encoded string from frontend
+  pdfUrl?: string;         // Public URL pointer to PDF
+  netTotal?: number;
+  vatAmount?: number;
+  grossTotal?: number;
+  fromEmail?: string;      // Optional custom sender
+}
+
 serve(async (req) => {
-  // Handle CORS preflight
+  // Handle CORS pre-flight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
-    const { toEmail, clientName, quoteRef, pdfBase64, netTotal, vatAmount, grossTotal } = await req.json()
+    const payload: RequestPayload = await req.json()
+    const { toEmail, clientName, quoteRef, pdfBase64, pdfUrl, netTotal, vatAmount, grossTotal, fromEmail } = payload
 
-    if (!toEmail || !pdfBase64) {
-      return new Response(JSON.stringify({ error: "Missing required fields (toEmail, pdfBase64)" }), {
+    if (!toEmail) {
+      return new Response(JSON.stringify({ error: "Recipient email (toEmail) is required." }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    // 1. Connect to Supabase using the built-in service role key (always available in Edge Functions)
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
-    // 2. Read SMTP config from the smtp_config table
-    const { data: configRows, error: configError } = await supabase
-      .from('smtp_config')
-      .select('key, value')
-
-    if (configError || !configRows || configRows.length === 0) {
-      return new Response(JSON.stringify({ error: "Failed to load SMTP config from database.", detail: configError }), {
+    // 1. Retrieve the Resend API Key securely from Supabase Environment Secrets
+    const resendApiKey = Deno.env.get('RESEND_API_KEY')
+    if (!resendApiKey) {
+      return new Response(JSON.stringify({ 
+        error: "RESEND_API_KEY environment variable is not configured in Supabase." 
+      }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    // Convert rows to a keyed object
-    const config: Record<string, string> = {}
-    for (const row of configRows) {
-      config[row.key] = row.value
-    }
-
-    const host = config['IONOS_SMTP_HOST'] || 'smtp.ionos.co.uk'
-    const port = parseInt(config['IONOS_SMTP_PORT'] || '465')
-    const secure = port === 465
-    const user = config['IONOS_SMTP_USER']
-    const pass = config['IONOS_SMTP_PASS']
-
-    if (!user || !pass) {
-      return new Response(JSON.stringify({ error: "IONOS credentials missing from smtp_config table." }), {
-        status: 500,
+    // 2. Resolve PDF attachment content (handles Base64 or Public URL pointer)
+    let attachmentContent = ""
+    if (pdfBase64) {
+      attachmentContent = pdfBase64
+    } else if (pdfUrl) {
+      // Fetch PDF binary from the public URL and convert to Base64
+      const response = await fetch(pdfUrl)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch PDF from URL: ${pdfUrl}`)
+      }
+      const arrayBuffer = await response.arrayBuffer()
+      const uint8Array = new Uint8Array(arrayBuffer)
+      
+      // Convert Uint8Array to Base64 in a Deno-compatible way
+      let binary = ""
+      const len = uint8Array.byteLength
+      for (let i = 0; i < len; i++) {
+        binary += String.fromCharCode(uint8Array[i])
+      }
+      attachmentContent = btoa(binary)
+    } else {
+      return new Response(JSON.stringify({ error: "No PDF attachment provided (pdfBase64 or pdfUrl is required)." }), {
+        status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    // 3. Create Nodemailer transporter
-    const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure,
-      auth: { user, pass },
-    })
-
-    // 4. Compose email HTML body
+    // 3. Compose HTML message body
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.6;">
         <h2 style="color: #26262B; border-bottom: 2px solid #526E8C; padding-bottom: 10px;">Opus Form Quote Estimate</h2>
@@ -97,28 +101,42 @@ serve(async (req) => {
       </div>
     `
 
-    // 5. Send email with PDF attachment
-    await transporter.sendMail({
-      from: `"Opus Form Billing" <${user}>`,
-      to: toEmail,
-      subject: `Formal Quote: #${quoteRef} - ${clientName || 'Project'}`,
-      html: emailHtml,
-      attachments: [
-        {
-          filename: `Quote_${quoteRef}.pdf`,
-          content: pdfBase64,
-          encoding: 'base64',
-          contentType: 'application/pdf'
-        }
-      ]
+    // Determine the sender address (sandbox domain onboarding@resend.dev if custom sender domain isn't set up yet)
+    const sender = fromEmail || "onboarding@resend.dev"
+
+    // 4. Send via Resend HTTP API
+    const resendResponse = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${resendApiKey}`
+      },
+      body: JSON.stringify({
+        from: `Opus Form Billing <${sender}>`,
+        to: [toEmail],
+        subject: `Formal Quote: #${quoteRef} - ${clientName || 'Project'}`,
+        html: emailHtml,
+        attachments: [
+          {
+            content: attachmentContent,
+            filename: `Quote_${quoteRef}.pdf`
+          }
+        ]
+      })
     })
 
-    return new Response(JSON.stringify({ success: true }), {
+    const resendData = await resendResponse.json()
+
+    if (!resendResponse.ok) {
+      throw new Error(resendData.message || JSON.stringify(resendData))
+    }
+
+    return new Response(JSON.stringify({ success: true, data: resendData }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
   } catch (error) {
-    console.error("Error sending email:", error)
+    console.error("Error sending email via Resend:", error)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,

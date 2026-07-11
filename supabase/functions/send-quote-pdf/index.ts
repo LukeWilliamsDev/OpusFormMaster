@@ -59,10 +59,10 @@ serve(async (req) => {
       config[row.key] = row.value
     }
 
-    // Resolve Resend API Key (fallback to database config if env is not set)
-    let resendApiKey = Deno.env.get('RESEND_API_KEY')
+    // Resolve Resend API Key (prioritize database config, fallback to env)
+    let resendApiKey = config['RESEND_API_KEY']
     if (!resendApiKey) {
-      resendApiKey = config['RESEND_API_KEY']
+      resendApiKey = Deno.env.get('RESEND_API_KEY')
     }
 
     if (!resendApiKey) {

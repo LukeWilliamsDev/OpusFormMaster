@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 import nodemailer from "npm:nodemailer@6.9.13"
 
 const corsHeaders = {
@@ -22,32 +23,52 @@ serve(async (req) => {
       })
     }
 
-    // 1. Get IONOS SMTP credentials from env
-    const host = Deno.env.get("IONOS_SMTP_HOST") || "smtp.ionos.co.uk"
-    const port = parseInt(Deno.env.get("IONOS_SMTP_PORT") || "465")
-    const secure = port === 465 // Use SSL/TLS for port 465
-    const user = Deno.env.get("IONOS_SMTP_USER")
-    const pass = Deno.env.get("IONOS_SMTP_PASS")
+    // 1. Connect to Supabase using the built-in service role key (always available in Edge Functions)
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 
-    if (!user || !pass) {
-      return new Response(JSON.stringify({ error: "IONOS_SMTP_USER or IONOS_SMTP_PASS environment secrets are not configured in Supabase." }), {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // 2. Read SMTP config from the smtp_config table
+    const { data: configRows, error: configError } = await supabase
+      .from('smtp_config')
+      .select('key, value')
+
+    if (configError || !configRows || configRows.length === 0) {
+      return new Response(JSON.stringify({ error: "Failed to load SMTP config from database.", detail: configError }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    // 2. Create Nodemailer transporter
+    // Convert rows to a keyed object
+    const config: Record<string, string> = {}
+    for (const row of configRows) {
+      config[row.key] = row.value
+    }
+
+    const host = config['IONOS_SMTP_HOST'] || 'smtp.ionos.co.uk'
+    const port = parseInt(config['IONOS_SMTP_PORT'] || '465')
+    const secure = port === 465
+    const user = config['IONOS_SMTP_USER']
+    const pass = config['IONOS_SMTP_PASS']
+
+    if (!user || !pass) {
+      return new Response(JSON.stringify({ error: "IONOS credentials missing from smtp_config table." }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // 3. Create Nodemailer transporter
     const transporter = nodemailer.createTransport({
       host,
       port,
       secure,
-      auth: {
-        user,
-        pass,
-      },
+      auth: { user, pass },
     })
 
-    // 3. Compose email html body
+    // 4. Compose email HTML body
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.6;">
         <h2 style="color: #26262B; border-bottom: 2px solid #526E8C; padding-bottom: 10px;">Opus Form Quote Estimate</h2>
@@ -72,13 +93,13 @@ serve(async (req) => {
         <p>The PDF contains complete project details, structural scopes, and payment terms.</p>
         <p>Kind regards,</p>
         <p><strong>Opus Form Operations Team</strong><br>
-        <a href="mailto:operations@opusform.co.uk" style="color: #526E8C; text-decoration: none;">operations@opusform.co.uk</a></p>
+        <a href="mailto:billing@opusform.co.uk" style="color: #526E8C; text-decoration: none;">billing@opusform.co.uk</a></p>
       </div>
     `
 
-    // 4. Send email with PDF attachment
+    // 5. Send email with PDF attachment
     await transporter.sendMail({
-      from: `"Opus Form Operations" <${user}>`,
+      from: `"Opus Form Billing" <${user}>`,
       to: toEmail,
       subject: `Formal Quote: #${quoteRef} - ${clientName || 'Project'}`,
       html: emailHtml,

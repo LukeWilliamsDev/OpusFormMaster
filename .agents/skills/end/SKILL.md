@@ -1,3 +1,8 @@
+---
+name: end
+description: Activates when the user issues the /end command to compile RECAP.md, perform the smart merge to MEMORY.md, and output the confirmation message.
+---
+
 # Workflow: /end
 
 ## 1. Summarization

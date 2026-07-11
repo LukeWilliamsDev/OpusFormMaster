@@ -227,7 +227,15 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           useCORS: true,
           logging: false,
           scrollY: 0,
-          scrollX: 0
+          scrollX: 0,
+          // Strip all external stylesheets from the clone before rendering.
+          // Tailwind CSS v3 uses oklch() color functions which html2canvas cannot parse.
+          // The .print-area already uses explicit hex colors, so removing global styles is safe.
+          onclone: (_document: Document, element: HTMLElement) => {
+            const cloneDoc = element.ownerDocument;
+            const links = cloneDoc.querySelectorAll('link[rel="stylesheet"], style');
+            links.forEach(link => link.remove());
+          }
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };

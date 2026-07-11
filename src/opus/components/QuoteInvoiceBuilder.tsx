@@ -297,7 +297,21 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   };
 
   const handleSend = async () => {
-    if (items.length === 0 && !clientInfo.entity) return;
+    // Validation checks before sending
+    const missingFields: string[] = [];
+    if (!clientInfo.entity.trim()) missingFields.push("Client Name");
+    if (!clientInfo.email.trim()) missingFields.push("Client Email");
+    if (!clientInfo.site.trim()) missingFields.push("Project/Site Name");
+    if (!clientInfo.postcode.trim()) missingFields.push("Site Postcode");
+    if (items.length === 0) missingFields.push("Line Items (at least one is required)");
+    
+    const validTerms = terms.filter(t => t.trim() !== "");
+    if (validTerms.length === 0) missingFields.push("Terms & Summary Conditions (at least one condition is required)");
+
+    if (missingFields.length > 0) {
+      alert(`Cannot authorize or send quote. Please complete the following missing details:\n\n• ${missingFields.join('\n• ')}`);
+      return;
+    }
 
     setIsSendingEmail(true);
 
@@ -541,11 +555,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
               
               <div className="flex items-center justify-between relative mt-2 px-2">
                 {/* Stepper background line */}
-                <div className="absolute top-[14px] left-8 right-8 h-0.5 bg-[#2e2e2e] z-0" />
+                <div className="absolute top-[14px] left-8 right-8 h-[2px] bg-[#2e2e2e] z-0" />
                 {/* Stepper active progress line */}
                 <div 
-                  className="absolute top-[14px] left-8 h-0.5 bg-[#5c7285] transition-all duration-300 z-0" 
-                  style={{ width: `${(activeStep - 1) * 50}%` }}
+                  className="absolute top-[14px] left-8 h-[2px] bg-[#5c7285] transition-all duration-300 z-0" 
+                  style={{ width: `calc(${(activeStep - 1) * 50}% - ${(activeStep - 1) * 32}px)` }}
                 />
 
                 {[

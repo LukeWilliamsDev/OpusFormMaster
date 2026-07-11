@@ -74,6 +74,11 @@ const SUGGESTED_ITEMS = [
 
 const INITIAL_ITEMS: MeasuredItem[] = [];
 
+const capitalizeWords = (str: string) => {
+  if (!str) return '';
+  return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+};
+
 export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, quoteToLoadId, onQuoteLoaded }) => {
   const [clientInfo, setClientInfo] = useState({
     entity: '',
@@ -429,9 +434,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
         let errMsg = error.message;
         try {
           const errBody = await error.context?.json();
-          if (errBody) {
-            if (errBody.error) errMsg = errBody.error;
-            if (errBody.debugKey) errMsg += ` (Debug Key: ${errBody.debugKey})`;
+          if (errBody && errBody.error) {
+            errMsg = errBody.error;
           }
         } catch (_) {
           // Fallback to default message
@@ -1036,8 +1040,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
                         {clientInfo.entity ? (
                           <div className="space-y-1">
-                            <p className="font-black text-gray-900 uppercase text-sm">{clientInfo.entity}</p>
-                            <p className="text-gray-600 uppercase tracking-wide">{clientInfo.email || '...'}</p>
+                            <p className="font-black text-gray-900 text-sm">{capitalizeWords(clientInfo.entity)}</p>
+                            <p className="text-gray-600 tracking-wide">{clientInfo.email ? clientInfo.email.toLowerCase() : '...'}</p>
                           </div>
                         ) : (
                           <span className="text-[#AAA]">No client data entered</span>
@@ -1049,8 +1053,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
                         {clientInfo.site ? (
                           <div className="space-y-1">
-                            <p className="font-black text-gray-900 uppercase text-sm">{clientInfo.site}</p>
-                            <p className="text-gray-600 uppercase tracking-wide">{clientInfo.postcode || '...'}</p>
+                            <p className="font-black text-gray-900 text-sm">{capitalizeWords(clientInfo.site)}</p>
+                            <p className="text-gray-600 tracking-wide">{clientInfo.postcode ? clientInfo.postcode.toUpperCase() : '...'}</p>
                           </div>
                         ) : (
                           <span className="text-[#AAA]">No project data entered</span>

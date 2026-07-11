@@ -1,6 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
+// NOTE: This Edge Function MUST be deployed with `verify_jwt: false`
+// to allow email clients (Gmail, Outlook, etc.) to fetch the corporate SVG logo
+// via the GET endpoint without Supabase authorization headers.
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -20,6 +24,19 @@ interface RequestPayload {
 }
 
 serve(async (req) => {
+  // Handle GET request to serve the SVG logo directly
+  if (req.method === 'GET') {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120" width="100%" height="100%"><text x="250" y="70" font-family="\'Inter\', \'Arial Black\', system-ui, -apple-system, sans-serif" font-weight="900" font-size="46" fill="#F4F4F0" letter-spacing="9" text-anchor="middle">OPUS FORM</text><line x1="120" y1="92" x2="380" y2="92" stroke="#526E8C" stroke-width="4" stroke-linecap="round"/></svg>';
+    return new Response(svg, {
+      headers: {
+        'Content-Type': 'image/svg+xml',
+        'Cache-Control': 'public, max-age=31536000',
+        ...corsHeaders
+      },
+      status: 200
+    });
+  }
+
   // Handle CORS pre-flight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -104,11 +121,8 @@ serve(async (req) => {
       })
     }
 
-    // Resolve logoUrl host (rewrite local dev localhost hosts to GitHub Dev branch asset)
-    let resolvedLogoUrl = logoUrl
-    if (resolvedLogoUrl && (resolvedLogoUrl.includes("localhost") || resolvedLogoUrl.includes("127.0.0.1"))) {
-      resolvedLogoUrl = "https://raw.githubusercontent.com/LukeWilliamsDev/lovable-opus-form/Dev/public/opus-form-primary.svg"
-    }
+    // Serve the logo directly from this function's public GET endpoint to bypass private repository blockages
+    const resolvedLogoUrl = "https://fgpthpxmiroyebrzjdzo.supabase.co/functions/v1/send-quote-pdf"
 
     // Compose HTML message body using standard string concatenation to completely avoid Deno/JSON escaping bugs
     let emailHtml = "";

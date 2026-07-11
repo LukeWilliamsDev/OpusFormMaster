@@ -30,3 +30,10 @@
 - **Strict Form Validation Check:** Implemented strict controls that validate client name, email, project name, site postcode, line items list, and terms and conditions. Added a custom animated overlay modal dialog to report validation failures directly on the page instead of native browser popups.
 - **Single-page Pixel-Perfect PDF Export:** Renamed the printer button to \"Save PDF\", mapped `jsPDF` custom formats directly to canvas pixel boundaries (`[794, 1122]`), and reset browser body margin styles during capture to prevent whitespaces and blank second page overflows.
 - **Drafts-Only Local Storage:** Excluded sent quotes from the local storage drafts database and automatically purged draft records upon a successful send transaction.
+
+#### Session 5
+- **Edge Function Variables Concatenation:** Converted email HTML template assembly to standard string concatenation, completely resolving escaped template variable parsing issues under Deno bundler pipelines.
+- **Self-Hosted Public Logo Endpoint:** Configured a GET handler on `send-quote-pdf` to serve the SVG logo and redeployed the function with `verify_jwt: false`, bypassing private repository authentication barriers so email clients can render the header logo.
+- **iOS WebKit Color Inversion Bypass:** Applied inline `-webkit-text-fill-color` CSS declarations to all email text nodes, preventing iOS Mail and Gmail App from inverting white text to dark-on-dark in dark mode.
+- **PDF Capitalization Normalization:** Removed native `uppercase` text formatting on the Client Name and Project fields and added a Title Case words capitalizer to render formatted casing.
+- **Custom UI Banner Alerts:** Replaced native browser alerts with custom animated success and failure toast overlays, prompting contacts to `admin@opusform.co.uk` upon send failures.

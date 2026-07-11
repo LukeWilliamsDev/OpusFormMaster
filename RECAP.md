@@ -1,16 +1,14 @@
-# Session Recap - 2026-07-11
+# Session Recap - 2026-07-11 (Session 5)
 
 ## Progress Made
-- **Quote Builder UI/UX Refinement:** Integrated smooth step-based slide transitions using Framer Motion (`motion/react`) when switching stepper pages.
-- **Searchable Concrete Autocomplete:** Embedded item suggestions for pours, rebar mesh, shuttering, pumps, and day rates that pre-fill description, unit, and standard rate parameters.
-- **Integrated Dark Workspace Layout:** Redesigned the Live Mirror preview viewport frame (`bg-[#131417] border-[#2e2e2e]`) to merge seamlessly with the dark industrial user interface theme, and centered the page card vertically.
-- **Duplicate Send Prompt Removal:** Streamlined the workflow by removing the duplicate bottom nav bar send button, driving emailing transactions exclusively through the step 3 "Authorize & Send" card.
-- **Strict Form Validation Check:** Implemented strict controls that validate client name, email, project name, site postcode, line items list, and terms and conditions. Added a custom animated overlay modal dialog to report validation failures directly on the page instead of native browser popups.
-- **Single-page Pixel-Perfect PDF Export:** Renamed the printer button to "Save PDF", mapped `jsPDF` custom formats directly to canvas pixel boundaries (`[794, 1122]`), and reset browser body margin styles during capture to prevent whitespaces and blank second page overflows.
-- **Drafts-Only Local Storage:** Excluded sent quotes from the local storage drafts database and automatically purged draft records upon a successful send transaction.
+- **Edge Function Variables Concatenation:** Converted email HTML template assembly to standard string concatenation, completely resolving escaped template variable parsing issues under Deno bundler pipelines.
+- **Self-Hosted Public Logo Endpoint:** Configured a GET handler on `send-quote-pdf` to serve the SVG logo and redeployed the function with `verify_jwt: false`, bypassing private repository authentication barriers so email clients can render the header logo.
+- **iOS WebKit Color Inversion Bypass:** Applied inline `-webkit-text-fill-color` CSS declarations to all email text nodes, preventing iOS Mail and Gmail App from inverting white text to dark-on-dark in dark mode.
+- **PDF Capitalization Normalization:** Removed native `uppercase` text formatting on the Client Name and Project fields and added a Title Case words capitalizer to render formatted casing.
+- **Custom UI Banner Alerts:** Replaced native browser alerts with custom animated success and failure toast overlays, prompting contacts to `admin@opusform.co.uk` upon send failures.
 
 ## Labor Roster State
-- Unchanged this session (workers, shifts, jobs Supabase backend operational).
+- Unchanged this session (workers, shifts, jobs Supabase operational).
 
 ## Open Issues
-- None. All client feedback addressed.
+- None. All issues fixed and verified.

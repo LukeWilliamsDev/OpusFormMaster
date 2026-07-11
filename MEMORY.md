@@ -21,6 +21,12 @@
 - Refined Quote Builder with stepper animations, concrete autocomplete suggestions, and a centered, dark workspace layout.
 - Removed redundant bottom bar buttons and implemented strict on-page validation overlays for client, project, line item, and terms checklist errors.
 - Resolved PDF layout overflows and margins by resetting body spacing on document clones and locking canvas/jsPDF format bounds to exactly 794x1122px.
+- Converted email HTML template assembly to standard string concatenation to completely fix escaped variable parsing bugs.
+- Built a public GET endpoint in the Edge Function to serve the SVG logo, deployed with JWT verification disabled.
+- Implemented inline `-webkit-text-fill-color` styles on email HTML text nodes to override iOS WebKit dark mode text inversion.
+- Integrated a Title Case capitalizing formatter for Client and Project names on the PDF, removing force-caps formatting.
+- Replaced native alerts with custom animated on-screen status toast modals.
+
 
 ## Roadmap
 - Migrate estimate/quoting records from client `localStorage` to database tables.

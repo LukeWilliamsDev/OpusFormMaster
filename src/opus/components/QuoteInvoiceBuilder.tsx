@@ -84,6 +84,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [activeStep, setActiveStep] = useState<number>(1);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [items, setItems] = useState<MeasuredItem[]>(INITIAL_ITEMS);
   const [terms, setTerms] = useState<string[]>([
     "Assumed total pours up to 1, additional pours shall be charged minimum of £3,500",
@@ -309,7 +310,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     if (validTerms.length === 0) missingFields.push("Terms & Summary Conditions (at least one condition is required)");
 
     if (missingFields.length > 0) {
-      alert(`Cannot authorize or send quote. Please complete the following missing details:\n\n• ${missingFields.join('\n• ')}`);
+      setValidationErrors(missingFields);
       return;
     }
 
@@ -1194,6 +1195,53 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           )}
         </div>
       </div>
+
+      {/* Validation Error Modal */}
+      <AnimatePresence>
+        {validationErrors.length > 0 && (
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-[#242424] border border-red-500/20 rounded-xl max-w-sm w-full p-5 shadow-2xl relative"
+            >
+              <button 
+                onClick={() => setValidationErrors([])}
+                className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              
+              <div className="flex items-center gap-2 text-red-400 border-b border-[#2e2e2e] pb-3 mb-4">
+                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="text-[10px] font-black uppercase tracking-[0.2em]">VALIDATION FAILURE</span>
+              </div>
+              
+              <p className="text-[10px] text-gray-400 uppercase tracking-wider leading-relaxed mb-4">
+                The following fields are required before sending:
+              </p>
+              
+              <ul className="space-y-2 mb-5">
+                {validationErrors.map((error, idx) => (
+                  <li key={idx} className="flex items-center gap-2 text-[10px] text-gray-300 uppercase font-black tracking-widest bg-[#1a1a1c] border border-[#2d2d30] p-2.5 rounded-lg">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500/80" />
+                    {error}
+                  </li>
+                ))}
+              </ul>
+              
+              <button
+                type="button"
+                onClick={() => setValidationErrors([])}
+                className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#444] rounded-lg py-2 text-[9px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors"
+              >
+                DISMISS
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

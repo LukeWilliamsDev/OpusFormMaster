@@ -18,6 +18,9 @@
 - Resolved `html2canvas` parser crash caused by `oklch()` Tailwind variables via programmatic target node cloning and synchronous CSS sanitization.
 - Fixed PDF layout offsets and multi-page overflow margins.
 - Migrated mail service from SMTP/Nodemailer to the Resend HTTP API to bypass provider-level anti-bot throttling.
+- Refined Quote Builder with stepper animations, concrete autocomplete suggestions, and a centered, dark workspace layout.
+- Removed redundant bottom bar buttons and implemented strict on-page validation overlays for client, project, line item, and terms checklist errors.
+- Resolved PDF layout overflows and margins by resetting body spacing on document clones and locking canvas/jsPDF format bounds to exactly 794x1122px.
 
 ## Roadmap
 - Migrate estimate/quoting records from client `localStorage` to database tables.

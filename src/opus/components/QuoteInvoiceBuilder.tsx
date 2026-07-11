@@ -226,15 +226,34 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           scale: 2, 
           useCORS: true,
           logging: false,
-          scrollY: 0,
-          scrollX: 0,
-          // Strip all external stylesheets from the clone before rendering.
-          // Tailwind CSS v3 uses oklch() color functions which html2canvas cannot parse.
-          // The .print-area already uses explicit hex colors, so removing global styles is safe.
           onclone: (_document: Document, element: HTMLElement) => {
             const cloneDoc = element.ownerDocument;
-            const links = cloneDoc.querySelectorAll('link[rel="stylesheet"], style');
-            links.forEach(link => link.remove());
+            
+            // 1. Gather all CSS rules from the main document synchronously
+            let cssText = '';
+            for (let i = 0; i < document.styleSheets.length; i++) {
+              const sheet = document.styleSheets[i];
+              try {
+                const rules = sheet.cssRules || sheet.rules;
+                for (let j = 0; j < rules.length; j++) {
+                  cssText += rules[j].cssText + '\n';
+                }
+              } catch (e) {
+                console.warn("Could not read stylesheet rules: ", e);
+              }
+            }
+            
+            // 2. Replace all oklch() color functions with a standard hex fallback to prevent parser crash
+            const safeCss = cssText.replace(/oklch\([^)]+\)/g, '#333333');
+            
+            // 3. Remove all original stylesheet links/styles from the clone
+            const originalStyles = cloneDoc.querySelectorAll('link[rel="stylesheet"], style');
+            originalStyles.forEach(el => el.remove());
+            
+            // 4. Inject the safe parsed CSS rules
+            const styleEl = cloneDoc.createElement('style');
+            styleEl.textContent = safeCss;
+            cloneDoc.head.appendChild(styleEl);
           }
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }

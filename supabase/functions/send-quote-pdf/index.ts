@@ -171,14 +171,14 @@ serve(async (req) => {
         'Authorization': 'Bearer ' + resendApiKey
       },
       body: JSON.stringify({
-        from: `Opus Form Billing <${sender}>`,
+        from: 'Opus Form Billing <' + sender + '>',
         to: [toEmail],
-        subject: `Formal Quote: #${quoteRef} - ${clientName || 'Project'}`,
+        subject: 'Formal Quote: #' + quoteRef + ' - ' + (clientName || 'Project'),
         html: emailHtml,
         attachments: [
           {
             content: attachmentContent,
-            filename: `Quote_${quoteRef}.pdf`
+            filename: 'Quote_' + quoteRef + '.pdf'
           }
         ]
       })

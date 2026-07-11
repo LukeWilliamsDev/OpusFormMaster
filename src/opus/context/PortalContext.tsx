@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { Job, Worker, ScheduledShift } from '../types/erp';
@@ -15,6 +15,68 @@ const INITIAL_JOBS: Job[] = [
 
 export type AppRole = 'admin' | 'dispatcher' | 'operative';
 
+// ---- Row <-> App mappers -----------------------------------------------
+const workerToRow = (w: Worker) => ({
+  id: w.id,
+  name: w.name,
+  role: w.role,
+  phone: w.phone ?? null,
+  email: w.email ?? null,
+  is_archived: w.isArchived ?? false,
+  tickets: w.tickets ?? [],
+  uploaded_certificates: w.uploadedCertificates ?? [],
+});
+const rowToWorker = (r: any): Worker => ({
+  id: r.id,
+  name: r.name,
+  role: r.role,
+  phone: r.phone ?? undefined,
+  email: r.email ?? undefined,
+  isArchived: r.is_archived ?? false,
+  tickets: r.tickets ?? [],
+  uploadedCertificates: r.uploaded_certificates ?? [],
+});
+
+const jobToRow = (j: Job) => ({
+  id: j.id,
+  job_ref: j.jobRef,
+  site_name: j.siteName,
+  main_contractor: j.mainContractor ?? null,
+  postcode: j.postcode ?? null,
+  current_pours: j.currentPours ?? 0,
+  contract_max_pours: j.contractMaxPours ?? 0,
+  status: j.status,
+  schedule_value: j.scheduleValue ?? 0,
+  assigned_workers: j.assignedWorkers ?? [],
+});
+const rowToJob = (r: any): Job => ({
+  id: r.id,
+  jobRef: r.job_ref,
+  siteName: r.site_name,
+  mainContractor: r.main_contractor ?? '',
+  postcode: r.postcode ?? '',
+  currentPours: r.current_pours ?? 0,
+  contractMaxPours: r.contract_max_pours ?? 0,
+  status: r.status,
+  scheduleValue: Number(r.schedule_value ?? 0),
+  assignedWorkers: r.assigned_workers ?? [],
+});
+
+const shiftToRow = (s: ScheduledShift) => ({
+  id: s.id,
+  worker_id: s.workerId,
+  job_id: s.jobId,
+  date: s.date,
+  is_removed: s.isRemoved ?? false,
+});
+const rowToShift = (r: any): ScheduledShift => ({
+  id: r.id,
+  workerId: r.worker_id,
+  jobId: r.job_id,
+  date: r.date,
+  isRemoved: r.is_removed ?? false,
+});
+
 interface PortalContextType {
   workers: Worker[];
   setWorkers: React.Dispatch<React.SetStateAction<Worker[]>>;
@@ -25,6 +87,7 @@ interface PortalContextType {
   handleReloadDemoData: () => void;
   isAuthenticated: boolean;
   authLoading: boolean;
+  dataLoading: boolean;
   session: Session | null;
   user: User | null;
   role: AppRole | null;
@@ -41,53 +104,17 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [role, setRole] = useState<AppRole | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  const [workers, setWorkers] = useState<Worker[]>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('opus_workers');
-      return stored ? JSON.parse(stored) : INITIAL_ROSTER;
-    }
-    return INITIAL_ROSTER;
-  });
+  const [workers, setWorkers] = useState<Worker[]>([]);
+  const [shifts, setShifts] = useState<ScheduledShift[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
-  const [shifts, setShifts] = useState<ScheduledShift[]>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('opus_shifts');
-      return stored ? JSON.parse(stored) : INITIAL_SHIFTS;
-    }
-    return INITIAL_SHIFTS;
-  });
-
-  const [jobs, setJobs] = useState<Job[]>(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('opus_jobs');
-      if (stored) {
-        try {
-          return JSON.parse(stored);
-        } catch (e) {
-          console.error('Failed to parse jobs', e);
-        }
-      }
-    }
-    return INITIAL_JOBS;
-  });
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('opus_workers', JSON.stringify(workers));
-    }
-  }, [workers]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('opus_shifts', JSON.stringify(shifts));
-    }
-  }, [shifts]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('opus_jobs', JSON.stringify(jobs));
-    }
-  }, [jobs]);
+  // Track previous ids per table so we can compute deletions on sync.
+  const prevWorkerIdsRef = useRef<Set<string>>(new Set());
+  const prevJobIdsRef = useRef<Set<string>>(new Set());
+  const prevShiftIdsRef = useRef<Set<string>>(new Set());
+  // Suppress the "sync-back" effect until we've hydrated from Supabase.
+  const hydratedRef = useRef(false);
 
   // Bootstrap session + subscribe to auth changes
   useEffect(() => {
@@ -97,6 +124,15 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setUser(newSession?.user ?? null);
       if (!newSession) {
         setRole(null);
+        // Clear cached data on sign-out to avoid leaking one user's view.
+        hydratedRef.current = false;
+        prevWorkerIdsRef.current = new Set();
+        prevJobIdsRef.current = new Set();
+        prevShiftIdsRef.current = new Set();
+        setWorkers([]);
+        setJobs([]);
+        setShifts([]);
+        setDataLoading(true);
       }
     });
 
@@ -134,36 +170,132 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => { cancelled = true; };
   }, [user]);
 
-  // Proactive automatic upgrade for legacy/small mock data
+  // Load operational data from Supabase whenever we have a signed-in user.
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('opus_shifts');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length < 10) {
-            localStorage.setItem('opus_shifts', JSON.stringify(INITIAL_SHIFTS));
-            setShifts(INITIAL_SHIFTS);
-            localStorage.setItem('opus_jobs', JSON.stringify(INITIAL_JOBS));
-            setJobs(INITIAL_JOBS);
-          }
-        } catch (e) {
-          console.error('Failed to parse stored shifts for upgrade check', e);
-        }
-      }
-    }
-  }, []);
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      setDataLoading(true);
+      const [wRes, jRes, sRes] = await Promise.all([
+        supabase.from('workers').select('*'),
+        supabase.from('jobs').select('*'),
+        supabase.from('shifts').select('*'),
+      ]);
+      if (cancelled) return;
+      if (wRes.error) console.error('load workers', wRes.error);
+      if (jRes.error) console.error('load jobs', jRes.error);
+      if (sRes.error) console.error('load shifts', sRes.error);
+      const wList = (wRes.data ?? []).map(rowToWorker);
+      const jList = (jRes.data ?? []).map(rowToJob);
+      const sList = (sRes.data ?? []).map(rowToShift);
+      prevWorkerIdsRef.current = new Set(wList.map(w => w.id));
+      prevJobIdsRef.current = new Set(jList.map(j => j.id));
+      prevShiftIdsRef.current = new Set(sList.map(s => s.id));
+      setWorkers(wList);
+      setJobs(jList);
+      setShifts(sList);
+      hydratedRef.current = true;
+      setDataLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
-  const handleReloadDemoData = () => {
-    if (window.confirm("Are you sure you want to restore the default active jobs, full crew list, and rich deployment histories? This will replace your current browser session state.")) {
-      localStorage.removeItem('opus_workers');
-      localStorage.removeItem('opus_shifts');
-      localStorage.removeItem('opus_jobs');
-      setWorkers(INITIAL_ROSTER);
-      setShifts(INITIAL_SHIFTS);
-      setJobs(INITIAL_JOBS);
-      alert("Demo dataset successfully loaded! Explore the staff profiles to view active deployments and the new 'Deployment History' records.");
+  // Persist changes back to Supabase whenever local state changes.
+  useEffect(() => {
+    if (!hydratedRef.current || !user) return;
+    const currentIds = new Set(workers.map(w => w.id));
+    const removed = [...prevWorkerIdsRef.current].filter(id => !currentIds.has(id));
+    prevWorkerIdsRef.current = currentIds;
+    (async () => {
+      if (workers.length > 0) {
+        const { error } = await supabase.from('workers').upsert(workers.map(workerToRow));
+        if (error) console.error('upsert workers', error);
+      }
+      if (removed.length > 0) {
+        const { error } = await supabase.from('workers').delete().in('id', removed);
+        if (error) console.error('delete workers', error);
+      }
+    })();
+  }, [workers, user]);
+
+  useEffect(() => {
+    if (!hydratedRef.current || !user) return;
+    const currentIds = new Set(jobs.map(j => j.id));
+    const removed = [...prevJobIdsRef.current].filter(id => !currentIds.has(id));
+    prevJobIdsRef.current = currentIds;
+    (async () => {
+      if (jobs.length > 0) {
+        const { error } = await supabase.from('jobs').upsert(jobs.map(jobToRow));
+        if (error) console.error('upsert jobs', error);
+      }
+      if (removed.length > 0) {
+        const { error } = await supabase.from('jobs').delete().in('id', removed);
+        if (error) console.error('delete jobs', error);
+      }
+    })();
+  }, [jobs, user]);
+
+  useEffect(() => {
+    if (!hydratedRef.current || !user) return;
+    const currentIds = new Set(shifts.map(s => s.id));
+    const removed = [...prevShiftIdsRef.current].filter(id => !currentIds.has(id));
+    prevShiftIdsRef.current = currentIds;
+    (async () => {
+      if (shifts.length > 0) {
+        const { error } = await supabase.from('shifts').upsert(shifts.map(shiftToRow));
+        if (error) console.error('upsert shifts', error);
+      }
+      if (removed.length > 0) {
+        const { error } = await supabase.from('shifts').delete().in('id', removed);
+        if (error) console.error('delete shifts', error);
+      }
+    })();
+  }, [shifts, user]);
+
+  const handleReloadDemoData = async () => {
+    if (!(role === 'admin' || role === 'dispatcher')) {
+      alert('Only admins or dispatchers can seed the demo dataset.');
+      return;
     }
+    if (!window.confirm("Restore default demo dataset? This will replace the workers, jobs and shifts stored in the backend.")) {
+      return;
+    }
+    setDataLoading(true);
+    // Wipe existing rows, then insert the canonical demo dataset.
+    const [dw, dj, ds] = await Promise.all([
+      supabase.from('workers').delete().neq('id', '__none__'),
+      supabase.from('jobs').delete().neq('id', '__none__'),
+      supabase.from('shifts').delete().neq('id', '__none__'),
+    ]);
+    if (dw.error || dj.error || ds.error) {
+      console.error('demo wipe', dw.error, dj.error, ds.error);
+      alert('Failed to reset demo data: ' + (dw.error?.message || dj.error?.message || ds.error?.message));
+      setDataLoading(false);
+      return;
+    }
+    const [iw, ij, is_] = await Promise.all([
+      supabase.from('workers').insert(INITIAL_ROSTER.map(workerToRow)),
+      supabase.from('jobs').insert(INITIAL_JOBS.map(jobToRow)),
+      supabase.from('shifts').insert(INITIAL_SHIFTS.map(shiftToRow)),
+    ]);
+    if (iw.error || ij.error || is_.error) {
+      console.error('demo seed', iw.error, ij.error, is_.error);
+      alert('Failed to seed demo data: ' + (iw.error?.message || ij.error?.message || is_.error?.message));
+      setDataLoading(false);
+      return;
+    }
+    // Reflect the seeded state locally without re-triggering sync-back.
+    hydratedRef.current = false;
+    prevWorkerIdsRef.current = new Set(INITIAL_ROSTER.map(w => w.id));
+    prevJobIdsRef.current = new Set(INITIAL_JOBS.map(j => j.id));
+    prevShiftIdsRef.current = new Set(INITIAL_SHIFTS.map(s => s.id));
+    setWorkers(INITIAL_ROSTER);
+    setJobs(INITIAL_JOBS);
+    setShifts(INITIAL_SHIFTS);
+    // Re-enable sync on next tick, once the state updates have flushed.
+    setTimeout(() => { hydratedRef.current = true; }, 0);
+    setDataLoading(false);
+    alert('Demo dataset successfully seeded.');
   };
 
   const signIn = async (email: string, password: string) => {
@@ -196,6 +328,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       handleReloadDemoData,
       isAuthenticated: !!session,
       authLoading,
+      dataLoading,
       session,
       user,
       role,

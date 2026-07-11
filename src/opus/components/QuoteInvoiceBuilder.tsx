@@ -969,7 +969,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
             <div 
               ref={containerRef}
-              className="w-full relative flex justify-center items-start overflow-hidden bg-[#131417] border border-[#2e2e2e] py-8 rounded-xl min-h-[400px] sm:min-h-[800px] font-archivo no-scrollbar"
+              className="w-full relative flex justify-center items-center overflow-hidden bg-[#131417] border border-[#2e2e2e] py-8 rounded-xl min-h-[400px] sm:min-h-[800px] font-archivo no-scrollbar"
             >
               <div 
                 className="bg-white shadow-2xl text-[#333] flex flex-col origin-top print-area shrink-0"

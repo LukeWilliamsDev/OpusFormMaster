@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, 
   Trash2, 
@@ -18,7 +19,10 @@ import {
   FileText,
   X,
   CheckCircle2,
-  History
+  History,
+  ZoomIn,
+  ZoomOut,
+  Maximize2
 } from 'lucide-react';
 
 interface MeasuredItem {
@@ -57,6 +61,17 @@ interface ValuationBuilderProps {
   onQuoteLoaded?: () => void;
 }
 
+const SUGGESTED_ITEMS = [
+  { description: "C30/37 Foundation Slab Pour", unit: "m³", rate: 145.00 },
+  { description: "C40/50 Columns & Reinforced Beam Work", unit: "m³", rate: 185.00 },
+  { description: "A393 Structural Rebar Steel Mesh", unit: "m²", rate: 12.50 },
+  { description: "DPM & Sand Blinding Preparation", unit: "m²", rate: 8.00 },
+  { description: "Double-Sided Formwork Shuttering", unit: "m²", rate: 45.00 },
+  { description: "Concrete Pump Hire - 36m Boom Setup", unit: "Sum", rate: 450.00 },
+  { description: "Operative Labor Day Rate", unit: "Day", rate: 240.00 },
+  { description: "Site Supervisor Day Rate", unit: "Day", rate: 280.00 }
+];
+
 const INITIAL_ITEMS: MeasuredItem[] = [];
 
 export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, quoteToLoadId, onQuoteLoaded }) => {
@@ -68,6 +83,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   });
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [activeStep, setActiveStep] = useState<number>(1);
+  const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [items, setItems] = useState<MeasuredItem[]>(INITIAL_ITEMS);
   const [terms, setTerms] = useState<string[]>([
     "Assumed total pours up to 1, additional pours shall be charged minimum of £3,500",
@@ -109,6 +125,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   // Scaling logic for the PDF preview
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const [zoomLevel, setZoomLevel] = useState<'auto' | '50%' | '75%' | '100%'>('auto');
+
+  const previewScale = useMemo(() => {
+    if (zoomLevel === '50%') return 0.5;
+    if (zoomLevel === '75%') return 0.75;
+    if (zoomLevel === '100%') return 1;
+    return scale;
+  }, [zoomLevel, scale]);
 
   useEffect(() => {
     const updateScale = () => {
@@ -407,14 +431,12 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   </div>
                 </div>
                 <div className="flex flex-col gap-[5px] max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                  {savedQuotes.filter(q => q.isSavedLocal && q.isSent !== true).length === 0 ? (
+                  {savedQuotes.length === 0 ? (
                     <div className="bg-[#1e1e1e] border border-dashed border-[#2a2a2a] rounded-lg p-7 px-4 text-center">
-                      <div className="text-[9px] font-black tracking-widest text-[#777] uppercase">No saved quotes found</div>
+                       <div className="text-[9px] font-black tracking-widest text-[#777] uppercase">No saved quotes found</div>
                     </div>
                   ) : (
-                    savedQuotes
-                      .filter(q => q.isSavedLocal && q.isSent !== true)
-                      .map((q) => (
+                    savedQuotes.map((q) => (
                         <div 
                           key={q.id}
                           onClick={() => loadQuote(q)}
@@ -424,6 +446,13 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                             <div className="flex items-center gap-1.5">
                               <span className="text-[11px] font-black uppercase tracking-widest text-white">{q.reference}</span>
                               <span className="text-[10px] text-[#888]">{q.date}</span>
+                              <span className={`text-[7px] font-black uppercase px-1 py-0.5 rounded-sm border ${
+                                q.isSent 
+                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
+                                  : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                              }`}>
+                                {q.isSent ? 'SENT' : 'DRAFT'}
+                              </span>
                             </div>
                             <div className="text-[10px] text-[#888] mt-[2px] uppercase">
                               {q.clientInfo?.entity || 'Unnamed Client'}
@@ -503,8 +532,16 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             </div>
 
             {/* Step Content */}
-            {activeStep === 1 && (
-              <div className="bg-[#242424] border border-[#333] overflow-hidden rounded-xl p-4 space-y-4">
+            <AnimatePresence mode="wait">
+              {activeStep === 1 && (
+                <motion.div
+                  key="step-1"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="bg-[#242424] border border-[#333] overflow-hidden rounded-xl p-4 space-y-4"
+                >
                 <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-3 mb-1">
                   <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-[#b0b8c4]" />
@@ -574,11 +611,18 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {activeStep === 2 && (
-              <div className="bg-[#242424] border border-[#333] overflow-hidden rounded-xl p-4 space-y-4">
+                </motion.div>
+              )}
+              
+              {activeStep === 2 && (
+                <motion.div
+                  key="step-2"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="bg-[#242424] border border-[#333] overflow-hidden rounded-xl p-4 space-y-4"
+                >
                 <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-3 mb-1">
                   <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
                     <ClipboardList className="w-4 h-4 text-[#b0b8c4]" />
@@ -597,14 +641,58 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                 <div className="space-y-4">
                   {items.map((item) => (
                     <div key={item.id} className="p-4 bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl space-y-4 relative group">
-                      <div className="flex items-center justify-between gap-2 border-b border-[#2e2e2e]/40 pb-2">
-                        <input 
-                          type="text"
-                          className="flex-1 bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold uppercase tracking-wider"
-                          value={item.description}
-                          onChange={e => updateItem(item.id, { description: e.target.value })}
-                          placeholder="Description of item..."
-                        />
+                      <div className="flex items-center justify-between gap-2 border-b border-[#2e2e2e]/40 pb-2 relative">
+                        <div className="relative flex-1">
+                          <input 
+                            type="text"
+                            className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold uppercase tracking-wider"
+                            value={item.description}
+                            onChange={e => updateItem(item.id, { description: e.target.value })}
+                            onFocus={() => setFocusedItemId(item.id)}
+                            onBlur={() => {
+                              // Small timeout to allow clicking a suggestion before blur closes it
+                              setTimeout(() => setFocusedItemId(null), 200);
+                            }}
+                            placeholder="Description of item..."
+                          />
+                          
+                          {/* Autocomplete Dropdown */}
+                          <AnimatePresence>
+                            {focusedItemId === item.id && (
+                              <motion.div 
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="absolute left-0 right-0 top-full mt-2 bg-[#1e1e1e] border border-[#333] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
+                              >
+                                {SUGGESTED_ITEMS.filter(s => 
+                                  !item.description || 
+                                  s.description.toLowerCase().includes(item.description.toLowerCase())
+                                ).map((suggestion) => (
+                                  <button
+                                    key={suggestion.description}
+                                    type="button"
+                                    onClick={() => {
+                                      updateItem(item.id, {
+                                        description: suggestion.description,
+                                        unit: suggestion.unit,
+                                        rate: suggestion.rate
+                                      });
+                                    }}
+                                    className="w-full text-left px-3 py-2 text-[10px] uppercase font-bold tracking-wider text-gray-400 hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2e2e2e]/30 last:border-none"
+                                  >
+                                    <div className="flex justify-between items-center">
+                                      <span>{suggestion.description}</span>
+                                      <span className="text-brand-accent/70 font-mono text-[9px]">
+                                        £{suggestion.rate}/{suggestion.unit}
+                                      </span>
+                                    </div>
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
                         <button 
                           type="button"
                           onClick={() => removeItem(item.id)}
@@ -702,11 +790,18 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     </div>
                   )}
                 </div>
-              </div>
-            )}
-
-            {activeStep === 3 && (
-              <div className="space-y-4">
+                </motion.div>
+              )}
+              
+              {activeStep === 3 && (
+                <motion.div
+                  key="step-3"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 10 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-4"
+                >
                 <div className="bg-[#242424] border border-[#333] overflow-hidden rounded-xl p-4 space-y-4">
                   <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-3 mb-1">
                     <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
@@ -769,9 +864,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     <span>{isSendingEmail ? 'SENDING...' : 'Authorize & Send'}</span>
                   </button>
                 </div>
-              </div>
+              </motion.div>
             )}
-          </div>
+          </AnimatePresence>
+        </div>
 
           {/* Right: PDF Live Mirror View */}
           <div className="lg:sticky lg:top-24 space-y-6">
@@ -780,7 +876,26 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                 <div className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em]">Live Mirror View</span>
               </div>
-              <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
+              <div className="flex items-center flex-wrap gap-3 w-full sm:w-auto justify-between sm:justify-end">
+                {/* Zoom Controls */}
+                <div className="flex items-center bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-0.5">
+                  {(['auto', '50%', '75%', '100%'] as const).map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setZoomLevel(level)}
+                      className={`px-2 py-1 text-[8px] font-black uppercase tracking-wider rounded-md transition-all ${
+                        zoomLevel === level
+                          ? 'bg-[#5C7285] text-white shadow-sm'
+                          : 'text-[#888] hover:text-white hover:bg-[#2a2a2a]'
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+                
+                <div className="w-px h-3 bg-white/10 hidden sm:block" />
+                
                 <button 
                   onClick={() => window.print()}
                   className="flex items-center space-x-2 text-white/40 hover:text-brand-accent transition-colors cursor-pointer group"
@@ -788,10 +903,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   <Printer className="w-3.5 h-3.5" />
                   <span className="text-[9px] font-black uppercase tracking-[0.2em]">Print / Save PDF</span>
                 </button>
-                <div className="w-px h-3 bg-white/10 hidden sm:block" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em] flex items-center text-white/20">
-                  <LayoutGrid className="w-3 h-3 mr-1.5" /> A4 Preview
-                </span>
               </div>
             </div>
 
@@ -804,10 +915,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                 style={{ 
                   width: '794px', 
                   minHeight: '1123px', 
-                  transform: `scale(${scale})`,
-                  marginLeft: `${(794 * scale - 794) / 2}px`,
-                  marginRight: `${(794 * scale - 794) / 2}px`,
-                  marginBottom: `${(1123 * scale - 1123)}px`
+                  transform: `scale(${previewScale})`,
+                  marginLeft: `${(794 * previewScale - 794) / 2}px`,
+                  marginRight: `${(794 * previewScale - 794) / 2}px`,
+                  marginBottom: `${(1123 * previewScale - 1123)}px`
                 }}
               >
                 {/* HEADER */}

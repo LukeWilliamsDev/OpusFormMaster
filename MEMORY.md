@@ -4,6 +4,7 @@
 - **Workflow Configurations**: Custom slash commands `/start` and `/end` are configured in `.agents/` to manage session initialization, git synchronization, and session history compilation.
 - **System Design**: Specialized concrete construction subcontractor ERP managing jobs (pours, contracts), operatives (CSCS credentials), scheduling matrices, and estimating.
 - **Database Architecture**: Switched from Lovable Cloud to standalone Supabase project ref `fgpthpxmiroyebrzjdzo`. Database schemas for profiles, workers, shifts, and jobs are live with RLS policies.
+- **Email Delivery System**: Quote builder outputs PDF quotes and sends them as attachments via a Supabase Edge Function using the Resend HTTP API. Secure configuration credentials (`smtp_config` table) are fetched dynamically.
 - **Source Control**: Repository configured to track the `Dev` branch on GitHub.
 
 ## Session History
@@ -13,6 +14,10 @@
 - Installed local Git client, synchronized project with `Dev` branch, and removed legacy Dashboard component.
 - Configured local environment variables and database config for the standalone Supabase setup.
 - Applied DDL schema migrations, initialized 4 admin accounts (`roya`, `liam`, `anais`, `admin`), and verified RLS permissions.
+- Integrated `html2pdf.js` for client-side PDF quote compilation.
+- Resolved `html2canvas` parser crash caused by `oklch()` Tailwind variables via programmatic target node cloning and synchronous CSS sanitization.
+- Fixed PDF layout offsets and multi-page overflow margins.
+- Migrated mail service from SMTP/Nodemailer to the Resend HTTP API to bypass provider-level anti-bot throttling.
 
 ## Roadmap
 - Migrate estimate/quoting records from client `localStorage` to database tables.

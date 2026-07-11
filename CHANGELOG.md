@@ -14,3 +14,10 @@
 - **Reverted Views:** Dropped the `user_directory` view and deleted its migration file as requested by the user.
 - **Memory Lifecycle Integration:** Updated `.agents/AGENTS.md` and `.agents/skills/end/SKILL.md` to implement the `Memory Lifecycle` system.
 - **User Provisioning Verification:** Confirmed logins are active and roles updated for all four new administrators.
+
+#### Session 3
+- **PDF Generation Integration:** Installed `html2pdf.js` and wired client-side PDF rendering for quote summaries.
+- **Vite Styling fixes:** Resolved `html2canvas` canvas parsing crash caused by modern Tailwind `oklch()` variables by programmatically cloning the target A4 node and sanitizing CSS definitions synchronously.
+- **Layout & Zoom Isolation:** Fixed page boundaries, margins, and blank overflow pages in generated PDFs by isolating elements in a hidden container to prevent active preview transform calculations from leaking.
+- **Resend SMTP API Migration:** Replaced the Nodemailer SMTP server transport with a standard HTTP-based Resend API client to bypass IONOS rate-limiting and anti-bot blocks.
+- **Secure Key Database Storage:** Configured secure settings storage in `public.smtp_config` database table with RLS protections, allowing the Edge Function to pull keys dynamically without manual deployment changes.

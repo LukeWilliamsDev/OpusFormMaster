@@ -130,8 +130,8 @@ serve(async (req) => {
     `
 
     // Determine the sender address (sandbox domain onboarding@resend.dev if custom domain is not verified yet)
-    // If the user has a custom verified domain on Resend, they can pass fromEmail. Otherwise it falls back to database user if verified, or onboarding@resend.dev
-    const sender = fromEmail || config['IONOS_SMTP_USER'] || "onboarding@resend.dev"
+    // Resolves key RESEND_FROM_EMAIL first, defaults to onboarding@resend.dev
+    const sender = fromEmail || config['RESEND_FROM_EMAIL'] || "onboarding@resend.dev"
 
     // Send via Resend HTTP API
     const resendResponse = await fetch('https://api.resend.com/emails', {

@@ -212,10 +212,34 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     setIsSendingEmail(true);
 
     try {
-      const element = document.querySelector('.print-area');
-      if (!element) {
+      const originalElement = document.querySelector('.print-area');
+      if (!originalElement) {
         throw new Error("Live Mirror print area not found.");
       }
+
+      // 1. Clone the element to render it at its true size without parent scaling/zoom transforms
+      const element = originalElement.cloneNode(true) as HTMLElement;
+      element.style.transform = 'none';
+      element.style.margin = '0';
+      element.style.padding = '0';
+      element.style.width = '794px';
+      element.style.height = '1120px';
+      element.style.minHeight = '1120px';
+      element.style.maxHeight = '1120px';
+      element.style.position = 'relative';
+      element.style.left = '0';
+      element.style.top = '0';
+
+      // 2. Append the clone to a hidden container on the main document
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '-9999px';
+      tempContainer.style.width = '794px';
+      tempContainer.style.height = '1120px';
+      tempContainer.style.overflow = 'hidden';
+      tempContainer.appendChild(element);
+      document.body.appendChild(tempContainer);
 
       // Configure html2pdf option settings for perfect single-page A4 output
       const opt = {
@@ -228,10 +252,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           logging: false,
           scrollX: 0,
           scrollY: 0,
-          onclone: (_document: Document, element: HTMLElement) => {
-            const cloneDoc = element.ownerDocument;
+          onclone: (_document: Document, clonedElement: HTMLElement) => {
+            const cloneDoc = clonedElement.ownerDocument;
             
-            // 1. Gather all CSS rules from the main document synchronously
+            // Gather all CSS rules from the main document synchronously
             let cssText = '';
             for (let i = 0; i < document.styleSheets.length; i++) {
               const sheet = document.styleSheets[i];
@@ -245,40 +269,17 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
               }
             }
             
-            // 2. Replace all oklch() color functions with a standard hex fallback to prevent parser crash
+            // Replace all oklch() color functions with a standard hex fallback to prevent parser crash
             const safeCss = cssText.replace(/oklch\([^)]+\)/g, '#333333');
             
-            // 3. Remove all original stylesheet links/styles from the clone
+            // Remove all original stylesheet links/styles from the clone
             const originalStyles = cloneDoc.querySelectorAll('link[rel="stylesheet"], style');
             originalStyles.forEach(el => el.remove());
             
-            // 4. Inject the safe parsed CSS rules
+            // Inject the safe parsed CSS rules
             const styleEl = cloneDoc.createElement('style');
             styleEl.textContent = safeCss;
             cloneDoc.head.appendChild(styleEl);
-
-            // 5. Isolate the target element in the body to eliminate external margins/paddings/transforms
-            cloneDoc.body.innerHTML = '';
-            cloneDoc.body.appendChild(element);
-            
-            // Reset styles on container and body for perfect 1-page alignment
-            cloneDoc.body.style.margin = '0';
-            cloneDoc.body.style.padding = '0';
-            cloneDoc.body.style.backgroundColor = '#ffffff';
-            cloneDoc.documentElement.style.margin = '0';
-            cloneDoc.documentElement.style.padding = '0';
-
-            element.style.margin = '0';
-            element.style.padding = '0';
-            element.style.transform = 'none';
-            element.style.left = '0';
-            element.style.top = '0';
-            element.style.position = 'relative';
-            element.style.width = '794px';
-            element.style.height = '1120px';
-            element.style.minHeight = '1120px';
-            element.style.maxHeight = '1120px';
-            element.style.overflow = 'hidden';
           }
         },
         jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
@@ -289,8 +290,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       const { default: html2pdf } = await import('html2pdf.js');
 
       // Generate PDF data uri
-      const pdfDataUri = await html2pdf().from(element).set(opt).toContainer().toCanvas().toImg().toPdf().outputPdf('datauristring');
+      const pdfDataUri = await html2pdf().from(element).set(opt).outputPdf('datauristring');
       const base64 = pdfDataUri.split(',')[1];
+
+      // Clean up the temporary container
+      document.body.removeChild(tempContainer);
 
       // Invoke Supabase Edge Function send-quote-pdf
       const { data, error } = await supabase.functions.invoke('send-quote-pdf', {

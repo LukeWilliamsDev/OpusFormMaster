@@ -110,54 +110,53 @@ serve(async (req) => {
       resolvedLogoUrl = "https://raw.githubusercontent.com/LukeWilliamsDev/lovable-opus-form/Dev/public/opus-form-primary.svg"
     }
 
-    // Compose HTML message body
-    const emailHtml = `
-      <div style="background-color: #1a1b1f; padding: 40px 20px; font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; line-height: 1.6; color: #d1d5db;">
-        <div style="max-width: 600px; margin: 0 auto; background-color: #242428; border: 1px solid #2e2e33; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">
-          <!-- Header -->
-          <div style="background-color: #26262B; padding: 30px 40px; border-bottom: 3px solid #526E8C; text-align: center;">
-            ${resolvedLogoUrl ? `
-              <img src="${resolvedLogoUrl}" alt="OPUS FORM" width="180" style="display: inline-block; border: 0; outline: none; text-decoration: none;" />
-            ` : `
-              <div style="font-family: Arial, sans-serif; font-size: 24px; font-weight: 900; color: #F4F4F0; letter-spacing: 4px;">OPUS FORM</div>
-            `}
-          </div>
-          
-          <!-- Body -->
-          <div style="padding: 40px;">
-            <div style="text-transform: uppercase; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; color: #526E8C; margin-bottom: 20px;">
-              Quote Estimate Details
-            </div>
-            
-            <p style="margin: 0 0 16px; color: #e5e7eb; font-size: 16px; font-weight: 700;">Dear ${clientName || 'Valued Client'},</p>
-            <p style="margin: 0 0 24px; color: #9ca3af;">Please find attached the formal concrete works quote estimate <strong>#${quoteRef}</strong> for your review.</p>
-            
-            <!-- Summary Table -->
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 32px; border: 1px solid #2e2e33; border-radius: 8px; overflow: hidden;">
-              <tr style="background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">
-                <td style="padding: 14px 16px; font-weight: bold; color: #9ca3af; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">Net Subtotal</td>
-                <td style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb;">£${Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-              </tr>
-              <tr style="background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">
-                <td style="padding: 14px 16px; font-weight: bold; color: #9ca3af; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">UK Standard VAT (20%)</td>
-                <td style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb;">£${Number(vatAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-              </tr>
-              <tr style="background-color: #26262B;">
-                <td style="padding: 16px; font-weight: 900; color: #e5e7eb; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;">Concrete Works Total</td>
-                <td style="padding: 16px; text-align: right; font-weight: 900; color: #e5e7eb; font-size: 16px;">£${Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-              </tr>
-            </table>
-            
-            <p style="margin: 0 0 24px; color: #9ca3af;">The attached PDF contains the complete bill of quantities, structural scopes, standard terms, and banking details.</p>
-            
-            <div style="border-top: 1px solid #2e2e33; padding-top: 24px; margin-top: 32px;">
-              <p style="margin: 0 0 4px; color: #e5e7eb; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Opus Form Billing</p>
-              <a href="mailto:billing@opusform.co.uk" style="color: #526E8C; text-decoration: none; font-size: 12px; font-weight: 700;">billing@opusform.co.uk</a>
-            </div>
-          </div>
-        </div>
-      </div>
-    `
+    // Compose HTML message body using standard string concatenation to completely avoid Deno/JSON escaping bugs
+    let emailHtml = "";
+    emailHtml += '<div style="background-color: #1a1b1f; padding: 40px 20px; font-family: \'Inter\', -apple-system, sans-serif; font-size: 14px; line-height: 1.6; color: #d1d5db;">';
+    emailHtml += '  <div style="max-width: 600px; margin: 0 auto; background-color: #242428; border: 1px solid #2e2e33; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">';
+    emailHtml += '    <!-- Header -->';
+    emailHtml += '    <div style="background-color: #26262B; padding: 30px 40px; border-bottom: 3px solid #526E8C; text-align: center;">';
+    if (resolvedLogoUrl) {
+      emailHtml += '      <img src="' + resolvedLogoUrl + '" alt="OPUS FORM" width="180" style="display: inline-block; border: 0; outline: none; text-decoration: none;" />';
+    } else {
+      emailHtml += '      <div style="font-family: Arial, sans-serif; font-size: 24px; font-weight: 900; color: #F4F4F0; letter-spacing: 4px;">OPUS FORM</div>';
+    }
+    emailHtml += '    </div>';
+    emailHtml += '    ';
+    emailHtml += '    <!-- Body -->';
+    emailHtml += '    <div style="padding: 40px;">';
+    emailHtml += '      <div style="text-transform: uppercase; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; color: #526E8C; margin-bottom: 20px;">';
+    emailHtml += '        Quote Estimate Details';
+    emailHtml += '      </div>';
+    emailHtml += '      ';
+    emailHtml += '      <p style="margin: 0 0 16px; color: #e5e7eb; font-size: 16px; font-weight: 700;">Dear ' + (clientName || 'Valued Client') + ',</p>';
+    emailHtml += '      <p style="margin: 0 0 24px; color: #9ca3af;">Please find attached the formal concrete works quote estimate <strong>#' + quoteRef + '</strong> for your review.</p>';
+    emailHtml += '      ';
+    emailHtml += '      <!-- Summary Table -->';
+    emailHtml += '      <table style="width: 100%; border-collapse: collapse; margin-bottom: 32px; border: 1px solid #2e2e33; border-radius: 8px; overflow: hidden;">';
+    emailHtml += '        <tr style="background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">';
+    emailHtml += '          <td style="padding: 14px 16px; font-weight: bold; color: #9ca3af; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">Net Subtotal</td>';
+    emailHtml += '          <td style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb;">£' + Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
+    emailHtml += '        </tr>';
+    emailHtml += '        <tr style="background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">';
+    emailHtml += '          <td style="padding: 14px 16px; font-weight: bold; color: #9ca3af; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">UK Standard VAT (20%)</td>';
+    emailHtml += '          <td style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb;">£' + Number(vatAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
+    emailHtml += '        </tr>';
+    emailHtml += '        <tr style="background-color: #26262B;">';
+    emailHtml += '          <td style="padding: 16px; font-weight: 900; color: #e5e7eb; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;">Concrete Works Total</td>';
+    emailHtml += '          <td style="padding: 16px; text-align: right; font-weight: 900; color: #e5e7eb; font-size: 16px;">£' + Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
+    emailHtml += '        </tr>';
+    emailHtml += '      </table>';
+    emailHtml += '      ';
+    emailHtml += '      <p style="margin: 0 0 24px; color: #9ca3af;">The attached PDF contains the complete bill of quantities, structural scopes, standard terms, and banking details.</p>';
+    emailHtml += '      ';
+    emailHtml += '      <div style="border-top: 1px solid #2e2e33; padding-top: 24px; margin-top: 32px;">';
+    emailHtml += '        <p style="margin: 0 0 4px; color: #e5e7eb; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Opus Form Billing</p>';
+    emailHtml += '        <a href="mailto:billing@opusform.co.uk" style="color: #526E8C; text-decoration: none; font-size: 12px; font-weight: 700;">billing@opusform.co.uk</a>';
+    emailHtml += '      </div>';
+    emailHtml += '    </div>';
+    emailHtml += '  </div>';
+    emailHtml += '</div>';
 
     // Determine the sender address (sandbox domain onboarding@resend.dev if custom domain is not verified yet)
     // Resolves key RESEND_FROM_EMAIL first, defaults to onboarding@resend.dev

@@ -236,9 +236,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       element.style.margin = '0';
       element.style.padding = '0';
       element.style.width = '794px';
-      element.style.height = '1120px';
-      element.style.minHeight = '1120px';
-      element.style.maxHeight = '1120px';
+      element.style.height = '1123px';
+      element.style.minHeight = '1123px';
+      element.style.maxHeight = '1123px';
       element.style.position = 'relative';
       element.style.left = '0';
       element.style.top = '0';
@@ -248,7 +248,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       tempContainer.style.left = '-9999px';
       tempContainer.style.top = '-9999px';
       tempContainer.style.width = '794px';
-      tempContainer.style.height = '1120px';
+      tempContainer.style.height = '1123px';
       tempContainer.style.overflow = 'hidden';
       tempContainer.appendChild(element);
       document.body.appendChild(tempContainer);
@@ -328,9 +328,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       element.style.margin = '0';
       element.style.padding = '0';
       element.style.width = '794px';
-      element.style.height = '1120px';
-      element.style.minHeight = '1120px';
-      element.style.maxHeight = '1120px';
+      element.style.height = '1123px';
+      element.style.minHeight = '1123px';
+      element.style.maxHeight = '1123px';
       element.style.position = 'relative';
       element.style.left = '0';
       element.style.top = '0';
@@ -341,7 +341,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       tempContainer.style.left = '-9999px';
       tempContainer.style.top = '-9999px';
       tempContainer.style.width = '794px';
-      tempContainer.style.height = '1120px';
+      tempContainer.style.height = '1123px';
       tempContainer.style.overflow = 'hidden';
       tempContainer.appendChild(element);
       document.body.appendChild(tempContainer);
@@ -951,8 +951,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   onClick={handleDownloadPDF}
                   className="flex items-center space-x-2 text-white/40 hover:text-brand-accent transition-colors cursor-pointer group"
                 >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span className="text-[9px] font-black uppercase tracking-[0.2em]">Print / Save PDF</span>
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="text-[9px] font-black uppercase tracking-[0.2em]">Save PDF</span>
                 </button>
               </div>
             </div>
@@ -965,7 +965,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                 className="bg-white shadow-2xl text-[#333] flex flex-col origin-top print-area shrink-0"
                 style={{ 
                   width: '794px', 
+                  height: '1123px',
                   minHeight: '1123px', 
+                  maxHeight: '1123px',
                   transform: `scale(${scale})`,
                   marginLeft: `${(794 * scale - 794) / 2}px`,
                   marginRight: `${(794 * scale - 794) / 2}px`,

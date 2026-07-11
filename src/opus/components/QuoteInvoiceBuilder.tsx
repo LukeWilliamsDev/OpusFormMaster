@@ -254,6 +254,21 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             const styleEl = cloneDoc.createElement('style');
             styleEl.textContent = safeCss;
             cloneDoc.head.appendChild(styleEl);
+
+            // 5. Isolate the target element in the body to eliminate external margins/paddings/transforms
+            cloneDoc.body.innerHTML = '';
+            cloneDoc.body.appendChild(element);
+            
+            // Reset styles on container and body
+            cloneDoc.body.style.margin = '0';
+            cloneDoc.body.style.padding = '0';
+            cloneDoc.body.style.backgroundColor = '#ffffff';
+            element.style.margin = '0';
+            element.style.padding = '0';
+            element.style.transform = 'none';
+            element.style.left = '0';
+            element.style.top = '0';
+            element.style.position = 'relative';
           }
         },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }

@@ -1,5 +1,6 @@
 // @ts-nocheck
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Plus, 
   Trash2, 
@@ -65,6 +66,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     site: '',
     postcode: ''
   });
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [activeStep, setActiveStep] = useState<number>(1);
   const [items, setItems] = useState<MeasuredItem[]>(INITIAL_ITEMS);
   const [terms, setTerms] = useState<string[]>([
@@ -204,45 +206,82 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     }
   };
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if (items.length === 0 && !clientInfo.entity) return;
 
-    const existing = savedQuotes.find(q => q.reference === quoteReference);
-    const sentQuote: Quote = {
-      id: existing ? existing.id : Date.now().toString(),
-      reference: quoteReference,
-      date: existing ? existing.date : new Date().toLocaleDateString('en-GB'),
-      clientInfo,
-      items,
-      vatRate,
-      totals,
-      isSavedLocal: true,
-      isSent: true
-    };
+    setIsSendingEmail(true);
 
-    const updated = [sentQuote, ...savedQuotes.filter(q => q.reference !== quoteReference)];
-    setSavedQuotes(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+    try {
+      const element = document.querySelector('.print-area');
+      if (!element) {
+        throw new Error("Live Mirror print area not found.");
+      }
+
+      // Configure html2pdf option settings
+      const opt = {
+        margin: 0,
+        filename: `Quote_${quoteReference}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true,
+          logging: false,
+          scrollY: 0,
+          scrollX: 0
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      // Dynamically import html2pdf.js to avoid packaging issues on non-browser environments
+      const { default: html2pdf } = await import('html2pdf.js');
+
+      // Generate PDF data uri
+      const pdfDataUri = await html2pdf().from(element).set(opt).outputPdf('datauristring');
+      const base64 = pdfDataUri.split(',')[1];
+
+      // Invoke Supabase Edge Function send-quote-pdf
+      const { data, error } = await supabase.functions.invoke('send-quote-pdf', {
+        body: {
+          toEmail: clientInfo.email,
+          clientName: clientInfo.entity,
+          quoteRef: quoteReference,
+          pdfBase64: base64,
+          netTotal: totals.netTotal,
+          vatAmount: totals.vatAmount,
+          grossTotal: totals.grossTotal
+        }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      const existing = savedQuotes.find(q => q.reference === quoteReference);
+      const sentQuote: Quote = {
+        id: existing ? existing.id : Date.now().toString(),
+        reference: quoteReference,
+        date: existing ? existing.date : new Date().toLocaleDateString('en-GB'),
+        clientInfo,
+        items,
+        vatRate,
+        totals,
+        isSavedLocal: true,
+        isSent: true
+      };
+
+      const updated = [sentQuote, ...savedQuotes.filter(q => q.reference !== quoteReference)];
+      setSavedQuotes(updated);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+      }
+
+      alert("Quote PDF successfully generated and emailed via IONOS Mail.");
+    } catch (err) {
+      console.error("Failed to send quote PDF:", err);
+      alert("Error sending quote email: " + (err.message || JSON.stringify(err)));
+    } finally {
+      setIsSendingEmail(false);
     }
-
-    const subject = encodeURIComponent(`Quote: ${quoteReference} - ${clientInfo.site || 'Project'}`);
-    const body = encodeURIComponent(`
-Hi ${clientInfo.entity || 'Team'},
-
-Please find the quote summary for ${clientInfo.site || 'the project'} below:
-
-Reference: ${quoteReference}
-Total Value: £${totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-
-Items Summary:
-${items.map(item => `- ${item.description}: ${item.quantity} ${item.unit} @ ${typeof item.rate === 'string' && item.rate.toUpperCase() === 'INCLUDED' ? 'INCLUDED' : '£' + Number(item.rate || 0).toFixed(2)}`).join('\n')}
-
-Kind regards,
-Opus Form Operations
-    `);
-    
-    window.location.href = `mailto:${clientInfo.email}?subject=${subject}&body=${body}`;
   };
 
   const addItem = () => {
@@ -653,10 +692,15 @@ Opus Form Operations
                   <button 
                     type="button"
                     onClick={handleSend}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#5C7285] hover:brightness-110 border-none rounded-lg py-3 px-5 text-white text-[10px] font-black uppercase tracking-widest cursor-pointer shadow-lg shadow-[#5C7285]/20 transition-all whitespace-nowrap"
+                    disabled={isSendingEmail}
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#5C7285] hover:brightness-110 disabled:bg-[#5C7285]/50 disabled:cursor-not-allowed border-none rounded-lg py-3 px-5 text-white text-[10px] font-black uppercase tracking-widest cursor-pointer shadow-lg shadow-[#5C7285]/20 transition-all whitespace-nowrap"
                   >
-                    <Send className="w-3.5 h-3.5" />
-                    Authorize & Send
+                    {isSendingEmail ? (
+                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-3.5 h-3.5" />
+                    )}
+                    <span>{isSendingEmail ? 'SENDING...' : 'Authorize & Send'}</span>
                   </button>
                 </div>
               </div>
@@ -924,9 +968,15 @@ Opus Form Operations
             <button
               type="button"
               onClick={handleSend}
-              className="bg-[#5c7285] hover:brightness-110 text-white rounded-lg px-4 py-1.5 text-[9px] font-black uppercase tracking-widest cursor-pointer shadow-md transition-all active:scale-95 flex items-center gap-1"
+              disabled={isSendingEmail}
+              className="bg-[#5c7285] hover:brightness-110 disabled:bg-[#5c7285]/50 disabled:cursor-not-allowed text-white rounded-lg px-4 py-1.5 text-[9px] font-black uppercase tracking-widest cursor-pointer shadow-md transition-all active:scale-95 flex items-center gap-1.5"
             >
-              <Send className="w-3 h-3" /> Send
+              {isSendingEmail ? (
+                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Send className="w-3 h-3" />
+              )}
+              <span>{isSendingEmail ? 'SENDING...' : 'Send'}</span>
             </button>
           )}
         </div>

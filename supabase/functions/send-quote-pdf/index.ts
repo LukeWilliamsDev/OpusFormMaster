@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -34,18 +35,45 @@ serve(async (req) => {
       })
     }
 
-    // 1. Retrieve the Resend API Key securely from Supabase Environment Secrets
-    const resendApiKey = Deno.env.get('RESEND_API_KEY')
+    // Connect to Supabase using the built-in service role key
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // Retrieve settings config from the secure smtp_config table
+    const { data: configRows, error: configError } = await supabase
+      .from('smtp_config')
+      .select('key, value')
+
+    if (configError || !configRows || configRows.length === 0) {
+      return new Response(JSON.stringify({ error: "Failed to load config from database.", detail: configError }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // Convert rows to a keyed object
+    const config: Record<string, string> = {}
+    for (const row of configRows) {
+      config[row.key] = row.value
+    }
+
+    // Resolve Resend API Key (fallback to database config if env is not set)
+    let resendApiKey = Deno.env.get('RESEND_API_KEY')
+    if (!resendApiKey) {
+      resendApiKey = config['RESEND_API_KEY']
+    }
+
     if (!resendApiKey) {
       return new Response(JSON.stringify({ 
-        error: "RESEND_API_KEY environment variable is not configured in Supabase." 
+        error: "RESEND_API_KEY not found in Supabase environment variables or smtp_config database table." 
       }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
 
-    // 2. Resolve PDF attachment content (handles Base64 or Public URL pointer)
+    // Resolve PDF attachment content (handles Base64 or Public URL pointer)
     let attachmentContent = ""
     if (pdfBase64) {
       attachmentContent = pdfBase64
@@ -72,7 +100,7 @@ serve(async (req) => {
       })
     }
 
-    // 3. Compose HTML message body
+    // Compose HTML message body
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; color: #333; line-height: 1.6;">
         <h2 style="color: #26262B; border-bottom: 2px solid #526E8C; padding-bottom: 10px;">Opus Form Quote Estimate</h2>
@@ -101,10 +129,11 @@ serve(async (req) => {
       </div>
     `
 
-    // Determine the sender address (sandbox domain onboarding@resend.dev if custom sender domain isn't set up yet)
-    const sender = fromEmail || "onboarding@resend.dev"
+    // Determine the sender address (sandbox domain onboarding@resend.dev if custom domain is not verified yet)
+    // If the user has a custom verified domain on Resend, they can pass fromEmail. Otherwise it falls back to database user if verified, or onboarding@resend.dev
+    const sender = fromEmail || config['IONOS_SMTP_USER'] || "onboarding@resend.dev"
 
-    // 4. Send via Resend HTTP API
+    // Send via Resend HTTP API
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {

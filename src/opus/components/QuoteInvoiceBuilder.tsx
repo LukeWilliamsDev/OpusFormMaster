@@ -125,14 +125,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   // Scaling logic for the PDF preview
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-  const [zoomLevel, setZoomLevel] = useState<'auto' | '50%' | '75%' | '100%'>('auto');
 
-  const previewScale = useMemo(() => {
-    if (zoomLevel === '50%') return 0.5;
-    if (zoomLevel === '75%') return 0.75;
-    if (zoomLevel === '100%') return 1;
-    return scale;
-  }, [zoomLevel, scale]);
 
   useEffect(() => {
     const updateScale = () => {
@@ -227,6 +220,79 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     setSavedQuotes(updated);
     if (typeof window !== 'undefined') {
       localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+    }
+  };
+
+  const handleDownloadPDF = async () => {
+    try {
+      const originalElement = document.querySelector('.print-area');
+      if (!originalElement) {
+        throw new Error("Print area not found.");
+      }
+      
+      const element = originalElement.cloneNode(true) as HTMLElement;
+      element.style.transform = 'none';
+      element.style.margin = '0';
+      element.style.padding = '0';
+      element.style.width = '794px';
+      element.style.height = '1120px';
+      element.style.minHeight = '1120px';
+      element.style.maxHeight = '1120px';
+      element.style.position = 'relative';
+      element.style.left = '0';
+      element.style.top = '0';
+
+      const tempContainer = document.createElement('div');
+      tempContainer.style.position = 'absolute';
+      tempContainer.style.left = '-9999px';
+      tempContainer.style.top = '-9999px';
+      tempContainer.style.width = '794px';
+      tempContainer.style.height = '1120px';
+      tempContainer.style.overflow = 'hidden';
+      tempContainer.appendChild(element);
+      document.body.appendChild(tempContainer);
+
+      const opt = {
+        margin: 0,
+        filename: `Quote_${quoteReference}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2, 
+          useCORS: true,
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          onclone: (_document: Document, clonedElement: HTMLElement) => {
+            const cloneDoc = clonedElement.ownerDocument;
+            let cssText = '';
+            for (let i = 0; i < document.styleSheets.length; i++) {
+              const sheet = document.styleSheets[i];
+              try {
+                const rules = sheet.cssRules || sheet.rules;
+                for (let j = 0; j < rules.length; j++) {
+                  cssText += rules[j].cssText + '\n';
+                }
+              } catch (e) {
+                console.warn("Could not read stylesheet rules: ", e);
+              }
+            }
+            const safeCss = cssText.replace(/oklch\([^)]+\)/g, '#333333');
+            const originalStyles = cloneDoc.querySelectorAll('link[rel="stylesheet"], style');
+            originalStyles.forEach(el => el.remove());
+            const styleEl = cloneDoc.createElement('style');
+            styleEl.textContent = safeCss;
+            cloneDoc.head.appendChild(styleEl);
+          }
+        },
+        jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: 'avoid' }
+      };
+
+      const { default: html2pdf } = await import('html2pdf.js');
+      await html2pdf().from(element).set(opt).save();
+      document.body.removeChild(tempContainer);
+    } catch (err) {
+      alert("Error generating PDF download: " + err.message);
     }
   };
 
@@ -347,25 +413,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       }
 
       const existing = savedQuotes.find(q => q.reference === quoteReference);
-      const sentQuote: Quote = {
-        id: existing ? existing.id : Date.now().toString(),
-        reference: quoteReference,
-        date: existing ? existing.date : new Date().toLocaleDateString('en-GB'),
-        clientInfo,
-        items,
-        vatRate,
-        totals,
-        isSavedLocal: true,
-        isSent: true
-      };
-
-      const updated = [sentQuote, ...savedQuotes.filter(q => q.reference !== quoteReference)];
+      // Remove this quote from local drafts history since it is now sent
+      const updated = savedQuotes.filter(q => q.reference !== quoteReference);
       setSavedQuotes(updated);
       if (typeof window !== 'undefined') {
         localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
       }
 
-      alert("Quote PDF successfully generated and emailed via IONOS Mail.");
+      alert("Quote PDF successfully generated and emailed via Resend.");
     } catch (err) {
       console.error("Failed to send quote PDF:", err);
       alert("Error sending quote email: " + (err.message || JSON.stringify(err)));
@@ -876,28 +931,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                 <div className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />
                 <span className="text-[9px] font-black uppercase tracking-[0.2em]">Live Mirror View</span>
               </div>
-              <div className="flex items-center flex-wrap gap-3 w-full sm:w-auto justify-between sm:justify-end">
-                {/* Zoom Controls */}
-                <div className="flex items-center bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-0.5">
-                  {(['auto', '50%', '75%', '100%'] as const).map((level) => (
-                    <button
-                      key={level}
-                      onClick={() => setZoomLevel(level)}
-                      className={`px-2 py-1 text-[8px] font-black uppercase tracking-wider rounded-md transition-all ${
-                        zoomLevel === level
-                          ? 'bg-[#5C7285] text-white shadow-sm'
-                          : 'text-[#888] hover:text-white hover:bg-[#2a2a2a]'
-                      }`}
-                    >
-                      {level}
-                    </button>
-                  ))}
-                </div>
-                
-                <div className="w-px h-3 bg-white/10 hidden sm:block" />
-                
+              <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
                 <button 
-                  onClick={() => window.print()}
+                  onClick={handleDownloadPDF}
                   className="flex items-center space-x-2 text-white/40 hover:text-brand-accent transition-colors cursor-pointer group"
                 >
                   <Printer className="w-3.5 h-3.5" />
@@ -908,17 +944,17 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
             <div 
               ref={containerRef}
-              className="w-full relative flex justify-center items-start overflow-hidden bg-[#E8E5DF] rounded-xl border border-white/5 min-h-[400px] sm:min-h-[800px] font-archivo no-scrollbar"
+              className="w-full relative flex justify-center items-start overflow-hidden bg-[#131417] border border-[#2e2e2e] py-8 rounded-xl min-h-[400px] sm:min-h-[800px] font-archivo no-scrollbar"
             >
               <div 
                 className="bg-white shadow-2xl text-[#333] flex flex-col origin-top print-area shrink-0"
                 style={{ 
                   width: '794px', 
                   minHeight: '1123px', 
-                  transform: `scale(${previewScale})`,
-                  marginLeft: `${(794 * previewScale - 794) / 2}px`,
-                  marginRight: `${(794 * previewScale - 794) / 2}px`,
-                  marginBottom: `${(1123 * previewScale - 1123)}px`
+                  transform: `scale(${scale})`,
+                  marginLeft: `${(794 * scale - 794) / 2}px`,
+                  marginRight: `${(794 * scale - 794) / 2}px`,
+                  marginBottom: `${(1123 * scale - 1123)}px`
                 }}
               >
                 {/* HEADER */}
@@ -1133,27 +1169,13 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             <span>{lastSaved ? 'Saved' : 'Save'}</span>
           </button>
 
-          {activeStep < 3 ? (
+          {activeStep < 3 && (
             <button
               type="button"
               onClick={() => setActiveStep(prev => Math.min(3, prev + 1))}
               className="bg-[#5c7285] hover:brightness-110 text-white rounded-lg px-4 py-1.5 text-[9px] font-black uppercase tracking-widest cursor-pointer shadow-md transition-all active:scale-95"
             >
               Next
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={isSendingEmail}
-              className="bg-[#5c7285] hover:brightness-110 disabled:bg-[#5c7285]/50 disabled:cursor-not-allowed text-white rounded-lg px-4 py-1.5 text-[9px] font-black uppercase tracking-widest cursor-pointer shadow-md transition-all active:scale-95 flex items-center gap-1.5"
-            >
-              {isSendingEmail ? (
-                <div className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Send className="w-3 h-3" />
-              )}
-              <span>{isSendingEmail ? 'SENDING...' : 'Send'}</span>
             </button>
           )}
         </div>

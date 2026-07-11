@@ -58,7 +58,6 @@ serve(async (req) => {
     for (const row of configRows) {
       config[row.key] = row.value
     }
-    console.log("Database config keys: ", configRows.map(r => r.key).join(", "))
 
 
     // Resolve Resend API Key (prioritize database config, fallback to env)
@@ -67,7 +66,7 @@ serve(async (req) => {
       resendApiKey = Deno.env.get('RESEND_API_KEY')
     }
 
-    console.log("Resolved Resend API Key: ", resendApiKey ? `${resendApiKey.slice(0, 6)}...${resendApiKey.slice(-4)} (len: ${resendApiKey.length})` : "undefined")
+
 
     if (!resendApiKey) {
       return new Response(JSON.stringify({ 
@@ -146,8 +145,8 @@ serve(async (req) => {
             <p style="margin: 0 0 24px; color: #9ca3af;">The attached PDF contains the complete bill of quantities, structural scopes, standard terms, and banking details.</p>
             
             <div style="border-top: 1px solid #2e2e33; padding-top: 24px; margin-top: 32px;">
-              <p style="margin: 0 0 4px; color: #ffffff; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Opus Form Operations</p>
-              <a href="mailto:operations@opusform.co.uk" style="color: #526E8C; text-decoration: none; font-size: 12px; font-weight: 700;">operations@opusform.co.uk</a>
+              <p style="margin: 0 0 4px; color: #ffffff; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Opus Form Billing</p>
+              <a href="mailto:billing@opusform.co.uk" style="color: #526E8C; text-decoration: none; font-size: 12px; font-weight: 700;">billing@opusform.co.uk</a>
             </div>
           </div>
         </div>
@@ -191,10 +190,7 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error("Error sending email via Resend:", error)
-    return new Response(JSON.stringify({ 
-      error: error.message,
-      debugKey: resendApiKey ? `${resendApiKey.slice(0, 6)}...${resendApiKey.slice(-4)} (len: ${resendApiKey.length})` : "undefined"
-    }), {
+    return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })

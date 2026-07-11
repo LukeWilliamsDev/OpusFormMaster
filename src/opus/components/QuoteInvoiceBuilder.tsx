@@ -217,7 +217,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
         throw new Error("Live Mirror print area not found.");
       }
 
-      // Configure html2pdf option settings
+      // Configure html2pdf option settings for perfect single-page A4 output
       const opt = {
         margin: 0,
         filename: `Quote_${quoteReference}.pdf`,
@@ -226,6 +226,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           scale: 2, 
           useCORS: true,
           logging: false,
+          scrollX: 0,
+          scrollY: 0,
           onclone: (_document: Document, element: HTMLElement) => {
             const cloneDoc = element.ownerDocument;
             
@@ -259,26 +261,35 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             cloneDoc.body.innerHTML = '';
             cloneDoc.body.appendChild(element);
             
-            // Reset styles on container and body
+            // Reset styles on container and body for perfect 1-page alignment
             cloneDoc.body.style.margin = '0';
             cloneDoc.body.style.padding = '0';
             cloneDoc.body.style.backgroundColor = '#ffffff';
+            cloneDoc.documentElement.style.margin = '0';
+            cloneDoc.documentElement.style.padding = '0';
+
             element.style.margin = '0';
             element.style.padding = '0';
             element.style.transform = 'none';
             element.style.left = '0';
             element.style.top = '0';
             element.style.position = 'relative';
+            element.style.width = '794px';
+            element.style.height = '1120px';
+            element.style.minHeight = '1120px';
+            element.style.maxHeight = '1120px';
+            element.style.overflow = 'hidden';
           }
         },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        jsPDF: { unit: 'pt', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: 'avoid' }
       };
 
       // Dynamically import html2pdf.js to avoid packaging issues on non-browser environments
       const { default: html2pdf } = await import('html2pdf.js');
 
       // Generate PDF data uri
-      const pdfDataUri = await html2pdf().from(element).set(opt).outputPdf('datauristring');
+      const pdfDataUri = await html2pdf().from(element).set(opt).toContainer().toCanvas().toImg().toPdf().outputPdf('datauristring');
       const base64 = pdfDataUri.split(',')[1];
 
       // Invoke Supabase Edge Function send-quote-pdf

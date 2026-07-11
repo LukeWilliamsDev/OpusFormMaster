@@ -15,6 +15,7 @@ import {
   ArrowRightLeft
 } from 'lucide-react';
 import { Job } from '../types/erp';
+import { usePortal } from '../context/PortalContext';
 
 interface MeasuredItem {
   id: string;
@@ -52,6 +53,7 @@ interface PipelineRegistryProps {
 }
 
 export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote, onBack }) => {
+  const { jobs, setJobs } = usePortal();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedQuoteToDelete, setSelectedQuoteToDelete] = useState<Quote | null>(null);
@@ -97,27 +99,6 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
   const handleConvertToJob = () => {
     if (!convertingQuote) return;
 
-    // Load active jobs
-    let currentJobs: Job[] = [];
-    const storedJobs = typeof window !== 'undefined' ? localStorage.getItem('opus_jobs') : null;
-    if (storedJobs) {
-      try {
-        currentJobs = JSON.parse(storedJobs);
-      } catch (e) {
-        console.error('Failed to parse jobs', e);
-      }
-    } else {
-      // fallback to initial mock values from Dashboard if we need to
-      const INITIAL_JOBS: Job[] = [
-        { id: '1', jobRef: 'OP-4921-X', siteName: 'Riverside Phase 2', mainContractor: 'Balfour Beatty', postcode: 'SW1A 1AA', currentPours: 5, contractMaxPours: 4, status: 'in-progress', scheduleValue: 42500 },
-        { id: '2', jobRef: 'OP-5102-Y', siteName: 'Oakwood Grounds', mainContractor: 'Laing O\'Rourke', postcode: 'M1 1AE', currentPours: 2, contractMaxPours: 6, status: 'pending', scheduleValue: 18200 },
-        { id: '3', jobRef: 'OP-3884-Z', siteName: 'Brentwood Hub', mainContractor: 'Kier Group', postcode: 'CM14 4BA', currentPours: 8, contractMaxPours: 8, status: 'completed', scheduleValue: 65400 },
-        { id: '4', jobRef: 'OP-2291-A', siteName: 'Central Square', mainContractor: 'Skanska', postcode: 'B1 1BB', currentPours: 1, contractMaxPours: 10, status: 'in-progress', scheduleValue: 89000 },
-        { id: '5', jobRef: 'OP-9921-B', siteName: 'Marina Development', mainContractor: 'Morgan Sindall', postcode: 'EH1 1YZ', currentPours: 12, contractMaxPours: 10, status: 'in-progress', scheduleValue: 54000 },
-      ];
-      currentJobs = INITIAL_JOBS;
-    }
-
     // Create a new active Job object
     const newJob: Job = {
       id: Math.random().toString(36).substr(2, 9),
@@ -131,11 +112,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
       scheduleValue: convertingQuote.totals?.grossTotal || 0
     };
 
-    // Prepend new job and save
-    const updatedJobs = [newJob, ...currentJobs];
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('opus_jobs', JSON.stringify(updatedJobs));
-    }
+    // Prepend new job and persist through the portal context (Supabase-backed).
+    setJobs(prev => [newJob, ...prev]);
 
     // Remove quote from registry and save
     const updatedQuotes = quotes.filter(q => q.id !== convertingQuote.id);

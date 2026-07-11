@@ -142,7 +142,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
   });
 
   const selectedWorkerDetails = workers.find(w => w.id === selectedWorkerDetailsId) || null;
-  const anchorDate = new Date('2026-07-05');
+  const anchorDate = (() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  })();
 
   if (workerToEdit) {
     return (

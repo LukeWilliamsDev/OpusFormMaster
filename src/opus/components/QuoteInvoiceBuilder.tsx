@@ -452,10 +452,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
         localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
       }
 
-      setNotification({ type: 'success', title: 'QUOTE TRANSMITTED', message: "Quote PDF successfully generated and emailed via Resend." });
+      setNotification({ type: 'success', title: 'EMAIL SENT', message: "Email sent successfully." });
     } catch (err) {
       console.error("Failed to send quote PDF:", err);
-      setNotification({ type: 'error', title: 'TRANSMISSION ERROR', message: "Error sending quote email: " + (err.message || JSON.stringify(err)) });
+      setNotification({ type: 'error', title: 'EMAIL FAILED', message: "Email failed. Please get in contact with admin@opusform.co.uk" });
     } finally {
       setIsSendingEmail(false);
     }

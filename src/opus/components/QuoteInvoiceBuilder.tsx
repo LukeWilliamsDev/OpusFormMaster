@@ -429,8 +429,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
         let errMsg = error.message;
         try {
           const errBody = await error.context?.json();
-          if (errBody && errBody.error) {
-            errMsg = errBody.error;
+          if (errBody) {
+            if (errBody.error) errMsg = errBody.error;
+            if (errBody.debugKey) errMsg += ` (Debug Key: ${errBody.debugKey})`;
           }
         } catch (_) {
           // Fallback to default message

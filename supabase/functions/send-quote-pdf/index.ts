@@ -58,12 +58,16 @@ serve(async (req) => {
     for (const row of configRows) {
       config[row.key] = row.value
     }
+    console.log("Database config keys: ", configRows.map(r => r.key).join(", "))
+
 
     // Resolve Resend API Key (prioritize database config, fallback to env)
     let resendApiKey = config['RESEND_API_KEY']
     if (!resendApiKey) {
       resendApiKey = Deno.env.get('RESEND_API_KEY')
     }
+
+    console.log("Resolved Resend API Key: ", resendApiKey ? `${resendApiKey.slice(0, 6)}...${resendApiKey.slice(-4)} (len: ${resendApiKey.length})` : "undefined")
 
     if (!resendApiKey) {
       return new Response(JSON.stringify({ 
@@ -187,7 +191,10 @@ serve(async (req) => {
     })
   } catch (error) {
     console.error("Error sending email via Resend:", error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ 
+      error: error.message,
+      debugKey: resendApiKey ? `${resendApiKey.slice(0, 6)}...${resendApiKey.slice(-4)} (len: ${resendApiKey.length})` : "undefined"
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })

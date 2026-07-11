@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      jobs: {
+        Row: {
+          assigned_workers: string[]
+          contract_max_pours: number
+          created_at: string
+          current_pours: number
+          id: string
+          job_ref: string
+          main_contractor: string | null
+          postcode: string | null
+          schedule_value: number
+          site_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_workers?: string[]
+          contract_max_pours?: number
+          created_at?: string
+          current_pours?: number
+          id: string
+          job_ref: string
+          main_contractor?: string | null
+          postcode?: string | null
+          schedule_value?: number
+          site_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_workers?: string[]
+          contract_max_pours?: number
+          created_at?: string
+          current_pours?: number
+          id?: string
+          job_ref?: string
+          main_contractor?: string | null
+          postcode?: string | null
+          schedule_value?: number
+          site_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -38,6 +83,75 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      shifts: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          is_removed: boolean
+          job_id: string
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id: string
+          is_removed?: boolean
+          job_id: string
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          is_removed?: boolean
+          job_id?: string
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: []
+      }
+      workers: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_archived: boolean
+          name: string
+          phone: string | null
+          role: string
+          tickets: Json
+          updated_at: string
+          uploaded_certificates: Json
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          is_archived?: boolean
+          name: string
+          phone?: string | null
+          role: string
+          tickets?: Json
+          updated_at?: string
+          uploaded_certificates?: Json
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_archived?: boolean
+          name?: string
+          phone?: string | null
+          role?: string
+          tickets?: Json
+          updated_at?: string
+          uploaded_certificates?: Json
         }
         Relationships: []
       }

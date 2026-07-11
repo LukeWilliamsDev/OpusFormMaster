@@ -418,6 +418,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           clientName: clientInfo.entity,
           quoteRef: quoteReference,
           pdfBase64: base64,
+          logoUrl: typeof window !== 'undefined' ? `${window.location.origin}/opus-form-primary.svg` : undefined,
           netTotal: totals.netTotal,
           vatAmount: totals.vatAmount,
           grossTotal: totals.grossTotal

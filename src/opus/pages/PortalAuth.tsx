@@ -14,13 +14,15 @@ import {
 import { usePortal } from '../context/PortalContext';
 
 export const PortalAuthPage: React.FC = () => {
-  const { isAuthenticated, signIn, resetPassword } = usePortal();
+  const { isAuthenticated, signIn, resetPassword, updatePassword } = usePortal();
   const navigate = useNavigate();
 
-  const [formMode, setFormMode] = useState<'login' | 'forgot'>('login');
+  const [formMode, setFormMode] = useState<'login' | 'forgot' | 'reset'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -29,14 +31,23 @@ export const PortalAuthPage: React.FC = () => {
   const [ruleVisible, setRuleVisible] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
 
-  // Redirect if already authenticated
+  // Check for recovery token/type in URL on mount
   useEffect(() => {
-    if (isAuthenticated) {
+    const hash = window.location.hash;
+    const search = window.location.search;
+    if (hash.includes('type=recovery') || search.includes('type=recovery')) {
+      setFormMode('reset');
+    }
+  }, []);
+
+  // Redirect if already authenticated and not resetting password
+  useEffect(() => {
+    if (isAuthenticated && formMode !== 'reset') {
       navigate('/portal/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, formMode]);
 
-  // Re-trigger animation whenever the login/forgot view mounts
+  // Re-trigger animation whenever the login/forgot/reset view mounts
   useEffect(() => {
     setLogoVisible(false);
     setRuleVisible(false);
@@ -79,6 +90,32 @@ export const PortalAuthPage: React.FC = () => {
     }
     setFormError(null);
     setFormMode('login');
+  };
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    if (!password || !confirmPassword) {
+      setFormError('Please fill in both password fields.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setFormError('Passwords do not match.');
+      return;
+    }
+    if (password.length < 6) {
+      setFormError('Password must be at least 6 characters.');
+      return;
+    }
+    setIsSubmitting(true);
+    const { error } = await updatePassword(password);
+    setIsSubmitting(false);
+    if (error) {
+      setFormError(error);
+      return;
+    }
+    setFormError(null);
+    navigate('/portal/dashboard');
   };
 
   return (
@@ -271,6 +308,85 @@ export const PortalAuthPage: React.FC = () => {
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <span>Request Link</span>
+                    )}
+                  </button>
+                </form>
+              </div>
+            )}
+
+            {formMode === 'reset' && (
+              <div className="p-6 sm:p-8">
+                <div className="flex items-center gap-2.5 text-[11px] font-extrabold tracking-widest uppercase text-[#e0e0e0] mb-8">
+                  <div className="w-[3px] h-4 bg-[#b0b8c4] rounded-[2px]" />
+                  Set New Password
+                </div>
+
+                {formError && (
+                  <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-[10px] font-bold text-red-400 uppercase tracking-widest flex items-center gap-2.5">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                    <span>{formError}</span>
+                  </div>
+                )}
+
+                <form onSubmit={handleResetPassword} className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-[#555] uppercase tracking-widest block ml-1 mb-2">New Password</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#555]">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-12 pr-12 py-3.5 rounded-lg border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-[#5C7285] transition-colors placeholder:text-[#444] font-medium text-sm outline-none tracking-widest"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#555] hover:text-[#b0b8c4] transition-colors cursor-pointer"
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-[#555] uppercase tracking-widest block ml-1 mb-2">Confirm Password</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#555]">
+                        <Lock className="w-4 h-4" />
+                      </div>
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="••••••••"
+                        className="w-full pl-12 pr-12 py-3.5 rounded-lg border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-[#5C7285] transition-colors placeholder:text-[#444] font-medium text-sm outline-none tracking-widest"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#555] hover:text-[#b0b8c4] transition-colors cursor-pointer"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-3.5 px-4 bg-[#5C7285] hover:bg-[#6c8295] disabled:bg-[#5C7285]/50 disabled:cursor-not-allowed text-white rounded-lg text-[11px] font-extrabold tracking-widest uppercase transition-colors flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+                  >
+                    {isSubmitting ? (
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>Update Password</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </>
                     )}
                   </button>
                 </form>

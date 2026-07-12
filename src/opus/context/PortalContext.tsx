@@ -94,6 +94,7 @@ interface PortalContextType {
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
+  updatePassword: (password: string) => Promise<{ error: string | null }>;
 }
 
 const PortalContext = createContext<PortalContextType | undefined>(undefined);
@@ -317,6 +318,11 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { error: error?.message ?? null };
   };
 
+  const updatePassword = async (password: string) => {
+    const { error } = await supabase.auth.updateUser({ password });
+    return { error: error?.message ?? null };
+  };
+
   return (
     <PortalContext.Provider value={{
       workers,
@@ -335,6 +341,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       signIn,
       signOut,
       resetPassword,
+      updatePassword,
     }}>
       {children}
     </PortalContext.Provider>

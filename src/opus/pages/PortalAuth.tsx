@@ -99,16 +99,13 @@ export const PortalAuthPage: React.FC = () => {
     setFormError(null);
 
     try {
-      // Check if user is registered in the profiles table
-      const { data: profile, error: queryError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', target)
-        .maybeSingle();
+      // Check if user is registered in the profiles table via RPC helper (to bypass RLS for anonymous guests)
+      const { data: isRegistered, error: queryError } = await supabase
+        .rpc('check_email_registered', { _email: target });
 
       if (queryError) throw queryError;
 
-      if (!profile) {
+      if (!isRegistered) {
         setIsSubmitting(false);
         setNotification({
           type: 'error',

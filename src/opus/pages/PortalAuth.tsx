@@ -47,12 +47,16 @@ export const PortalAuthPage: React.FC = () => {
     }
   }, []);
 
-  // Redirect if already authenticated and not resetting password
+  // Redirect if already authenticated and not resetting password or showing success modal
   useEffect(() => {
-    if (isAuthenticated && formMode !== 'reset') {
+    const hash = window.location.hash;
+    const search = window.location.search;
+    const isRecovery = hash.includes('type=recovery') || search.includes('type=recovery');
+
+    if (isAuthenticated && !isRecovery && formMode !== 'reset' && !notification) {
       navigate('/portal/dashboard', { replace: true });
     }
-  }, [isAuthenticated, navigate, formMode]);
+  }, [isAuthenticated, navigate, formMode, notification]);
 
   // Re-trigger animation whenever the login/forgot/reset view mounts
   useEffect(() => {

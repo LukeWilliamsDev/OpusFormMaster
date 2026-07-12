@@ -147,8 +147,24 @@ export const PortalAuthPage: React.FC = () => {
       setFormError('Passwords do not match.');
       return;
     }
-    if (password.length < 6) {
-      setFormError('Password must be at least 6 characters.');
+    if (password.length < 8) {
+      setFormError('Password must be at least 8 characters.');
+      return;
+    }
+    if (!/[A-Z]/.test(password)) {
+      setFormError('Password must contain at least one uppercase letter.');
+      return;
+    }
+    if (!/[a-z]/.test(password)) {
+      setFormError('Password must contain at least one lowercase letter.');
+      return;
+    }
+    if (!/[0-9]/.test(password)) {
+      setFormError('Password must contain at least one number.');
+      return;
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      setFormError('Password must contain at least one special symbol.');
       return;
     }
     setIsSubmitting(true);
@@ -401,6 +417,24 @@ export const PortalAuthPage: React.FC = () => {
                         {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+
+                    {password.length > 0 && (
+                      <div className="p-3 bg-[#1A1B1E] border border-[#2e2e2e] rounded-lg space-y-2">
+                        <div className="text-[9px] font-bold text-[#555] uppercase tracking-widest mb-1">Strength Criteria:</div>
+                        {[
+                          { label: 'Minimum 8 characters', met: password.length >= 8 },
+                          { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
+                          { label: 'One lowercase letter', met: /[a-z]/.test(password) },
+                          { label: 'One number (0-9)', met: /[0-9]/.test(password) },
+                          { label: 'One symbol (!@#$%^&*)', met: /[^A-Za-z0-9]/.test(password) }
+                        ].map((rule, idx) => (
+                          <div key={idx} className="flex items-center gap-2 text-[9px] uppercase tracking-wider font-bold">
+                            <div className={`w-1.5 h-1.5 rounded-full ${rule.met ? 'bg-[#5C7285] animate-pulse' : 'bg-[#333]'}`} />
+                            <span className={rule.met ? 'text-[#859bb0]' : 'text-[#444]'}>{rule.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-2">

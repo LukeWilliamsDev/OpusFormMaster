@@ -114,6 +114,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [quoteReference, setQuoteReference] = useState(`JOB-${Math.floor(1000 + Math.random() * 9000)}`);
+  const [currentQuoteId, setCurrentQuoteId] = useState<string>(() => quoteToLoadId || crypto.randomUUID());
 
   const loadSavedQuotes = async () => {
     try {
@@ -188,7 +189,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       return;
     }
 
-    const quoteId = quoteToLoadId || crypto.randomUUID();
+    const quoteId = currentQuoteId;
     const newQuote = {
       id: quoteId,
       reference: quoteReference,
@@ -225,6 +226,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     setItems(quote.items);
     setVatRate(quote.vatRate);
     setQuoteReference(quote.reference);
+    setCurrentQuoteId(quote.id);
     setShowSavedQuotes(false);
   };
 
@@ -493,7 +495,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       }
 
       // Update this quote in database to mark it as sent
-      const quoteId = quoteToLoadId || crypto.randomUUID();
+      const quoteId = currentQuoteId;
       const updatedQuote = {
         id: quoteId,
         reference: quoteReference,

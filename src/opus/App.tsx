@@ -9,6 +9,7 @@ import { DashboardPage } from './pages/Dashboard';
 import { LaborRosterPage } from './pages/LaborRoster';
 import { JobLedgerPage } from './pages/JobLedger';
 import { PipelinePage } from './pages/Pipeline';
+import { AuditLogPage } from './pages/AuditLog';
 
 // Session gate — any /portal/* view requires a valid Supabase session.
 const ProtectedRoute: React.FC = () => {
@@ -62,6 +63,9 @@ export default function App() {
             {/* Roster is available to every signed-in role; operatives see their shift view. */}
             <Route path="/portal/roster" element={
               <RoleGuard allow={['admin', 'dispatcher', 'operative']}><LaborRosterPage /></RoleGuard>
+            } />
+            <Route path="/portal/audit" element={
+              <RoleGuard allow={['admin']}><AuditLogPage /></RoleGuard>
             } />
             
             {/* Fallback internal routes — send operatives to their calendar. */}

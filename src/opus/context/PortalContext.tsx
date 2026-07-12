@@ -116,6 +116,11 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const prevShiftIdsRef = useRef<Set<string>>(new Set());
   // Suppress the "sync-back" effect until we've hydrated from Supabase.
   const hydratedRef = useRef(false);
+  
+  // Track last saved state to prevent redundant updates (and initial load-time auto-saves)
+  const lastSavedWorkersRef = useRef<string>('');
+  const lastSavedJobsRef = useRef<string>('');
+  const lastSavedShiftsRef = useRef<string>('');
 
   // Bootstrap session + subscribe to auth changes
   useEffect(() => {
@@ -192,24 +197,38 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       prevWorkerIdsRef.current = new Set(wList.map(w => w.id));
       prevJobIdsRef.current = new Set(jList.map(j => j.id));
       prevShiftIdsRef.current = new Set(sList.map(s => s.id));
+      
+      // Seed last saved refs to prevent auto-write on mount
+      lastSavedWorkersRef.current = JSON.stringify(wList.map(workerToRow));
+      lastSavedJobsRef.current = JSON.stringify(jList.map(jobToRow));
+      lastSavedShiftsRef.current = JSON.stringify(sList.map(shiftToRow));
+      
       setWorkers(wList);
       setJobs(jList);
       setShifts(sList);
-      hydratedRef.current = true;
-      setDataLoading(false);
+      
+      // Delay enabling the sync triggers until React has flushed the state updates
+      setTimeout(() => {
+        hydratedRef.current = true;
+        setDataLoading(false);
+      }, 50);
     })();
     return () => { cancelled = true; };
   }, [user]);
 
-  // Persist changes back to Supabase whenever local state changes.
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
+    const rows = workers.map(workerToRow);
+    const serialized = JSON.stringify(rows);
+    if (serialized === lastSavedWorkersRef.current) return;
+    lastSavedWorkersRef.current = serialized;
+
     const currentIds = new Set(workers.map(w => w.id));
     const removed = [...prevWorkerIdsRef.current].filter(id => !currentIds.has(id));
     prevWorkerIdsRef.current = currentIds;
     (async () => {
       if (workers.length > 0) {
-        const { error } = await supabase.from('staff').upsert(workers.map(workerToRow));
+        const { error } = await supabase.from('staff').upsert(rows);
         if (error) console.error('upsert staff', error);
       }
       if (removed.length > 0) {
@@ -221,12 +240,17 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
+    const rows = jobs.map(jobToRow);
+    const serialized = JSON.stringify(rows);
+    if (serialized === lastSavedJobsRef.current) return;
+    lastSavedJobsRef.current = serialized;
+
     const currentIds = new Set(jobs.map(j => j.id));
     const removed = [...prevJobIdsRef.current].filter(id => !currentIds.has(id));
     prevJobIdsRef.current = currentIds;
     (async () => {
       if (jobs.length > 0) {
-        const { error } = await supabase.from('jobs').upsert(jobs.map(jobToRow));
+        const { error } = await supabase.from('jobs').upsert(rows);
         if (error) console.error('upsert jobs', error);
       }
       if (removed.length > 0) {
@@ -238,12 +262,17 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
+    const rows = shifts.map(shiftToRow);
+    const serialized = JSON.stringify(rows);
+    if (serialized === lastSavedShiftsRef.current) return;
+    lastSavedShiftsRef.current = serialized;
+
     const currentIds = new Set(shifts.map(s => s.id));
     const removed = [...prevShiftIdsRef.current].filter(id => !currentIds.has(id));
     prevShiftIdsRef.current = currentIds;
     (async () => {
       if (shifts.length > 0) {
-        const { error } = await supabase.from('shifts').upsert(shifts.map(shiftToRow));
+        const { error } = await supabase.from('shifts').upsert(rows);
         if (error) console.error('upsert shifts', error);
       }
       if (removed.length > 0) {
@@ -301,10 +330,42 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      await supabase.rpc('log_anonymous_audit', {
+        p_user_email: email,
+        p_action: 'LOGIN_FAILURE',
+        p_target_type: 'auth',
+        p_target_id: 'unknown',
+        p_details: { error: error.message }
+      });
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('audit_logs').insert({
+          user_id: user.id,
+          user_email: email,
+          action: 'LOGIN_SUCCESS',
+          target_type: 'auth',
+          target_id: user.id,
+          details: { message: 'Successful user authentication' }
+        });
+      }
+    }
     return { error: error?.message ?? null };
   };
 
   const signOut = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from('audit_logs').insert({
+        user_id: user.id,
+        user_email: user.email,
+        action: 'LOGOUT',
+        target_type: 'auth',
+        target_id: user.id,
+        details: { message: 'User terminated active session' }
+      });
+    }
     await supabase.auth.signOut();
     setSession(null);
     setUser(null);
@@ -315,11 +376,33 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/portal`,
     });
+    if (!error) {
+      await supabase.rpc('log_anonymous_audit', {
+        p_user_email: email,
+        p_action: 'PASSWORD_RESET_REQUEST',
+        p_target_type: 'auth',
+        p_target_id: 'unknown',
+        p_details: { message: 'Dispatched password reset recovery link' }
+      });
+    }
     return { error: error?.message ?? null };
   };
 
   const updatePassword = async (password: string) => {
     const { error } = await supabase.auth.updateUser({ password });
+    if (!error) {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('audit_logs').insert({
+          user_id: user.id,
+          user_email: user.email,
+          action: 'PASSWORD_RESET_SUCCESS',
+          target_type: 'auth',
+          target_id: user.id,
+          details: { message: 'Successfully updated password credentials' }
+        });
+      }
+    }
     return { error: error?.message ?? null };
   };
 

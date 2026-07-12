@@ -28,6 +28,7 @@ export const PortalLayout: React.FC = () => {
     { name: 'Staff', path: '/portal/roster?view=staff', roles: ['admin', 'dispatcher'] },
     { name: 'Quote', path: '/portal/pipeline?view=quote-builder', roles: ['admin', 'dispatcher'] },
     { name: 'Quote Management', path: '/portal/pipeline?view=pipeline-registry', roles: ['admin', 'dispatcher'] },
+    { name: 'Audit Trail', path: '/portal/audit', roles: ['admin'] },
   ];
   const navItems = allNav.filter(item => !role || item.roles.includes(role));
 

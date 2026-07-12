@@ -10,6 +10,7 @@ import {
   ArrowLeft,
   ArrowRight,
   AlertCircle,
+  X,
 } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
 
@@ -25,6 +26,12 @@ export const PortalAuthPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [notification, setNotification] = useState<{ type: 'success' | 'error'; title: string; message: string; } | null>(null);
+
+  const handleDismissNotification = () => {
+    setNotification(null);
+    navigate('/portal/dashboard');
+  };
 
   // Staggered entrance animation state
   const [logoVisible, setLogoVisible] = useState(false);
@@ -115,7 +122,14 @@ export const PortalAuthPage: React.FC = () => {
       return;
     }
     setFormError(null);
-    navigate('/portal/dashboard');
+    setNotification({
+      type: 'success',
+      title: 'PASSWORD UPDATED',
+      message: 'Your password has been reset successfully. You will now be redirected to the portal.'
+    });
+    setTimeout(() => {
+      navigate('/portal/dashboard');
+    }, 3000);
   };
 
   return (
@@ -401,6 +415,36 @@ export const PortalAuthPage: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Custom Notification Toast/Modal */}
+      {notification && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+          <div 
+            className={`bg-[#242424] border ${notification.type === 'success' ? 'border-[#5C7285]/40' : 'border-red-500/20'} rounded-xl max-w-sm w-full p-5 shadow-2xl relative`}
+            style={{ animation: 'slide-up 200ms ease-out' }}
+          >
+            <button 
+              onClick={handleDismissNotification}
+              className="absolute top-4 right-4 text-[#444] hover:text-[#e0e0e0] transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className={`flex items-center gap-2 ${notification.type === 'success' ? 'text-[#859bb0]' : 'text-red-400'} border-b border-[#2e2e2e] pb-3 mb-4`}>
+              <div className={`w-2 h-2 rounded-full ${notification.type === 'success' ? 'bg-[#5C7285]' : 'bg-red-500'} animate-pulse`} />
+              <span className="text-[10px] font-black uppercase tracking-[0.25em]">{notification.title}</span>
+            </div>
+            <p className="text-[11px] text-[#9ca3af] leading-relaxed font-bold uppercase tracking-widest">
+              {notification.message}
+            </p>
+            <button 
+              onClick={handleDismissNotification}
+              className="w-full mt-5 py-2 px-4 bg-[#2e2e2e] hover:bg-[#383838] text-[9px] font-extrabold uppercase tracking-widest text-[#e0e0e0] rounded-lg transition-colors border border-[#3e3e3e] cursor-pointer"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

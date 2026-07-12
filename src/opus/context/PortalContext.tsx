@@ -178,7 +178,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     (async () => {
       setDataLoading(true);
       const [wRes, jRes, sRes] = await Promise.all([
-        supabase.from('workers').select('*'),
+        supabase.from('staff').select('*'),
         supabase.from('jobs').select('*'),
         supabase.from('shifts').select('*'),
       ]);
@@ -209,11 +209,11 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     prevWorkerIdsRef.current = currentIds;
     (async () => {
       if (workers.length > 0) {
-        const { error } = await supabase.from('workers').upsert(workers.map(workerToRow));
-        if (error) console.error('upsert workers', error);
+        const { error } = await supabase.from('staff').upsert(workers.map(workerToRow));
+        if (error) console.error('upsert staff', error);
       }
       if (removed.length > 0) {
-        const { error } = await supabase.from('workers').delete().in('id', removed);
+        const { error } = await supabase.from('staff').delete().in('id', removed);
         if (error) console.error('delete workers', error);
       }
     })();
@@ -264,7 +264,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setDataLoading(true);
     // Wipe existing rows, then insert the canonical demo dataset.
     const [dw, dj, ds] = await Promise.all([
-      supabase.from('workers').delete().neq('id', '__none__'),
+      supabase.from('staff').delete().neq('id', '__none__'),
       supabase.from('jobs').delete().neq('id', '__none__'),
       supabase.from('shifts').delete().neq('id', '__none__'),
     ]);
@@ -275,7 +275,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
     const [iw, ij, is_] = await Promise.all([
-      supabase.from('workers').insert(INITIAL_ROSTER.map(workerToRow)),
+      supabase.from('staff').insert(INITIAL_ROSTER.map(workerToRow)),
       supabase.from('jobs').insert(INITIAL_JOBS.map(jobToRow)),
       supabase.from('shifts').insert(INITIAL_SHIFTS.map(shiftToRow)),
     ]);

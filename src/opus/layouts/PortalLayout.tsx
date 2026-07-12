@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { usePortal } from '../context/PortalContext';
 
 export const PortalLayout: React.FC = () => {
-  const { handleReloadDemoData, signOut, role } = usePortal();
+  const { signOut, role } = usePortal();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -87,14 +87,7 @@ export const PortalLayout: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <button 
-              onClick={handleReloadDemoData}
-              className="hidden lg:flex items-center space-x-2 px-4 py-2 border border-[#333] hover:border-brand-accent/50 rounded bg-[#222]/40 hover:bg-[#252525] transition-all group active:scale-95 cursor-pointer"
-              title="Reset application to complete initial demo dataset with active and historical shifts"
-            >
-              <Database className="w-4 h-4 text-brand-accent/80 group-hover:text-brand-accent" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/70 group-hover:text-white">Seed Demo Data</span>
-            </button>
+            
             <button 
               onClick={handleLogoutClick}
               className="hidden lg:flex items-center space-x-2 px-4 py-2 border border-white/10 rounded hover:bg-white/5 transition-all group active:scale-95 cursor-pointer"
@@ -165,13 +158,7 @@ export const PortalLayout: React.FC = () => {
               </div>
 
               <div className="mt-auto space-y-2 w-full">
-                <button 
-                  onClick={() => { setIsMobileMenuOpen(false); handleReloadDemoData(); }}
-                  className="flex items-center justify-center space-x-3 w-full py-4 border border-[#333] hover:border-brand-accent/30 rounded text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all text-brand-accent cursor-pointer"
-                >
-                  <Database className="w-4 h-4" />
-                  <span>Seed Demo Data</span>
-                </button>
+                
                 <button 
                   onClick={() => { setIsMobileMenuOpen(false); handleLogoutClick(); }}
                   className="flex items-center justify-center space-x-3 w-full py-4 border border-white/10 rounded text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all cursor-pointer"

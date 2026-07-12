@@ -19,6 +19,49 @@ interface RosterViewProps {
   setSelectedWorkerDetailsId?: (id: string | null) => void;
 }
 
+export const ON_SITE_CERTIFICATIONS = [
+  "Abrasive Wheels Certification",
+  "Blue CPCS Competence Card",
+  "Blue CSCS Skilled Worker Card",
+  "CITB Health Safety and Environment Test",
+  "COSHH Wet Concrete Awareness",
+  "CPCS A73 Plant Signaller Vehicle Marshaller",
+  "CPCS Category A06 Concrete Placing Boom",
+  "CPCS Category A17 Telescopic Handler",
+  "CPCS Category A44 Trailer Mounted Concrete Pump",
+  "CSCS Labourer Card",
+  "Emergency First Aid at Work",
+  "Face Fit Testing Respirable Crystalline Silica",
+  "Harness Awareness Inspection Ticket",
+  "Manual Handling",
+  "Site Supervisor Safety Training Scheme",
+  "Suspended Loads Endorsement",
+  "Working at Heights Certification"
+];
+
+export const STAFF_ROLES = [
+  "Concrete Finisher",
+  "Concrete Operative",
+  "Concrete Pour Supervisor",
+  "Concrete Pump Operator",
+  "Decking Assistant",
+  "Director",
+  "Ganger",
+  "General Construction Labourer",
+  "Inbound Sales Representative",
+  "IT",
+  "Logistics and Operations Coordinator",
+  "Material Handler",
+  "Telehandler Operator"
+];
+
+export const OFFICE_ROLES = [
+  "Director",
+  "IT",
+  "Inbound Sales Representative",
+  "Logistics and Operations Coordinator"
+];
+
 export const RosterView: React.FC<RosterViewProps> = ({ 
   workers, 
   setWorkers, 
@@ -31,15 +74,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
   setSelectedWorkerDetailsId: propSetSelectedWorkerDetailsId
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedRoleFilter, setSelectedRoleFilter] = useState<string>('ALL');
   const [showAddWorkerForm, setShowAddWorkerForm] = useState(false);
   
   const [newWorkerName, setNewWorkerName] = useState('');
-  const [newWorkerRole, setNewWorkerRole] = useState<'Supervisor' | 'Operative' | 'Telehandler' | 'Groundworker'>('Operative');
+  const [newWorkerRole, setNewWorkerRole] = useState<string>('Concrete Operative');
   const [newWorkerPhone, setNewWorkerPhone] = useState('');
   const [newWorkerEmail, setNewWorkerEmail] = useState('');
-  const [newTicketType, setNewTicketType] = useState('CSCS');
+  const [newTicketType, setNewTicketType] = useState('CSCS Labourer Card');
   const [newTicketExpiry, setNewTicketExpiry] = useState('2027-12-31');
+  const [includeCertifications, setIncludeCertifications] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
   
   const [localSelectedWorkerDetailsId, setLocalSelectedWorkerDetailsId] = useState<string | null>(null);
@@ -53,14 +96,25 @@ export const RosterView: React.FC<RosterViewProps> = ({
     : setLocalSelectedWorkerDetailsId;
 
   const [selectedWorkerToDelete, setSelectedWorkerToDelete] = useState<Worker | null>(null);
+  const [selectedWorkerToPermanentDelete, setSelectedWorkerToPermanentDelete] = useState<Worker | null>(null);
+  const [selectedWorkerToRestore, setSelectedWorkerToRestore] = useState<Worker | null>(null);
   const [selectedDocToDelete, setSelectedDocToDelete] = useState<{ id: string; name: string } | null>(null);
   
   const [workerToEdit, setWorkerToEdit] = useState<Worker | null>(null);
   const [editName, setEditName] = useState('');
-  const [editRole, setEditRole] = useState<'Supervisor' | 'Operative' | 'Telehandler' | 'Groundworker'>('Operative');
+  const [editRole, setEditRole] = useState<string>('Concrete Operative');
 
   const [rosterMode, setRosterMode] = useState<'active' | 'archived'>('active');
   const [showAllHistory, setShowAllHistory] = useState(false);
+
+  // Auto toggle cert inclusion checkbox off for office roles
+  useEffect(() => {
+    if (OFFICE_ROLES.includes(newWorkerRole)) {
+      setIncludeCertifications(false);
+    } else {
+      setIncludeCertifications(true);
+    }
+  }, [newWorkerRole]);
 
   useEffect(() => {
     setShowAllHistory(false);
@@ -88,29 +142,31 @@ export const RosterView: React.FC<RosterViewProps> = ({
     }
 
     const newId = `worker-${Date.now()}`;
-    const tickets: Ticket[] = [
-      {
+    const tickets: Ticket[] = [];
+    if (includeCertifications) {
+      tickets.push({
         id: `t-${Date.now()}-1`,
         type: newTicketType,
         expiryDate: newTicketExpiry,
         ticketNumber: `OP-${Math.floor(100000 + Math.random() * 900000)}`
-      }
-    ];
+      });
 
-    if (newWorkerRole === 'Supervisor' && newTicketType !== 'CSCS') {
-      tickets.push({
-        id: `t-${Date.now()}-2`,
-        type: 'CSCS',
-        expiryDate: '2028-12-31',
-        ticketNumber: `CSCS-${Math.floor(100000 + Math.random() * 900000)}`
-      });
-    } else if (newWorkerRole === 'Telehandler' && newTicketType !== 'CSCS') {
-      tickets.push({
-        id: `t-${Date.now()}-2`,
-        type: 'CSCS',
-        expiryDate: '2028-12-31',
-        ticketNumber: `CSCS-${Math.floor(100000 + Math.random() * 900000)}`
-      });
+      const isCscsSelected = newTicketType.includes('CSCS');
+      if (newWorkerRole === 'Concrete Pour Supervisor' && !isCscsSelected) {
+        tickets.push({
+          id: `t-${Date.now()}-2`,
+          type: 'CSCS Labourer Card',
+          expiryDate: '2028-12-31',
+          ticketNumber: `CSCS-${Math.floor(100000 + Math.random() * 900000)}`
+        });
+      } else if (newWorkerRole === 'Telehandler Operator' && !isCscsSelected) {
+        tickets.push({
+          id: `t-${Date.now()}-2`,
+          type: 'CSCS Labourer Card',
+          expiryDate: '2028-12-31',
+          ticketNumber: `CSCS-${Math.floor(100000 + Math.random() * 900000)}`
+        });
+      }
     }
 
     const createdWorker: Worker = {
@@ -134,12 +190,25 @@ export const RosterView: React.FC<RosterViewProps> = ({
   };
 
   const filteredWorkersList = workers.filter(w => {
-    const matchesSearch = w.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          w.role.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesRole = selectedRoleFilter === 'ALL' || w.role === selectedRoleFilter;
+    const query = searchQuery.toLowerCase();
+    
+    // Check if worker's scheduled jobs match the query
+    const workerJobMatches = (shifts || [])
+      .filter(s => s.workerId === w.id && !s.isRemoved)
+      .some(s => {
+        const job = (jobs || []).find(j => j.id === s.jobId);
+        return job && job.siteName.toLowerCase().includes(query);
+      });
+
+    const matchesSearch = !query || 
+                          w.name.toLowerCase().includes(query) || 
+                          (w.phone || '').toLowerCase().includes(query) || 
+                          (w.email || '').toLowerCase().includes(query) || 
+                          workerJobMatches;
+                          
     const matchesMode = rosterMode === 'active' ? !w.isArchived : w.isArchived;
-    return matchesSearch && matchesRole && matchesMode;
-  });
+    return matchesSearch && matchesMode;
+  }).sort((a, b) => a.name.localeCompare(b.name));
 
   const selectedWorkerDetails = workers.find(w => w.id === selectedWorkerDetailsId) || null;
   const anchorDate = (() => {
@@ -246,13 +315,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     <label className="text-[9px] font-black uppercase tracking-widest text-[#888]">Roster Role</label>
                     <select
                       value={editRole}
-                      onChange={(e) => setEditRole(e.target.value as any)}
+                      onChange={(e) => setEditRole(e.target.value)}
                       className="w-full bg-[#1a1a1a] border border-[#333] focus:border-brand-accent rounded-lg px-3 py-2.5 text-xs text-white uppercase font-black tracking-wider transition-colors outline-none"
                     >
-                      <option value="Operative">Operative</option>
-                      <option value="Supervisor">Supervisor</option>
-                      <option value="Telehandler">Telehandler</option>
-                      <option value="Groundworker">Groundworker</option>
+                      {STAFF_ROLES.map(role => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
                     </select>
                   </div>
 
@@ -263,7 +331,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       value={editPhone}
                       onChange={(e) => setEditPhone(e.target.value)}
                       className="w-full bg-[#1a1a1a] border border-[#333] hover:border-[#444] focus:border-brand-accent rounded-lg px-3.5 py-2.5 text-xs text-white tracking-widest transition-colors outline-none"
-                      placeholder="e.g. +44 7700 900456"
+                      placeholder="e.g. 07700900456"
                     />
                   </div>
 
@@ -274,7 +342,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       value={editEmail}
                       onChange={(e) => setEditEmail(e.target.value)}
                       className="w-full bg-[#1a1a1a] border border-[#333] hover:border-[#444] focus:border-brand-accent rounded-lg px-3.5 py-2.5 text-xs text-white tracking-widest transition-colors outline-none"
-                      placeholder="e.g. worker@opusconcrete.co.uk"
+                      placeholder="e.g. john.doe@opusform.co.uk"
                     />
                   </div>
                 </div>
@@ -301,7 +369,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         ...prev,
                         {
                           id: `t-edit-${Date.now()}`,
-                          type: 'CSCS',
+                          type: 'CSCS Labourer Card',
                           expiryDate: new Date(Date.now() + 365*24*60*60*1000).toISOString().split('T')[0],
                           ticketNumber: `OP-${Math.floor(100000 + Math.random() * 900000)}`
                         }
@@ -338,15 +406,18 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           <div className="space-y-3.5 pr-6">
                             <div className="space-y-1.5">
                               <label className="text-[8px] font-black uppercase tracking-widest text-[#888]">Ticket Type / Scheme</label>
-                              <input
-                                type="text"
+                              <select
                                 value={ticket.type}
                                 onChange={(e) => {
                                   const val = e.target.value;
                                   setEditTickets(prev => prev.map((t, idx) => idx === index ? { ...t, type: val } : t));
                                 }}
-                                className="w-full bg-[#111] border border-[#2a2a2a] focus:border-brand-accent rounded-lg px-3 py-2 text-xs text-white uppercase font-black tracking-wider outline-none"
-                              />
+                                className="w-full bg-[#111] border border-[#2a2a2a] focus:border-brand-accent rounded-lg px-3 py-2.5 text-xs text-white uppercase font-black tracking-wider outline-none appearance-none"
+                              >
+                                {ON_SITE_CERTIFICATIONS.map(cert => (
+                                  <option key={cert} value={cert}>{cert}</option>
+                                ))}
+                              </select>
                             </div>
 
                             <div className="space-y-1.5">
@@ -507,24 +578,32 @@ export const RosterView: React.FC<RosterViewProps> = ({
               </button>
 
               {selectedWorkerDetails.isArchived ? (
-                <button
-                  onClick={() => {
-                    setWorkers(prev => prev.map(w => w.id === selectedWorkerDetails.id ? { ...w, isArchived: false } : w));
-                  }}
-                  className="px-3.5 py-2 bg-emerald-950/25 hover:bg-emerald-950/60 text-emerald-400/80 hover:text-emerald-400 rounded-lg transition-all border border-emerald-900/30 hover:border-emerald-900/60 text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
-                  title="Restore to active roster"
-                >
-                  <UserCheck className="w-3.5 h-3.5" />
-                  <span>Restore Worker</span>
-                </button>
+                <>
+                  <button
+                    onClick={() => setSelectedWorkerToRestore(selectedWorkerDetails)}
+                    className="px-3.5 py-2 bg-emerald-950/25 hover:bg-emerald-950/60 text-emerald-400/80 hover:text-emerald-400 rounded-lg transition-all border border-emerald-900/30 hover:border-emerald-900/60 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 cursor-pointer"
+                    title="Restore to active roster"
+                  >
+                    <UserCheck className="w-3.5 h-3.5" />
+                    <span>Restore Staff</span>
+                  </button>
+                  <button
+                    onClick={() => setSelectedWorkerToPermanentDelete(selectedWorkerDetails)}
+                    className="px-3.5 py-2 bg-red-950/25 hover:bg-red-950/60 text-red-400/80 hover:text-red-400 rounded-lg transition-all border border-red-900/30 hover:border-red-900/60 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 cursor-pointer"
+                    title="Delete permanently from database"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Permanently</span>
+                  </button>
+                </>
               ) : (
                 <button
                   onClick={() => setSelectedWorkerToDelete(selectedWorkerDetails)}
-                  className="px-3.5 py-2 bg-red-950/25 hover:bg-red-950/60 text-red-400/80 hover:text-red-400 rounded-lg transition-all border border-red-900/30 hover:border-red-900/60 text-[10px] font-black uppercase tracking-widest flex items-center gap-2"
+                  className="px-3.5 py-2 bg-red-950/25 hover:bg-red-950/60 text-red-400/80 hover:text-red-400 rounded-lg transition-all border border-red-900/30 hover:border-red-900/60 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 cursor-pointer"
                   title="Archive profile"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Archive Worker</span>
+                  <span>Archive Staff</span>
                 </button>
               )}
             </div>
@@ -944,6 +1023,97 @@ export const RosterView: React.FC<RosterViewProps> = ({
             </div>
           )}
 
+          {/* Permanent Delete Confirmation Modal */}
+          {selectedWorkerToPermanentDelete && (
+            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 text-left">
+              <div className="fixed inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setSelectedWorkerToPermanentDelete(null)} />
+              <div className="bg-[#222428] border border-red-500/20 rounded-2xl w-full max-w-md overflow-hidden relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="p-6 pb-4 border-b border-red-500/10 bg-red-500/[0.01] flex items-center space-x-3.5">
+                  <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
+                    <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-red-400">Delete Staff Member</h3>
+                    <p className="text-[8px] font-semibold text-red-500/50 uppercase tracking-widest mt-0.5">Permanent record deletion</p>
+                  </div>
+                </div>
+                
+                <div className="p-6 space-y-4">
+                  <p className="text-sm font-medium text-white/80 leading-relaxed">
+                    Are you absolutely sure you want to permanently delete <span className="font-bold text-white">{selectedWorkerToPermanentDelete.name}</span>?
+                  </p>
+                  <div className="p-4 bg-red-500/5 border border-red-500/10 rounded-lg text-xs font-semibold text-red-400/90 leading-relaxed uppercase tracking-wider">
+                    WARNING: This action is irreversible. All records, compliance certificates, and schedules associated with this staff member will be permanently purged from the database.
+                  </div>
+                </div>
+
+                <div className="p-6 bg-white/[0.01] border-t border-white/5 flex items-center space-x-3">
+                  <button
+                    onClick={() => setSelectedWorkerToPermanentDelete(null)}
+                    className="flex-1 py-3.5 border border-white/10 text-white/40 hover:text-white hover:bg-white/5 transition-all rounded text-[9px] font-black uppercase tracking-widest cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setWorkers(prev => prev.filter(w => w.id !== selectedWorkerToPermanentDelete.id));
+                      setSelectedWorkerDetailsId(null);
+                      setSelectedWorkerToPermanentDelete(null);
+                    }}
+                    className="flex-1 py-3.5 bg-red-600 hover:bg-red-500 text-white transition-all rounded text-[9px] font-black uppercase tracking-widest shadow-lg shadow-red-600/10 cursor-pointer"
+                  >
+                    Purge Record
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Restore Confirmation Modal */}
+          {selectedWorkerToRestore && (
+            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 text-left">
+              <div className="fixed inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setSelectedWorkerToRestore(null)} />
+              <div className="bg-[#222428] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="p-6 pb-4 border-b border-white/5 bg-white/[0.01] flex items-center space-x-3.5">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
+                    <UserCheck className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-emerald-400">Restore Staff Member</h3>
+                    <p className="text-[8px] font-semibold text-white/30 uppercase tracking-widest mt-0.5">Activate archived record</p>
+                  </div>
+                </div>
+                
+                <div className="p-6 space-y-4">
+                  <p className="text-sm font-medium text-white/80 leading-relaxed">
+                    Are you sure you want to restore <span className="font-bold text-white">{selectedWorkerToRestore.name}</span> to the active staff roster?
+                  </p>
+                  <div className="p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-lg text-xs font-medium text-emerald-400/90 leading-relaxed">
+                    This staff member will be returned to the active staff roster and made available for site assignments.
+                  </div>
+                </div>
+
+                <div className="p-6 bg-white/[0.01] border-t border-white/5 flex items-center space-x-3">
+                  <button
+                    onClick={() => setSelectedWorkerToRestore(null)}
+                    className="flex-1 py-3.5 border border-white/10 text-white/40 hover:text-white hover:bg-white/5 transition-all rounded text-[9px] font-black uppercase tracking-widest cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      setWorkers(prev => prev.map(w => w.id === selectedWorkerToRestore.id ? { ...w, isArchived: false } : w));
+                      setSelectedWorkerToRestore(null);
+                    }}
+                    className="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-500 text-white transition-all rounded text-[9px] font-black uppercase tracking-widest shadow-lg shadow-emerald-600/10 cursor-pointer"
+                  >
+                    Restore Record
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Delete Document Confirmation Modal */}
           {selectedDocToDelete && (
             <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 text-left">
@@ -1005,7 +1175,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search staff by name or role..."
+            placeholder="Search by name, number, email, or job site..."
             className="w-full bg-[#1e1e1e] border border-[#333] text-sm text-white rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:border-[#5C7285] transition-colors placeholder:text-[#555] shadow-inner"
           />
         </div>
@@ -1024,40 +1194,23 @@ export const RosterView: React.FC<RosterViewProps> = ({
           type="button"
           onClick={() => {
             setRosterMode('active');
-            setSelectedRoleFilter('ALL');
           }}
           className={`pb-2.5 text-[10px] font-black uppercase tracking-[0.15em] border-b-2 transition-all ${rosterMode === 'active' ? 'border-[#5C7285] text-white' : 'border-transparent text-[#666] hover:text-white'}`}
         >
-          Active Crew ({workers.filter(w => !w.isArchived).length})
+          Staff ({workers.filter(w => !w.isArchived).length})
         </button>
         <button
           type="button"
           onClick={() => {
             setRosterMode('archived');
-            setSelectedRoleFilter('ALL');
           }}
           className={`pb-2.5 text-[10px] font-black uppercase tracking-[0.15em] border-b-2 transition-all ${rosterMode === 'archived' ? 'border-amber-600 text-amber-500' : 'border-transparent text-[#666] hover:text-amber-500'}`}
         >
-          Archived Dossiers ({workers.filter(w => w.isArchived).length})
+          Archived Staff ({workers.filter(w => w.isArchived).length})
         </button>
       </div>
 
-      {/* Role Filter Badges */}
-      <div className="flex flex-wrap gap-2">
-        {['ALL', 'Supervisor', 'Operative', 'Telehandler', 'Groundworker'].map(role => (
-          <button
-            key={role}
-            onClick={() => setSelectedRoleFilter(role)}
-            className={`px-4 py-2 rounded-lg text-[9px] font-black uppercase tracking-widest border transition-all ${
-              selectedRoleFilter === role 
-                ? 'bg-[#5C7285] border-[#5C7285] text-white shadow-md' 
-                : 'bg-[#1e1e1e] border-[#333] text-[#888] hover:bg-[#252525] hover:text-white'
-            }`}
-          >
-            {role}
-          </button>
-        ))}
-      </div>
+      
 
       {/* Add Worker Form */}
       {showAddWorkerForm && (
@@ -1091,7 +1244,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 type="text"
                 value={newWorkerPhone}
                 onChange={(e) => setNewWorkerPhone(e.target.value)}
-                placeholder="e.g. +44 7700 900123"
+                placeholder="e.g. 07700900123"
                 className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
               />
             </div>
@@ -1101,7 +1254,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 type="email"
                 value={newWorkerEmail}
                 onChange={(e) => setNewWorkerEmail(e.target.value)}
-                placeholder="e.g. worker@opusconcrete.co.uk"
+                placeholder="e.g. john.doe@opusform.co.uk"
                 className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
               />
             </div>
@@ -1109,35 +1262,50 @@ export const RosterView: React.FC<RosterViewProps> = ({
               <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Role</label>
               <select
                 value={newWorkerRole}
-                onChange={(e) => setNewWorkerRole(e.target.value as any)}
+                onChange={(e) => setNewWorkerRole(e.target.value)}
                 className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-[11px] font-bold tracking-widest text-white uppercase outline-none focus:border-[#5C7285] transition-colors appearance-none"
               >
-                <option value="Operative">Operative</option>
-                <option value="Supervisor">Supervisor</option>
-                <option value="Telehandler">Telehandler</option>
-                <option value="Groundworker">Groundworker</option>
+                {STAFF_ROLES.map(role => (
+                  <option key={role} value={role}>{role}</option>
+                ))}
               </select>
             </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Primary Ticket</label>
-              <div className="flex gap-3">
-                <select
-                  value={newTicketType}
-                  onChange={(e) => setNewTicketType(e.target.value)}
-                  className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-[11px] font-bold tracking-widest text-white uppercase outline-none focus:border-[#5C7285] transition-colors appearance-none"
-                >
-                  <option value="CSCS">CSCS Card</option>
-                  <option value="Supervisor">Supervisor</option>
-                  <option value="Telehandler">Telehandler</option>
-                </select>
-                <input
-                  type="date"
-                  value={newTicketExpiry}
-                  onChange={(e) => setNewTicketExpiry(e.target.value)}
-                  className="flex-1 bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-[11px] font-bold tracking-widest text-white uppercase outline-none focus:border-[#5C7285] transition-colors"
-                />
-              </div>
+            
+            <div className="flex items-center gap-2 pt-2 md:col-span-2">
+              <input
+                type="checkbox"
+                id="includeCertifications"
+                checked={includeCertifications}
+                onChange={(e) => setIncludeCertifications(e.target.checked)}
+                className="w-4 h-4 bg-[#1a1a1a] border border-[#333] rounded focus:ring-0 accent-[#5C7285] cursor-pointer"
+              />
+              <label htmlFor="includeCertifications" className="text-[10px] font-black uppercase tracking-widest text-[#bbb] cursor-pointer">
+                Include On-site Certification
+              </label>
             </div>
+
+            {includeCertifications && (
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">On-site Certifications</label>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <select
+                    value={newTicketType}
+                    onChange={(e) => setNewTicketType(e.target.value)}
+                    className="flex-1 w-full min-w-0 bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-[11px] font-bold tracking-widest text-white uppercase outline-none focus:border-[#5C7285] transition-colors appearance-none truncate"
+                  >
+                    {ON_SITE_CERTIFICATIONS.map(cert => (
+                      <option key={cert} value={cert}>{cert}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="date"
+                    value={newTicketExpiry}
+                    onChange={(e) => setNewTicketExpiry(e.target.value)}
+                    className="flex-1 w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-[11px] font-bold tracking-widest text-white uppercase outline-none focus:border-[#5C7285] transition-colors"
+                  />
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="flex gap-3 pt-2">
@@ -1160,11 +1328,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
       {/* Staff Roster Table */}
       <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl">
-        <div className="hidden md:grid md:grid-cols-[2fr_1.5fr_2fr_100px] gap-4 px-6 py-4 border-b border-[#2e2e2e] bg-[#222]">
+        <div className="hidden md:grid md:grid-cols-[2fr_1.5fr_2.5fr] gap-4 px-6 py-4 border-b border-[#2e2e2e] bg-[#222]">
           <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Staff Details</span>
           <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Contact</span>
           <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Compliance & Tickets</span>
-          <span className="text-[9px] font-black tracking-widest uppercase text-[#888] text-right">Actions</span>
         </div>
         <div className="divide-y divide-[#2e2e2e]">
           {filteredWorkersList.length === 0 ? (
@@ -1176,22 +1343,31 @@ export const RosterView: React.FC<RosterViewProps> = ({
             </div>
           ) : (
             filteredWorkersList.map(worker => {
-              const cscsTicket = worker.tickets.find(t => t.type === 'CSCS');
-              const isCscsExpired = cscsTicket ? new Date(cscsTicket.expiryDate) < anchorDate : true;
+              const isOfficeStaff = OFFICE_ROLES.includes(worker.role);
+              const hasCertifications = worker.tickets && worker.tickets.length > 0;
+              let isUnfit = false;
+              if (isOfficeStaff) {
+                const hasExpiredCerts = worker.tickets?.some(t => new Date(t.expiryDate) < anchorDate);
+                isUnfit = hasCertifications && hasExpiredCerts;
+              } else {
+                const cscsTicket = worker.tickets?.find(t => t.type.includes('CSCS') || t.type.includes('Labourer'));
+                isUnfit = !cscsTicket || new Date(cscsTicket.expiryDate) < anchorDate;
+              }
               const isAssignActive = activeWorkerToAssign?.id === worker.id;
 
               return (
                 <div 
                   key={worker.id}
-                  className={`flex flex-col md:grid md:grid-cols-[2fr_1.5fr_2fr_100px] gap-4 px-6 py-5 items-center hover:bg-[#242424] transition-colors duration-150 ${isAssignActive ? 'bg-[#5C7285]/10' : ''}`}
+                  onClick={() => setSelectedWorkerDetailsId(worker.id)}
+                  className={`flex flex-col md:grid md:grid-cols-[2fr_1.5fr_2.5fr] gap-4 px-6 py-5 items-center hover:bg-[#242424] cursor-pointer transition-colors duration-150 ${isAssignActive ? 'bg-[#5C7285]/10' : ''}`}
                 >
                   {/* Staff Details */}
                   <div className="flex flex-col space-y-1.5 w-full md:w-auto">
                     <div className="flex items-center gap-2">
-                      <span className={`text-sm font-black uppercase tracking-wider break-words ${isCscsExpired ? 'text-red-400 line-through' : 'text-white'}`}>
+                      <span className={`text-sm font-black uppercase tracking-wider break-words ${isUnfit ? 'text-red-400 line-through' : 'text-white'}`}>
                         {worker.name}
                       </span>
-                      {isCscsExpired && (
+                      {isUnfit && (
                         <span className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-[7px] font-black text-red-400 uppercase tracking-widest flex items-center gap-1">
                           <ShieldAlert className="w-2.5 h-2.5" />
                           UNFIT
@@ -1245,15 +1421,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     })}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center justify-end w-full gap-2 border-t border-[#333] pt-4 md:pt-0 md:border-0">
-                    <button
-                      onClick={() => setSelectedWorkerDetailsId(worker.id)}
-                      className="w-full md:w-auto text-center px-3 py-1.5 bg-[#1a1a1a] hover:bg-[#333] text-[#888] hover:text-white rounded-lg transition-colors border border-[#333] text-[9px] font-black uppercase tracking-widest"
-                    >
-                      Dossier
-                    </button>
-                  </div>
                 </div>
               );
             })

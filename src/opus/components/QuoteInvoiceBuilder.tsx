@@ -115,18 +115,34 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [quoteReference, setQuoteReference] = useState(`JOB-${Math.floor(1000 + Math.random() * 9000)}`);
 
+  const loadSavedQuotes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('quotes')
+        .select('*')
+        .eq('is_sent', false)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      
+      const loadedQuotes: Quote[] = (data || []).map(row => ({
+        id: row.id,
+        reference: row.reference,
+        date: row.date,
+        clientInfo: row.client_info,
+        items: row.items,
+        vatRate: Number(row.vat_rate),
+        totals: row.totals,
+        isSent: row.is_sent
+      }));
+      setSavedQuotes(loadedQuotes);
+    } catch (e) {
+      console.error("Failed to load saved quotes from Supabase", e);
+    }
+  };
+
   // Load saved quotes on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const stored = localStorage.getItem('opus_saved_quotes');
-      if (stored) {
-        try {
-          setSavedQuotes(JSON.parse(stored));
-        } catch (e) {
-          console.error("Failed to parse saved quotes", e);
-        }
-      }
-    }
+    loadSavedQuotes();
   }, []);
 
   // Scaling logic for the PDF preview
@@ -166,33 +182,42 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
   const generateNewReference = () => `JOB-${Math.floor(1000 + Math.random() * 9000)}`;
 
-  const handleSave = () => {
-    if (items.length === 0 && !clientInfo.entity) return;
+  const handleSaveDraft = async () => {
+    if (!clientInfo.entity.trim()) {
+      setNotification({ type: 'error', title: 'VALIDATION FAILURE', message: "Please provide a Client Name to save a draft." });
+      return;
+    }
 
-    const existing = savedQuotes.find(q => q.reference === quoteReference);
-    const newQuote: Quote = {
-      id: existing ? existing.id : Date.now().toString(),
+    const quoteId = quoteToLoadId || crypto.randomUUID();
+    const newQuote = {
+      id: quoteId,
       reference: quoteReference,
-      date: existing ? existing.date : new Date().toLocaleDateString('en-GB'),
-      clientInfo,
+      date: new Date().toLocaleDateString('en-GB'),
+      client_info: clientInfo,
       items,
-      vatRate,
+      vat_rate: vatRate,
       totals,
-      isSavedLocal: true,
-      isSent: false
+      is_sent: false
     };
 
-    const updated = [newQuote, ...savedQuotes.filter(q => q.reference !== quoteReference)];
-    setSavedQuotes(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
-    }
-    setLastSaved(new Date().toLocaleTimeString());
+    try {
+      const { error } = await supabase
+        .from('quotes')
+        .upsert(newQuote);
 
-    // Do NOT reset inputs. Just clear the "Saved" message on button after a short delay
-    setTimeout(() => {
-      setLastSaved(null);
-    }, 2000);
+      if (error) throw error;
+
+      setLastSaved(new Date().toLocaleTimeString());
+      loadSavedQuotes();
+
+      // Do NOT reset inputs. Just clear the "Saved" message on button after a short delay
+      setTimeout(() => {
+        setLastSaved(null);
+      }, 2000);
+    } catch (e) {
+      console.error("Failed to save draft quote to Supabase", e);
+      setNotification({ type: 'error', title: 'SAVE FAILED', message: "Failed to save draft to database." });
+    }
   };
 
   const loadQuote = (quote: Quote) => {
@@ -204,29 +229,50 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   };
 
   useEffect(() => {
-    if (quoteToLoadId && typeof window !== 'undefined') {
-      const stored = localStorage.getItem('opus_saved_quotes');
-      if (stored) {
-        try {
-          const quotes: Quote[] = JSON.parse(stored);
-          const found = quotes.find(q => q.id === quoteToLoadId);
-          if (found) {
-            loadQuote(found);
-            if (onQuoteLoaded) onQuoteLoaded();
-          }
-        } catch (e) {
-          console.error("Failed to load quote via quoteToLoadId", e);
-        }
-      }
+    if (quoteToLoadId) {
+      (async () => {
+         try {
+           const { data, error } = await supabase
+             .from('quotes')
+             .select('*')
+             .eq('id', quoteToLoadId)
+             .maybeSingle();
+
+           if (error) throw error;
+           if (data) {
+             const quote: Quote = {
+               id: data.id,
+               reference: data.reference,
+               date: data.date,
+               clientInfo: data.client_info,
+               items: data.items,
+               vatRate: Number(data.vat_rate),
+               totals: data.totals,
+               isSent: data.is_sent
+             };
+             loadQuote(quote);
+             if (onQuoteLoaded) onQuoteLoaded();
+           }
+         } catch (e) {
+           console.error("Failed to load quote via quoteToLoadId from Supabase", e);
+         }
+      })();
     }
   }, [quoteToLoadId]);
 
-  const deleteQuote = (e: React.MouseEvent, id: string) => {
+  const deleteQuote = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    const updated = savedQuotes.filter(q => q.id !== id);
-    setSavedQuotes(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
+    try {
+      const { error } = await supabase
+        .from('quotes')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+
+      setSavedQuotes(savedQuotes.filter(q => q.id !== id));
+    } catch (e) {
+      console.error("Failed to delete quote", e);
+      setNotification({ type: 'error', title: 'DELETE FAILED', message: "Failed to delete quote draft from database." });
     }
   };
 
@@ -446,14 +492,26 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
         throw new Error(errMsg);
       }
 
-      const existing = savedQuotes.find(q => q.reference === quoteReference);
-      // Remove this quote from local drafts history since it is now sent
-      const updated = savedQuotes.filter(q => q.reference !== quoteReference);
-      setSavedQuotes(updated);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('opus_saved_quotes', JSON.stringify(updated));
-      }
+      // Update this quote in database to mark it as sent
+      const quoteId = quoteToLoadId || crypto.randomUUID();
+      const updatedQuote = {
+        id: quoteId,
+        reference: quoteReference,
+        date: new Date().toLocaleDateString('en-GB'),
+        client_info: clientInfo,
+        items,
+        vat_rate: vatRate,
+        totals,
+        is_sent: true
+      };
 
+      const { error: upsertError } = await supabase
+        .from('quotes')
+        .upsert(updatedQuote);
+
+      if (upsertError) throw upsertError;
+
+      loadSavedQuotes();
       setNotification({ type: 'success', title: 'EMAIL SENT', message: "Email sent successfully." });
     } catch (err) {
       console.error("Failed to send quote PDF:", err);
@@ -503,7 +561,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     />
                   </div>
                   <button 
-                    onClick={handleSave}
+                    onClick={handleSaveDraft}
                     className="flex items-center gap-[7px] bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-2.5 px-4 text-white text-[10px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors whitespace-nowrap"
                   >
                     <Save className="w-3.5 h-3.5" />
@@ -1198,7 +1256,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
           <button
             type="button"
-            onClick={() => handleSave()}
+            onClick={() => handleSaveDraft()}
             className="flex items-center gap-1.5 bg-[#1a1b1e] border border-[#3e3e3e] hover:bg-[#2e2e2e] rounded-lg px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-white transition-colors"
           >
             <Save className="w-3.5 h-3.5" />

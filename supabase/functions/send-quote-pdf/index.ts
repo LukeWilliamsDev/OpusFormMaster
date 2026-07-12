@@ -13,6 +13,8 @@ const corsHeaders = {
 interface RequestPayload {
   toEmail: string;
   clientName?: string;
+  siteName?: string;
+  postcode?: string;
   quoteRef: string;
   pdfBase64?: string;      // Base64 encoded string from frontend
   pdfUrl?: string;         // Public URL pointer to PDF
@@ -44,7 +46,7 @@ serve(async (req) => {
 
   try {
     const payload: RequestPayload = await req.json()
-    const { toEmail, clientName, quoteRef, pdfBase64, pdfUrl, logoUrl, netTotal, vatAmount, grossTotal, fromEmail } = payload
+    const { toEmail, clientName, siteName, postcode, quoteRef, pdfBase64, pdfUrl, logoUrl, netTotal, vatAmount, grossTotal, fromEmail } = payload
 
     if (!toEmail) {
       return new Response(JSON.stringify({ error: "Recipient email (toEmail) is required." }), {
@@ -60,7 +62,7 @@ serve(async (req) => {
 
     // Retrieve settings config from the secure smtp_config table
     const { data: configRows, error: configError } = await supabase
-      .from('smtp_config')
+      .from('decrypted_smtp_config')
       .select('key, value')
 
     if (configError || !configRows || configRows.length === 0) {
@@ -161,33 +163,35 @@ serve(async (req) => {
     emailHtml += '    <!-- Body -->';
     emailHtml += '    <div style="padding: 40px;">';
     emailHtml += '      <div style="text-transform: uppercase; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; color: #526E8C; margin-bottom: 20px;">';
-    emailHtml += '        Quote Estimate Details';
+    emailHtml += '        Quotation Summary';
     emailHtml += '      </div>';
     emailHtml += '      ';
-    emailHtml += '      <p class="text-title" style="margin: 0 0 16px; color: #e5e7eb; font-size: 16px; font-weight: 700;" data-ogsc="color: #e5e7eb;">Dear ' + (clientName || 'Valued Client') + ',</p>';
-    emailHtml += '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af;" data-ogsc="color: #9ca3af;">Please find attached the formal concrete works quote estimate <strong class="text-title" style="color: #e5e7eb;" data-ogsc="color: #e5e7eb;">#' + quoteRef + '</strong> for your review.</p>';
+    emailHtml += '      <p class="text-title" style="margin: 0 0 16px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px; font-weight: 700;" data-ogsc="color: #e5e7eb;">Dear ' + (clientName || 'Valued Client') + ',</p>';
+    emailHtml += '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">Please find attached our formal quotation <strong class="text-title" style="color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">#' + quoteRef + '</strong> for the concrete works at ' + (siteName || 'Site') + (postcode ? ', ' + postcode : '') + '.</p>';
     emailHtml += '      ';
     emailHtml += '      <!-- Summary Table -->';
     emailHtml += '      <table style="width: 100%; border-collapse: collapse; margin-bottom: 32px; border: 1px solid #2e2e33; border-radius: 8px; overflow: hidden;">';
     emailHtml += '        <tr class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">';
-    emailHtml += '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; color: #9ca3af; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;" data-ogsc="color: #9ca3af;">Net Subtotal</td>';
-    emailHtml += '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb;" data-ogsc="color: #e5e7eb;">£' + Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
+    emailHtml += '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;" data-ogsc="color: #9ca3af;">Net Subtotal</td>';
+    emailHtml += '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">£' + Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
     emailHtml += '        </tr>';
     emailHtml += '        <tr class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">';
-    emailHtml += '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; color: #9ca3af; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;" data-ogsc="color: #9ca3af;">UK Standard VAT (20%)</td>';
-    emailHtml += '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb;" data-ogsc="color: #e5e7eb;">£' + Number(vatAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
+    emailHtml += '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;" data-ogsc="color: #9ca3af;">UK Standard VAT (20%)</td>';
+    emailHtml += '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">£' + Number(vatAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
     emailHtml += '        </tr>';
     emailHtml += '        <tr class="header-bg" style="background-image: linear-gradient(#26262B, #26262B); background-color: #26262B;">';
-    emailHtml += '          <td class="text-title" style="padding: 16px; font-weight: 900; color: #e5e7eb; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;" data-ogsc="color: #e5e7eb;">Concrete Works Total</td>';
-    emailHtml += '          <td class="text-title" style="padding: 16px; text-align: right; font-weight: 900; color: #e5e7eb; font-size: 16px;" data-ogsc="color: #e5e7eb;">£' + Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
+    emailHtml += '          <td class="text-title" style="padding: 16px; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;" data-ogsc="color: #e5e7eb;">Total (inc. VAT)</td>';
+    emailHtml += '          <td class="text-title" style="padding: 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px;" data-ogsc="color: #e5e7eb;">£' + Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
     emailHtml += '        </tr>';
     emailHtml += '      </table>';
     emailHtml += '      ';
-    emailHtml += '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af;" data-ogsc="color: #9ca3af;">The attached PDF contains the complete bill of quantities, structural scopes, standard terms, and banking details.</p>';
+    emailHtml += '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">The attached PDF includes the full bill of quantities, structural scopes, our standard terms and conditions, and banking details for your reference.</p>';
+    emailHtml += '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">Should you have any questions or wish to discuss the quotation further, please do not hesitate to get in touch.</p>';
     emailHtml += '      ';
     emailHtml += '      <div style="border-top: 1px solid #2e2e33; padding-top: 24px; margin-top: 32px;">';
-    emailHtml += '        <p class="text-title" style="margin: 0 0 4px; color: #e5e7eb; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;" data-ogsc="color: #e5e7eb;">Opus Form Billing</p>';
-    emailHtml += '        <a href="mailto:billing@opusform.co.uk" style="color: #526E8C; text-decoration: none; font-size: 12px; font-weight: 700;" data-ogsc="color: #526E8C;">billing@opusform.co.uk</a>';
+    emailHtml += '        <p class="text-title" style="margin: 0 0 4px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;" data-ogsc="color: #e5e7eb;">Kind regards,</p>';
+    emailHtml += '        <p class="text-title" style="margin: 0 0 4px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;" data-ogsc="color: #e5e7eb;">Opus Form Billing</p>';
+    emailHtml += '        <a href="mailto:billing@opusform.co.uk" style="color: #526E8C; -webkit-text-fill-color: #526E8C !important; text-decoration: none; font-size: 12px; font-weight: 700;" data-ogsc="color: #526E8C;">billing@opusform.co.uk</a>';
     emailHtml += '      </div>';
     emailHtml += '    </div>';
     emailHtml += '  </div>';
@@ -207,7 +211,7 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Opus Form Billing <' + sender + '>',
         to: [toEmail],
-        subject: 'Formal Quote: #' + quoteRef + ' - ' + (clientName || 'Project'),
+        subject: 'Quote #' + quoteRef + ' | ' + (siteName || 'Project') + (postcode ? ', ' + postcode : '') + ' – ' + (clientName || 'Client'),
         html: emailHtml,
         attachments: [
           {

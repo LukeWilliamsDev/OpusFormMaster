@@ -422,6 +422,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
         body: {
           toEmail: clientInfo.email,
           clientName: clientInfo.entity,
+          siteName: clientInfo.site,
+          postcode: clientInfo.postcode,
           quoteRef: quoteReference,
           pdfBase64: base64,
           logoUrl: typeof window !== 'undefined' ? `${window.location.origin}/opus-form-primary.svg` : undefined,
@@ -645,7 +647,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       <div className="flex items-center bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
                         <input 
                           type="text"
-                          className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold uppercase tracking-wider"
+                          className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
                           value={clientInfo.entity}
                           onChange={e => setClientInfo({ ...clientInfo, entity: e.target.value })}
                           placeholder="e.g. ABC CONSTRUCTIONS LTD"
@@ -675,7 +677,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                         <LayoutGrid className="w-4 h-4 text-gray-600 shrink-0" />
                         <input 
                           type="text"
-                          className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold uppercase tracking-wider"
+                          className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
                           value={clientInfo.site}
                           onChange={e => setClientInfo({ ...clientInfo, site: e.target.value })}
                           placeholder="e.g. Project Titan"
@@ -689,7 +691,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                         <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
                         <input 
                           type="text"
-                          className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold uppercase tracking-widest"
+                          className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-widest"
                           value={clientInfo.postcode}
                           onChange={e => setClientInfo({ ...clientInfo, postcode: e.target.value })}
                           placeholder="e.g. SW1A 1AA"
@@ -732,7 +734,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                         <div className="relative flex-1">
                           <input 
                             type="text"
-                            className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold uppercase tracking-wider"
+                            className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
                             value={item.description}
                             onChange={e => updateItem(item.id, { description: e.target.value })}
                             onFocus={() => setFocusedItemId(item.id)}
@@ -1041,7 +1043,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
                         {clientInfo.entity ? (
                           <div className="space-y-1">
-                            <p className="font-black text-gray-900 text-sm">{capitalizeWords(clientInfo.entity)}</p>
+                            <p className="font-black text-gray-900 text-sm">{clientInfo.entity}</p>
                             <p className="text-gray-600 tracking-wide">{clientInfo.email ? clientInfo.email.toLowerCase() : '...'}</p>
                           </div>
                         ) : (
@@ -1054,8 +1056,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
                         {clientInfo.site ? (
                           <div className="space-y-1">
-                            <p className="font-black text-gray-900 text-sm">{capitalizeWords(clientInfo.site)}</p>
-                            <p className="text-gray-600 tracking-wide">{clientInfo.postcode ? clientInfo.postcode.toUpperCase() : '...'}</p>
+                            <p className="font-black text-gray-900 text-sm">{clientInfo.site}</p>
+                            <p className="text-gray-600 tracking-wide">{clientInfo.postcode || '...'}</p>
                           </div>
                         ) : (
                           <span className="text-[#AAA]">No project data entered</span>

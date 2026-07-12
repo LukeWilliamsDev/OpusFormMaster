@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { usePortal } from '../context/PortalContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export const PortalAuthPage: React.FC = () => {
   const { isAuthenticated, signIn, resetPassword, updatePassword } = usePortal();
@@ -30,7 +31,9 @@ export const PortalAuthPage: React.FC = () => {
 
   const handleDismissNotification = () => {
     setNotification(null);
-    navigate('/portal/dashboard');
+    if (formMode === 'reset') {
+      navigate('/portal/dashboard');
+    }
   };
 
   // Staggered entrance animation state
@@ -93,14 +96,47 @@ export const PortalAuthPage: React.FC = () => {
     const target = emailInput?.value?.trim();
     if (!target) return;
     setIsSubmitting(true);
-    const { error } = await resetPassword(target);
-    setIsSubmitting(false);
-    if (error) {
-      setFormError(error);
-      return;
-    }
     setFormError(null);
-    setFormMode('login');
+
+    try {
+      // Check if user is registered in the profiles table
+      const { data: profile, error: queryError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', target)
+        .maybeSingle();
+
+      if (queryError) throw queryError;
+
+      if (!profile) {
+        setIsSubmitting(false);
+        setNotification({
+          type: 'error',
+          title: 'EMAIL NOT REGISTERED',
+          message: 'The email address entered is not registered for portal access. Please contact your administrator.'
+        });
+        return;
+      }
+
+      // Proceed to reset password since email is verified
+      const { error } = await resetPassword(target);
+      setIsSubmitting(false);
+      if (error) {
+        setFormError(error);
+        return;
+      }
+      setFormError(null);
+      setNotification({
+        type: 'success',
+        title: 'RECOVERY LINK SENT',
+        message: 'A secure password restoration link has been dispatched to your email address. Please check your inbox.'
+      });
+      setFormMode('login');
+    } catch (err) {
+      setIsSubmitting(false);
+      console.error("Recovery request error:", err);
+      setFormError(err.message || 'An unexpected error occurred during password recovery.');
+    }
   };
 
   const handleResetPassword = async (e: React.FormEvent) => {

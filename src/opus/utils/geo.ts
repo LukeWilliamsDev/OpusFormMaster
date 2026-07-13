@@ -5,6 +5,19 @@ export interface Coords {
   lng: number;
 }
 
+// In-memory cache for postcode coordinates to prevent duplicate network requests
+const postcodeCache: Record<string, Coords> = {};
+
+/**
+ * Validates if the given string matches the UK postcode regex.
+ */
+export const isValidUKPostcode = (postcode: string): boolean => {
+  const clean = postcode.trim().toUpperCase().replace(/\s+/g, '');
+  // Standard UK Postcode regex (matches outbound + inbound codes)
+  const regex = /^[A-Z]{1,2}[0-9][A-Z0-9]? ?[0-9][A-Z]{2}$/i;
+  return regex.test(clean);
+};
+
 /**
  * Mocks geocoding for UK postcodes using fixed coordinates for demo postcodes 
  * and a consistent hash-based generator for any other postcodes.
@@ -29,6 +42,45 @@ export const getPostcodeCoordinates = (postcode: string): Coords => {
   const lat = 52.5 + (Math.abs(hash % 100) / 100) * 1.5;
   const lng = -1.5 - (Math.abs((hash >> 2) % 100) / 100) * 1.5;
   return { lat, lng };
+};
+
+/**
+ * Asynchronously fetches actual coordinates for a UK postcode using the free postcodes.io API.
+ * Falls back to the local hash-based coordinates if the API is offline, returns 404, or fails.
+ */
+export const fetchPostcodeCoordinates = async (postcode: string): Promise<Coords> => {
+  const code = postcode.trim().toUpperCase().replace(/\s+/g, '');
+  
+  if (!code) {
+    return { lat: 52.5, lng: -1.5 };
+  }
+
+  // Check cache first
+  if (postcodeCache[code]) {
+    return postcodeCache[code];
+  }
+
+  try {
+    const response = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(code)}`);
+    if (response.ok) {
+      const data = await response.json();
+      if (data.status === 200 && data.result) {
+        const coords = {
+          lat: data.result.latitude,
+          lng: data.result.longitude
+        };
+        postcodeCache[code] = coords;
+        return coords;
+      }
+    }
+  } catch (error) {
+    console.warn(`Postcode geocoding API failed for ${code}, falling back to local generator.`, error);
+  }
+
+  // Fallback to the local generator
+  const fallbackCoords = getPostcodeCoordinates(code);
+  postcodeCache[code] = fallbackCoords;
+  return fallbackCoords;
 };
 
 /**

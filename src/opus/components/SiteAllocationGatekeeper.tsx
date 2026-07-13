@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Shield, AlertTriangle, MapPin } from 'lucide-react';
 import { Job, Worker } from '../types/erp';
-import { getPostcodeCoordinates, calculateDistance } from '../utils/geo';
+import { getPostcodeCoordinates, calculateDistance, fetchPostcodeCoordinates, Coords } from '../utils/geo';
 
 interface SiteAllocationGatekeeperProps {
   job: Job;
@@ -13,18 +13,54 @@ interface SiteAllocationGatekeeperProps {
 export const SiteAllocationGatekeeper: React.FC<SiteAllocationGatekeeperProps> = ({ job, workers, onUpdateJob }) => {
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [resolvedCoords, setResolvedCoords] = useState<Record<string, Coords>>({});
+
+  React.useEffect(() => {
+    const resolveAllCoords = async () => {
+      const postcodesToResolve = new Set<string>();
+      if (job.postcode) postcodesToResolve.add(job.postcode);
+      workers.forEach(w => {
+        if (w.postcode) postcodesToResolve.add(w.postcode);
+      });
+
+      const newCoords: Record<string, Coords> = { ...resolvedCoords };
+      let changed = false;
+
+      for (const pc of postcodesToResolve) {
+        if (!newCoords[pc]) {
+          try {
+            const coords = await fetchPostcodeCoordinates(pc);
+            newCoords[pc] = coords;
+            changed = true;
+          } catch (e) {
+            console.error('Failed to resolve postcode:', pc, e);
+          }
+        }
+      }
+
+      if (changed) {
+        setResolvedCoords(newCoords);
+      }
+    };
+
+    resolveAllCoords();
+  }, [job.postcode, workers]);
+
+  const getCoords = (postcode: string): Coords => {
+    return resolvedCoords[postcode] || getPostcodeCoordinates(postcode);
+  };
 
   const workersList = workers;
 
   const assignedWorkerIds = job.assignedWorkers || [];
-  const siteCoords = job.postcode ? getPostcodeCoordinates(job.postcode) : null;
+  const siteCoords = job.postcode ? getCoords(job.postcode) : null;
   const availableWorkers = workersList.filter(w => !assignedWorkerIds.includes(w.id));
   
   const availableWorkersWithDistance = availableWorkers.map(w => {
     let distance: number | null = null;
     let warning = false;
     if (siteCoords && w.postcode) {
-      const workerCoords = getPostcodeCoordinates(w.postcode);
+      const workerCoords = getCoords(w.postcode);
       distance = calculateDistance(workerCoords, siteCoords);
       if (distance > 50) {
         warning = true;

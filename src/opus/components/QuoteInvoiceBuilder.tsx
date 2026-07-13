@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { isValidUKPostcode } from '../utils/geo';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Plus, 
@@ -362,7 +363,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     if (!clientInfo.entity.trim()) missingFields.push("Client Name");
     if (!clientInfo.email.trim()) missingFields.push("Client Email");
     if (!clientInfo.site.trim()) missingFields.push("Project/Site Name");
-    if (!clientInfo.postcode.trim()) missingFields.push("Site Postcode");
+    if (!clientInfo.postcode.trim()) {
+      missingFields.push("Site Postcode");
+    } else if (!isValidUKPostcode(clientInfo.postcode)) {
+      missingFields.push("Invalid Site Postcode format (e.g. M1 1AE)");
+    }
     if (items.length === 0) missingFields.push("Line Items (at least one is required)");
     
     const validTerms = terms.filter(t => t.trim() !== "");
@@ -757,6 +762,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                           placeholder="e.g. SW1A 1AA"
                         />
                       </div>
+                      {clientInfo.postcode.trim() && !isValidUKPostcode(clientInfo.postcode) && (
+                        <p className="text-[9.5px] font-black text-red-500 uppercase tracking-widest mt-1">Invalid UK Postcode format</p>
+                      )}
                     </div>
                   </div>
                 </div>

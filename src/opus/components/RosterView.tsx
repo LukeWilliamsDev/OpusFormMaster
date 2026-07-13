@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { Worker, Ticket, Job } from '../types/erp';
 import { getTicketStatus } from '../utils/workerValidation';
+import { isValidUKPostcode } from '../utils/geo';
 import { TicketStatusBadge } from './TicketStatusBadge';
 import { RequestCredentialsModal } from './RequestCredentialsModal';
 import { supabase } from '../../integrations/supabase/client';
@@ -207,6 +208,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
       return;
     }
 
+    if (newWorkerPostcode.trim() && !isValidUKPostcode(newWorkerPostcode)) {
+      setFormError('Invalid Home Postcode format');
+      return;
+    }
+
     const newId = `worker-${Date.now()}`;
     const tickets: Ticket[] = [];
     if (includeCertifications) {
@@ -293,6 +299,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
           setEditError(null);
           if (!editName.trim()) {
             setEditError('Please enter worker name');
+            return;
+          }
+
+          if (editPostcode.trim() && !isValidUKPostcode(editPostcode)) {
+            setEditError('Invalid Home Postcode format');
             return;
           }
           
@@ -400,6 +411,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       className="w-full bg-[#1a1a1a] border border-[#333] hover:border-[#444] focus:border-brand-accent rounded-lg px-3.5 py-2.5 text-xs text-white uppercase tracking-wider transition-colors outline-none"
                       placeholder="e.g. M1 1AE"
                     />
+                    {editPostcode.trim() && !isValidUKPostcode(editPostcode) && (
+                      <p className="text-[9.5px] font-black text-red-500 uppercase tracking-widest mt-1">Invalid UK Postcode format</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1276,6 +1290,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 placeholder="e.g. M1 1AE"
                 className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-[#5C7285] transition-colors uppercase tracking-wider"
               />
+              {newWorkerPostcode.trim() && !isValidUKPostcode(newWorkerPostcode) && (
+                <p className="text-[9.5px] font-black text-red-500 uppercase tracking-widest mt-1">Invalid UK Postcode format</p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Role</label>

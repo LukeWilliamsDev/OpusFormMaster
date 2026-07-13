@@ -10,6 +10,7 @@ import { LaborRosterPage } from './pages/LaborRoster';
 import { JobLedgerPage } from './pages/JobLedger';
 import { PipelinePage } from './pages/Pipeline';
 import { AuditLogPage } from './pages/AuditLog';
+import { SubmitCredentialsPage } from './pages/SubmitCredentials';
 
 // Session gate — any /portal/* view requires a valid Supabase session.
 const ProtectedRoute: React.FC = () => {
@@ -66,6 +67,7 @@ export default function App() {
           {/* Public Views */}
           <Route path="/" element={<LandingPageWrapper />} />
           <Route path="/portal" element={<PortalAuthPage />} />
+          <Route path="/submit-credentials" element={<SubmitCredentialsPage />} />
 
           {/* Secure Portal Application Views */}
           <Route element={<ProtectedRoute />}>

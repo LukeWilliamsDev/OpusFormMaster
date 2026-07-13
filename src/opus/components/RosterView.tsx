@@ -6,6 +6,8 @@ import {
 import { Worker, Ticket, Job } from '../types/erp';
 import { getTicketStatus } from '../utils/workerValidation';
 import { TicketStatusBadge } from './TicketStatusBadge';
+import { RequestCredentialsModal } from './RequestCredentialsModal';
+import { supabase } from '../../integrations/supabase/client';
 
 interface RosterViewProps {
   workers: Worker[];
@@ -125,6 +127,40 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [editTickets, setEditTickets] = useState<Ticket[]>([]);
   const [editError, setEditError] = useState<string | null>(null);
   const [showReminderConfirm, setShowReminderConfirm] = useState(false);
+
+  const verifyTicket = async (workerId: string, ticketId: string, approve: boolean) => {
+    const worker = workers.find(w => w.id === workerId);
+    if (!worker) return;
+
+    let updatedTickets = [];
+    if (approve) {
+      updatedTickets = worker.tickets.map(t => 
+        t.id === ticketId ? { ...t, verified: true } : t
+      );
+    } else {
+      updatedTickets = worker.tickets.filter(t => t.id !== ticketId);
+    }
+
+    const updatedWorker = {
+      ...worker,
+      tickets: updatedTickets
+    };
+
+    setWorkers(prev => prev.map(w => w.id === workerId ? updatedWorker : w));
+
+    try {
+      const ticket = worker.tickets.find(t => t.id === ticketId);
+      await supabase.rpc('log_anonymous_audit', {
+        p_user_email: 'admin@opusform.co.uk',
+        p_action: approve ? 'APPROVE_DOCUMENT' : 'REJECT_DOCUMENT',
+        p_target_type: 'staff',
+        p_target_id: workerId,
+        p_details: { ticket_id: ticketId, ticket_type: ticket?.type, ticket_number: ticket?.ticketNumber }
+      });
+    } catch (e) {
+      console.error('Failed to log audit:', e);
+    }
+  };
 
   const handleSendReminder = () => {
     if (selectedWorkerDetails) {
@@ -261,10 +297,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
           )}
 
           {/* Form Content Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+          <div className="grid grid-cols-1 gap-6">
             
-            {/* Left Column: General Info */}
-            <div className="lg:col-span-1 flex flex-col">
+            {/* General Info */}
+            <div className="flex flex-col">
               <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
                 <div className="p-5 pb-4 border-b border-white/5 bg-[#161616] flex items-center space-x-3 shrink-0">
                   <div className="w-8 h-8 rounded-full bg-brand-accent/10 flex items-center justify-center shrink-0">
@@ -326,8 +362,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
               </div>
             </div>
 
-            {/* Right Column: Compliance & Tickets */}
-            <div className="lg:col-span-2 flex flex-col">
+            {/* Compliance & Tickets */}
+            <div className="flex flex-col">
               <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
                 <div className="p-5 pb-4 border-b border-white/5 bg-[#161616] flex items-center justify-between gap-4 flex-wrap">
                   <div className="flex items-center space-x-3">
@@ -549,13 +585,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 <div>
                   <span className="text-[8.5px] font-black uppercase tracking-widest text-[#666] block mb-1.5">Phone Number</span>
                   {selectedWorkerDetails.phone ? (
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#222] p-3.5 rounded-lg border border-[#333] w-full">
-                      <div className="text-xs sm:text-sm font-bold text-white tracking-wider">
+                    <div className="flex flex-col gap-2.5 bg-[#222] p-3 rounded-lg border border-[#333] w-full">
+                      <div className="text-xs font-bold text-white tracking-wider">
                         {selectedWorkerDetails.phone}
                       </div>
                       <a
                         href={`tel:${selectedWorkerDetails.phone}`}
-                        className="flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/10"
+                        className="flex items-center justify-center gap-2 px-3.5 py-2 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/10 w-full"
                       >
                         <Phone className="w-3.5 h-3.5" />
                         <span>Call</span>
@@ -572,13 +608,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 <div>
                   <span className="text-[8.5px] font-black uppercase tracking-widest text-[#666] block mb-1.5">Email Address</span>
                   {selectedWorkerDetails.email ? (
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-[#222] p-3.5 rounded-lg border border-[#333] w-full">
-                      <div className="text-xs sm:text-sm font-bold text-white tracking-wide truncate max-w-[220px]" title={selectedWorkerDetails.email}>
+                    <div className="flex flex-col gap-2.5 bg-[#222] p-3 rounded-lg border border-[#333] w-full">
+                      <div className="text-xs font-bold text-white tracking-wide break-all" title={selectedWorkerDetails.email}>
                         {selectedWorkerDetails.email}
                       </div>
                       <a
                         href={`mailto:${selectedWorkerDetails.email}`}
-                        className="flex items-center justify-center gap-2 px-3.5 py-2 bg-[#5C7285] hover:bg-[#6c8295] text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-[#5C7285]/10"
+                        className="flex items-center justify-center gap-2 px-3.5 py-2 bg-[#5C7285] hover:bg-[#6c8295] text-white rounded-lg text-[9px] font-black uppercase tracking-widest transition-all shadow-lg shadow-[#5C7285]/10 w-full"
                       >
                         <Mail className="w-3.5 h-3.5" />
                         <span>Email</span>
@@ -610,22 +646,63 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 </button>
               </div>
               <div className="space-y-2">
-                {selectedWorkerDetails.tickets.map(ticket => (
-                  <div key={ticket.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border border-[#333] bg-[#222] gap-3">
-                    <div className="flex flex-col space-y-1">
-                      <span className="text-[10px] font-black text-white uppercase tracking-widest">{ticket.type} Ticket</span>
-                      <span className="text-[9.5px] font-bold text-[#bbb] uppercase tracking-widest">
-                        Ref: {ticket.ticketNumber || 'N/A'} &bull; Exp: {ticket.expiryDate}
-                      </span>
+                {selectedWorkerDetails.tickets.map(ticket => {
+                  const isPending = ticket.verified === false;
+                  return (
+                    <div key={ticket.id} className="flex flex-col p-4 rounded-lg border border-[#333] bg-[#222] gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex flex-col space-y-1">
+                          <span className="text-[10px] font-black text-white uppercase tracking-widest flex items-center gap-1.5 flex-wrap">
+                            {ticket.type} Ticket
+                            {isPending && (
+                              <span className="px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 text-amber-400">
+                                Pending Approval
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-[9.5px] font-bold text-[#bbb] uppercase tracking-widest">
+                            Ref: {ticket.ticketNumber || 'N/A'} &bull; Exp: {ticket.expiryDate}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {ticket.documentUrl && (
+                            <a
+                              href={ticket.documentUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-2 py-1 bg-zinc-900 border border-zinc-800 hover:border-brand-accent text-zinc-300 hover:text-white rounded text-[8px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                            >
+                              View File
+                            </a>
+                          )}
+                          <TicketStatusBadge ticket={ticket} />
+                        </div>
+                      </div>
+                      
+                      {isPending && (
+                        <div className="flex items-center gap-2 pt-2 border-t border-white/5">
+                          <button
+                            onClick={() => verifyTicket(selectedWorkerDetails.id, ticket.id, true)}
+                            className="flex-1 py-1.5 bg-emerald-600/90 hover:bg-emerald-500 text-white rounded text-[8.5px] font-black uppercase tracking-widest transition-all cursor-pointer text-center"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => verifyTicket(selectedWorkerDetails.id, ticket.id, false)}
+                            className="flex-1 py-1.5 bg-red-950/40 hover:bg-red-950/70 border border-red-900/30 text-red-400 rounded text-[8.5px] font-black uppercase tracking-widest transition-all cursor-pointer text-center"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <TicketStatusBadge ticket={ticket} />
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             {/* Active Deployments / Sites Section */}
-            <div className="lg:col-span-2 space-y-4 bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
+            <div className="space-y-4 bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#bbb]">
                 <Calendar className="w-4.5 h-4.5 text-brand-accent" />
                 Active Site Deployments
@@ -827,66 +904,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
             </div>
           </div>
 
-          {/* Request Compliance Update Confirmation Modal */}
-          {showReminderConfirm && selectedWorkerDetails && (
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 text-left">
-              <div className="fixed inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setShowReminderConfirm(false)} />
-              <div className="bg-[#222428] border border-white/10 rounded-2xl w-full max-w-md overflow-hidden relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
-                <div className="p-6 pb-4 border-b border-white/5 bg-white/[0.01] flex items-center space-x-3.5">
-                  <div className="w-10 h-10 rounded-full bg-[#5C7285]/10 flex items-center justify-center shrink-0">
-                    <Send className="w-5 h-5 text-[#5C7285]" />
-                  </div>
-                  <div>
-                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">Request Compliance Update</h3>
-                    <p className="text-[8px] font-semibold text-white/30 uppercase tracking-widest mt-0.5">Automated Dispatch</p>
-                  </div>
-                </div>
-                
-                <div className="p-6 space-y-4">
-                  <p className="text-sm font-medium text-white/80 leading-relaxed">
-                    Are you sure you want to send automated compliance and ticket reminder alerts to <span className="font-bold text-white">{selectedWorkerDetails.name}</span>?
-                  </p>
-                  
-                  <div className="space-y-3 bg-white/5 border border-white/5 p-4 rounded-xl">
-                    <div className="flex items-start gap-2.5">
-                      <Mail className="w-4 h-4 text-[#5C7285] shrink-0 mt-0.5" />
-                      <div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-[#888] block">Email Reminder</span>
-                        <span className="text-xs text-white/80 font-mono tracking-wide">{selectedWorkerDetails.email || 'No email registered'}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-2.5 pt-3 border-t border-white/5">
-                      <Phone className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="text-[9px] font-black uppercase tracking-widest text-[#888] block">SMS Alert</span>
-                        <span className="text-xs text-white/80 font-mono tracking-wide">{selectedWorkerDetails.phone || 'No phone registered'}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <p className="text-[11px] text-white/40 leading-normal">
-                    This will dispatch direct instructions prompting the worker to upload copies of their valid tickets and certifications via their secure worker dashboard link.
-                  </p>
-                </div>
-
-                <div className="p-6 bg-white/[0.01] border-t border-white/5 flex items-center space-x-3">
-                  <button
-                    onClick={() => setShowReminderConfirm(false)}
-                    className="flex-1 py-3.5 border border-white/10 text-white/40 hover:text-white hover:bg-white/5 transition-all rounded text-[9px] font-black uppercase tracking-widest min-h-[44px]"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSendReminder}
-                    className="flex-1 py-3.5 bg-[#5C7285] hover:bg-[#6c8295] text-white transition-all rounded text-[9px] font-black uppercase tracking-widest shadow-lg shadow-[#5C7285]/10 min-h-[44px]"
-                  >
-                    Confirm & Send
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Request Compliance Update Modal */}
+          <RequestCredentialsModal 
+            isOpen={showReminderConfirm} 
+            onClose={() => setShowReminderConfirm(false)} 
+            worker={selectedWorkerDetails} 
+          />
 
           {/* Archive Confirmation Modal */}
           {selectedWorkerToDelete && (
@@ -1480,7 +1503,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           />
           
           {/* Drawer Panel container */}
-          <div className="relative w-full max-w-2xl bg-[#18181b] border-l border-zinc-800 h-full overflow-y-auto z-10 shadow-2xl flex flex-col transition-all duration-300 animate-in slide-in-from-right">
+          <div className="relative w-full max-w-2xl bg-[#18181b] border-l border-zinc-800 h-full overflow-hidden z-10 shadow-2xl flex flex-col transition-all duration-300 animate-in slide-in-from-right">
             {/* Drawer Header */}
             <div className="px-6 py-5 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between shrink-0 sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
               <div className="flex items-center space-x-3.5">
@@ -1559,7 +1582,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             </div>
 
             {/* Scroll Body */}
-            <div className="p-6 flex-grow">
+            <div className="p-6 flex-grow overflow-y-auto">
               {workerToEdit ? renderEditForm() : renderDetailsDossier()}
             </div>
           </div>

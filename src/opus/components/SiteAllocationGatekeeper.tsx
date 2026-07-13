@@ -1,7 +1,8 @@
 // @ts-nocheck
 import React, { useState } from 'react';
-import { Shield, AlertTriangle } from 'lucide-react';
+import { Shield, AlertTriangle, MapPin } from 'lucide-react';
 import { Job, Worker } from '../types/erp';
+import { getPostcodeCoordinates, calculateDistance } from '../utils/geo';
 
 interface SiteAllocationGatekeeperProps {
   job: Job;
@@ -16,7 +17,26 @@ export const SiteAllocationGatekeeper: React.FC<SiteAllocationGatekeeperProps> =
   const workersList = workers;
 
   const assignedWorkerIds = job.assignedWorkers || [];
+  const siteCoords = job.postcode ? getPostcodeCoordinates(job.postcode) : null;
   const availableWorkers = workersList.filter(w => !assignedWorkerIds.includes(w.id));
+  
+  const availableWorkersWithDistance = availableWorkers.map(w => {
+    let distance: number | null = null;
+    let warning = false;
+    if (siteCoords && w.postcode) {
+      const workerCoords = getPostcodeCoordinates(w.postcode);
+      distance = calculateDistance(workerCoords, siteCoords);
+      if (distance > 50) {
+        warning = true;
+      }
+    }
+    return { ...w, distance, warning };
+  }).sort((a, b) => {
+    if (a.distance === null && b.distance === null) return 0;
+    if (a.distance === null) return 1;
+    if (b.distance === null) return -1;
+    return a.distance - b.distance;
+  });
 
   // Evaluate against the current date so expiry checks stay live.
   const anchorDate = (() => {
@@ -137,9 +157,9 @@ export const SiteAllocationGatekeeper: React.FC<SiteAllocationGatekeeperProps> =
             className="flex-1 bg-[#1e1e1e] border border-[#333] text-xs font-bold text-white rounded-lg px-3 py-2 outline-none focus:border-[#5C7285] cursor-pointer uppercase tracking-wider"
           >
             <option value="" disabled className="text-white/20">Select Operative to deploy...</option>
-            {availableWorkers.map(w => (
+            {availableWorkersWithDistance.map(w => (
               <option key={w.id} value={w.id}>
-                {w.name} &bull; {w.role.toUpperCase()}
+                {w.name} &bull; {w.role.toUpperCase()} {w.distance !== null ? `(${w.distance.toFixed(1)} miles${w.warning ? ' ⚠️ >50mi' : ''})` : '(no postcode)'}
               </option>
             ))}
           </select>
@@ -172,15 +192,27 @@ export const SiteAllocationGatekeeper: React.FC<SiteAllocationGatekeeperProps> =
         </div>
 
         <div className="space-y-2.5">
-          {currentSquad.map(worker => (
-            <div key={worker.id} className="p-3 bg-[#1c1c1e] border border-[#2e2e2e] rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="space-y-1.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] font-extrabold text-white uppercase tracking-wider">{worker.name}</span>
-                  <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[7px] font-black text-white/50 uppercase tracking-widest">
-                    {worker.role}
-                  </span>
-                </div>
+          {currentSquad.map(worker => {
+            const workerCoords = worker.postcode && siteCoords ? getPostcodeCoordinates(worker.postcode) : null;
+            const dist = workerCoords && siteCoords ? calculateDistance(workerCoords, siteCoords) : null;
+            return (
+              <div key={worker.id} className="p-3 bg-[#1c1c1e] border border-[#2e2e2e] rounded-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-extrabold text-white uppercase tracking-wider">{worker.name}</span>
+                    <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[7px] font-black text-white/50 uppercase tracking-widest">
+                      {worker.role}
+                    </span>
+                    {dist !== null && (
+                      <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border ${
+                        dist > 50 
+                          ? 'bg-red-500/10 border-red-500/20 text-red-400 animate-pulse' 
+                          : 'bg-[#5C7285]/10 border-[#5C7285]/20 text-[#859bb0]'
+                      }`}>
+                        {dist.toFixed(1)} miles {dist > 50 && '⚠️'}
+                      </span>
+                    )}
+                  </div>
 
                 <div className="flex flex-wrap gap-1.5">
                   {worker.tickets.map(ticket => {
@@ -214,7 +246,8 @@ export const SiteAllocationGatekeeper: React.FC<SiteAllocationGatekeeperProps> =
                 Withdraw
               </button>
             </div>
-          ))}
+          );
+        })}
 
           {currentSquad.length === 0 && (
             <div className="text-center py-6 border border-dashed border-[#2e2e2e] rounded-lg text-[10px] font-bold uppercase tracking-widest text-[#444]">

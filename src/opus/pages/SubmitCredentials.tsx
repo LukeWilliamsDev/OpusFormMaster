@@ -40,7 +40,7 @@ export const SubmitCredentialsPage: React.FC = () => {
       const { data, error } = await supabase
         .from('document_requests')
         .select('*, staff:worker_id(name)')
-        .eq('id', token)
+        .eq('id', token!)
         .single();
 
       if (error || !data) {
@@ -157,7 +157,7 @@ export const SubmitCredentialsPage: React.FC = () => {
 
       // Call secure database RPC function
       const { error: submitError } = await supabase.rpc('submit_worker_documents', {
-        p_request_id: token,
+        p_request_id: token!,
         p_new_tickets: newTickets
       });
 

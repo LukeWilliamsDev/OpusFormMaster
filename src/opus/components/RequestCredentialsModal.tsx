@@ -21,6 +21,9 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sendEmail, setSendEmail] = useState(true);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailErrorMsg, setEmailErrorMsg] = useState<string | null>(null);
 
   if (!isOpen || !worker) return null;
 
@@ -63,13 +66,47 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
       const uploadUrl = `${window.location.origin}/submit-credentials?token=${data.id}`;
       setGeneratedLink(uploadUrl);
 
+      // Call edge function send-compliance-email
+      let emailSentResult = false;
+      let emailErrorResult = '';
+      if (sendEmail && worker.email) {
+        try {
+          const { error: emailError } = await supabase.functions.invoke('send-compliance-email', {
+            body: {
+              toEmail: worker.email,
+              workerName: worker.name,
+              requestedCerts: selectedCerts,
+              uploadUrl: uploadUrl,
+              expiresAt: expiresAt.toISOString()
+            }
+          });
+          if (emailError) {
+            console.error('Failed to send email:', emailError);
+            emailErrorResult = emailError.message;
+            setEmailErrorMsg(emailError.message);
+          } else {
+            emailSentResult = true;
+            setEmailSent(true);
+          }
+        } catch (e: any) {
+          console.error('Email send exception:', e);
+          emailErrorResult = e.message || 'Unknown error';
+          setEmailErrorMsg(emailErrorResult);
+        }
+      }
+
       // Create admin audit log entry for request creation
       const { error: auditError } = await supabase.rpc('log_anonymous_audit', {
         p_user_email: 'admin@opusform.co.uk',
         p_action: 'CREATE_DOCUMENT_REQUEST',
         p_target_type: 'staff',
         p_target_id: worker.id,
-        p_details: { request_id: data.id, requested_certs: selectedCerts }
+        p_details: { 
+          request_id: data.id, 
+          requested_certs: selectedCerts,
+          email_sent: emailSentResult,
+          email_error: emailErrorResult || undefined
+        }
       });
       if (auditError) console.error('Failed to log audit:', auditError);
 
@@ -166,6 +203,22 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
                   })}
                 </div>
               </div>
+              
+              {/* Send Email Checkbox */}
+              {worker.email && (
+                <label className="flex items-center space-x-3 cursor-pointer p-3.5 border border-[#333] bg-[#1a1a1a]/50 rounded-xl hover:bg-[#1a1a1a] transition-all select-none">
+                  <input
+                    type="checkbox"
+                    checked={sendEmail}
+                    onChange={(e) => setSendEmail(e.target.checked)}
+                    className="w-4 h-4 rounded border-zinc-700 text-brand-accent focus:ring-0 focus:ring-offset-0 bg-zinc-950 cursor-pointer"
+                  />
+                  <div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-white">Send request via email</span>
+                    <span className="block text-[8px] text-zinc-500 uppercase tracking-widest mt-0.5">To: {worker.email}</span>
+                  </div>
+                </label>
+              )}
 
               {/* Expiry Settings */}
               <div className="grid grid-cols-2 gap-4">
@@ -213,6 +266,19 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
               <div className="p-4 bg-emerald-950/20 border border-emerald-900/30 rounded-xl text-center text-emerald-400 font-bold uppercase tracking-wider text-[10px]">
                 Link Generated Successfully!
               </div>
+
+              {sendEmail && worker.email && (
+                <div className={`p-4 rounded-xl text-[10px] font-bold uppercase tracking-wider border leading-relaxed ${
+                  emailSent 
+                    ? 'bg-emerald-950/20 border-emerald-900/30 text-emerald-400' 
+                    : 'bg-amber-950/20 border-amber-900/30 text-amber-500'
+                }`}>
+                  {emailSent 
+                    ? `Email successfully sent to ${worker.email}`
+                    : `Link generated but email failed to send: ${emailErrorMsg || 'Unknown error'}`
+                  }
+                </div>
+              )}
 
               <div className="space-y-2">
                 <label className="text-[9px] font-black uppercase tracking-widest text-[#666] block">

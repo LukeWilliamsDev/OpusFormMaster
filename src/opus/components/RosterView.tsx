@@ -127,6 +127,35 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [editTickets, setEditTickets] = useState<Ticket[]>([]);
   const [editError, setEditError] = useState<string | null>(null);
   const [showReminderConfirm, setShowReminderConfirm] = useState(false);
+  const [newWorkerPostcode, setNewWorkerPostcode] = useState('');
+  const [editPostcode, setEditPostcode] = useState('');
+
+  const handleViewDocument = async (documentUrl: string) => {
+    if (!documentUrl) return;
+    
+    if (documentUrl.includes('/compliance-documents/')) {
+      try {
+        const parts = documentUrl.split('/compliance-documents/');
+        const filePath = parts[1];
+        
+        const { data, error } = await supabase.storage
+          .from('compliance-documents')
+          .createSignedUrl(filePath, 60);
+          
+        if (error) throw error;
+        if (data?.signedUrl) {
+          window.open(data.signedUrl, '_blank');
+          return;
+        }
+      } catch (err) {
+        console.error('Failed to generate signed URL:', err);
+        window.open(documentUrl, '_blank');
+        return;
+      }
+    }
+    
+    window.open(documentUrl, '_blank');
+  };
 
   const verifyTicket = async (workerId: string, ticketId: string, approve: boolean) => {
     const worker = workers.find(w => w.id === workerId);
@@ -212,6 +241,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       role: newWorkerRole,
       phone: newWorkerPhone.trim() || undefined,
       email: newWorkerEmail.trim() || undefined,
+      postcode: newWorkerPostcode.trim().toUpperCase() || undefined,
       tickets,
       uploadedCertificates: []
     };
@@ -223,6 +253,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     setNewWorkerName('');
     setNewWorkerPhone('');
     setNewWorkerEmail('');
+    setNewWorkerPostcode('');
     setShowAddWorkerForm(false);
   };
 
@@ -283,6 +314,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             role: editRole,
             phone: editPhone.trim() || undefined,
             email: editEmail.trim() || undefined,
+            postcode: editPostcode.trim().toUpperCase() || undefined,
             tickets: editTickets
           };
 
@@ -356,6 +388,17 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       onChange={(e) => setEditEmail(e.target.value)}
                       className="w-full bg-[#1a1a1a] border border-[#333] hover:border-[#444] focus:border-brand-accent rounded-lg px-3.5 py-2.5 text-xs text-white tracking-widest transition-colors outline-none"
                       placeholder="e.g. john.doe@opusform.co.uk"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase tracking-widest text-[#888]">Home Postcode</label>
+                    <input
+                      type="text"
+                      value={editPostcode}
+                      onChange={(e) => setEditPostcode(e.target.value)}
+                      className="w-full bg-[#1a1a1a] border border-[#333] hover:border-[#444] focus:border-brand-accent rounded-lg px-3.5 py-2.5 text-xs text-white uppercase tracking-wider transition-colors outline-none"
+                      placeholder="e.g. M1 1AE"
                     />
                   </div>
                 </div>
@@ -626,6 +669,21 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Home Postcode */}
+                <div>
+                  <span className="text-[8.5px] font-black uppercase tracking-widest text-[#666] block mb-1.5">Home Postcode</span>
+                  {selectedWorkerDetails.postcode ? (
+                    <div className="flex items-center gap-2 bg-[#222] p-3 rounded-lg border border-[#333] w-full text-xs font-bold text-white tracking-widest uppercase">
+                      <MapPin className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+                      {selectedWorkerDetails.postcode}
+                    </div>
+                  ) : (
+                    <div className="text-[9px] font-bold uppercase tracking-widest text-[#555] p-2.5 bg-[#222] rounded-lg border border-[#333] w-full text-center">
+                      No postcode registered
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -666,14 +724,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         </div>
                         <div className="flex items-center gap-2">
                           {ticket.documentUrl && (
-                            <a
-                              href={ticket.documentUrl}
-                              target="_blank"
-                              rel="noreferrer"
+                            <button
+                              onClick={() => handleViewDocument(ticket.documentUrl)}
                               className="px-2 py-1 bg-zinc-900 border border-zinc-800 hover:border-brand-accent text-zinc-300 hover:text-white rounded text-[8px] font-black uppercase tracking-wider transition-colors cursor-pointer"
                             >
                               View File
-                            </a>
+                            </button>
                           )}
                           <TicketStatusBadge ticket={ticket} />
                         </div>
@@ -1212,6 +1268,16 @@ export const RosterView: React.FC<RosterViewProps> = ({
               />
             </div>
             <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Home Postcode</label>
+              <input
+                type="text"
+                value={newWorkerPostcode}
+                onChange={(e) => setNewWorkerPostcode(e.target.value)}
+                placeholder="e.g. M1 1AE"
+                className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-[#5C7285] transition-colors uppercase tracking-wider"
+              />
+            </div>
+            <div className="space-y-2">
               <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Role</label>
               <select
                 value={newWorkerRole}
@@ -1538,6 +1604,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         setEditRole(selectedWorkerDetails.role);
                         setEditPhone(selectedWorkerDetails.phone || '');
                         setEditEmail(selectedWorkerDetails.email || '');
+                        setEditPostcode(selectedWorkerDetails.postcode || '');
                         setEditTickets([...selectedWorkerDetails.tickets]);
                         setEditError(null);
                       }}

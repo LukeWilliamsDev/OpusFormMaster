@@ -29,6 +29,7 @@ export interface Worker {
   tickets: Ticket[];
   phone?: string;
   email?: string;
+  postcode?: string;
   uploadedCertificates?: {
     id: string;
     name: string;

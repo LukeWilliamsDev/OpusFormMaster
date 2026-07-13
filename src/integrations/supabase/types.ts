@@ -14,13 +14,304 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          target_id: string
+          target_type: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id: string
+          target_type: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          target_id?: string
+          target_type?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      document_requests: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          expires_at: string
+          id: string
+          requested_certs: string[]
+          worker_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          requested_certs: string[]
+          worker_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          expires_at?: string
+          id?: string
+          requested_certs?: string[]
+          worker_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_requests_worker_id_fkey"
+            columns: ["worker_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          assigned_workers: string[]
+          contract_max_pours: number
+          created_at: string
+          current_pours: number
+          id: string
+          job_ref: string
+          main_contractor: string | null
+          postcode: string | null
+          schedule_value: number
+          site_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_workers?: string[]
+          contract_max_pours?: number
+          created_at?: string
+          current_pours?: number
+          id: string
+          job_ref: string
+          main_contractor?: string | null
+          postcode?: string | null
+          schedule_value?: number
+          site_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_workers?: string[]
+          contract_max_pours?: number
+          created_at?: string
+          current_pours?: number
+          id?: string
+          job_ref?: string
+          main_contractor?: string | null
+          postcode?: string | null
+          schedule_value?: number
+          site_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          full_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      quotes: {
+        Row: {
+          client_info: Json
+          created_at: string
+          date: string
+          id: string
+          is_sent: boolean
+          items: Json
+          reference: string
+          totals: Json
+          updated_at: string
+          vat_rate: number
+        }
+        Insert: {
+          client_info: Json
+          created_at?: string
+          date?: string
+          id?: string
+          is_sent?: boolean
+          items: Json
+          reference: string
+          totals: Json
+          updated_at?: string
+          vat_rate?: number
+        }
+        Update: {
+          client_info?: Json
+          created_at?: string
+          date?: string
+          id?: string
+          is_sent?: boolean
+          items?: Json
+          reference?: string
+          totals?: Json
+          updated_at?: string
+          vat_rate?: number
+        }
+        Relationships: []
+      }
+      shifts: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          is_removed: boolean
+          job_id: string
+          updated_at: string
+          worker_id: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id: string
+          is_removed?: boolean
+          job_id: string
+          updated_at?: string
+          worker_id: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          is_removed?: boolean
+          job_id?: string
+          updated_at?: string
+          worker_id?: string
+        }
+        Relationships: []
+      }
+      smtp_config: {
+        Row: {
+          id: number
+          key: string
+          updated_at: string | null
+          value: string
+        }
+        Insert: {
+          id?: number
+          key: string
+          updated_at?: string | null
+          value: string
+        }
+        Update: {
+          id?: number
+          key?: string
+          updated_at?: string | null
+          value?: string
+        }
+        Relationships: []
+      }
+      staff: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          is_archived: boolean
+          name: string
+          phone: string | null
+          postcode: string | null
+          role: string
+          tickets: Json
+          updated_at: string
+          uploaded_certificates: Json
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          is_archived?: boolean
+          name: string
+          phone?: string | null
+          postcode?: string | null
+          role: string
+          tickets?: Json
+          updated_at?: string
+          uploaded_certificates?: Json
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          is_archived?: boolean
+          name?: string
+          phone?: string | null
+          postcode?: string | null
+          role?: string
+          tickets?: Json
+          updated_at?: string
+          uploaded_certificates?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      decrypted_smtp_config: {
+        Row: {
+          key: string | null
+          value: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      check_email_registered: { Args: { _email: string }; Returns: boolean }
+      log_anonymous_audit: {
+        Args: {
+          p_action: string
+          p_details: Json
+          p_target_id: string
+          p_target_type: string
+          p_user_email: string
+        }
+        Returns: undefined
+      }
+      submit_worker_documents: {
+        Args: { p_new_tickets: Json; p_request_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "dispatcher" | "operative"

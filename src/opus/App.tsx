@@ -23,9 +23,13 @@ const ProtectedRoute: React.FC = () => {
 // Role gate — restricts a subtree to a role allowlist. Blocked users go to the
 // first surface their role can see.
 const RoleGuard: React.FC<{ allow: Array<'admin' | 'dispatcher' | 'operative'>; children: React.ReactNode }> = ({ allow, children }) => {
-  const { role, authLoading } = usePortal();
+  const { role, user, authLoading } = usePortal();
   if (authLoading || role === null) {
     return <div className="min-h-screen bg-[#1A1B1E]" />;
+  }
+  // admin@opusform.co.uk can ONLY see the audit trail
+  if (user?.email === 'admin@opusform.co.uk') {
+    return <Navigate to="/portal/audit" replace />;
   }
   if (!allow.includes(role)) {
     const fallback = role === 'operative' ? '/portal/roster?view=calendar' : '/portal/dashboard';
@@ -33,6 +37,20 @@ const RoleGuard: React.FC<{ allow: Array<'admin' | 'dispatcher' | 'operative'>; 
   }
   return <>{children}</>;
 };
+
+// Audit Log Gate - restricts the audit trail to only the specific admin email
+const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { role, user, authLoading } = usePortal();
+  if (authLoading || role === null) {
+    return <div className="min-h-screen bg-[#1A1B1E]" />;
+  }
+  if (role !== 'admin' || user?.email !== 'admin@opusform.co.uk') {
+    const fallback = role === 'operative' ? '/portal/roster?view=calendar' : '/portal/dashboard';
+    return <Navigate to={fallback} replace />;
+  }
+  return <>{children}</>;
+};
+
 
 // Sub-component to wire navigation on the Landing Page
 const LandingPageWrapper: React.FC = () => {
@@ -65,7 +83,7 @@ export default function App() {
               <RoleGuard allow={['admin', 'dispatcher', 'operative']}><LaborRosterPage /></RoleGuard>
             } />
             <Route path="/portal/audit" element={
-              <RoleGuard allow={['admin']}><AuditLogPage /></RoleGuard>
+              <AuditLogGuard><AuditLogPage /></AuditLogGuard>
             } />
             
             {/* Fallback internal routes — send operatives to their calendar. */}
@@ -81,7 +99,10 @@ export default function App() {
 }
 
 const RoleAwareFallback: React.FC = () => {
-  const { role } = usePortal();
+  const { role, user } = usePortal();
+  if (user?.email === 'admin@opusform.co.uk') {
+    return <Navigate to="/portal/audit" replace />;
+  }
   const target = role === 'operative' ? '/portal/roster?view=calendar' : '/portal/dashboard';
   return <Navigate to={target} replace />;
 };

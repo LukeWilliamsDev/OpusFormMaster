@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { usePortal } from '../context/PortalContext';
 
 export const PortalLayout: React.FC = () => {
-  const { signOut, role } = usePortal();
+  const { signOut, role, user } = usePortal();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,7 +30,15 @@ export const PortalLayout: React.FC = () => {
     { name: 'Quote Management', path: '/portal/pipeline?view=pipeline-registry', roles: ['admin', 'dispatcher'] },
     { name: 'Audit Trail', path: '/portal/audit', roles: ['admin'] },
   ];
-  const navItems = allNav.filter(item => !role || item.roles.includes(role));
+  const navItems = allNav.filter(item => {
+    if (!role) return false;
+    if (!item.roles.includes(role)) return false;
+    if (user?.email === 'admin@opusform.co.uk') {
+      return item.path === '/portal/audit';
+    }
+    if (item.path === '/portal/audit' && user?.email !== 'admin@opusform.co.uk') return false;
+    return true;
+  });
 
   const checkIsActive = (path: string) => {
     const [itemPath, itemQuery] = path.split('?');
@@ -93,7 +101,7 @@ export const PortalLayout: React.FC = () => {
               onClick={handleLogoutClick}
               className="hidden lg:flex items-center space-x-2 px-4 py-2 border border-white/10 rounded hover:bg-white/5 transition-all group active:scale-95 cursor-pointer"
             >
-              <span className="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-brand-white">Terminate Session</span>
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/40 group-hover:text-brand-white">Logout</span>
               <LogOut className="w-4 h-4 text-white/40 group-hover:text-brand-white" />
             </button>
             <button 
@@ -165,7 +173,7 @@ export const PortalLayout: React.FC = () => {
                   className="flex items-center justify-center space-x-3 w-full py-4 border border-white/10 rounded text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Terminate Session</span>
+                  <span>Logout</span>
                 </button>
               </div>
             </motion.div>

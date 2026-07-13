@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { 
-  Users, Search, Plus, Trash2, ShieldAlert, X, Phone, Mail, FileText, UploadCloud, Download, FilePlus, UserCheck, AlertTriangle, UserPlus, Calendar, MapPin, ChevronLeft, Edit, Send
+  Users, Search, Plus, Trash2, ShieldAlert, X, Phone, Mail, FileText, UploadCloud, Download, FilePlus, UserCheck, AlertTriangle, UserPlus, Calendar, MapPin, ChevronLeft, Edit, Send, LayoutGrid, List
 } from 'lucide-react';
 import { Worker, Ticket, Job } from '../types/erp';
 import { getTicketStatus } from '../utils/workerValidation';
@@ -105,6 +105,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [editRole, setEditRole] = useState<string>('Concrete Operative');
 
   const [rosterMode, setRosterMode] = useState<'active' | 'archived'>('active');
+  const [layoutMode, setLayoutMode] = useState<'list' | 'grid'>('list');
   const [showAllHistory, setShowAllHistory] = useState(false);
 
   // Auto toggle cert inclusion checkbox off for office roles
@@ -217,34 +218,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
     return d;
   })();
 
-  if (workerToEdit) {
+  const renderEditForm = () => {
+    if (!workerToEdit) return null;
     return (
-      <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in duration-200">
-        {/* Top Header Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2e2e2e] pb-5">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setWorkerToEdit(null)}
-              className="px-3.5 py-2 bg-[#222] hover:bg-[#2c2c2c] border border-[#333] hover:border-[#444] text-[#ccc] hover:text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 shadow-sm"
-            >
-              <ChevronLeft className="w-4 h-4 text-brand-accent" />
-              <span>Back to Dossier</span>
-            </button>
-            <div>
-              <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight font-archivo">
-                Edit Staff Dossier
-              </h2>
-              <p className="text-[9px] font-bold text-[#888] uppercase tracking-widest mt-1">
-                Updating profile for <span className="text-white">{workerToEdit.name}</span>
-              </p>
-            </div>
-          </div>
-          <span className="self-start sm:self-center px-3 py-1 rounded-md bg-[#252525] border border-[#333] text-[9px] font-black text-brand-accent uppercase tracking-widest">
-            {editRole} &bull; Dossier Edit Mode
-          </span>
-        </div>
-
-        <form onSubmit={(e) => {
+      <form onSubmit={(e) => {
           e.preventDefault();
           setEditError(null);
           if (!editName.trim()) {
@@ -473,11 +450,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
             </button>
           </div>
         </form>
-      </div>
     );
-  }
+  };
 
-  if (selectedWorkerDetails) {
+  const renderDetailsDossier = () => {
+    if (!selectedWorkerDetails) return null;
     const isShiftHistory = (shift: any) => {
       const job = (jobs || []).find(j => j.id === shift.jobId);
       const isJobCompleted = job?.status === 'completed';
@@ -547,86 +524,20 @@ export const RosterView: React.FC<RosterViewProps> = ({
     };
 
     return (
-      <div className="space-y-4">
-        {/* Dossier Header */}
-        <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl shadow-2xl overflow-hidden">
-          {/* Top navigation row */}
-          <div className="p-4 sm:px-6 bg-[#161616] border-b border-[#2a2a2a] flex items-center justify-between gap-3 flex-wrap">
-            <button
-              onClick={() => setSelectedWorkerDetailsId(null)}
-              className="px-3.5 py-2 bg-[#222] hover:bg-[#2c2c2c] border border-[#333] hover:border-[#444] text-[#ccc] hover:text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 shadow-sm"
-            >
-              <ChevronLeft className="w-4 h-4 text-brand-accent" />
-              <span>Back to Roster</span>
-            </button>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setWorkerToEdit(selectedWorkerDetails);
-                  setEditName(selectedWorkerDetails.name);
-                  setEditRole(selectedWorkerDetails.role);
-                  setEditPhone(selectedWorkerDetails.phone || '');
-                  setEditEmail(selectedWorkerDetails.email || '');
-                  setEditTickets([...selectedWorkerDetails.tickets]);
-                  setEditError(null);
-                }}
-                className="px-3.5 py-2 bg-[#2a2a2a] hover:bg-[#333] border border-[#3e3e3e] hover:border-[#555] text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-all flex items-center gap-2 shadow-sm"
-              >
-                <Edit className="w-3.5 h-3.5 text-brand-accent" />
-                <span>Edit Dossier</span>
-              </button>
-
-              {selectedWorkerDetails.isArchived ? (
-                <>
-                  <button
-                    onClick={() => setSelectedWorkerToRestore(selectedWorkerDetails)}
-                    className="px-3.5 py-2 bg-emerald-950/25 hover:bg-emerald-950/60 text-emerald-400/80 hover:text-emerald-400 rounded-lg transition-all border border-emerald-900/30 hover:border-emerald-900/60 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 cursor-pointer"
-                    title="Restore to active roster"
-                  >
-                    <UserCheck className="w-3.5 h-3.5" />
-                    <span>Restore Staff</span>
-                  </button>
-                  <button
-                    onClick={() => setSelectedWorkerToPermanentDelete(selectedWorkerDetails)}
-                    className="px-3.5 py-2 bg-red-950/25 hover:bg-red-950/60 text-red-400/80 hover:text-red-400 rounded-lg transition-all border border-red-900/30 hover:border-red-900/60 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 cursor-pointer"
-                    title="Delete permanently from database"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    <span>Delete Permanently</span>
-                  </button>
-                </>
-              ) : (
-                <button
-                  onClick={() => setSelectedWorkerToDelete(selectedWorkerDetails)}
-                  className="px-3.5 py-2 bg-red-950/25 hover:bg-red-950/60 text-red-400/80 hover:text-red-400 rounded-lg transition-all border border-red-900/30 hover:border-red-900/60 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 cursor-pointer"
-                  title="Archive profile"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Archive Staff</span>
-                </button>
-              )}
-            </div>
+      <div className="space-y-6 animate-in fade-in duration-200">
+        {/* Profile Card Banner */}
+        <div className="flex items-center space-x-4 bg-zinc-950/40 p-4 rounded-xl border border-zinc-800">
+          <div className="w-12 h-12 rounded-xl bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent text-sm font-black uppercase shrink-0">
+            {selectedWorkerDetails.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
           </div>
+          <div>
+            <h4 className="text-base font-bold text-white uppercase tracking-wider leading-tight">{selectedWorkerDetails.name}</h4>
+            <span className="text-[10px] font-black text-brand-accent uppercase tracking-widest block mt-1">{selectedWorkerDetails.role}</span>
+          </div>
+        </div>
 
-          {/* Main header title row */}
-          <div className="p-5 sm:p-8 border-b border-[#2e2e2e] bg-[#1a1a1a]/40">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#2a2a2a] border border-[#383838] flex items-center justify-center text-[#5C7285] shrink-0">
-                <FileText className="w-6 h-6" />
-              </div>
-              <div>
-                <h2 className="text-xl sm:text-2xl font-black text-white uppercase tracking-tight font-archivo">
-                  {selectedWorkerDetails.name}
-                </h2>
-                <div className="text-[10px] font-black text-[#888] uppercase tracking-[0.2em] mt-1.5 flex items-center gap-2">
-                  <span className="text-brand-accent">{selectedWorkerDetails.role}</span>
-                  <span className="text-white/10">•</span>
-                  <span>Compliance Dossier</span>
-                </div>
-              </div>
-            </div>
-          </div>          <div className="p-5 sm:p-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Details Grid (single column inside drawer for readability) */}
+        <div className="grid grid-cols-1 gap-6">
             {/* Contact & Communication details */}
             <div className="space-y-4 bg-[#1a1a1a] border border-[#333] rounded-xl p-6">
               <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#bbb]">
@@ -1160,10 +1071,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
               </div>
             </div>
           )}
-        </div>
       </div>
     );
-  }
+  };
 
   return (
     <div className="space-y-6">
@@ -1179,13 +1089,33 @@ export const RosterView: React.FC<RosterViewProps> = ({
             className="w-full bg-[#1e1e1e] border border-[#333] text-sm text-white rounded-xl pl-12 pr-4 py-3 focus:outline-none focus:border-[#5C7285] transition-colors placeholder:text-[#555] shadow-inner"
           />
         </div>
-        <button
-          onClick={() => setShowAddWorkerForm(!showAddWorkerForm)}
-          className="px-5 py-3 bg-[#5C7285] hover:bg-[#6c8295] text-white rounded-xl transition-all shadow-lg shadow-[#5C7285]/20 flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest whitespace-nowrap"
-        >
-          {showAddWorkerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          {showAddWorkerForm ? 'Cancel Registration' : 'Register Staff'}
-        </button>
+        <div className="flex items-center gap-3 w-full md:w-auto">
+          {/* Layout Mode Toggle */}
+          <div className="flex items-center bg-[#1e1e1e] border border-[#333] rounded-xl p-1 shrink-0">
+            <button
+              onClick={() => setLayoutMode('list')}
+              className={`p-2 rounded-lg transition-colors cursor-pointer ${layoutMode === 'list' ? 'bg-[#2a2a2a] text-brand-accent' : 'text-[#666] hover:text-[#aaa]'}`}
+              title="List View"
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setLayoutMode('grid')}
+              className={`p-2 rounded-lg transition-colors cursor-pointer ${layoutMode === 'grid' ? 'bg-[#2a2a2a] text-brand-accent' : 'text-[#666] hover:text-[#aaa]'}`}
+              title="Grid View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
+
+          <button
+            onClick={() => setShowAddWorkerForm(!showAddWorkerForm)}
+            className="px-5 py-3 bg-[#5C7285] hover:bg-[#6c8295] text-white rounded-xl transition-all shadow-lg shadow-[#5C7285]/20 flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest whitespace-nowrap cursor-pointer"
+          >
+            {showAddWorkerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+            {showAddWorkerForm ? 'Cancel Registration' : 'Register Staff'}
+          </button>
+        </div>
       </div>
 
       {/* Active vs Archived Selector */}
@@ -1326,16 +1256,112 @@ export const RosterView: React.FC<RosterViewProps> = ({
         </form>
       )}
 
-      {/* Staff Roster Table */}
-      <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl">
-        <div className="hidden md:grid md:grid-cols-[2fr_1.5fr_2.5fr] gap-4 px-6 py-4 border-b border-[#2e2e2e] bg-[#222]">
-          <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Staff Details</span>
-          <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Contact</span>
-          <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Compliance & Tickets</span>
+      {/* Staff Roster Content */}
+      {layoutMode === 'list' ? (
+        <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl">
+          <div className="hidden md:grid md:grid-cols-[2fr_1.5fr_2.5fr] gap-4 px-6 py-4 border-b border-[#2e2e2e] bg-[#222]">
+            <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Staff Details</span>
+            <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Contact</span>
+            <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Compliance & Tickets</span>
+          </div>
+          <div className="divide-y divide-[#2e2e2e]">
+            {filteredWorkersList.length === 0 ? (
+              <div className="px-6 py-16 text-center">
+                <Users className="w-10 h-10 text-[#444] mx-auto mb-4" />
+                <div className="text-[11px] font-black uppercase tracking-widest text-[#666]">
+                  No matching staff found
+                </div>
+              </div>
+            ) : (
+              filteredWorkersList.map(worker => {
+                const isOfficeStaff = OFFICE_ROLES.includes(worker.role);
+                const hasCertifications = worker.tickets && worker.tickets.length > 0;
+                let isUnfit = false;
+                if (isOfficeStaff) {
+                  const hasExpiredCerts = worker.tickets?.some(t => new Date(t.expiryDate) < anchorDate);
+                  isUnfit = hasCertifications && hasExpiredCerts;
+                } else {
+                  const cscsTicket = worker.tickets?.find(t => t.type.includes('CSCS') || t.type.includes('Labourer'));
+                  isUnfit = !cscsTicket || new Date(cscsTicket.expiryDate) < anchorDate;
+                }
+                const isAssignActive = activeWorkerToAssign?.id === worker.id;
+
+                return (
+                  <div 
+                    key={worker.id}
+                    onClick={() => setSelectedWorkerDetailsId(worker.id)}
+                    className={`flex flex-col md:grid md:grid-cols-[2fr_1.5fr_2.5fr] gap-4 px-6 py-5 items-center hover:bg-[#242424] cursor-pointer transition-all duration-150 border-l-2 ${isUnfit ? 'border-l-red-500/50 hover:border-l-red-500' : 'border-l-transparent hover:border-l-brand-accent'} ${isAssignActive ? 'bg-[#5C7285]/10' : ''}`}
+                  >
+                    {/* Staff Details */}
+                    <div className="flex flex-col space-y-1.5 w-full md:w-auto">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-black uppercase tracking-wider break-words ${isUnfit ? 'text-red-400' : 'text-white'}`}>
+                          {worker.name}
+                        </span>
+                        {isUnfit && (
+                          <span className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-[7px] font-black text-red-400 uppercase tracking-widest flex items-center gap-1 animate-pulse">
+                            <ShieldAlert className="w-2.5 h-2.5" />
+                            UNFIT
+                          </span>
+                        )}
+                      </div>
+                      <span className="inline-block self-start px-2 py-0.5 rounded-md bg-[#1a1a1a] border border-[#333] text-[8.5px] font-black text-[#888] uppercase tracking-widest">
+                        {worker.role}
+                      </span>
+                    </div>
+
+                    {/* Contact */}
+                    <div className="flex flex-col gap-1 w-full md:w-auto text-[#aaa]">
+                      {worker.phone && (
+                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-white/95">
+                          <Phone className="w-3 h-3 text-[#777]" />
+                          {worker.phone}
+                        </div>
+                      )}
+                      {worker.email && (
+                        <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-[#888] tracking-wide" title={worker.email}>
+                          <Mail className="w-3 h-3 text-[#777] shrink-0" />
+                          <span className="truncate max-w-[170px]">{worker.email}</span>
+                        </div>
+                      )}
+                      {!worker.phone && !worker.email && (
+                        <span className="text-[9px] font-bold text-[#555] uppercase tracking-widest">-</span>
+                      )}
+                    </div>
+
+                    {/* Compliance & Tickets */}
+                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
+                      {worker.tickets.map(ticket => {
+                        const status = getTicketStatus(ticket);
+                        let colorClasses = '';
+                        if (status === 'EXPIRED') {
+                          colorClasses = 'bg-red-500/10 border-red-500/30 text-red-400';
+                        } else if (status === 'EXPIRING_SOON') {
+                          colorClasses = 'bg-amber-500/10 border-amber-500/30 text-amber-400';
+                        } else {
+                          colorClasses = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+                        }
+                        return (
+                          <span 
+                             key={ticket.id} 
+                             className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest border ${colorClasses} whitespace-nowrap`}
+                          >
+                            {ticket.type} &bull; {ticket.expiryDate}
+                          </span>
+                        );
+                      })}
+                    </div>
+
+                  </div>
+                );
+              })
+            )}
+          </div>
         </div>
-        <div className="divide-y divide-[#2e2e2e]">
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredWorkersList.length === 0 ? (
-            <div className="px-6 py-16 text-center">
+            <div className="col-span-full bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl px-6 py-16 text-center shadow-2xl">
               <Users className="w-10 h-10 text-[#444] mx-auto mb-4" />
               <div className="text-[11px] font-black uppercase tracking-widest text-[#666]">
                 No matching staff found
@@ -1356,77 +1382,189 @@ export const RosterView: React.FC<RosterViewProps> = ({
               const isAssignActive = activeWorkerToAssign?.id === worker.id;
 
               return (
-                <div 
+                <div
                   key={worker.id}
                   onClick={() => setSelectedWorkerDetailsId(worker.id)}
-                  className={`flex flex-col md:grid md:grid-cols-[2fr_1.5fr_2.5fr] gap-4 px-6 py-5 items-center hover:bg-[#242424] cursor-pointer transition-colors duration-150 ${isAssignActive ? 'bg-[#5C7285]/10' : ''}`}
+                  className={`bg-[#1e1e1e] border rounded-2xl p-5 cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-[0_8px_30px_rgb(0,0,0,0.4)] flex flex-col justify-between space-y-4 ${isUnfit ? 'border-red-500/30 hover:border-red-500' : 'border-[#2e2e2e] hover:border-brand-accent/50'} ${isAssignActive ? 'bg-[#5C7285]/10' : ''}`}
                 >
-                  {/* Staff Details */}
-                  <div className="flex flex-col space-y-1.5 w-full md:w-auto">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-black uppercase tracking-wider break-words ${isUnfit ? 'text-red-400 line-through' : 'text-white'}`}>
-                        {worker.name}
-                      </span>
+                  {/* Card Top: Avatar/Initials & Info */}
+                  <div className="space-y-3.5">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-black uppercase border shrink-0 ${isUnfit ? 'bg-red-500/10 text-red-400 border-red-500/20' : 'bg-brand-accent/10 text-brand-accent border-brand-accent/20'}`}>
+                          {worker.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-black uppercase tracking-wider text-white">
+                            {worker.name}
+                          </h4>
+                          <span className="text-[8.5px] font-black text-[#888] uppercase tracking-widest block mt-0.5">
+                            {worker.role}
+                          </span>
+                        </div>
+                      </div>
                       {isUnfit && (
-                        <span className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-[7px] font-black text-red-400 uppercase tracking-widest flex items-center gap-1">
+                        <span className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-[7px] font-black text-red-400 uppercase tracking-widest flex items-center gap-1 animate-pulse shrink-0">
                           <ShieldAlert className="w-2.5 h-2.5" />
                           UNFIT
                         </span>
                       )}
                     </div>
-                    <span className="inline-block self-start px-2 py-0.5 rounded-md bg-[#1a1a1a] border border-[#333] text-[8.5px] font-black text-[#888] uppercase tracking-widest">
-                      {worker.role}
-                    </span>
+
+                    {/* Card Contact Details */}
+                    <div className="space-y-1.5 text-xs text-zinc-400 border-t border-[#2e2e2e] pt-3">
+                      {worker.phone && (
+                        <div className="flex items-center space-x-2 text-[10px] font-bold uppercase tracking-widest text-[#aaa]">
+                          <Phone className="w-3.5 h-3.5 text-[#666] shrink-0" />
+                          <span>{worker.phone}</span>
+                        </div>
+                      )}
+                      {worker.email && (
+                        <div className="flex items-center space-x-2 text-[9.5px] font-bold tracking-wide text-[#888]">
+                          <Mail className="w-3.5 h-3.5 text-[#666] shrink-0" />
+                          <span className="truncate" title={worker.email}>{worker.email}</span>
+                        </div>
+                      )}
+                      {!worker.phone && !worker.email && (
+                        <span className="text-[9px] font-bold text-[#555] uppercase tracking-widest block">- No Contact Info -</span>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Contact */}
-                  <div className="flex flex-col gap-1 w-full md:w-auto text-[#aaa]">
-                    {worker.phone && (
-                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-white/95">
-                        <Phone className="w-3 h-3 text-[#777]" />
-                        {worker.phone}
-                      </div>
-                    )}
-                    {worker.email && (
-                      <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-[#888] tracking-wide" title={worker.email}>
-                        <Mail className="w-3 h-3 text-[#777] shrink-0" />
-                        <span className="truncate max-w-[170px]">{worker.email}</span>
-                      </div>
-                    )}
-                    {!worker.phone && !worker.email && (
-                      <span className="text-[9px] font-bold text-[#555] uppercase tracking-widest">-</span>
-                    )}
+                  {/* Card Bottom: Compliance Tickets */}
+                  <div className="border-t border-[#2e2e2e] pt-3">
+                    <p className="text-[8px] font-black uppercase tracking-[0.15em] text-[#666] mb-2">Compliance Dossier</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {worker.tickets && worker.tickets.length > 0 ? (
+                        worker.tickets.map(ticket => {
+                          const status = getTicketStatus(ticket);
+                          let colorClasses = '';
+                          if (status === 'EXPIRED') {
+                            colorClasses = 'bg-red-500/10 border-red-500/30 text-red-400';
+                          } else if (status === 'EXPIRING_SOON') {
+                            colorClasses = 'bg-amber-500/10 border-amber-500/30 text-amber-400';
+                          } else {
+                            colorClasses = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+                          }
+                          return (
+                            <span
+                              key={ticket.id}
+                              className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider border ${colorClasses}`}
+                            >
+                              {ticket.type} &bull; {ticket.expiryDate}
+                            </span>
+                          );
+                        })
+                      ) : (
+                        <span className="text-[7.5px] font-black text-zinc-600 uppercase tracking-widest">No Active Tickets</span>
+                      )}
+                    </div>
                   </div>
-
-                  {/* Compliance & Tickets */}
-                  <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                    {worker.tickets.map(ticket => {
-                      const status = getTicketStatus(ticket);
-                      let colorClasses = '';
-                      if (status === 'EXPIRED') {
-                        colorClasses = 'bg-red-500/10 border-red-500/30 text-red-400';
-                      } else if (status === 'EXPIRING_SOON') {
-                        colorClasses = 'bg-amber-500/10 border-amber-500/30 text-amber-400';
-                      } else {
-                        colorClasses = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
-                      }
-                      return (
-                        <span 
-                           key={ticket.id} 
-                           className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest border ${colorClasses} whitespace-nowrap`}
-                        >
-                          {ticket.type} &bull; {ticket.expiryDate}
-                        </span>
-                      );
-                    })}
-                  </div>
-
                 </div>
               );
             })
           )}
         </div>
-      </div>
+      )}
+
+      {/* Slide-out Drawer Panel for Staff Details / Edit */}
+      {selectedWorkerDetails && (
+        <div className="fixed inset-0 z-[100] flex justify-end animate-in fade-in duration-200">
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+            onClick={() => {
+              setSelectedWorkerDetailsId(null);
+              setWorkerToEdit(null);
+            }}
+          />
+          
+          {/* Drawer Panel container */}
+          <div className="relative w-full max-w-2xl bg-[#18181b] border-l border-zinc-800 h-full overflow-y-auto z-10 shadow-2xl flex flex-col transition-all duration-300 animate-in slide-in-from-right">
+            {/* Drawer Header */}
+            <div className="px-6 py-5 border-b border-zinc-800 bg-zinc-950 flex items-center justify-between shrink-0 sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
+              <div className="flex items-center space-x-3.5">
+                <button
+                  onClick={() => {
+                    setSelectedWorkerDetailsId(null);
+                    setWorkerToEdit(null);
+                  }}
+                  className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 rounded-lg text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                  title="Close Drawer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+                <div>
+                  <h3 className="text-xs font-black uppercase tracking-wider text-white">
+                    {workerToEdit ? 'Edit Staff Profile' : 'Staff Dossier'}
+                  </h3>
+                  <p className="text-[9px] font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">
+                    {selectedWorkerDetails.name}
+                  </p>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-2">
+                {!workerToEdit ? (
+                  <>
+                    <button
+                      onClick={() => {
+                        setWorkerToEdit(selectedWorkerDetails);
+                        setEditName(selectedWorkerDetails.name);
+                        setEditRole(selectedWorkerDetails.role);
+                        setEditPhone(selectedWorkerDetails.phone || '');
+                        setEditEmail(selectedWorkerDetails.email || '');
+                        setEditTickets([...selectedWorkerDetails.tickets]);
+                        setEditError(null);
+                      }}
+                      className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 text-zinc-300 hover:text-white text-[9px] font-black uppercase tracking-widest rounded transition-all cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Edit className="w-3.5 h-3.5 text-brand-accent" />
+                      <span>Edit</span>
+                    </button>
+                    {selectedWorkerDetails.isArchived ? (
+                      <>
+                        <button
+                          onClick={() => setSelectedWorkerToRestore(selectedWorkerDetails)}
+                          className="px-3 py-1.5 bg-emerald-950/30 hover:bg-emerald-950/60 border border-emerald-900/30 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded transition-all cursor-pointer"
+                        >
+                          Restore
+                        </button>
+                        <button
+                          onClick={() => setSelectedWorkerToPermanentDelete(selectedWorkerDetails)}
+                          className="px-3 py-1.5 bg-red-950/30 hover:bg-red-950/60 border border-red-900/30 text-red-400 text-[9px] font-black uppercase tracking-widest rounded transition-all cursor-pointer"
+                        >
+                          Delete
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => setSelectedWorkerToDelete(selectedWorkerDetails)}
+                        className="px-3 py-1.5 bg-red-950/30 hover:bg-red-950/60 border border-red-900/30 text-red-400 text-[9px] font-black uppercase tracking-widest rounded transition-all cursor-pointer"
+                      >
+                        Archive
+                      </button>
+                    )}
+                  </>
+                ) : (
+                  <button
+                    onClick={() => setWorkerToEdit(null)}
+                    className="px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-850 text-zinc-400 hover:text-white text-[9px] font-black uppercase tracking-widest rounded transition-all cursor-pointer"
+                  >
+                    Back to Dossier
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Scroll Body */}
+            <div className="p-6 flex-grow">
+              {workerToEdit ? renderEditForm() : renderDetailsDossier()}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

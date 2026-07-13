@@ -21,6 +21,43 @@ serve(async (req) => {
   }
 
   try {
+    // 1. Verify Authorization Header (JWT)
+    const authHeader = req.headers.get('Authorization')
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized: Missing Authorization header." }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    const token = authHeader.replace("Bearer ", "")
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+
+    // 2. Validate token and retrieve user
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token)
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized: Invalid token.", details: userError }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
+    // 3. Verify user's administrative privileges
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profileError || !profile || !['admin', 'dispatcher'].includes(profile.role)) {
+      return new Response(JSON.stringify({ error: "Forbidden: Only admins and dispatchers can trigger compliance requests." }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
+    }
+
     const payload: RequestPayload = await req.json()
     const { toEmail, workerName, requestedCerts, uploadUrl, expiresAt } = payload
 
@@ -30,11 +67,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       })
     }
-
-    // Connect to Supabase using service role key
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Retrieve settings config
     const { data: configRows, error: configError } = await supabase

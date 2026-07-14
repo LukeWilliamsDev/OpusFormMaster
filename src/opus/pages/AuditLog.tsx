@@ -14,6 +14,8 @@ import {
   ChevronRight,
   Filter
 } from 'lucide-react';
+import { computeDiff } from '../utils/auditDiff';
+import { AuditDiffTable } from '../components/AuditDiffTable';
 
 interface AuditLog {
   id: string;
@@ -99,19 +101,40 @@ export const AuditLogPage: React.FC = () => {
     }
   };
 
+  const [staffList, setStaffList] = useState<any[]>([]);
+
   const fetchLogs = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('audit_logs')
-      .select('*')
-      .order('created_at', { ascending: false });
+    const [logsRes, staffRes] = await Promise.all([
+      supabase.from('audit_logs').select('*').order('created_at', { ascending: false }),
+      supabase.from('staff').select('id, name')
+    ]);
 
-    if (error) {
-      console.error('Error fetching audit logs:', error);
+    if (logsRes.error) {
+      console.error('Error fetching audit logs:', logsRes.error);
     } else {
-      setLogs(data || []);
+      setLogs(logsRes.data || []);
+    }
+
+    if (staffRes.error) {
+      console.error('Error fetching staff list for mapping:', staffRes.error);
+    } else {
+      setStaffList(staffRes.data || []);
     }
     setLoading(false);
+  };
+
+  const getTargetDisplayName = (targetType: string, targetId: string, details?: any) => {
+    if (targetType === 'staff') {
+      const match = staffList.find(s => s.id === targetId);
+      if (match) return match.name;
+      
+      // Fallback strategies for archived or deleted workers
+      if (details?.new?.name) return details.new.name;
+      if (details?.old?.name) return details.old.name;
+      if (details?.name) return details.name;
+    }
+    return targetId;
   };
 
   useEffect(() => {
@@ -154,6 +177,8 @@ export const AuditLogPage: React.FC = () => {
         return 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
       case 'UPDATE':
         return 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+      case 'INSPECT':
+        return 'bg-purple-500/10 text-purple-400 border-purple-500/20';
       case 'DELETE':
       case 'LOGIN_FAILURE':
         return 'bg-red-500/10 text-red-400 border-red-500/20';
@@ -256,42 +281,65 @@ export const AuditLogPage: React.FC = () => {
                   <tr className="border-b border-white/5 text-[9px] font-black uppercase text-zinc-500 tracking-wider bg-black/10">
                     <th className="py-3 px-4">Timestamp</th>
                     <th className="py-3 px-4">User</th>
+                    <th className="py-3 px-4">Event Type</th>
                     <th className="py-3 px-4">Action</th>
                     <th className="py-3 px-4 text-right">Resource</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5 text-xs font-mono">
-                  {paginatedLogs.map((log) => (
-                    <tr 
-                      key={log.id} 
-                      onClick={() => setSelectedLog(log)}
-                      className="hover:bg-white/5 cursor-pointer transition-all"
-                    >
-                      <td className="py-3.5 px-4 text-zinc-400 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="w-3.5 h-3.5 text-zinc-600" />
-                          {new Date(log.created_at).toLocaleString()}
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5">
-                          <User className="w-3.5 h-3.5 text-zinc-600" />
-                          <span className="text-zinc-300">{log.user_email || 'System'}</span>
-                        </div>
-                      </td>
-                      <td className="py-3.5 px-4">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-black border uppercase ${getActionColor(log.action)}`}>
-                          {log.action}
-                        </span>
-                      </td>
-                      <td className="py-3.5 px-4 text-zinc-300 text-right">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Database className="w-3.5 h-3.5 text-zinc-600" />
-                          <span className="uppercase text-[11px] font-bold text-zinc-400">{log.target_type}</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {paginatedLogs.map((log) => {
+                    const isRecordChange = log.action === 'UPDATE' && computeDiff(log.details?.old, log.details?.new).length > 0;
+                    const friendlyEventName = isRecordChange ? 'Record Change' : 
+                                              log.action === 'INSPECT' ? 'Record Inspection' : 
+                                              log.action === 'CREATE' ? 'Record Created' : 
+                                              log.action === 'DELETE' ? 'Record Deleted' : 
+                                              log.action === 'APPROVE_DOCUMENT' ? 'Document Approved' : 
+                                              log.action === 'REJECT_DOCUMENT' ? 'Document Rejected' : 
+                                              log.action === 'SUBMIT_DOCUMENTS' ? 'Document Uploaded' :
+                                              log.action === 'RESEND_DOCUMENT_REQUEST' ? 'Link Renewed' : 'System Event';
+
+                    return (
+                      <tr 
+                        key={log.id} 
+                        onClick={() => setSelectedLog(log)}
+                        className="hover:bg-white/5 cursor-pointer transition-all"
+                      >
+                        <td className="py-3.5 px-4 text-zinc-400 whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="w-3.5 h-3.5 text-zinc-600" />
+                            {new Date(log.created_at).toLocaleString()}
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <div className="flex items-center gap-1.5">
+                            <User className="w-3.5 h-3.5 text-zinc-600" />
+                            <span className="text-zinc-300">{log.user_email || 'System'}</span>
+                          </div>
+                        </td>
+                        <td className="py-3.5 px-4 text-zinc-300 font-sans font-bold text-[11px]">
+                          <span className={isRecordChange ? 'text-[#ffb86c]' : log.action === 'INSPECT' ? 'text-purple-400' : 'text-zinc-450'}>
+                            {friendlyEventName}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-black border uppercase ${getActionColor(log.action)}`}>
+                            {log.action}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 text-zinc-300 text-right">
+                          <div className="flex flex-col items-end gap-0.5 justify-center">
+                            <div className="flex items-center gap-1.5 justify-end">
+                              <Database className="w-3.5 h-3.5 text-zinc-600" />
+                              <span className="uppercase text-[11px] font-bold text-zinc-400">{log.target_type}</span>
+                            </div>
+                            <span className="text-[10px] text-zinc-500 font-sans tracking-normal font-bold">
+                              {getTargetDisplayName(log.target_type, log.target_id, log.details)}
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -344,7 +392,12 @@ export const AuditLogPage: React.FC = () => {
                       {selectedLog.target_type}
                     </span>
                   </div>
-                  <h3 className="text-lg font-black font-archivo tracking-tight">Record Inspection</h3>
+                  <h3 className="text-lg font-black font-archivo tracking-tight">
+                    {selectedLog.action === 'UPDATE' && 
+                     computeDiff(selectedLog.details?.old, selectedLog.details?.new).length > 0
+                      ? 'Record Change'
+                      : 'Record Inspection'}
+                  </h3>
                 </div>
                 <button 
                   onClick={() => setSelectedLog(null)}
@@ -365,8 +418,15 @@ export const AuditLogPage: React.FC = () => {
                   <p className="text-zinc-300 mt-0.5">{selectedLog.user_email || 'System / Automated'}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-zinc-500 uppercase font-black text-[9px] tracking-wider">Target Resource ID</p>
-                  <p className="text-zinc-300 mt-0.5 select-all">{selectedLog.target_id}</p>
+                  <p className="text-zinc-500 uppercase font-black text-[9px] tracking-wider">Target Resource</p>
+                  <p className="text-zinc-300 mt-0.5 select-all font-sans font-bold text-sm">
+                    {getTargetDisplayName(selectedLog.target_type, selectedLog.target_id, selectedLog.details)}
+                  </p>
+                  {selectedLog.target_type === 'staff' && selectedLog.target_id.startsWith('worker-') && (
+                    <span className="text-[9px] text-zinc-650 font-mono tracking-normal block mt-0.5">
+                      ID: {selectedLog.target_id}
+                    </span>
+                  )}
                 </div>
               </div>
 
@@ -378,20 +438,7 @@ export const AuditLogPage: React.FC = () => {
                 </div>
 
                 {selectedLog.action === 'UPDATE' && selectedLog.details?.old ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-bold text-red-400 uppercase font-mono">Before Update</span>
-                      <pre className="p-3 bg-red-950/10 border border-red-900/20 rounded-lg text-[10px] font-mono text-zinc-400 overflow-x-auto max-h-[350px]">
-                        {JSON.stringify(selectedLog.details.old, null, 2)}
-                      </pre>
-                    </div>
-                    <div className="space-y-1">
-                      <span className="text-[9px] font-bold text-emerald-400 uppercase font-mono">After Update</span>
-                      <pre className="p-3 bg-emerald-950/10 border border-emerald-900/20 rounded-lg text-[10px] font-mono text-zinc-300 overflow-x-auto max-h-[350px]">
-                        {JSON.stringify(selectedLog.details.new, null, 2)}
-                      </pre>
-                    </div>
-                  </div>
+                  <AuditDiffTable diff={computeDiff(selectedLog.details.old, selectedLog.details.new)} />
                 ) : (
                   <pre className="p-4 bg-black/20 border border-white/5 rounded-xl text-[10px] font-mono text-zinc-300 overflow-x-auto max-h-[400px]">
                     {JSON.stringify(selectedLog.details, null, 2)}

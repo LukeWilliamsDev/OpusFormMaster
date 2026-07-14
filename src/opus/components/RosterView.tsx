@@ -9,6 +9,8 @@ import { isValidUKPostcode } from '../utils/geo';
 import { TicketStatusBadge } from './TicketStatusBadge';
 import { RequestCredentialsModal } from './RequestCredentialsModal';
 import { supabase } from '../../integrations/supabase/client';
+import { computeDiff } from '../utils/auditDiff';
+import { AuditDiffTable } from './AuditDiffTable';
 
 interface RosterViewProps {
   workers: Worker[];
@@ -145,6 +147,17 @@ export const RosterView: React.FC<RosterViewProps> = ({
     setShowAllHistory(false);
     setActiveDossierTab('general');
     setAuditLogPage(1);
+
+    // If a staff member is selected, log an INSPECT action to the audit logs
+    if (selectedWorkerDetailsId) {
+      supabase.rpc('log_anonymous_audit', {
+        p_user_email: 'admin@opusform.co.uk',
+        p_action: 'INSPECT',
+        p_target_type: 'staff',
+        p_target_id: selectedWorkerDetailsId,
+        p_details: { inspected: true }
+      }).catch(err => console.error('Failed to log INSPECT audit event:', err));
+    }
   }, [selectedWorkerDetailsId]);
 
   const fetchLogsAndRequests = async () => {
@@ -455,6 +468,24 @@ export const RosterView: React.FC<RosterViewProps> = ({
             postcode: editPostcode.trim().toUpperCase() || undefined,
             tickets: editTickets
           };
+
+          // Save to Supabase to trigger automatic audit log capturing
+          supabase
+            .from('staff')
+            .update({
+              name: updatedWorker.name,
+              role: updatedWorker.role,
+              phone: updatedWorker.phone,
+              email: updatedWorker.email,
+              postcode: updatedWorker.postcode,
+              tickets: updatedWorker.tickets
+            })
+            .eq('id', workerToEdit.id)
+            .then(({ error }) => {
+              if (error) {
+                console.error('Failed to persist staff changes to Supabase:', error);
+              }
+            });
 
           setWorkers(prev => prev.map(w => w.id === workerToEdit.id ? updatedWorker : w));
           setWorkerToEdit(null);
@@ -1252,6 +1283,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       logIcon = <Edit className="w-3.5 h-3.5 text-zinc-400" />;
                       logTitle = "Staff Profile Mutation Recorded";
                       badgeColor = "bg-zinc-900/40 border-zinc-800 text-zinc-300";
+                    } else if (action === 'INSPECT') {
+                      logIcon = <User className="w-3.5 h-3.5 text-blue-400" />;
+                      logTitle = "Staff Dossier Inspected";
+                      badgeColor = "bg-blue-950/20 border-blue-900/30 text-blue-400";
                     }
 
                     let summaryText = "";
@@ -1264,6 +1299,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       summaryText = "Administrative updates applied to database record";
                     } else if (action === 'CREATE') {
                       summaryText = "Initial database record created for staff member";
+                    } else if (action === 'INSPECT') {
+                      summaryText = "Staff dossier profile viewed by administrator";
                     } else {
                       summaryText = typeof event.details === 'string' ? event.details : JSON.stringify(event.details || {});
                     }
@@ -1290,13 +1327,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           </span>
                         </div>
 
-                        {summaryText && (
-                          <div className="pl-6">
+                        <div className="pl-6">
+                          {action === 'UPDATE' && event.details?.old ? (
+                            <AuditDiffTable diff={computeDiff(event.details.old, event.details.new)} />
+                          ) : summaryText ? (
                             <p className="text-[11px] font-bold text-zinc-400 font-sans leading-relaxed">
                               {summaryText}
                             </p>
-                          </div>
-                        )}
+                          ) : null}
+                        </div>
                       </div>
                     );
                   }

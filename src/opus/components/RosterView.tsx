@@ -150,13 +150,16 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
     // If a staff member is selected, log an INSPECT action to the audit logs
     if (selectedWorkerDetailsId) {
-      supabase.rpc('log_anonymous_audit', {
-        p_user_email: 'admin@opusform.co.uk',
-        p_action: 'INSPECT',
-        p_target_type: 'staff',
-        p_target_id: selectedWorkerDetailsId,
-        p_details: { inspected: true }
-      }).catch(err => console.error('Failed to log INSPECT audit event:', err));
+      // Fetch the authenticated user email from Supabase to dynamically log the actor
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        supabase.rpc('log_anonymous_audit', {
+          p_user_email: user?.email || 'admin@opusform.co.uk',
+          p_action: 'INSPECT',
+          p_target_type: 'staff',
+          p_target_id: selectedWorkerDetailsId,
+          p_details: { inspected: true }
+        }).catch(err => console.error('Failed to log INSPECT audit event:', err));
+      });
     }
   }, [selectedWorkerDetailsId]);
 
@@ -484,11 +487,14 @@ export const RosterView: React.FC<RosterViewProps> = ({
             .then(({ error }) => {
               if (error) {
                 console.error('Failed to persist staff changes to Supabase:', error);
+                // Trigger alert on DB failure
+                alert('Failed to save staff changes. Please try again.');
+              } else {
+                // Update UI state and close modal only after successful persistence
+                setWorkers(prev => prev.map(w => w.id === workerToEdit.id ? updatedWorker : w));
+                setWorkerToEdit(null);
               }
             });
-
-          setWorkers(prev => prev.map(w => w.id === workerToEdit.id ? updatedWorker : w));
-          setWorkerToEdit(null);
         }} className="space-y-6">
           
           {editError && (
@@ -1305,6 +1311,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       summaryText = typeof event.details === 'string' ? event.details : JSON.stringify(event.details || {});
                     }
 
+                    // Compute diff beforehand to selectively show the diff table or summary text
+                    const diff = action === 'UPDATE' && event.details?.old
+                      ? computeDiff(event.details.old, event.details.new)
+                      : [];
+
                     return (
                       <div key={event.id} className="py-3 space-y-1.5 hover:bg-zinc-900/10 transition-colors px-1 rounded-lg">
                         <div className="flex items-start justify-between gap-3">
@@ -1328,8 +1339,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         </div>
 
                         <div className="pl-6">
-                          {action === 'UPDATE' && event.details?.old ? (
-                            <AuditDiffTable diff={computeDiff(event.details.old, event.details.new)} />
+                          {/* Only render AuditDiffTable if there are non-empty changes in the diff */}
+                          {diff.length > 0 ? (
+                            <AuditDiffTable diff={diff} />
                           ) : summaryText ? (
                             <p className="text-[11px] font-bold text-zinc-400 font-sans leading-relaxed">
                               {summaryText}

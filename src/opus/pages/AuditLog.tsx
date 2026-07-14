@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { 
   Activity, 
@@ -41,6 +41,16 @@ export const AuditLogPage: React.FC = () => {
 
   const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
   const [restoring, setRestoring] = useState(false);
+
+  // Memoize update log diffs to avoid executing computeDiff on every render for every row
+  const diffCache = useMemo(() =>
+    Object.fromEntries(
+      logs
+        .filter(l => l.action === 'UPDATE')
+        .map(l => [l.id, computeDiff(l.details?.old, l.details?.new)])
+    ),
+    [logs]
+  );
 
   const handleRestore = async (log: AuditLog) => {
     if (!window.confirm(`Are you sure you want to restore the state of the ${log.target_type} record? This action will overwrite current data.`)) {
@@ -288,7 +298,9 @@ export const AuditLogPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-white/5 text-xs font-mono">
                   {paginatedLogs.map((log) => {
-                    const isRecordChange = log.action === 'UPDATE' && computeDiff(log.details?.old, log.details?.new).length > 0;
+                    // Check the cached diff length to determine if there is a record change
+                    const isRecordChange = log.action === 'UPDATE' && (diffCache[log.id]?.length ?? 0) > 0;
+                    // Resolve friendly event names falling back to 'Record Updated' for UPDATE action
                     const friendlyEventName = isRecordChange ? 'Record Change' : 
                                               log.action === 'INSPECT' ? 'Record Inspection' : 
                                               log.action === 'CREATE' ? 'Record Created' : 
@@ -296,7 +308,8 @@ export const AuditLogPage: React.FC = () => {
                                               log.action === 'APPROVE_DOCUMENT' ? 'Document Approved' : 
                                               log.action === 'REJECT_DOCUMENT' ? 'Document Rejected' : 
                                               log.action === 'SUBMIT_DOCUMENTS' ? 'Document Uploaded' :
-                                              log.action === 'RESEND_DOCUMENT_REQUEST' ? 'Link Renewed' : 'System Event';
+                                              log.action === 'RESEND_DOCUMENT_REQUEST' ? 'Link Renewed' : 
+                                              log.action === 'UPDATE' ? 'Record Updated' : 'System Event';
 
                     return (
                       <tr 
@@ -393,10 +406,16 @@ export const AuditLogPage: React.FC = () => {
                     </span>
                   </div>
                   <h3 className="text-lg font-black font-archivo tracking-tight">
-                    {selectedLog.action === 'UPDATE' && 
-                     computeDiff(selectedLog.details?.old, selectedLog.details?.new).length > 0
-                      ? 'Record Change'
-                      : 'Record Inspection'}
+                    {/* Expand ternary to match all action types in the drawer title */}
+                    {selectedLog.action === 'UPDATE' && computeDiff(selectedLog.details?.old, selectedLog.details?.new).length > 0 ? 'Record Change' :
+                     selectedLog.action === 'INSPECT' ? 'Record Inspection' :
+                     selectedLog.action === 'CREATE' ? 'Record Created' :
+                     selectedLog.action === 'DELETE' ? 'Record Deleted' :
+                     selectedLog.action === 'APPROVE_DOCUMENT' ? 'Document Approved' :
+                     selectedLog.action === 'REJECT_DOCUMENT' ? 'Document Rejected' :
+                     selectedLog.action === 'SUBMIT_DOCUMENTS' ? 'Document Uploaded' :
+                     selectedLog.action === 'RESEND_DOCUMENT_REQUEST' ? 'Link Renewed' :
+                     selectedLog.action === 'UPDATE' ? 'Record Updated' : 'System Event'}
                   </h3>
                 </div>
                 <button 
@@ -422,7 +441,8 @@ export const AuditLogPage: React.FC = () => {
                   <p className="text-zinc-300 mt-0.5 select-all font-sans font-bold text-sm">
                     {getTargetDisplayName(selectedLog.target_type, selectedLog.target_id, selectedLog.details)}
                   </p>
-                  {selectedLog.target_type === 'staff' && selectedLog.target_id.startsWith('worker-') && (
+                  {/* Use optional chaining to safely check target_id prefix if it is null */}
+                  {selectedLog.target_type === 'staff' && selectedLog.target_id?.startsWith('worker-') && (
                     <span className="text-[9px] text-zinc-650 font-mono tracking-normal block mt-0.5">
                       ID: {selectedLog.target_id}
                     </span>

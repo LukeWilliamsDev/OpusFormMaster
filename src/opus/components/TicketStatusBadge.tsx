@@ -19,11 +19,15 @@ export const TicketStatusBadge: React.FC<TicketStatusBadgeProps> = ({ ticket }) 
     colorClasses = 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400';
   }
 
+  let statusText = 'ACTIVE';
+  if (status === 'EXPIRED') statusText = 'EXPIRED';
+  else if (status === 'EXPIRING_SOON') statusText = 'EXPIRING';
+
   return (
     <span 
-      className={`px-1.5 py-0.5 rounded text-[8px] font-medium border ${colorClasses}`}
+      className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider border ${colorClasses}`}
     >
-      {ticket.type} &bull; {ticket.expiryDate} {status === 'EXPIRED' && '(EXPIRED)'}
+      {statusText}
     </span>
   );
 };

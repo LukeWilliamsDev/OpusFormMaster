@@ -5,10 +5,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-brand-charcoal: #26262B;
-  --color-brand-white: #F4F4F0;
+  --color-brand-charcoal: #121215;
+  --color-brand-white: #E4E4E7;
   --color-brand-navy: #0D2C54;
-  --color-brand-accent: #5C7285;
+  --color-brand-accent: #6C8295;
+  --color-white: #E4E4E7;
 
   --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
   --font-archivo: "Archivo", sans-serif;
@@ -42,24 +43,24 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.18 0.005 260);
-  --foreground: oklch(0.96 0.005 90);
-  --card: oklch(0.22 0.005 260);
-  --card-foreground: oklch(0.96 0.005 90);
-  --popover: oklch(0.22 0.005 260);
-  --popover-foreground: oklch(0.96 0.005 90);
+  --background: oklch(0.14 0.002 285);
+  --foreground: oklch(0.92 0.004 285);
+  --card: oklch(0.17 0.002 285);
+  --card-foreground: oklch(0.92 0.004 285);
+  --popover: oklch(0.17 0.002 285);
+  --popover-foreground: oklch(0.92 0.004 285);
   --primary: oklch(0.55 0.04 240);
   --primary-foreground: oklch(0.98 0 0);
   --secondary: oklch(0.3 0.01 260);
-  --secondary-foreground: oklch(0.96 0.005 90);
-  --muted: oklch(0.28 0.01 260);
+  --secondary-foreground: oklch(0.92 0.004 285);
+  --muted: oklch(0.24 0.002 285);
   --muted-foreground: oklch(0.7 0.01 260);
   --accent: oklch(0.3 0.01 260);
-  --accent-foreground: oklch(0.96 0.005 90);
+  --accent-foreground: oklch(0.92 0.004 285);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.3 0.01 260);
-  --input: oklch(0.3 0.01 260);
+  --border: oklch(0.22 0.002 285);
+  --input: oklch(0.22 0.002 285);
   --ring: oklch(0.55 0.04 240);
 }
 

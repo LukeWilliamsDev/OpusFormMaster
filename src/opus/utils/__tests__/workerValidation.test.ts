@@ -5,7 +5,7 @@ import { Worker, Ticket } from '../../types/erp';
 const createMockWorker = (role: string, tickets: Ticket[] = []): Worker => ({
   id: 'worker-1',
   name: 'John Doe',
-  role,
+  role: role as any,
   tickets,
   uploadedCertificates: []
 });

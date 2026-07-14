@@ -101,7 +101,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [selectedWorkerToDelete, setSelectedWorkerToDelete] = useState<Worker | null>(null);
   const [selectedWorkerToPermanentDelete, setSelectedWorkerToPermanentDelete] = useState<Worker | null>(null);
   const [selectedWorkerToRestore, setSelectedWorkerToRestore] = useState<Worker | null>(null);
-  const [selectedDocToDelete, setSelectedDocToDelete] = useState<{ id: string; name: string } | null>(null);
   
   const [workerToEdit, setWorkerToEdit] = useState<Worker | null>(null);
   const [editName, setEditName] = useState('');
@@ -731,17 +730,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
     return (
       <div className="space-y-4 animate-in fade-in duration-200">
-        {/* Profile Card Banner */}
-        <div className="flex items-center space-x-3 bg-zinc-950/40 p-3 rounded-xl border border-zinc-800">
-          <div className="w-10 h-10 rounded-lg bg-brand-accent/10 border border-brand-accent/20 flex items-center justify-center text-brand-accent text-xs font-black uppercase shrink-0">
-            {selectedWorkerDetails.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
-          </div>
-          <div>
-            <h4 className="text-sm font-bold text-white uppercase tracking-wider leading-tight">{selectedWorkerDetails.name}</h4>
-            <span className="text-[8.5px] font-black text-brand-accent uppercase tracking-widest block mt-0.5">{selectedWorkerDetails.role}</span>
-          </div>
-        </div>
-
         {/* Tab Buttons */}
         <div className="flex border-b border-zinc-850 gap-1 bg-zinc-950/25 p-0.5 rounded-lg">
           <button
@@ -926,77 +914,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
               </div>
             </div>
 
-            {/* Document Management Section */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-[#333] pb-3">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-[#bbb]">
-                  <UploadCloud className="w-4 h-4 text-brand-accent" />
-                  Uploaded Documents & Proofs
-                </div>
-                
-                <button
-                  type="button"
-                  onClick={() => {
-                    const fileNames = ['CSCS_Card_Front.jpg', 'ID_Passport_Copy.pdf', 'Manual_Handling_Cert.pdf'];
-                    const randomName = fileNames[Math.floor(Math.random() * fileNames.length)];
-                    const updated = { ...selectedWorkerDetails };
-                    if (!updated.uploadedCertificates) updated.uploadedCertificates = [];
-                    updated.uploadedCertificates.push({
-                      id: `doc-${Date.now()}`,
-                      name: randomName,
-                      uploadedAt: new Date().toISOString().split('T')[0],
-                      size: '1.2 MB'
-                    });
-                    setWorkers(prev => prev.map(w => w.id === updated.id ? updated : w));
-                  }}
-                  className="px-3 py-1.5 bg-[#5C7285] hover:bg-[#6c8295] text-white text-[9px] font-black uppercase tracking-widest rounded transition-colors flex items-center gap-1.5"
-                >
-                  <FilePlus className="w-3.5 h-3.5" />
-                  Upload File
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {selectedWorkerDetails.uploadedCertificates && selectedWorkerDetails.uploadedCertificates.length > 0 ? (
-                  selectedWorkerDetails.uploadedCertificates.map(cert => (
-                    <div key={cert.id} className="p-3 rounded-xl border border-[#333] bg-[#1a1a1a] flex flex-col space-y-3.5 hover:border-brand-accent/30 transition-colors group">
-                      <div className="flex items-start gap-2.5">
-                        <div className="p-2 rounded-lg bg-[#252525] text-brand-accent border border-[#333] group-hover:bg-brand-accent/10 transition-colors">
-                          <FileText className="w-4 h-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[9px] font-black text-white uppercase tracking-widest truncate" title={cert.name}>
-                            {cert.name}
-                          </p>
-                          <p className="text-[8.5px] font-bold text-[#bbb] uppercase tracking-widest mt-0.5">
-                            Added: {cert.uploadedAt}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-1.5">
-                        <button type="button" className="flex-1 py-1 rounded bg-[#222] border border-[#333] hover:bg-[#333] hover:text-white text-[8.5px] font-black uppercase tracking-widest text-white/80 flex justify-center items-center gap-1 transition-colors">
-                          <Download className="w-3 h-3" />
-                          Download
-                        </button>
-                        <button 
-                          type="button"
-                          onClick={() => setSelectedDocToDelete({ id: cert.id, name: cert.name })}
-                          className="px-2 py-1 rounded bg-[#222] border border-[#333] hover:bg-red-950 hover:border-red-900/50 hover:text-red-400 text-[8.5px] font-black uppercase tracking-widest text-[#888] flex justify-center items-center transition-colors"
-                          title="Delete File"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="col-span-full text-center py-10 border border-dashed border-[#333] rounded-xl text-[10px] font-black uppercase tracking-widest text-[#aaa] bg-[#1a1a1a]">
-                    <UploadCloud className="w-8 h-8 text-brand-accent/60 mx-auto mb-3" />
-                    No compliance certificates uploaded
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         )}
 
@@ -1529,52 +1446,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             </div>
           )}
 
-          {/* Delete Document Confirmation Modal */}
-          {selectedDocToDelete && (
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 text-left">
-              <div className="fixed inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setSelectedDocToDelete(null)} />
-              <div className="bg-[#1f2125] border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
-                <div className="p-6 pb-4 border-b border-zinc-850 bg-zinc-950/10 flex items-center space-x-3.5">
-                  <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
-                    <AlertTriangle className="w-5 h-5 text-red-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-[13px] font-bold uppercase tracking-wider text-zinc-100">Purge Document</h3>
-                    <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-normal mt-0.5">Permanent File Deletion</p>
-                  </div>
-                </div>
-                
-                <div className="p-6 space-y-4">
-                  <p className="text-[13px] font-medium text-zinc-300 leading-relaxed">
-                    Are you absolutely sure you want to permanently delete the document <span className="font-bold text-white">{selectedDocToDelete.name}</span> from <span className="text-brand-accent">{selectedWorkerDetails.name}</span>'s compliance dossier?
-                  </p>
-                  <div className="p-4 bg-red-950/10 border border-red-900/20 rounded-lg text-[12px] font-medium text-red-400 leading-relaxed">
-                    This action is irreversible and will permanently delete this record from the system storage.
-                  </div>
-                </div>
 
-                <div className="p-6 bg-zinc-950/10 border-t border-zinc-850 flex items-center space-x-3">
-                  <button
-                    onClick={() => setSelectedDocToDelete(null)}
-                    className="flex-1 py-3 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all rounded text-[12px] font-bold uppercase tracking-wider cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      const updated = { ...selectedWorkerDetails };
-                      updated.uploadedCertificates = updated.uploadedCertificates?.filter(c => c.id !== selectedDocToDelete.id);
-                      setWorkers(prev => prev.map(w => w.id === updated.id ? updated : w));
-                      setSelectedDocToDelete(null);
-                    }}
-                    className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white transition-all rounded text-[12px] font-bold uppercase tracking-wider shadow-lg shadow-red-600/10 cursor-pointer"
-                  >
-                    Delete Permanently
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
       </div>
     );
   };
@@ -1777,15 +1649,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
       {layoutMode === 'list' ? (
         <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl">
           <div className="hidden md:grid md:grid-cols-[2fr_1.5fr_2.5fr] gap-3 px-4 py-2.5 border-b border-[#2e2e2e] bg-[#222]">
-            <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Staff Details</span>
-            <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Contact</span>
-            <span className="text-[9px] font-black tracking-widest uppercase text-[#888]">Compliance & Tickets</span>
+            <span className="text-[11px] font-black tracking-widest uppercase text-[#888]">Staff Details</span>
+            <span className="text-[11px] font-black tracking-widest uppercase text-[#888]">Contact</span>
+            <span className="text-[11px] font-black tracking-widest uppercase text-[#888]">Compliance & Tickets</span>
           </div>
           <div className="divide-y divide-[#2e2e2e]">
             {filteredWorkersList.length === 0 ? (
               <div className="px-6 py-16 text-center">
                 <Users className="w-10 h-10 text-[#444] mx-auto mb-4" />
-                <div className="text-[11px] font-black uppercase tracking-widest text-[#666]">
+                <div className="text-[12px] font-black uppercase tracking-widest text-[#666]">
                   No matching staff found
                 </div>
               </div>
@@ -1816,13 +1688,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           {worker.name}
                         </span>
                         {isUnfit && (
-                          <span className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-[7px] font-black text-red-400 uppercase tracking-widest flex items-center gap-1 animate-pulse">
+                          <span className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-[9.5px] font-black text-red-400 uppercase tracking-widest flex items-center gap-1 animate-pulse">
                             <ShieldAlert className="w-2.5 h-2.5" />
                             UNFIT
                           </span>
                         )}
                       </div>
-                      <span className="inline-block self-start px-2 py-0.5 rounded-md bg-[#1a1a1a] border border-[#333] text-[8.5px] font-black text-[#888] uppercase tracking-widest">
+                      <span className="inline-block self-start px-2 py-0.5 rounded-md bg-[#1a1a1a] border border-[#333] text-[10px] font-black text-[#888] uppercase tracking-widest">
                         {worker.role}
                       </span>
                     </div>
@@ -1830,19 +1702,19 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     {/* Contact */}
                     <div className="flex flex-col gap-1 w-full md:w-auto text-[#aaa]">
                       {worker.phone && (
-                        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-white/95">
+                        <div className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-widest text-white/95">
                           <Phone className="w-3 h-3 text-[#777]" />
                           {worker.phone}
                         </div>
                       )}
                       {worker.email && (
-                        <div className="flex items-center gap-1.5 text-[9.5px] font-bold text-[#888] tracking-wide" title={worker.email}>
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#888] tracking-wide" title={worker.email}>
                           <Mail className="w-3 h-3 text-[#777] shrink-0" />
                           <span className="truncate max-w-[170px]">{worker.email}</span>
                         </div>
                       )}
                       {!worker.phone && !worker.email && (
-                        <span className="text-[9px] font-bold text-[#555] uppercase tracking-widest">-</span>
+                        <span className="text-[11px] font-bold text-[#555] uppercase tracking-widest">-</span>
                       )}
                     </div>
 
@@ -1861,7 +1733,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         return (
                           <span 
                              key={ticket.id} 
-                             className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest border ${colorClasses} whitespace-nowrap`}
+                             className={`px-2 py-1 rounded text-[9.5px] font-black uppercase tracking-widest border ${colorClasses} whitespace-nowrap`}
                           >
                             {ticket.type} &bull; {ticket.expiryDate}
                           </span>
@@ -1915,13 +1787,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           <h4 className="text-[12.5px] font-black uppercase tracking-wider text-zinc-200">
                             {worker.name}
                           </h4>
-                          <span className="text-[8px] font-black text-[#888] uppercase tracking-widest block mt-0.5">
+                          <span className="text-[10px] font-black text-[#888] uppercase tracking-widest block mt-0.5">
                             {worker.role}
                           </span>
                         </div>
                       </div>
                       {isUnfit && (
-                        <span className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-[7px] font-black text-red-400 uppercase tracking-widest flex items-center gap-1 animate-pulse shrink-0">
+                        <span className="px-1.5 py-0.5 rounded bg-red-500/20 border border-red-500/40 text-[9.5px] font-black text-red-400 uppercase tracking-widest flex items-center gap-1 animate-pulse shrink-0">
                           <ShieldAlert className="w-2.5 h-2.5" />
                           UNFIT
                         </span>
@@ -1931,26 +1803,26 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     {/* Card Contact Details */}
                     <div className="space-y-1.5 text-xs text-zinc-400 border-t border-[#2e2e2e] pt-3">
                       {worker.phone && (
-                        <div className="flex items-center space-x-2 text-[10px] font-bold uppercase tracking-widest text-[#aaa]">
+                        <div className="flex items-center space-x-2 text-[11px] font-bold uppercase tracking-widest text-[#aaa]">
                           <Phone className="w-3.5 h-3.5 text-[#666] shrink-0" />
                           <span>{worker.phone}</span>
                         </div>
                       )}
                       {worker.email && (
-                        <div className="flex items-center space-x-2 text-[9.5px] font-bold tracking-wide text-[#888]">
+                        <div className="flex items-center space-x-2 text-[11px] font-bold tracking-wide text-[#888]">
                           <Mail className="w-3.5 h-3.5 text-[#666] shrink-0" />
                           <span className="truncate" title={worker.email}>{worker.email}</span>
                         </div>
                       )}
                       {!worker.phone && !worker.email && (
-                        <span className="text-[9px] font-bold text-[#555] uppercase tracking-widest block">- No Contact Info -</span>
+                        <span className="text-[11px] font-bold text-[#555] uppercase tracking-widest block">- No Contact Info -</span>
                       )}
                     </div>
                   </div>
 
                   {/* Card Bottom: Compliance Tickets */}
                   <div className="border-t border-[#2e2e2e] pt-3">
-                    <p className="text-[8px] font-black uppercase tracking-[0.15em] text-[#666] mb-2">Compliance Dossier</p>
+                    <p className="text-[10.5px] font-black uppercase tracking-[0.15em] text-[#666] mb-2">Compliance Dossier</p>
                     <div className="flex flex-wrap gap-1.5">
                       {worker.tickets && worker.tickets.length > 0 ? (
                         worker.tickets.map(ticket => {
@@ -1966,14 +1838,14 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           return (
                             <span
                               key={ticket.id}
-                              className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-wider border ${colorClasses}`}
+                              className={`px-1.5 py-0.5 rounded text-[9.5px] font-black uppercase tracking-wider border ${colorClasses}`}
                             >
                               {ticket.type} &bull; {ticket.expiryDate}
                             </span>
                           );
                         })
                       ) : (
-                        <span className="text-[7.5px] font-black text-zinc-600 uppercase tracking-widest">No Active Tickets</span>
+                        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">No Active Tickets</span>
                       )}
                     </div>
                   </div>
@@ -2015,8 +1887,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   <h3 className="text-xs font-black uppercase tracking-wider text-white">
                     {workerToEdit ? 'Edit Staff Profile' : 'Staff Dossier'}
                   </h3>
-                  <p className="text-[9px] font-semibold text-zinc-500 uppercase tracking-widest mt-0.5">
-                    {selectedWorkerDetails.name}
+                  <p className="text-[11px] font-black text-brand-accent uppercase tracking-widest mt-0.5">
+                    {selectedWorkerDetails.name} &bull; {selectedWorkerDetails.role}
                   </p>
                 </div>
               </div>

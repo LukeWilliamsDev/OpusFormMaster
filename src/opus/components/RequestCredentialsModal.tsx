@@ -16,8 +16,6 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
 }) => {
   const [selectedCerts, setSelectedCerts] = useState<string[]>([]);
   const [customCertInput, setCustomCertInput] = useState('');
-  const [expiryHours, setExpiryHours] = useState<number>(48);
-  const [customExpiry, setCustomExpiry] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -70,11 +68,7 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
 
     try {
       const expiresAt = new Date();
-      if (customExpiry) {
-        expiresAt.setTime(new Date(customExpiry).getTime());
-      } else {
-        expiresAt.setHours(expiresAt.getHours() + expiryHours);
-      }
+      expiresAt.setHours(expiresAt.getHours() + 48);
 
       const { data, error: insertError } = await supabase
         .from('document_requests')
@@ -288,46 +282,6 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
                 </label>
               )}
 
-              {/* Expiry Settings */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                    Link Expiration
-                  </label>
-                  <select
-                    value={customExpiry ? 'custom' : expiryHours}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === 'custom') {
-                        setCustomExpiry(new Date(Date.now() + 48*60*60*1000).toISOString().slice(0, 16));
-                      } else {
-                        setExpiryHours(Number(val));
-                        setCustomExpiry('');
-                      }
-                    }}
-                    className="w-full bg-zinc-950 border border-zinc-850 focus:border-brand-accent rounded-lg px-3 py-2 text-xs text-white uppercase font-bold tracking-normal outline-none cursor-pointer"
-                  >
-                    <option value={24}>24 Hours</option>
-                    <option value={48}>48 Hours (Recommended)</option>
-                    <option value={168}>7 Days</option>
-                    <option value="custom">Custom Date/Time</option>
-                  </select>
-                </div>
-
-                {customExpiry && (
-                  <div>
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Expiry Date & Time
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={customExpiry}
-                      onChange={(e) => setCustomExpiry(e.target.value)}
-                      className="w-full bg-zinc-950 border border-zinc-850 focus:border-brand-accent rounded-lg px-3 py-1.5 text-xs text-white outline-none"
-                    />
-                  </div>
-                )}
-              </div>
             </>
           ) : (
             <div className="space-y-6 py-6 text-center animate-in fade-in zoom-in-95 duration-200">

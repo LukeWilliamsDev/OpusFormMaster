@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { supabase } from '../../integrations/supabase/client';
-import { FileUp, Check, AlertCircle, Loader, UploadCloud } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useParams, Link } from "react-router-dom";
+import { supabase } from "../../integrations/supabase/client";
+import { FileUp, Check, AlertCircle, Loader, UploadCloud } from "lucide-react";
 
 export const JobUploadPortalPage: React.FC = () => {
   const { token } = useParams<{ token: string }>();
@@ -18,7 +18,7 @@ export const JobUploadPortalPage: React.FC = () => {
     if (token) {
       fetchRequestDetails();
     } else {
-      setErrorMsg('No upload token provided. Please use a valid submission link.');
+      setErrorMsg("No upload token provided. Please use a valid submission link.");
       setLoading(false);
     }
   }, [token]);
@@ -26,25 +26,25 @@ export const JobUploadPortalPage: React.FC = () => {
   const fetchRequestDetails = async () => {
     try {
       const { data, error } = await supabase
-        .from('job_document_requests')
-        .select('*, job:job_id(*)')
-        .eq('token', token!)
+        .from("job_document_requests")
+        .select("*, job:job_id(*)")
+        .eq("token", token!)
         .single();
 
       if (error || !data) {
-        throw new Error('This upload link is invalid, expired, or has already been completed.');
+        throw new Error("This upload link is invalid, expired, or has already been completed.");
       }
 
       // Check expiry
       if (new Date(data.expires_at) < new Date()) {
-        throw new Error('This upload link has expired.');
+        throw new Error("This upload link has expired.");
       }
 
       setRequestData(data);
       setJobData(data.job);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Access Denied: Invalid or expired upload link.');
+      setErrorMsg(err.message || "Access Denied: Invalid or expired upload link.");
     } finally {
       setLoading(false);
     }
@@ -53,9 +53,9 @@ export const JobUploadPortalPage: React.FC = () => {
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
+    if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
-    } else if (e.type === 'dragleave') {
+    } else if (e.type === "dragleave") {
       setDragActive(false);
     }
   };
@@ -67,19 +67,19 @@ export const JobUploadPortalPage: React.FC = () => {
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFiles = Array.from(e.dataTransfer.files);
-      setFiles(prev => [...prev, ...droppedFiles]);
+      setFiles((prev) => [...prev, ...droppedFiles]);
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFiles = Array.from(e.target.files);
-      setFiles(prev => [...prev, ...selectedFiles]);
+      setFiles((prev) => [...prev, ...selectedFiles]);
     }
   };
 
   const handleRemoveFile = (index: number) => {
-    setFiles(prev => prev.filter((_, i) => i !== index));
+    setFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,46 +91,44 @@ export const JobUploadPortalPage: React.FC = () => {
 
     try {
       for (const file of files) {
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split(".").pop();
         const cleanFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
         const filePath = `jobs/${jobData.id}/${cleanFileName}`;
 
         // Upload file to storage
         const { error: uploadError, data: uploadData } = await supabase.storage
-          .from('job-attachments')
+          .from("job-attachments")
           .upload(filePath, file);
 
         if (uploadError) throw uploadError;
 
         // Get public URL
-        const { data: { publicUrl } } = supabase.storage
-          .from('job-attachments')
-          .getPublicUrl(filePath);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("job-attachments").getPublicUrl(filePath);
 
         // Insert document log
-        const { error: insertError } = await supabase
-          .from('job_attachments')
-          .insert({
-            job_id: jobData.id,
-            type: 'document',
-            file_name: file.name,
-            file_url: publicUrl,
-            uploaded_by: 'External Contributor (via Link)'
-          });
+        const { error: insertError } = await supabase.from("job_attachments").insert({
+          job_id: jobData.id,
+          type: "document",
+          file_name: file.name,
+          file_url: publicUrl,
+          uploaded_by: "External Contributor (via Link)",
+        });
 
         if (insertError) throw insertError;
       }
 
       // Mark document request as completed
       await supabase
-        .from('job_document_requests')
+        .from("job_document_requests")
         .update({ completed_at: new Date().toISOString() })
-        .eq('id', requestData.id);
+        .eq("id", requestData.id);
 
       setUploadSuccess(true);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'An error occurred during file upload.');
+      setErrorMsg(err.message || "An error occurred during file upload.");
     } finally {
       setUploading(false);
     }
@@ -141,7 +139,9 @@ export const JobUploadPortalPage: React.FC = () => {
       <div className="min-h-screen bg-[#111114] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <Loader className="w-8 h-8 text-[#6C8295] animate-spin" />
-          <span className="text-xs text-[#71717A] font-bold uppercase tracking-widest">Verifying Token...</span>
+          <span className="text-xs text-[#71717A] font-bold uppercase tracking-widest">
+            Verifying Token...
+          </span>
         </div>
       </div>
     );
@@ -164,11 +164,10 @@ export const JobUploadPortalPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#111114] flex items-center justify-center p-4 font-sans text-[#E4E4E7]">
       <div className="w-full max-w-lg bg-[#161619] border border-[#27272A] rounded-2xl p-6 md:p-8 space-y-6">
-        
         {/* Title and Job info */}
         <div className="text-center space-y-2">
           <div className="inline-flex px-3 py-1 bg-[#1E293B] border border-[#334155] rounded-full text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] font-mono">
-            {jobData.jobRef.replace('-X', '')}
+            {jobData.jobRef.replace("-X", "")}
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Job Document Portal</h1>
           <p className="text-sm text-[#94A3B8]">
@@ -190,17 +189,16 @@ export const JobUploadPortalPage: React.FC = () => {
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-6">
-            
             {/* Drag & Drop Area */}
-            <div 
+            <div
               onDragEnter={handleDrag}
               onDragOver={handleDrag}
               onDragLeave={handleDrag}
               onDrop={handleDrop}
               className={`border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center transition-all cursor-pointer relative ${
-                dragActive 
-                  ? 'border-[#6C8295] bg-[#1a1a24]/30' 
-                  : 'border-[#27272A] hover:border-[#3F3F46] bg-[#0F1012]'
+                dragActive
+                  ? "border-[#6C8295] bg-[#1a1a24]/30"
+                  : "border-[#27272A] hover:border-[#3F3F46] bg-[#0F1012]"
               }`}
             >
               <input
@@ -210,15 +208,17 @@ export const JobUploadPortalPage: React.FC = () => {
                 onChange={handleFileSelect}
                 className="hidden"
               />
-              <label htmlFor="file-upload-input" className="cursor-pointer flex flex-col items-center gap-3">
+              <label
+                htmlFor="file-upload-input"
+                className="cursor-pointer flex flex-col items-center gap-3"
+              >
                 <UploadCloud className="w-10 h-10 text-[#71717A]" />
                 <div className="space-y-1">
                   <p className="text-sm font-bold text-white">
-                    Drag and drop files here, or <span className="text-[#6C8295] hover:underline">browse</span>
+                    Drag and drop files here, or{" "}
+                    <span className="text-[#6C8295] hover:underline">browse</span>
                   </p>
-                  <p className="text-xs text-[#71717A]">
-                    Supports PDF, DOCX, JPEG, PNG, Excel
-                  </p>
+                  <p className="text-xs text-[#71717A]">Supports PDF, DOCX, JPEG, PNG, Excel</p>
                 </div>
               </label>
             </div>
@@ -231,7 +231,10 @@ export const JobUploadPortalPage: React.FC = () => {
                 </div>
                 <div className="max-h-40 overflow-y-auto space-y-1.5 pr-1">
                   {files.map((file, idx) => (
-                    <div key={idx} className="flex justify-between items-center bg-[#0F1012] border border-[#27272A] rounded-lg px-3 py-2 text-xs">
+                    <div
+                      key={idx}
+                      className="flex justify-between items-center bg-[#0F1012] border border-[#27272A] rounded-lg px-3 py-2 text-xs"
+                    >
                       <span className="truncate max-w-[80%] text-white font-mono">{file.name}</span>
                       <button
                         type="button"
@@ -251,8 +254,8 @@ export const JobUploadPortalPage: React.FC = () => {
               disabled={files.length === 0 || uploading}
               className={`w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex justify-center items-center gap-2 ${
                 files.length === 0 || uploading
-                  ? 'bg-[#27272A] text-[#71717A] cursor-not-allowed'
-                  : 'bg-[#6C8295] hover:bg-[#5C7285] text-white cursor-pointer'
+                  ? "bg-[#27272A] text-[#71717A] cursor-not-allowed"
+                  : "bg-[#6C8295] hover:bg-[#5C7285] text-white cursor-pointer"
               }`}
             >
               {uploading ? (
@@ -261,7 +264,7 @@ export const JobUploadPortalPage: React.FC = () => {
                   Uploading...
                 </>
               ) : (
-                'Submit Documentation'
+                "Submit Documentation"
               )}
             </button>
           </form>

@@ -1,24 +1,24 @@
 // @ts-nocheck
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  ChevronLeft, 
-  CloudRain, 
-  Camera, 
-  FileText, 
-  Link as LinkIcon, 
-  Check, 
-  AlertTriangle, 
-  UserCheck, 
-  Plus, 
-  Loader, 
+import React, { useState, useEffect, useRef } from "react";
+import {
+  ChevronLeft,
+  CloudRain,
+  Camera,
+  FileText,
+  Link as LinkIcon,
+  Check,
+  AlertTriangle,
+  UserCheck,
+  Plus,
+  Loader,
   AlertCircle,
   Copy,
   MapPin,
-  ClipboardList
-} from 'lucide-react';
-import { Job, Worker } from '../types/erp';
-import { supabase } from '../../integrations/supabase/client';
-import { OSMMap } from './OSMMap';
+  ClipboardList,
+} from "lucide-react";
+import { Job, Worker } from "../types/erp";
+import { supabase } from "../../integrations/supabase/client";
+import { OSMMap } from "./OSMMap";
 
 interface PourLog {
   id: string;
@@ -26,7 +26,7 @@ interface PourLog {
   date: string;
   mixType: string;
   volumeM3: number;
-  status: 'completed' | 'on-hold';
+  status: "completed" | "on-hold";
   notes: string;
 }
 
@@ -37,30 +37,25 @@ interface JobDetailsProps {
   onUpdateJob: (updatedJob: Job) => void;
 }
 
-export const JobDetails: React.FC<JobDetailsProps> = ({
-  job,
-  workers,
-  onBack,
-  onUpdateJob
-}) => {
-  const [status, setStatus] = useState<Job['status']>(job.status);
+export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, onUpdateJob }) => {
+  const [status, setStatus] = useState<Job["status"]>(job.status);
   const [currentPours, setCurrentPours] = useState<number>(job.currentPours || 0);
   const [contractMaxPours, setContractMaxPours] = useState<number>(job.contractMaxPours || 0);
 
   // Pour logs state
   const [pourLogs, setPourLogs] = useState<PourLog[]>([]);
   const [isAddingPour, setIsAddingPour] = useState(false);
-  const [newPourMix, setNewPourMix] = useState('C35/45');
-  const [newPourVolume, setNewPourVolume] = useState('34');
-  const [newPourNotes, setNewPourNotes] = useState('');
+  const [newPourMix, setNewPourMix] = useState("C35/45");
+  const [newPourVolume, setNewPourVolume] = useState("34");
+  const [newPourNotes, setNewPourNotes] = useState("");
 
   // Project Management states
-  const [diaryNotes, setDiaryNotes] = useState('');
+  const [diaryNotes, setDiaryNotes] = useState("");
   const [hsChecklist, setHsChecklist] = useState({
     ppe: false,
     briefing: false,
     delivery: false,
-    weather: false
+    weather: false,
   });
   const [diarySaved, setDiarySaved] = useState(false);
   const [savingDiary, setSavingDiary] = useState(false);
@@ -91,7 +86,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     setStatus(job.status);
     setCurrentPours(job.currentPours || 0);
     setContractMaxPours(job.contractMaxPours || 0);
-    
+
     // Fetch initial details
     fetchSiteDiary();
     fetchAttachments();
@@ -104,25 +99,25 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     const list: PourLog[] = [];
     const count = job.currentPours || 0;
     for (let i = 1; i <= count; i++) {
-      let mixType = 'C32/40';
+      let mixType = "C32/40";
       let volumeM3 = 30;
-      let dateStr = '';
-      
+      let dateStr = "";
+
       if (i === 5) {
-        mixType = 'C35/45';
+        mixType = "C35/45";
         volumeM3 = 34;
-        dateStr = '2026-07-09';
+        dateStr = "2026-07-09";
       } else if (i === 4) {
-        mixType = 'C32/40';
+        mixType = "C32/40";
         volumeM3 = 28;
-        dateStr = '2026-07-06';
+        dateStr = "2026-07-06";
       } else {
-        mixType = i % 2 === 0 ? 'C32/40' : 'C28/35';
+        mixType = i % 2 === 0 ? "C32/40" : "C28/35";
         volumeM3 = 20 + i * 2;
         const dayOffset = (count - i) * 3 + 1;
         const d = new Date();
         d.setDate(d.getDate() - dayOffset);
-        dateStr = d.toISOString().split('T')[0];
+        dateStr = d.toISOString().split("T")[0];
       }
 
       list.push({
@@ -131,8 +126,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         date: dateStr,
         mixType,
         volumeM3,
-        status: 'completed',
-        notes: `Structural slab pour #${i} completed successfully.`
+        status: "completed",
+        notes: `Structural slab pour #${i} completed successfully.`,
       });
     }
     setPourLogs(list.reverse());
@@ -141,12 +136,15 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   // Haversine Distance helper
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
     const R = 6371; // km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   };
 
@@ -159,10 +157,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       // 1. Geocode site postcode using OSM Nominatim
       const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(job.postcode)}&countrycodes=gb&limit=1`;
       const geoRes = await fetch(geoUrl, {
-        headers: { 'User-Agent': 'OpusForm/1.0 (admin@opusform.co.uk)' }
+        headers: { "User-Agent": "OpusForm/1.0 (admin@opusform.co.uk)" },
       });
       const geoData = await geoRes.json();
-      
+
       if (geoData && geoData[0]) {
         const lat = parseFloat(geoData[0].lat);
         const lng = parseFloat(geoData[0].lon);
@@ -174,16 +172,17 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         const wData = await weatherRes.json();
 
         if (wData && wData.main) {
-          const isImpactful = wData.weather[0].main.toLowerCase().includes('rain') || 
-                             wData.weather[0].main.toLowerCase().includes('snow') ||
-                             wData.wind?.speed > 8;
+          const isImpactful =
+            wData.weather[0].main.toLowerCase().includes("rain") ||
+            wData.weather[0].main.toLowerCase().includes("snow") ||
+            wData.wind?.speed > 8;
 
           setWeatherData({
             temp: Math.round(wData.main.temp),
             desc: wData.weather[0].description,
             icon: wData.weather[0].icon,
-            riskLevel: isImpactful ? 'High' : 'Low',
-            isImpactful
+            riskLevel: isImpactful ? "High" : "Low",
+            isImpactful,
           });
         }
 
@@ -191,30 +190,32 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         setLoadingSuppliers(true);
         const suppliersUrl = `https://nominatim.openstreetmap.org/search?format=json&q=tool+hire+${encodeURIComponent(job.postcode)}&limit=5`;
         const supRes = await fetch(suppliersUrl, {
-          headers: { 'User-Agent': 'OpusForm/1.0 (admin@opusform.co.uk)' }
+          headers: { "User-Agent": "OpusForm/1.0 (admin@opusform.co.uk)" },
         });
         const supData = await supRes.json();
 
         if (supData && Array.isArray(supData)) {
-          const mapped = supData.map((item: any) => {
-            const sLat = parseFloat(item.lat);
-            const sLng = parseFloat(item.lon);
-            const dist = calculateDistance(lat, lng, sLat, sLng);
-            return {
-              id: item.place_id.toString(),
-              name: item.display_name.split(',')[0],
-              address: item.display_name.split(',').slice(1, 4).join(','),
-              phone: "0113 " + Math.floor(1000000 + Math.random() * 9000000),
-              distance: `${dist.toFixed(1)} km`,
-              coords: { lat: sLat, lng: sLng }
-            };
-          }).sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+          const mapped = supData
+            .map((item: any) => {
+              const sLat = parseFloat(item.lat);
+              const sLng = parseFloat(item.lon);
+              const dist = calculateDistance(lat, lng, sLat, sLng);
+              return {
+                id: item.place_id.toString(),
+                name: item.display_name.split(",")[0],
+                address: item.display_name.split(",").slice(1, 4).join(","),
+                phone: "0113 " + Math.floor(1000000 + Math.random() * 9000000),
+                distance: `${dist.toFixed(1)} km`,
+                coords: { lat: sLat, lng: sLng },
+              };
+            })
+            .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
 
           setSuppliers(mapped);
         }
       }
     } catch (err) {
-      console.error('Error geocoding or fetching weather/suppliers:', err);
+      console.error("Error geocoding or fetching weather/suppliers:", err);
     } finally {
       setLoadingWeather(false);
       setLoadingSuppliers(false);
@@ -223,47 +224,50 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
   const fetchSiteDiary = async () => {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date().toISOString().split("T")[0];
       const { data, error } = await supabase
-        .from('job_diary')
-        .select('*')
-        .eq('job_id', job.id)
-        .eq('date', today)
+        .from("job_diary")
+        .select("*")
+        .eq("job_id", job.id)
+        .eq("date", today)
         .maybeSingle();
 
       if (data) {
-        setDiaryNotes(data.notes || '');
-        setHsChecklist(data.hs_checklist || {
-          ppe: false,
-          briefing: false,
-          delivery: false,
-          weather: false
-        });
+        setDiaryNotes(data.notes || "");
+        setHsChecklist(
+          data.hs_checklist || {
+            ppe: false,
+            briefing: false,
+            delivery: false,
+            weather: false,
+          },
+        );
         setDiarySaved(true);
       }
     } catch (err) {
-      console.error('Error fetching site diary:', err);
+      console.error("Error fetching site diary:", err);
     }
   };
 
   const saveSiteDiary = async () => {
     setSavingDiary(true);
     try {
-      const today = new Date().toISOString().split('T')[0];
-      const { error } = await supabase
-        .from('job_diary')
-        .upsert({
+      const today = new Date().toISOString().split("T")[0];
+      const { error } = await supabase.from("job_diary").upsert(
+        {
           job_id: job.id,
           date: today,
           notes: diaryNotes,
           hs_checklist: hsChecklist,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'job_id,date' });
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "job_id,date" },
+      );
 
       if (error) throw error;
       setDiarySaved(true);
     } catch (err) {
-      console.error('Error saving site diary:', err);
+      console.error("Error saving site diary:", err);
     } finally {
       setSavingDiary(false);
     }
@@ -272,57 +276,58 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const fetchAttachments = async () => {
     try {
       const { data, error } = await supabase
-        .from('job_attachments')
-        .select('*')
-        .eq('job_id', job.id)
-        .order('uploaded_at', { ascending: false });
+        .from("job_attachments")
+        .select("*")
+        .eq("job_id", job.id)
+        .order("uploaded_at", { ascending: false });
 
       if (data) {
         setAttachments(data);
       }
     } catch (err) {
-      console.error('Error fetching attachments:', err);
+      console.error("Error fetching attachments:", err);
     }
   };
 
-  const uploadAttachment = async (file: File, type: 'image_before' | 'image_after' | 'document') => {
-    if (type === 'image_before') setUploadingPhotoBefore(true);
-    else if (type === 'image_after') setUploadingPhotoAfter(true);
+  const uploadAttachment = async (
+    file: File,
+    type: "image_before" | "image_after" | "document",
+  ) => {
+    if (type === "image_before") setUploadingPhotoBefore(true);
+    else if (type === "image_after") setUploadingPhotoAfter(true);
     else setUploadingDoc(true);
 
     try {
-      const fileExt = file.name.split('.').pop();
+      const fileExt = file.name.split(".").pop();
       const cleanFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
       const filePath = `jobs/${job.id}/${cleanFileName}`;
 
       // Upload file to Supabase storage
       const { error: uploadError } = await supabase.storage
-        .from('job-attachments')
+        .from("job-attachments")
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('job-attachments')
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("job-attachments").getPublicUrl(filePath);
 
       // Insert attachment record
-      const { error: insertError } = await supabase
-        .from('job_attachments')
-        .insert({
-          job_id: job.id,
-          type,
-          file_name: file.name,
-          file_url: publicUrl,
-          uploaded_by: 'Supervisor'
-        });
+      const { error: insertError } = await supabase.from("job_attachments").insert({
+        job_id: job.id,
+        type,
+        file_name: file.name,
+        file_url: publicUrl,
+        uploaded_by: "Supervisor",
+      });
 
       if (insertError) throw insertError;
 
       await fetchAttachments();
     } catch (err) {
-      console.error('Error uploading attachment:', err);
+      console.error("Error uploading attachment:", err);
     } finally {
       setUploadingPhotoBefore(false);
       setUploadingPhotoAfter(false);
@@ -333,13 +338,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const generateUploadLink = async () => {
     setGeneratingLink(true);
     try {
-      const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      const token =
+        Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
       const { data, error } = await supabase
-        .from('job_document_requests')
+        .from("job_document_requests")
         .insert({
           job_id: job.id,
           token,
-          expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString()
+          expires_at: new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString(),
         })
         .select()
         .single();
@@ -349,7 +355,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       const link = `${window.location.origin}${window.location.pathname}#/job-upload/${token}`;
       setGeneratedLink(link);
     } catch (err) {
-      console.error('Error generating link:', err);
+      console.error("Error generating link:", err);
     } finally {
       setGeneratingLink(false);
     }
@@ -366,23 +372,23 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     setLoadingStaff(true);
     try {
       const { data, error } = await supabase
-        .from('shifts')
-        .select('worker_id')
-        .eq('job_id', job.id);
+        .from("shifts")
+        .select("worker_id")
+        .eq("job_id", job.id);
 
       if (data) {
         const workerIds = Array.from(new Set(data.map((s: any) => s.worker_id)));
-        const onsite = workers.filter(w => workerIds.includes(w.id));
+        const onsite = workers.filter((w) => workerIds.includes(w.id));
         setStaffOnSite(onsite);
       }
     } catch (err) {
-      console.error('Error fetching staff on site:', err);
+      console.error("Error fetching staff on site:", err);
     } finally {
       setLoadingStaff(false);
     }
   };
 
-  const handleStatusChange = (newStatus: Job['status']) => {
+  const handleStatusChange = (newStatus: Job["status"]) => {
     setStatus(newStatus);
     onUpdateJob({ ...job, status: newStatus });
   };
@@ -393,33 +399,46 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     const newLog: PourLog = {
       id: `${job.id}-pour-${Date.now()}`,
       pourNumber: newPourNumber,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
       mixType: newPourMix,
       volumeM3: Number(newPourVolume),
-      status: 'completed',
-      notes: newPourNotes || `Manual entry pour #${newPourNumber}`
+      status: "completed",
+      notes: newPourNotes || `Manual entry pour #${newPourNumber}`,
     };
 
     const updatedLogs = [newLog, ...pourLogs];
     setPourLogs(updatedLogs);
-    
+
     const nextPourCount = currentPours + 1;
     setCurrentPours(nextPourCount);
-    
+
     onUpdateJob({
       ...job,
-      currentPours: nextPourCount
+      currentPours: nextPourCount,
     });
 
     setIsAddingPour(false);
-    setNewPourNotes('');
+    setNewPourNotes("");
   };
 
   const formatPourDate = (dateStr: string) => {
     try {
       const d = new Date(dateStr);
-      const day = String(d.getDate()).padStart(2, '0');
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const day = String(d.getDate()).padStart(2, "0");
+      const months = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
       const month = months[d.getMonth()];
       const year = d.getFullYear();
       return `${day} ${month} ${year}`;
@@ -429,16 +448,17 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   };
 
   const pourPercent = Math.round((currentPours / (contractMaxPours || 1)) * 100);
-  const beforePhotos = attachments.filter(a => a.type === 'image_before');
-  const afterPhotos = attachments.filter(a => a.type === 'image_after');
-  const projectDocs = attachments.filter(a => a.type === 'document');
+  const beforePhotos = attachments.filter((a) => a.type === "image_before");
+  const afterPhotos = attachments.filter((a) => a.type === "image_after");
+  const projectDocs = attachments.filter((a) => a.type === "document");
 
   // Check if H&S checklist is completed
-  const isHsComplete = hsChecklist.ppe && hsChecklist.briefing && hsChecklist.delivery && hsChecklist.weather;
+  const isHsComplete =
+    hsChecklist.ppe && hsChecklist.briefing && hsChecklist.delivery && hsChecklist.weather;
 
   // Group staff on site by role
   const groupedStaff: { [key: string]: Worker[] } = {};
-  staffOnSite.forEach(w => {
+  staffOnSite.forEach((w) => {
     if (!groupedStaff[w.role]) {
       groupedStaff[w.role] = [];
     }
@@ -447,10 +467,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
   return (
     <div className="space-y-6 font-sans text-[#E4E4E7] p-4 md:p-6 max-w-7xl mx-auto bg-[#0F1012] min-h-screen">
-      
       {/* Header Bar */}
       <div className="flex items-center justify-between pb-4 border-b border-[#27272A]">
-        <button 
+        <button
           onClick={onBack}
           className="flex items-center gap-1 text-[#94A3B8] hover:text-white font-medium text-sm transition-colors cursor-pointer"
         >
@@ -458,38 +477,40 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <span>Job Ledger</span>
         </button>
         <div className="text-xs font-semibold bg-[#1E293B] border border-[#334155] text-[#94A3B8] px-3 py-1 rounded-md font-mono">
-          {job.jobRef.replace('-X', '')}
+          {job.jobRef.replace("-X", "")}
         </div>
       </div>
 
       {/* Title & Contractor info */}
       <div className="space-y-1 pb-2">
         <h1 className="text-3xl font-extrabold text-white tracking-tight">{job.siteName}</h1>
-        <p className="text-sm text-[#94A3B8]">{job.mainContractor} · <span className="font-mono">{job.postcode}</span></p>
+        <p className="text-sm text-[#94A3B8]">
+          {job.mainContractor} · <span className="font-mono">{job.postcode}</span>
+        </p>
       </div>
 
       {/* Main Grid: Status, Progress, and Live Weather */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        
         {/* Project Status Selector Card */}
         <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5">
-          <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider mb-4">Project Status</div>
+          <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider mb-4">
+            Project Status
+          </div>
           <div className="flex bg-[#0F1012] p-1 rounded-lg border border-[#27272A] gap-1">
-            {(['in-progress', 'pending', 'completed'] as const).map((s) => {
-              const isActive = (s === 'in-progress' && status === 'in-progress') || 
-                               (s === 'pending' && status === 'pending') || 
-                               (s === 'completed' && status === 'completed');
+            {(["in-progress", "pending", "completed"] as const).map((s) => {
+              const isActive =
+                (s === "in-progress" && status === "in-progress") ||
+                (s === "pending" && status === "pending") ||
+                (s === "completed" && status === "completed");
               return (
                 <button
                   key={s}
                   onClick={() => handleStatusChange(s)}
                   className={`flex-1 text-center py-2.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    isActive 
-                      ? 'bg-[#3D4E5D] text-white' 
-                      : 'text-[#525866] hover:text-[#94A3B8]'
+                    isActive ? "bg-[#3D4E5D] text-white" : "text-[#525866] hover:text-[#94A3B8]"
                   }`}
                 >
-                  {s === 'in-progress' ? 'In Progress' : s}
+                  {s === "in-progress" ? "In Progress" : s}
                 </button>
               );
             })}
@@ -498,22 +519,28 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
         {/* Pour Progress Card */}
         <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5">
-          <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider mb-3">Pour Progress</div>
+          <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider mb-3">
+            Pour Progress
+          </div>
           <div className="flex justify-between items-baseline mb-2">
-            <span className="text-sm font-semibold text-white">{currentPours} of {contractMaxPours} contracted</span>
+            <span className="text-sm font-semibold text-white">
+              {currentPours} of {contractMaxPours} contracted
+            </span>
             <span className="text-[#FF9F0A] text-sm font-bold">{pourPercent}%</span>
           </div>
           <div className="h-1.5 bg-[#27272A] rounded-full overflow-hidden">
-            <div 
-              className="h-full bg-[#FF9F0A] rounded-full transition-all duration-500" 
-              style={{ width: `${Math.min(100, (currentPours / (contractMaxPours || 1)) * 100)}%` }} 
+            <div
+              className="h-full bg-[#FF9F0A] rounded-full transition-all duration-500"
+              style={{ width: `${Math.min(100, (currentPours / (contractMaxPours || 1)) * 100)}%` }}
             />
           </div>
         </div>
 
         {/* Live Weather Card */}
         <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 flex flex-col justify-between">
-          <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider">Live Weather Risk</div>
+          <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider">
+            Live Weather Risk
+          </div>
           {loadingWeather ? (
             <div className="flex items-center gap-2 text-xs text-[#71717A] py-2">
               <Loader className="w-4 h-4 animate-spin text-[#6C8295]" />
@@ -524,18 +551,22 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               <div className="space-y-1">
                 <div className="text-lg font-bold text-white flex items-center gap-2">
                   <span>{weatherData.temp}°C</span>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                    weatherData.isImpactful ? 'bg-[#451A1A] text-[#EF4444] border border-[#EF4444]/20' : 'bg-[#142A1E] text-[#10B981] border border-[#10B981]/20'
-                  }`}>
+                  <span
+                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                      weatherData.isImpactful
+                        ? "bg-[#451A1A] text-[#EF4444] border border-[#EF4444]/20"
+                        : "bg-[#142A1E] text-[#10B981] border border-[#10B981]/20"
+                    }`}
+                  >
                     {weatherData.riskLevel} Risk
                   </span>
                 </div>
                 <p className="text-xs text-[#94A3B8] capitalize">{weatherData.desc}</p>
               </div>
               {weatherData.icon && (
-                <img 
-                  src={`https://openweathermap.org/img/wn/${weatherData.icon}@2x.png`} 
-                  alt="weather" 
+                <img
+                  src={`https://openweathermap.org/img/wn/${weatherData.icon}@2x.png`}
+                  alt="weather"
                   className="w-12 h-12"
                 />
               )}
@@ -544,7 +575,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             <p className="text-xs text-[#71717A] mt-2">Weather details unavailable.</p>
           )}
         </div>
-
       </div>
 
       {/* Interactive Proximity Suppliers Map */}
@@ -553,13 +583,15 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <div className="p-4 border-b border-[#27272A] flex justify-between items-center">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-[#EF4444]" />
-              <span className="text-xs font-bold uppercase tracking-wider text-white">Live Site Proximity Matrix</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-white">
+                Live Site Proximity Matrix
+              </span>
             </div>
             <span className="text-[10px] text-[#71717A] font-mono">OpenStreetMap Engine</span>
           </div>
           {siteCoords ? (
             <div className="flex-1 min-h-[300px] relative">
-              <OSMMap 
+              <OSMMap
                 center={siteCoords}
                 siteCoords={siteCoords}
                 siteName={job.siteName}
@@ -579,7 +611,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         {/* Local Suppliers List */}
         <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider">Closest Local Suppliers</div>
+            <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider">
+              Closest Local Suppliers
+            </div>
             {loadingSuppliers ? (
               <div className="flex items-center gap-2 text-xs text-[#71717A] py-4">
                 <Loader className="w-4 h-4 animate-spin text-[#6C8295]" />
@@ -592,9 +626,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                     key={s.id}
                     onClick={() => setSelectedSupplierId(s.id)}
                     className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer flex justify-between items-start ${
-                      selectedSupplierId === s.id 
-                        ? 'bg-[#1E293B] border-[#6C8295]' 
-                        : 'bg-[#0F1012] border-[#27272A] hover:border-[#3F3F46]'
+                      selectedSupplierId === s.id
+                        ? "bg-[#1E293B] border-[#6C8295]"
+                        : "bg-[#0F1012] border-[#27272A] hover:border-[#3F3F46]"
                     }`}
                   >
                     <div className="space-y-0.5 max-w-[70%]">
@@ -611,7 +645,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 ))}
               </div>
             ) : (
-              <div className="text-xs text-[#71717A] py-4">No local tool hire or building merchants found.</div>
+              <div className="text-xs text-[#71717A] py-4">
+                No local tool hire or building merchants found.
+              </div>
             )}
           </div>
         </div>
@@ -619,24 +655,27 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Project Management Grid: Daily Site Diary & Checklist + Staff on Site */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
         {/* Site Diary & Checklist */}
         <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 space-y-4">
           <div className="flex items-center gap-2">
             <ClipboardList className="w-4 h-4 text-[#6C8295]" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-white">Daily Site Diary & H&S Clearance</h2>
+            <h2 className="text-sm font-bold uppercase tracking-wider text-white">
+              Daily Site Diary & H&S Clearance
+            </h2>
           </div>
 
           <div className="space-y-3 bg-[#0F1012] border border-[#27272A] rounded-lg p-4">
-            <div className="text-[10px] font-bold uppercase text-[#71717A]">Health & Safety Checklists</div>
-            
+            <div className="text-[10px] font-bold uppercase text-[#71717A]">
+              Health & Safety Checklists
+            </div>
+
             <div className="space-y-2.5">
               <label className="flex items-center gap-2.5 text-xs text-white cursor-pointer select-none">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={hsChecklist.ppe}
                   onChange={(e) => {
-                    setHsChecklist(prev => ({ ...prev, ppe: e.target.checked }));
+                    setHsChecklist((prev) => ({ ...prev, ppe: e.target.checked }));
                     setDiarySaved(false);
                   }}
                   className="rounded border-[#27272A] text-[#6C8295] focus:ring-0 bg-[#161619] w-4 h-4"
@@ -645,11 +684,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               </label>
 
               <label className="flex items-center gap-2.5 text-xs text-white cursor-pointer select-none">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={hsChecklist.briefing}
                   onChange={(e) => {
-                    setHsChecklist(prev => ({ ...prev, briefing: e.target.checked }));
+                    setHsChecklist((prev) => ({ ...prev, briefing: e.target.checked }));
                     setDiarySaved(false);
                   }}
                   className="rounded border-[#27272A] text-[#6C8295] focus:ring-0 bg-[#161619] w-4 h-4"
@@ -658,11 +697,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               </label>
 
               <label className="flex items-center gap-2.5 text-xs text-white cursor-pointer select-none">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={hsChecklist.delivery}
                   onChange={(e) => {
-                    setHsChecklist(prev => ({ ...prev, delivery: e.target.checked }));
+                    setHsChecklist((prev) => ({ ...prev, delivery: e.target.checked }));
                     setDiarySaved(false);
                   }}
                   className="rounded border-[#27272A] text-[#6C8295] focus:ring-0 bg-[#161619] w-4 h-4"
@@ -671,11 +710,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               </label>
 
               <label className="flex items-center gap-2.5 text-xs text-white cursor-pointer select-none">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={hsChecklist.weather}
                   onChange={(e) => {
-                    setHsChecklist(prev => ({ ...prev, weather: e.target.checked }));
+                    setHsChecklist((prev) => ({ ...prev, weather: e.target.checked }));
                     setDiarySaved(false);
                   }}
                   className="rounded border-[#27272A] text-[#6C8295] focus:ring-0 bg-[#161619] w-4 h-4"
@@ -686,7 +725,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block">Daily Notes & Observations</label>
+            <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block">
+              Daily Notes & Observations
+            </label>
             <textarea
               rows={3}
               value={diaryNotes}
@@ -701,7 +742,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
           <div className="flex justify-between items-center pt-2">
             <span className="text-[10px] text-[#71717A] font-mono">
-              {diarySaved ? '✓ Saved' : '● Unsaved changes'}
+              {diarySaved ? "✓ Saved" : "● Unsaved changes"}
             </span>
             <button
               onClick={saveSiteDiary}
@@ -719,9 +760,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-[#6C8295]" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-white">Staff Scheduled On Site</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-white">
+                Staff Scheduled On Site
+              </h2>
             </div>
-            <span className="text-[10px] bg-[#1E293B] border border-[#334155] text-[#94A3B8] px-2 py-0.5 rounded font-mono">Read Only</span>
+            <span className="text-[10px] bg-[#1E293B] border border-[#334155] text-[#94A3B8] px-2 py-0.5 rounded font-mono">
+              Read Only
+            </span>
           </div>
 
           {loadingStaff ? (
@@ -738,9 +783,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {groupedStaff[roleName].map((w) => (
-                      <div key={w.id} className="bg-[#0F1012] border border-[#27272A] rounded-lg p-2.5 flex items-center justify-between">
+                      <div
+                        key={w.id}
+                        className="bg-[#0F1012] border border-[#27272A] rounded-lg p-2.5 flex items-center justify-between"
+                      >
                         <span className="text-xs font-bold text-white">{w.name}</span>
-                        {w.postcode && <span className="text-[9px] text-[#71717A] font-mono">{w.postcode}</span>}
+                        {w.postcode && (
+                          <span className="text-[9px] text-[#71717A] font-mono">{w.postcode}</span>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -757,18 +807,18 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Attachments Section: Photos and Documents */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
         {/* Before & After Photo Gallery */}
         <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 space-y-4">
           <div className="flex justify-between items-center border-b border-[#27272A] pb-3">
             <div className="flex items-center gap-2">
               <Camera className="w-4 h-4 text-[#6C8295]" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-white">Before & After Site Media</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-white">
+                Before & After Site Media
+              </h2>
             </div>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
             {/* Before Section */}
             <div className="space-y-2">
               <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider flex justify-between items-center">
@@ -784,7 +834,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => e.target.files?.[0] && uploadAttachment(e.target.files[0], 'image_before')}
+                    onChange={(e) =>
+                      e.target.files?.[0] && uploadAttachment(e.target.files[0], "image_before")
+                    }
                     className="hidden"
                     disabled={uploadingPhotoBefore}
                   />
@@ -794,7 +846,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 {beforePhotos.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2 w-full">
                     {beforePhotos.map((p) => (
-                      <div key={p.id} className="relative group rounded-lg overflow-hidden border border-[#27272A]">
+                      <div
+                        key={p.id}
+                        className="relative group rounded-lg overflow-hidden border border-[#27272A]"
+                      >
                         <img src={p.file_url} alt="before" className="w-full h-24 object-cover" />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-[#94A3B8]">
                           <span className="text-white font-bold truncate">{p.uploaded_by}</span>
@@ -804,7 +859,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <span className="text-[10px] text-[#525866] uppercase tracking-widest font-semibold">No Media</span>
+                  <span className="text-[10px] text-[#525866] uppercase tracking-widest font-semibold">
+                    No Media
+                  </span>
                 )}
               </div>
             </div>
@@ -824,7 +881,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                   <input
                     type="file"
                     accept="image/*"
-                    onChange={(e) => e.target.files?.[0] && uploadAttachment(e.target.files[0], 'image_after')}
+                    onChange={(e) =>
+                      e.target.files?.[0] && uploadAttachment(e.target.files[0], "image_after")
+                    }
                     className="hidden"
                     disabled={uploadingPhotoAfter}
                   />
@@ -834,7 +893,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 {afterPhotos.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2 w-full">
                     {afterPhotos.map((p) => (
-                      <div key={p.id} className="relative group rounded-lg overflow-hidden border border-[#27272A]">
+                      <div
+                        key={p.id}
+                        className="relative group rounded-lg overflow-hidden border border-[#27272A]"
+                      >
                         <img src={p.file_url} alt="after" className="w-full h-24 object-cover" />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-[#94A3B8]">
                           <span className="text-white font-bold truncate">{p.uploaded_by}</span>
@@ -844,11 +906,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <span className="text-[10px] text-[#525866] uppercase tracking-widest font-semibold">No Media</span>
+                  <span className="text-[10px] text-[#525866] uppercase tracking-widest font-semibold">
+                    No Media
+                  </span>
                 )}
               </div>
             </div>
-
           </div>
         </div>
 
@@ -857,7 +920,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <div className="flex justify-between items-center border-b border-[#27272A] pb-3">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-[#6C8295]" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-white">Project Documents</h2>
+              <h2 className="text-sm font-bold uppercase tracking-wider text-white">
+                Project Documents
+              </h2>
             </div>
             <button
               onClick={generateUploadLink}
@@ -878,15 +943,21 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           {generatedLink && (
             <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-3.5 flex items-center justify-between gap-3 animate-fade-in">
               <div className="space-y-0.5 max-w-[75%]">
-                <div className="text-[10px] font-bold text-white uppercase tracking-wider">Secure Upload Link Generated</div>
+                <div className="text-[10px] font-bold text-white uppercase tracking-wider">
+                  Secure Upload Link Generated
+                </div>
                 <div className="text-[11px] text-[#94A3B8] truncate font-mono">{generatedLink}</div>
               </div>
               <button
                 onClick={copyToClipboard}
                 className="px-3 py-1.5 bg-[#161619] border border-[#27272A] text-white hover:bg-[#27272A] rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
-                {copiedLink ? <Check className="w-3.5 h-3.5 text-[#10B981]" /> : <Copy className="w-3.5 h-3.5" />}
-                <span>{copiedLink ? 'Copied' : 'Copy'}</span>
+                {copiedLink ? (
+                  <Check className="w-3.5 h-3.5 text-[#10B981]" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+                <span>{copiedLink ? "Copied" : "Copy"}</span>
               </button>
             </div>
           )}
@@ -895,14 +966,16 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <div className="border border-dashed border-[#27272A] hover:border-[#3F3F46] rounded-xl p-6 bg-[#0F1012] text-center relative transition-all">
             <input
               type="file"
-              onChange={(e) => e.target.files?.[0] && uploadAttachment(e.target.files[0], 'document')}
+              onChange={(e) =>
+                e.target.files?.[0] && uploadAttachment(e.target.files[0], "document")
+              }
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
               disabled={uploadingDoc}
             />
             <div className="flex flex-col items-center gap-2">
               <FileText className="w-8 h-8 text-[#71717A]" />
               <div className="text-xs font-bold text-white">
-                {uploadingDoc ? 'Uploading...' : 'Drop files here or click to upload'}
+                {uploadingDoc ? "Uploading..." : "Drop files here or click to upload"}
               </div>
               <div className="text-[10px] text-[#71717A]">PDF, Excel, Word, or CAD Drawings</div>
             </div>
@@ -911,10 +984,18 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           {/* Documents List */}
           <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
             {projectDocs.map((d) => (
-              <div key={d.id} className="flex justify-between items-center p-2.5 bg-[#0F1012] border border-[#27272A] rounded-lg hover:border-[#3F3F46] transition-all">
+              <div
+                key={d.id}
+                className="flex justify-between items-center p-2.5 bg-[#0F1012] border border-[#27272A] rounded-lg hover:border-[#3F3F46] transition-all"
+              >
                 <div className="flex items-center gap-2 truncate max-w-[70%]">
                   <FileText className="w-4 h-4 text-[#71717A] shrink-0" />
-                  <a href={d.file_url} target="_blank" rel="noreferrer" className="text-xs text-white hover:text-[#6C8295] truncate font-mono">
+                  <a
+                    href={d.file_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs text-white hover:text-[#6C8295] truncate font-mono"
+                  >
                     {d.file_name}
                   </a>
                 </div>
@@ -931,14 +1012,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             )}
           </div>
         </div>
-
       </div>
 
       {/* Pour History Logs Card */}
       <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-bold text-white">Pour History</h2>
-          
+
           <div className="flex items-center gap-3">
             {!isHsComplete && (
               <span className="text-[10px] text-[#FF9F0A] font-bold flex items-center gap-1">
@@ -946,25 +1026,30 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 <span>Clear daily checklist to log pours</span>
               </span>
             )}
-            <button 
+            <button
               onClick={() => setIsAddingPour(!isAddingPour)}
               disabled={!isHsComplete}
               className={`px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border ${
-                isHsComplete 
-                  ? 'bg-[#161619] border-[#27272A] hover:bg-[#27272A] text-white' 
-                  : 'bg-[#27272A] border-[#27272A] text-[#71717A] cursor-not-allowed'
+                isHsComplete
+                  ? "bg-[#161619] border-[#27272A] hover:bg-[#27272A] text-white"
+                  : "bg-[#27272A] border-[#27272A] text-[#71717A] cursor-not-allowed"
               }`}
             >
-              {isAddingPour ? 'Cancel' : '+ Log Pour'}
+              {isAddingPour ? "Cancel" : "+ Log Pour"}
             </button>
           </div>
         </div>
 
         {isAddingPour && isHsComplete && (
-          <form onSubmit={handleAddPourSubmit} className="mb-4 p-4 bg-[#0F1012] border border-[#27272A] rounded-lg space-y-4">
+          <form
+            onSubmit={handleAddPourSubmit}
+            className="mb-4 p-4 bg-[#0F1012] border border-[#27272A] rounded-lg space-y-4"
+          >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block mb-1">Mix Type</label>
+                <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block mb-1">
+                  Mix Type
+                </label>
                 <select
                   value={newPourMix}
                   onChange={(e) => setNewPourMix(e.target.value)}
@@ -976,7 +1061,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block mb-1">Volume (m³)</label>
+                <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block mb-1">
+                  Volume (m³)
+                </label>
                 <input
                   type="number"
                   required
@@ -989,7 +1076,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block mb-1">Pour Notes</label>
+              <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block mb-1">
+                Pour Notes
+              </label>
               <input
                 type="text"
                 placeholder="Notes..."
@@ -1000,7 +1089,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             </div>
 
             <div className="flex justify-end">
-              <button type="submit" className="px-4 py-2 bg-[#3D4E5D] text-white font-bold rounded-lg text-xs cursor-pointer">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-[#3D4E5D] text-white font-bold rounded-lg text-xs cursor-pointer"
+              >
                 Commit Pour Log
               </button>
             </div>
@@ -1009,10 +1101,15 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
         <div className="space-y-2.5">
           {pourLogs.map((log) => (
-            <div key={log.id} className="flex justify-between items-center p-4 bg-[#161619] border border-[#27272A] rounded-xl hover:bg-[#1a1a1f] transition-all">
+            <div
+              key={log.id}
+              className="flex justify-between items-center p-4 bg-[#161619] border border-[#27272A] rounded-xl hover:bg-[#1a1a1f] transition-all"
+            >
               <div className="space-y-1">
                 <div className="text-sm font-bold text-white">Pour #{log.pourNumber}</div>
-                <div className="text-xs text-[#71717A]">{log.mixType} · {log.volumeM3}m³</div>
+                <div className="text-xs text-[#71717A]">
+                  {log.mixType} · {log.volumeM3}m³
+                </div>
               </div>
               <div className="text-xs text-[#71717A] font-semibold">{formatPourDate(log.date)}</div>
             </div>

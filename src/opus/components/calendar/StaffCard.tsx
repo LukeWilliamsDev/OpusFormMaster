@@ -56,9 +56,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
           <div className="min-w-0">
             <h4
               className={`font-bold text-white leading-tight ${
-                dense
-                  ? "text-xs truncate whitespace-nowrap max-w-[110px]"
-                  : "text-sm break-words"
+                dense ? "text-xs truncate whitespace-nowrap max-w-[110px]" : "text-sm break-words"
               }`}
               title={worker.name}
             >

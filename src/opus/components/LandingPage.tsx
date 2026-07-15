@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 interface LandingPageProps {
   onNavigateToPortal: () => void;
@@ -18,7 +18,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
     const t2 = setTimeout(() => setLineVisible(true), 700);
     const t3 = setTimeout(() => setSubtitleVisible(true), 1050);
     const t4 = setTimeout(() => setFooterVisible(true), 1400);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+    };
   }, []);
 
   return (
@@ -41,9 +46,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
         <button
           onClick={onNavigateToPortal}
           className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] transition-all duration-300"
-          style={{ color: '#526E8C' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#F4F4F0')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#526E8C')}
+          style={{ color: "#526E8C" }}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "#F4F4F0")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "#526E8C")}
           aria-label="Portal Access"
         >
           Portal Access
@@ -52,21 +57,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
 
       {/* Main centred content */}
       <main className="flex-grow flex flex-col items-center justify-center z-10 px-6">
-
         {/* Logo image — fades and rises in */}
         <div
           className="transition-all duration-700 ease-out"
           style={{
             opacity: visible ? 1 : 0,
-            transform: visible ? 'translateY(0)' : 'translateY(16px)',
-            maxWidth: '480px',
-            width: '100%',
+            transform: visible ? "translateY(0)" : "translateY(16px)",
+            maxWidth: "480px",
+            width: "100%",
           }}
         >
           <img
             src="/opus-form-primary.svg"
             alt="Opus Form"
-            style={{ width: '100%', height: 'auto', display: 'block' }}
+            style={{ width: "100%", height: "auto", display: "block" }}
             draggable={false}
             referrerPolicy="no-referrer"
           />
@@ -76,40 +80,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
         <p
           className="mt-4 text-center font-mono font-bold uppercase text-[11px]"
           style={{
-            color: '#526E8C',
-            letterSpacing: '0.3em',
+            color: "#526E8C",
+            letterSpacing: "0.3em",
             opacity: subtitleVisible ? 1 : 0,
-            transform: subtitleVisible ? 'translateY(0)' : 'translateY(8px)',
-            transition: 'opacity 500ms ease-out, transform 500ms ease-out',
+            transform: subtitleVisible ? "translateY(0)" : "translateY(8px)",
+            transition: "opacity 500ms ease-out, transform 500ms ease-out",
           }}
         >
           Coming Soon
         </p>
-
       </main>
 
       {/* Footer */}
       <footer
         className="w-full z-20 px-8 pb-7 pt-5"
         style={{
-          borderTop: '1px solid #2e2e33',
+          borderTop: "1px solid #2e2e33",
           opacity: footerVisible ? 1 : 0,
-          transition: 'opacity 500ms ease-out',
+          transition: "opacity 500ms ease-out",
         }}
       >
         {/* Legal links row */}
         <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mb-4">
           {[
-            { label: 'Privacy Notice', path: '#/privacy' },
-            { label: 'Cookies', path: '#/cookies' },
-          ].map(link => (
+            { label: "Privacy Notice", path: "#/privacy" },
+            { label: "Cookies", path: "#/cookies" },
+          ].map((link) => (
             <a
               key={link.path}
               href={link.path}
               className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200"
-              style={{ color: '#3d3d44' }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#526E8C')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#3d3d44')}
+              style={{ color: "#3d3d44" }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#526E8C")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "#3d3d44")}
             >
               {link.label}
             </a>
@@ -117,14 +120,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
         </div>
 
         {/* Company details + contact */}
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-2 text-[8px] font-mono uppercase" style={{ color: '#2e2e33', letterSpacing: '0.15em' }}>
+        <div
+          className="flex flex-col sm:flex-row justify-center items-center gap-2 text-[8px] font-mono uppercase"
+          style={{ color: "#2e2e33", letterSpacing: "0.15em" }}
+        >
           <span>Opus Form Ltd · Company No. 17228356 · 128 City Road, London, EC1V 2NX</span>
           <span className="hidden sm:inline">·</span>
           <a
             href="mailto:admin@opusform.co.uk"
-            style={{ color: '#2e2e33', transition: 'color 200ms' }}
-            onMouseEnter={e => (e.currentTarget.style.color = '#526E8C')}
-            onMouseLeave={e => (e.currentTarget.style.color = '#2e2e33')}
+            style={{ color: "#2e2e33", transition: "color 200ms" }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#526E8C")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#2e2e33")}
           >
             admin@opusform.co.uk
           </a>

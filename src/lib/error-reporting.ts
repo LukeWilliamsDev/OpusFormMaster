@@ -21,10 +21,11 @@ declare global {
 
 export function reportError(error: unknown, context: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
-  
+
   // Try custom error handler or fallback to legacy Lovable handler
-  const handler = window.__errorEvents?.captureException || window.__lovableEvents?.captureException;
-  
+  const handler =
+    window.__errorEvents?.captureException || window.__lovableEvents?.captureException;
+
   if (handler) {
     handler(
       error,

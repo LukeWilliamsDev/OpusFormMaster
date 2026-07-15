@@ -1,7 +1,7 @@
 // @ts-nocheck
-import React, { useEffect, useRef } from 'react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
+import React, { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 
 interface Supplier {
   id: string;
@@ -30,7 +30,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
   postcode,
   suppliers,
   selectedSupplierId,
-  onSelectSupplier
+  onSelectSupplier,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
@@ -44,10 +44,10 @@ export const OSMMap: React.FC<OSMMapProps> = ({
           <div style="position: relative; width: 14px; height: 14px; border-radius: 50%; background-color: ${color}; border: 2px solid #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.5);"></div>
         </div>
       `,
-      className: '',
+      className: "",
       iconSize: [30, 30],
       iconAnchor: [15, 15],
-      popupAnchor: [0, -10]
+      popupAnchor: [0, -10],
     });
   };
 
@@ -66,23 +66,24 @@ export const OSMMap: React.FC<OSMMapProps> = ({
       center: [center.lat, center.lng],
       zoom: 13,
       zoomControl: true,
-      attributionControl: true
+      attributionControl: true,
     });
 
     mapRef.current = map;
 
     // CartoDB Dark Matter tile layer matches our premium charcoal theme perfectly
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer("https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png", {
       maxZoom: 20,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
     }).addTo(map);
 
     const markers: { [key: string]: L.Marker } = {};
 
     // Site Marker
-    const siteIcon = createCustomMarkerIcon('#E11D48', 'pulsing-marker-red');
+    const siteIcon = createCustomMarkerIcon("#E11D48", "pulsing-marker-red");
     const siteMarker = L.marker([siteCoords.lat, siteCoords.lng], { icon: siteIcon }).addTo(map);
-    
+
     const sitePopupContent = `
       <div style="padding: 4px; font-family: inherit;">
         <h4 style="margin: 0 0 4px 0; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #ffffff;">${siteName}</h4>
@@ -90,12 +91,14 @@ export const OSMMap: React.FC<OSMMapProps> = ({
       </div>
     `;
     siteMarker.bindPopup(sitePopupContent);
-    markers['site'] = siteMarker;
+    markers["site"] = siteMarker;
 
     // Suppliers Markers
     suppliers.forEach((s) => {
-      const supplierIcon = createCustomMarkerIcon('#5C7285', 'pulsing-marker-accent');
-      const supplierMarker = L.marker([s.coords.lat, s.coords.lng], { icon: supplierIcon }).addTo(map);
+      const supplierIcon = createCustomMarkerIcon("#5C7285", "pulsing-marker-accent");
+      const supplierMarker = L.marker([s.coords.lat, s.coords.lng], { icon: supplierIcon }).addTo(
+        map,
+      );
 
       const supplierPopupContent = `
         <div style="padding: 4px; font-family: inherit; max-width: 180px;">
@@ -107,7 +110,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
       `;
       supplierMarker.bindPopup(supplierPopupContent);
 
-      supplierMarker.on('click', () => {
+      supplierMarker.on("click", () => {
         onSelectSupplier(s.id);
       });
 
@@ -141,10 +144,10 @@ export const OSMMap: React.FC<OSMMapProps> = ({
   }, [selectedSupplierId, center.lat, center.lng]);
 
   return (
-    <div 
-      ref={mapContainerRef} 
-      className="w-full h-full rounded-b-xl" 
-      style={{ minHeight: '280px', zIndex: 1 }} 
+    <div
+      ref={mapContainerRef}
+      className="w-full h-full rounded-b-xl"
+      style={{ minHeight: "280px", zIndex: 1 }}
     />
   );
 };

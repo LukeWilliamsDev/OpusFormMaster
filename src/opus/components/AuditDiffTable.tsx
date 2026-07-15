@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface DiffItem {
   field: string;
@@ -12,21 +12,27 @@ interface AuditDiffTableProps {
 
 export const AuditDiffTable: React.FC<AuditDiffTableProps> = ({ diff }) => {
   if (!diff || diff.length === 0) {
-    return <span className="text-[10px] text-zinc-500 uppercase font-mono">No changes detected in business fields</span>;
+    return (
+      <span className="text-[10px] text-zinc-500 uppercase font-mono">
+        No changes detected in business fields
+      </span>
+    );
   }
 
   const renderValue = (val: any) => {
     if (val === undefined || val === null) {
       return <span className="text-zinc-650 font-mono italic text-[10px]">&lt;empty&gt;</span>;
     }
-    if (typeof val === 'object') {
-      return <span className="font-mono text-[10px] text-zinc-400 break-all">{JSON.stringify(val)}</span>;
+    if (typeof val === "object") {
+      return (
+        <span className="font-mono text-[10px] text-zinc-400 break-all">{JSON.stringify(val)}</span>
+      );
     }
     return <span className="break-all">{String(val)}</span>;
   };
 
   const getFriendlyFieldName = (field: string) => {
-    return field.replace(/_/g, ' ');
+    return field.replace(/_/g, " ");
   };
 
   return (
@@ -40,7 +46,7 @@ export const AuditDiffTable: React.FC<AuditDiffTableProps> = ({ diff }) => {
           </tr>
         </thead>
         <tbody className="divide-y divide-white/5 font-medium">
-          {diff.map(item => (
+          {diff.map((item) => (
             <tr key={item.field} className="hover:bg-white/[0.01] transition-colors">
               <td className="py-2 px-3 font-mono text-zinc-400 uppercase text-[9px] tracking-wide align-top">
                 {getFriendlyFieldName(item.field)}

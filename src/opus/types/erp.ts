@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon } from "lucide-react";
 
 export interface Job {
   id: string;
@@ -9,13 +9,13 @@ export interface Job {
   postcode: string;
   currentPours: number;
   contractMaxPours: number;
-  status: 'active' | 'completed' | 'on-hold' | 'pending' | 'in-progress';
+  status: "active" | "completed" | "on-hold" | "pending" | "in-progress";
   scheduleValue: number;
 }
 
 export interface Ticket {
   id: string;
-  type: 'CSCS' | 'NPORS' | 'CPCS' | 'Telehandler' | 'Supervisor' | string;
+  type: "CSCS" | "NPORS" | "CPCS" | "Telehandler" | "Supervisor" | string;
   expiryDate: string; // YYYY-MM-DD
   ticketNumber: string;
   isValid?: boolean;
@@ -24,7 +24,7 @@ export interface Ticket {
 export interface Worker {
   id: string;
   name: string;
-  role: 'Supervisor' | 'Operative' | 'Telehandler' | 'Groundworker';
+  role: "Supervisor" | "Operative" | "Telehandler" | "Groundworker";
   tickets: Ticket[];
   phone?: string;
   email?: string;
@@ -40,13 +40,13 @@ export interface Worker {
 
 export interface WeatherRisk {
   postcode: string;
-  condition: 'Rain' | 'Frost' | 'Clear' | 'Wind';
-  riskLevel: 'Low' | 'Medium' | 'High';
+  condition: "Rain" | "Frost" | "Clear" | "Wind";
+  riskLevel: "Low" | "Medium" | "High";
   temperature?: number;
 }
 
 export interface LaborRate {
-  type: 'Supervisor' | 'Operative';
+  type: "Supervisor" | "Operative";
   rate: number;
 }
 
@@ -55,7 +55,7 @@ export interface MeasuredItem {
   description: string;
   quantity: number;
   unit: string;
-  rate: number | 'Included';
+  rate: number | "Included";
   isIncluded: boolean;
 }
 

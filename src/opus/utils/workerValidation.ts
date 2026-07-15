@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { Worker, Ticket } from '../types/erp';
+import { Worker, Ticket } from "../types/erp";
 
 // Validation anchor: today (evaluated at call time so expiry checks stay live)
 const getAnchorDate = () => {
@@ -8,35 +8,44 @@ const getAnchorDate = () => {
   return now;
 };
 
-export const validateWorkerForDeployment = (worker: Worker, roleNeeded: string): { isValid: boolean; reason: string | null } => {
+export const validateWorkerForDeployment = (
+  worker: Worker,
+  roleNeeded: string,
+): { isValid: boolean; reason: string | null } => {
   const anchorDate = getAnchorDate();
   // Must possess a valid CSCS safety ticket
-  const cscsTicket = worker.tickets.find(t => t.type === 'CSCS');
+  const cscsTicket = worker.tickets.find((t) => t.type === "CSCS");
   if (!cscsTicket) {
-    return { isValid: false, reason: 'Missing CSCS safety ticket' };
+    return { isValid: false, reason: "Missing CSCS safety ticket" };
   }
   if (new Date(cscsTicket.expiryDate) < anchorDate) {
-    return { isValid: false, reason: 'CSCS safety ticket has expired' };
+    return { isValid: false, reason: "CSCS safety ticket has expired" };
   }
 
   // Role-specific machine qualifications
-  if (roleNeeded?.toLowerCase().includes('telehandler') || worker.role?.toLowerCase().includes('telehandler')) {
-    const teleTicket = worker.tickets.find(t => t.type === 'Telehandler');
+  if (
+    roleNeeded?.toLowerCase().includes("telehandler") ||
+    worker.role?.toLowerCase().includes("telehandler")
+  ) {
+    const teleTicket = worker.tickets.find((t) => t.type === "Telehandler");
     if (!teleTicket) {
-      return { isValid: false, reason: 'Requires active Telehandler operator ticket' };
+      return { isValid: false, reason: "Requires active Telehandler operator ticket" };
     }
     if (new Date(teleTicket.expiryDate) < anchorDate) {
-      return { isValid: false, reason: 'Telehandler operator ticket has expired' };
+      return { isValid: false, reason: "Telehandler operator ticket has expired" };
     }
   }
 
-  if (roleNeeded?.toLowerCase().includes('supervisor') || worker.role?.toLowerCase().includes('supervisor')) {
-    const superTicket = worker.tickets.find(t => t.type === 'Supervisor');
+  if (
+    roleNeeded?.toLowerCase().includes("supervisor") ||
+    worker.role?.toLowerCase().includes("supervisor")
+  ) {
+    const superTicket = worker.tickets.find((t) => t.type === "Supervisor");
     if (!superTicket) {
-      return { isValid: false, reason: 'Requires active Supervisor qualification ticket' };
+      return { isValid: false, reason: "Requires active Supervisor qualification ticket" };
     }
     if (new Date(superTicket.expiryDate) < anchorDate) {
-      return { isValid: false, reason: 'Supervisor qualification ticket has expired' };
+      return { isValid: false, reason: "Supervisor qualification ticket has expired" };
     }
   }
 
@@ -47,12 +56,12 @@ export const getTicketStatus = (ticket: Ticket) => {
   const anchorDate = getAnchorDate();
   const expDate = new Date(ticket.expiryDate);
   if (expDate < anchorDate) {
-    return 'EXPIRED';
+    return "EXPIRED";
   }
   const diffTime = expDate.getTime() - anchorDate.getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   if (diffDays >= 0 && diffDays <= 30) {
-    return 'EXPIRING_SOON';
+    return "EXPIRING_SOON";
   }
-  return 'VALID';
+  return "VALID";
 };

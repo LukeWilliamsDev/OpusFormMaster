@@ -1,14 +1,14 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 // NOTE: This Edge Function MUST be deployed with `verify_jwt: false`
 // to allow email clients (Gmail, Outlook, etc.) to fetch the corporate SVG logo
 // via the GET endpoint without Supabase authorization headers.
 
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 interface RequestPayload {
   toEmail: string;
@@ -16,227 +16,300 @@ interface RequestPayload {
   siteName?: string;
   postcode?: string;
   quoteRef: string;
-  pdfBase64?: string;      // Base64 encoded string from frontend
-  pdfUrl?: string;         // Public URL pointer to PDF
-  logoUrl?: string;        // Absolute URL of corporate SVG logo
+  pdfBase64?: string; // Base64 encoded string from frontend
+  pdfUrl?: string; // Public URL pointer to PDF
+  logoUrl?: string; // Absolute URL of corporate SVG logo
   netTotal?: number;
   vatAmount?: number;
   grossTotal?: number;
-  fromEmail?: string;      // Optional custom sender
+  fromEmail?: string; // Optional custom sender
 }
 
 serve(async (req) => {
   // Handle GET request to serve the SVG logo directly
-  if (req.method === 'GET') {
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120" width="100%" height="100%"><text x="250" y="70" font-family="\'Inter\', \'Arial Black\', system-ui, -apple-system, sans-serif" font-weight="900" font-size="46" fill="#F4F4F0" letter-spacing="9" text-anchor="middle">OPUS FORM</text><line x1="120" y1="92" x2="380" y2="92" stroke="#526E8C" stroke-width="4" stroke-linecap="round"/></svg>';
+  if (req.method === "GET") {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120" width="100%" height="100%"><text x="250" y="70" font-family="\'Inter\', \'Arial Black\', system-ui, -apple-system, sans-serif" font-weight="900" font-size="46" fill="#F4F4F0" letter-spacing="9" text-anchor="middle">OPUS FORM</text><line x1="120" y1="92" x2="380" y2="92" stroke="#526E8C" stroke-width="4" stroke-linecap="round"/></svg>';
     return new Response(svg, {
       headers: {
-        'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'public, max-age=31536000',
-        ...corsHeaders
+        "Content-Type": "image/svg+xml",
+        "Cache-Control": "public, max-age=31536000",
+        ...corsHeaders,
       },
-      status: 200
+      status: 200,
     });
   }
 
   // Handle CORS pre-flight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    const payload: RequestPayload = await req.json()
-    const { toEmail, clientName, siteName, postcode, quoteRef, pdfBase64, pdfUrl, logoUrl, netTotal, vatAmount, grossTotal, fromEmail } = payload
+    const payload: RequestPayload = await req.json();
+    const {
+      toEmail,
+      clientName,
+      siteName,
+      postcode,
+      quoteRef,
+      pdfBase64,
+      pdfUrl,
+      logoUrl,
+      netTotal,
+      vatAmount,
+      grossTotal,
+      fromEmail,
+    } = payload;
 
     if (!toEmail) {
       return new Response(JSON.stringify({ error: "Recipient email (toEmail) is required." }), {
         status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Connect to Supabase using the built-in service role key
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Retrieve settings config from the secure smtp_config table
     const { data: configRows, error: configError } = await supabase
-      .from('decrypted_smtp_config')
-      .select('key, value')
+      .from("decrypted_smtp_config")
+      .select("key, value");
 
     if (configError || !configRows || configRows.length === 0) {
-      return new Response(JSON.stringify({ error: "Failed to load config from database.", detail: configError }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      return new Response(
+        JSON.stringify({ error: "Failed to load config from database.", detail: configError }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Convert rows to a keyed object
-    const config: Record<string, string> = {}
+    const config: Record<string, string> = {};
     for (const row of configRows) {
-      config[row.key] = row.value
+      config[row.key] = row.value;
     }
-
 
     // Resolve Resend API Key (prioritize database config, fallback to env)
-    let resendApiKey = config['RESEND_API_KEY']
+    let resendApiKey = config["RESEND_API_KEY"];
     if (!resendApiKey) {
-      resendApiKey = Deno.env.get('RESEND_API_KEY')
+      resendApiKey = Deno.env.get("RESEND_API_KEY");
     }
 
-
-
     if (!resendApiKey) {
-      return new Response(JSON.stringify({ 
-        error: "RESEND_API_KEY not found in Supabase environment variables or smtp_config database table." 
-      }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      return new Response(
+        JSON.stringify({
+          error:
+            "RESEND_API_KEY not found in Supabase environment variables or smtp_config database table.",
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Resolve PDF attachment content (handles Base64 or Public URL pointer)
-    let attachmentContent = ""
+    let attachmentContent = "";
     if (pdfBase64) {
-      attachmentContent = pdfBase64
+      attachmentContent = pdfBase64;
     } else if (pdfUrl) {
       // Fetch PDF binary from the public URL and convert to Base64
-      const response = await fetch(pdfUrl)
+      const response = await fetch(pdfUrl);
       if (!response.ok) {
-        throw new Error(`Failed to fetch PDF from URL: ${pdfUrl}`)
+        throw new Error(`Failed to fetch PDF from URL: ${pdfUrl}`);
       }
-      const arrayBuffer = await response.arrayBuffer()
-      const uint8Array = new Uint8Array(arrayBuffer)
-      
+      const arrayBuffer = await response.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+
       // Convert Uint8Array to Base64 in a Deno-compatible way
-      let binary = ""
-      const len = uint8Array.byteLength
+      let binary = "";
+      const len = uint8Array.byteLength;
       for (let i = 0; i < len; i++) {
-        binary += String.fromCharCode(uint8Array[i])
+        binary += String.fromCharCode(uint8Array[i]);
       }
-      attachmentContent = btoa(binary)
+      attachmentContent = btoa(binary);
     } else {
-      return new Response(JSON.stringify({ error: "No PDF attachment provided (pdfBase64 or pdfUrl is required)." }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      })
+      return new Response(
+        JSON.stringify({ error: "No PDF attachment provided (pdfBase64 or pdfUrl is required)." }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     // Serve the logo directly from this function's public GET endpoint to bypass private repository blockages
-    const resolvedLogoUrl = "https://fgpthpxmiroyebrzjdzo.supabase.co/functions/v1/send-quote-pdf"
+    const resolvedLogoUrl = "https://fgpthpxmiroyebrzjdzo.supabase.co/functions/v1/send-quote-pdf";
 
     // Compose HTML message body using standard string concatenation to completely avoid Deno/JSON escaping bugs
     let emailHtml = "";
-    emailHtml += '<head>';
+    emailHtml += "<head>";
     emailHtml += '  <meta name="color-scheme" content="light dark">';
     emailHtml += '  <meta name="supported-color-schemes" content="light dark">';
-    emailHtml += '  <style>';
-    emailHtml += '    :root { color-scheme: light dark; supported-color-schemes: light dark; }';
-    emailHtml += '    @media (prefers-color-scheme: dark) {';
-    emailHtml += '      .dark-bg { background-color: #1a1b1f !important; background-image: none !important; }';
-    emailHtml += '      .card-bg { background-color: #242428 !important; background-image: none !important; }';
-    emailHtml += '      .header-bg { background-color: #26262B !important; background-image: none !important; }';
-    emailHtml += '      .text-title { color: #e5e7eb !important; }';
-    emailHtml += '      .text-body { color: #d1d5db !important; }';
-    emailHtml += '      .text-secondary { color: #9ca3af !important; }';
-    emailHtml += '    }';
-    emailHtml += '    [data-ogsc] .text-title { color: #e5e7eb !important; }';
-    emailHtml += '    [data-ogsc] .text-body { color: #d1d5db !important; }';
-    emailHtml += '    [data-ogsc] .text-secondary { color: #9ca3af !important; }';
-    emailHtml += '    [data-ogsb] .dark-bg { background-color: #1a1b1f !important; background-image: none !important; }';
-    emailHtml += '    [data-ogsb] .card-bg { background-color: #242428 !important; background-image: none !important; }';
-    emailHtml += '    [data-ogsb] .header-bg { background-color: #26262B !important; background-image: none !important; }';
-    emailHtml += '  </style>';
-    emailHtml += '</head>';
-    emailHtml += '<div class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; padding: 40px 20px; font-family: \'Inter\', -apple-system, sans-serif; font-size: 14px; line-height: 1.6; color: #d1d5db;">';
-    emailHtml += '  <div class="card-bg" style="max-width: 600px; margin: 0 auto; background-image: linear-gradient(#242428, #242428); background-color: #242428; border: 1px solid #2e2e33; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">';
-    emailHtml += '    <!-- Header -->';
-    emailHtml += '    <div class="header-bg" style="background-image: linear-gradient(#26262B, #26262B); background-color: #26262B; padding: 30px 40px; border-bottom: 3px solid #526E8C; text-align: center;">';
+    emailHtml += "  <style>";
+    emailHtml += "    :root { color-scheme: light dark; supported-color-schemes: light dark; }";
+    emailHtml += "    @media (prefers-color-scheme: dark) {";
+    emailHtml +=
+      "      .dark-bg { background-color: #1a1b1f !important; background-image: none !important; }";
+    emailHtml +=
+      "      .card-bg { background-color: #242428 !important; background-image: none !important; }";
+    emailHtml +=
+      "      .header-bg { background-color: #26262B !important; background-image: none !important; }";
+    emailHtml += "      .text-title { color: #e5e7eb !important; }";
+    emailHtml += "      .text-body { color: #d1d5db !important; }";
+    emailHtml += "      .text-secondary { color: #9ca3af !important; }";
+    emailHtml += "    }";
+    emailHtml += "    [data-ogsc] .text-title { color: #e5e7eb !important; }";
+    emailHtml += "    [data-ogsc] .text-body { color: #d1d5db !important; }";
+    emailHtml += "    [data-ogsc] .text-secondary { color: #9ca3af !important; }";
+    emailHtml +=
+      "    [data-ogsb] .dark-bg { background-color: #1a1b1f !important; background-image: none !important; }";
+    emailHtml +=
+      "    [data-ogsb] .card-bg { background-color: #242428 !important; background-image: none !important; }";
+    emailHtml +=
+      "    [data-ogsb] .header-bg { background-color: #26262B !important; background-image: none !important; }";
+    emailHtml += "  </style>";
+    emailHtml += "</head>";
+    emailHtml +=
+      '<div class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; padding: 40px 20px; font-family: \'Inter\', -apple-system, sans-serif; font-size: 14px; line-height: 1.6; color: #d1d5db;">';
+    emailHtml +=
+      '  <div class="card-bg" style="max-width: 600px; margin: 0 auto; background-image: linear-gradient(#242428, #242428); background-color: #242428; border: 1px solid #2e2e33; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">';
+    emailHtml += "    <!-- Header -->";
+    emailHtml +=
+      '    <div class="header-bg" style="background-image: linear-gradient(#26262B, #26262B); background-color: #26262B; padding: 30px 40px; border-bottom: 3px solid #526E8C; text-align: center;">';
     if (resolvedLogoUrl) {
-      emailHtml += '      <img src="' + resolvedLogoUrl + '" alt="OPUS FORM" width="180" style="display: inline-block; border: 0; outline: none; text-decoration: none;" />';
+      emailHtml +=
+        '      <img src="' +
+        resolvedLogoUrl +
+        '" alt="OPUS FORM" width="180" style="display: inline-block; border: 0; outline: none; text-decoration: none;" />';
     } else {
-      emailHtml += '      <div style="font-family: Arial, sans-serif; font-size: 24px; font-weight: 900; color: #F4F4F0; letter-spacing: 4px;">OPUS FORM</div>';
+      emailHtml +=
+        '      <div style="font-family: Arial, sans-serif; font-size: 24px; font-weight: 900; color: #F4F4F0; letter-spacing: 4px;">OPUS FORM</div>';
     }
-    emailHtml += '    </div>';
-    emailHtml += '    ';
-    emailHtml += '    <!-- Body -->';
+    emailHtml += "    </div>";
+    emailHtml += "    ";
+    emailHtml += "    <!-- Body -->";
     emailHtml += '    <div style="padding: 40px;">';
-    emailHtml += '      <div style="text-transform: uppercase; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; color: #526E8C; margin-bottom: 20px;">';
-    emailHtml += '        Quotation Summary';
-    emailHtml += '      </div>';
-    emailHtml += '      ';
-    emailHtml += '      <p class="text-title" style="margin: 0 0 16px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px; font-weight: 700;" data-ogsc="color: #e5e7eb;">Dear ' + (clientName || 'Valued Client') + ',</p>';
-    emailHtml += '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">Please find attached our formal quotation <strong class="text-title" style="color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">#' + quoteRef + '</strong> for the concrete works at ' + (siteName || 'Site') + (postcode ? ', ' + postcode : '') + '.</p>';
-    emailHtml += '      ';
-    emailHtml += '      <!-- Summary Table -->';
-    emailHtml += '      <table style="width: 100%; border-collapse: collapse; margin-bottom: 32px; border: 1px solid #2e2e33; border-radius: 8px; overflow: hidden;">';
-    emailHtml += '        <tr class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">';
-    emailHtml += '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;" data-ogsc="color: #9ca3af;">Net Subtotal</td>';
-    emailHtml += '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">£' + Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
-    emailHtml += '        </tr>';
-    emailHtml += '        <tr class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">';
-    emailHtml += '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;" data-ogsc="color: #9ca3af;">UK Standard VAT (20%)</td>';
-    emailHtml += '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">£' + Number(vatAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
-    emailHtml += '        </tr>';
-    emailHtml += '        <tr class="header-bg" style="background-image: linear-gradient(#26262B, #26262B); background-color: #26262B;">';
-    emailHtml += '          <td class="text-title" style="padding: 16px; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;" data-ogsc="color: #e5e7eb;">Total (inc. VAT)</td>';
-    emailHtml += '          <td class="text-title" style="padding: 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px;" data-ogsc="color: #e5e7eb;">£' + Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) + '</td>';
-    emailHtml += '        </tr>';
-    emailHtml += '      </table>';
-    emailHtml += '      ';
-    emailHtml += '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">The attached PDF includes the full bill of quantities, structural scopes, our standard terms and conditions, and banking details for your reference.</p>';
-    emailHtml += '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">Should you have any questions or wish to discuss the quotation further, please do not hesitate to get in touch.</p>';
-    emailHtml += '      ';
-    emailHtml += '      <div style="border-top: 1px solid #2e2e33; padding-top: 24px; margin-top: 32px;">';
-    emailHtml += '        <p class="text-title" style="margin: 0 0 4px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;" data-ogsc="color: #e5e7eb;">Kind regards,</p>';
-    emailHtml += '        <p class="text-title" style="margin: 0 0 4px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;" data-ogsc="color: #e5e7eb;">Opus Form Billing</p>';
-    emailHtml += '        <a href="mailto:billing@opusform.co.uk" style="color: #526E8C; -webkit-text-fill-color: #526E8C !important; text-decoration: none; font-size: 12px; font-weight: 700;" data-ogsc="color: #526E8C;">billing@opusform.co.uk</a>';
-    emailHtml += '      </div>';
-    emailHtml += '    </div>';
-    emailHtml += '  </div>';
-    emailHtml += '</div>';
+    emailHtml +=
+      '      <div style="text-transform: uppercase; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; color: #526E8C; margin-bottom: 20px;">';
+    emailHtml += "        Quotation Summary";
+    emailHtml += "      </div>";
+    emailHtml += "      ";
+    emailHtml +=
+      '      <p class="text-title" style="margin: 0 0 16px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px; font-weight: 700;" data-ogsc="color: #e5e7eb;">Dear ' +
+      (clientName || "Valued Client") +
+      ",</p>";
+    emailHtml +=
+      '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">Please find attached our formal quotation <strong class="text-title" style="color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">#' +
+      quoteRef +
+      "</strong> for the concrete works at " +
+      (siteName || "Site") +
+      (postcode ? ", " + postcode : "") +
+      ".</p>";
+    emailHtml += "      ";
+    emailHtml += "      <!-- Summary Table -->";
+    emailHtml +=
+      '      <table style="width: 100%; border-collapse: collapse; margin-bottom: 32px; border: 1px solid #2e2e33; border-radius: 8px; overflow: hidden;">';
+    emailHtml +=
+      '        <tr class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">';
+    emailHtml +=
+      '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;" data-ogsc="color: #9ca3af;">Net Subtotal</td>';
+    emailHtml +=
+      '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">£' +
+      Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
+      "</td>";
+    emailHtml += "        </tr>";
+    emailHtml +=
+      '        <tr class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">';
+    emailHtml +=
+      '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;" data-ogsc="color: #9ca3af;">UK Standard VAT (20%)</td>';
+    emailHtml +=
+      '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">£' +
+      Number(vatAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
+      "</td>";
+    emailHtml += "        </tr>";
+    emailHtml +=
+      '        <tr class="header-bg" style="background-image: linear-gradient(#26262B, #26262B); background-color: #26262B;">';
+    emailHtml +=
+      '          <td class="text-title" style="padding: 16px; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;" data-ogsc="color: #e5e7eb;">Total (inc. VAT)</td>';
+    emailHtml +=
+      '          <td class="text-title" style="padding: 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px;" data-ogsc="color: #e5e7eb;">£' +
+      Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
+      "</td>";
+    emailHtml += "        </tr>";
+    emailHtml += "      </table>";
+    emailHtml += "      ";
+    emailHtml +=
+      '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">The attached PDF includes the full bill of quantities, structural scopes, our standard terms and conditions, and banking details for your reference.</p>';
+    emailHtml +=
+      '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">Should you have any questions or wish to discuss the quotation further, please do not hesitate to get in touch.</p>';
+    emailHtml += "      ";
+    emailHtml +=
+      '      <div style="border-top: 1px solid #2e2e33; padding-top: 24px; margin-top: 32px;">';
+    emailHtml +=
+      '        <p class="text-title" style="margin: 0 0 4px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;" data-ogsc="color: #e5e7eb;">Kind regards,</p>';
+    emailHtml +=
+      '        <p class="text-title" style="margin: 0 0 4px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;" data-ogsc="color: #e5e7eb;">Opus Form Billing</p>';
+    emailHtml +=
+      '        <a href="mailto:billing@opusform.co.uk" style="color: #526E8C; -webkit-text-fill-color: #526E8C !important; text-decoration: none; font-size: 12px; font-weight: 700;" data-ogsc="color: #526E8C;">billing@opusform.co.uk</a>';
+    emailHtml += "      </div>";
+    emailHtml += "    </div>";
+    emailHtml += "  </div>";
+    emailHtml += "</div>";
 
     // Determine the sender address (sandbox domain onboarding@resend.dev if custom domain is not verified yet)
     // Resolves key RESEND_FROM_EMAIL first, defaults to onboarding@resend.dev
-    const sender = fromEmail || config['RESEND_FROM_EMAIL'] || "onboarding@resend.dev"
+    const sender = fromEmail || config["RESEND_FROM_EMAIL"] || "onboarding@resend.dev";
 
     // Send via Resend HTTP API
-    const resendResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
+    const resendResponse = await fetch("https://api.resend.com/emails", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + resendApiKey
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + resendApiKey,
       },
       body: JSON.stringify({
-        from: 'Opus Form Billing <' + sender + '>',
+        from: "Opus Form Billing <" + sender + ">",
         to: [toEmail],
-        subject: 'Quote #' + quoteRef + ' | ' + (siteName || 'Project') + (postcode ? ', ' + postcode : '') + ' – ' + (clientName || 'Client'),
+        subject:
+          "Quote #" +
+          quoteRef +
+          " | " +
+          (siteName || "Project") +
+          (postcode ? ", " + postcode : "") +
+          " – " +
+          (clientName || "Client"),
         html: emailHtml,
         attachments: [
           {
             content: attachmentContent,
-            filename: 'Quote_' + quoteRef + '.pdf'
-          }
-        ]
-      })
-    })
+            filename: "Quote_" + quoteRef + ".pdf",
+          },
+        ],
+      }),
+    });
 
-    const resendData = await resendResponse.json()
+    const resendData = await resendResponse.json();
 
     if (!resendResponse.ok) {
-      throw new Error(resendData.message || JSON.stringify(resendData))
+      throw new Error(resendData.message || JSON.stringify(resendData));
     }
 
     return new Response(JSON.stringify({ success: true, data: resendData }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
-    })
+    });
   } catch (error) {
-    console.error("Error sending email via Resend:", error)
+    console.error("Error sending email via Resend:", error);
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
-    })
+    });
   }
-})
+});

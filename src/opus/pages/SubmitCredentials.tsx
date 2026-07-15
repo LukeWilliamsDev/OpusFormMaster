@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { supabase } from '../../integrations/supabase/client';
-import { ShieldAlert, FileUp, Check, AlertCircle, Calendar, Hash, Plus, X } from 'lucide-react';
-import { ON_SITE_CERTIFICATIONS } from '../components/RosterView';
+import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
+import { supabase } from "../../integrations/supabase/client";
+import { ShieldAlert, FileUp, Check, AlertCircle, Calendar, Hash, Plus, X } from "lucide-react";
+import { ON_SITE_CERTIFICATIONS } from "../components/RosterView";
 
 interface UploadSlot {
   id: string;
@@ -22,21 +22,21 @@ const emptySlot = (): UploadSlot => ({
   id: makeSlotId(),
   cert: ON_SITE_CERTIFICATIONS[0],
   file: null,
-  refNo: '',
-  expiryDate: '',
+  refNo: "",
+  expiryDate: "",
   uploading: false,
   progress: 0,
   uploadedUrl: null,
-  error: null
+  error: null,
 });
 
 export const SubmitCredentialsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
-  
+  const token = searchParams.get("token");
+
   const [loading, setLoading] = useState(true);
   const [requestData, setRequestData] = useState<any>(null);
-  const [staffName, setStaffName] = useState<string>('');
+  const [staffName, setStaffName] = useState<string>("");
   const [slots, setSlots] = useState<UploadSlot[]>([]);
   const [openEnded, setOpenEnded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -47,7 +47,7 @@ export const SubmitCredentialsPage: React.FC = () => {
     if (token) {
       fetchRequestDetails();
     } else {
-      setErrorMsg('No upload token provided. Please use a valid submission link.');
+      setErrorMsg("No upload token provided. Please use a valid submission link.");
       setLoading(false);
     }
   }, [token]);
@@ -55,17 +55,17 @@ export const SubmitCredentialsPage: React.FC = () => {
   const fetchRequestDetails = async () => {
     try {
       const { data, error } = await supabase
-        .from('document_requests')
-        .select('*, staff:worker_id(name)')
-        .eq('id', token!)
+        .from("document_requests")
+        .select("*, staff:worker_id(name)")
+        .eq("id", token!)
         .single();
 
       if (error || !data) {
-        throw new Error('Link is invalid, expired, or has already been used.');
+        throw new Error("Link is invalid, expired, or has already been used.");
       }
 
       setRequestData(data);
-      setStaffName(data.staff?.name || 'Staff Member');
+      setStaffName(data.staff?.name || "Staff Member");
 
       if (!data.requested_certs || data.requested_certs.length === 0) {
         // Open-ended request: let the worker add every cert they hold.
@@ -77,19 +77,18 @@ export const SubmitCredentialsPage: React.FC = () => {
           id: makeSlotId(),
           cert,
           file: null,
-          refNo: '',
-          expiryDate: '',
+          refNo: "",
+          expiryDate: "",
           uploading: false,
           progress: 0,
           uploadedUrl: null,
-          error: null
+          error: null,
         }));
         setSlots(initialSlots);
       }
-
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Access Denied: Invalid or expired upload link.');
+      setErrorMsg(err.message || "Access Denied: Invalid or expired upload link.");
     } finally {
       setLoading(false);
     }
@@ -99,66 +98,65 @@ export const SubmitCredentialsPage: React.FC = () => {
     if (!file) return;
 
     // Validate type
-    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    const allowedTypes = ["application/pdf", "image/png", "image/jpeg", "image/jpg"];
     if (!allowedTypes.includes(file.type)) {
-      updateSlot(index, { error: 'Only PDF and image files (PNG, JPG) are allowed.' });
+      updateSlot(index, { error: "Only PDF and image files (PNG, JPG) are allowed." });
       return;
     }
 
     // Validate size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      updateSlot(index, { error: 'File size must be under 5MB.' });
+      updateSlot(index, { error: "File size must be under 5MB." });
       return;
     }
 
     updateSlot(index, { file, error: null, uploading: true, progress: 10 });
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const slug = slots[index].cert.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      const fileExt = file.name.split(".").pop();
+      const slug = slots[index].cert.toLowerCase().replace(/[^a-z0-9]+/g, "-");
       const filePath = `requests/${token}/${slug}-${Date.now()}.${fileExt}`;
 
       // Upload to Storage
       const { data, error: uploadError } = await supabase.storage
-        .from('compliance-documents')
+        .from("compliance-documents")
         .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true
+          cacheControl: "3600",
+          upsert: true,
         });
 
       if (uploadError) throw uploadError;
 
       // Get public or resource URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('compliance-documents')
-        .getPublicUrl(filePath);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("compliance-documents").getPublicUrl(filePath);
 
-      updateSlot(index, { 
-        uploadedUrl: publicUrl, 
-        progress: 100, 
-        uploading: false 
+      updateSlot(index, {
+        uploadedUrl: publicUrl,
+        progress: 100,
+        uploading: false,
       });
-
     } catch (err: any) {
       console.error(err);
-      updateSlot(index, { 
-        error: 'Failed to upload file. Please try again.', 
-        uploading: false, 
-        progress: 0 
+      updateSlot(index, {
+        error: "Failed to upload file. Please try again.",
+        uploading: false,
+        progress: 0,
       });
     }
   };
 
   const updateSlot = (index: number, updates: Partial<UploadSlot>) => {
-    setSlots(prev => prev.map((s, idx) => idx === index ? { ...s, ...updates } : s));
+    setSlots((prev) => prev.map((s, idx) => (idx === index ? { ...s, ...updates } : s)));
   };
 
   const addSlot = () => {
-    setSlots(prev => [...prev, emptySlot()]);
+    setSlots((prev) => [...prev, emptySlot()]);
   };
 
   const removeSlot = (index: number) => {
-    setSlots(prev => prev.filter((_, idx) => idx !== index));
+    setSlots((prev) => prev.filter((_, idx) => idx !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -166,7 +164,7 @@ export const SubmitCredentialsPage: React.FC = () => {
     setErrorMsg(null);
 
     if (slots.length === 0) {
-      setErrorMsg('Please add at least one certification.');
+      setErrorMsg("Please add at least one certification.");
       return;
     }
 
@@ -185,17 +183,17 @@ export const SubmitCredentialsPage: React.FC = () => {
     setSubmitting(true);
 
     try {
-      const newTickets = slots.map(slot => ({
+      const newTickets = slots.map((slot) => ({
         type: slot.cert,
         expiryDate: slot.expiryDate,
         ticketNumber: slot.refNo.trim() || null,
-        documentUrl: slot.uploadedUrl
+        documentUrl: slot.uploadedUrl,
       }));
 
       // Call secure database RPC function
-      const { error: submitError } = await supabase.rpc('submit_worker_documents', {
+      const { error: submitError } = await supabase.rpc("submit_worker_documents", {
         p_request_id: token!,
-        p_new_tickets: newTickets
+        p_new_tickets: newTickets,
       });
 
       if (submitError) throw submitError;
@@ -203,7 +201,7 @@ export const SubmitCredentialsPage: React.FC = () => {
       setSubmitSuccess(true);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(err.message || 'Submission failed. Please check your inputs and try again.');
+      setErrorMsg(err.message || "Submission failed. Please check your inputs and try again.");
     } finally {
       setSubmitting(false);
     }
@@ -222,10 +220,10 @@ export const SubmitCredentialsPage: React.FC = () => {
       <div className="min-h-screen bg-[#1A1B1E] flex items-center justify-center p-4">
         <div className="bg-[#222428] border border-white/10 rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl">
           <ShieldAlert className="w-12 h-12 text-red-500 mx-auto" />
-          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Access Denied</h3>
-          <p className="text-xs text-[#aaa] leading-relaxed uppercase tracking-wider">
-            {errorMsg}
-          </p>
+          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">
+            Access Denied
+          </h3>
+          <p className="text-xs text-[#aaa] leading-relaxed uppercase tracking-wider">{errorMsg}</p>
         </div>
       </div>
     );
@@ -239,9 +237,12 @@ export const SubmitCredentialsPage: React.FC = () => {
             <Check className="w-6 h-6 text-emerald-400" />
           </div>
           <div>
-            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">Submission Complete</h3>
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">
+              Submission Complete
+            </h3>
             <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-1.5 leading-relaxed">
-              Your credentials have been uploaded successfully. The link has been deactivated, and your records are now pending admin verification.
+              Your credentials have been uploaded successfully. The link has been deactivated, and
+              your records are now pending admin verification.
             </p>
           </div>
         </div>
@@ -252,12 +253,15 @@ export const SubmitCredentialsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#1A1B1E] text-brand-white py-12 px-4 sm:px-6">
       <div className="max-w-xl mx-auto space-y-6">
-        
         {/* Portal Header */}
         <div className="text-center space-y-2">
           <div className="h-0.5 w-12 bg-brand-accent mx-auto" />
-          <h1 className="text-lg font-black tracking-tighter uppercase font-archivo">OPUS FORM CREDENTIAL PORTAL</h1>
-          <p className="text-[9px] font-black text-brand-accent uppercase tracking-[0.25em]">Secure Document Submission</p>
+          <h1 className="text-lg font-black tracking-tighter uppercase font-archivo">
+            OPUS FORM CREDENTIAL PORTAL
+          </h1>
+          <p className="text-[9px] font-black text-brand-accent uppercase tracking-[0.25em]">
+            Secure Document Submission
+          </p>
         </div>
 
         {/* Info card */}
@@ -266,11 +270,13 @@ export const SubmitCredentialsPage: React.FC = () => {
             <AlertCircle className="w-5 h-5 text-brand-accent" />
           </div>
           <div>
-            <h4 className="text-xs font-black uppercase tracking-wider text-white">Hi, {staffName}</h4>
+            <h4 className="text-xs font-black uppercase tracking-wider text-white">
+              Hi, {staffName}
+            </h4>
             <p className="text-[9px] text-[#aaa] uppercase tracking-widest mt-1.5 leading-relaxed">
               {openEnded
-                ? 'Please add and upload every on-site certification you currently hold. Enter the correct reference number and expiration date as stated on each card.'
-                : 'Please upload clear copies of the requested certifications below. Enter the correct reference number and expiration dates as stated on the cards.'}
+                ? "Please add and upload every on-site certification you currently hold. Enter the correct reference number and expiration date as stated on each card."
+                : "Please upload clear copies of the requested certifications below. Enter the correct reference number and expiration dates as stated on the cards."}
             </p>
           </div>
         </div>
@@ -279,7 +285,10 @@ export const SubmitCredentialsPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             {slots.map((slot, index) => (
-              <div key={slot.id} className="bg-[#222428] border border-white/10 rounded-2xl p-6 space-y-4 shadow-lg hover:border-brand-accent/20 transition-all">
+              <div
+                key={slot.id}
+                className="bg-[#222428] border border-white/10 rounded-2xl p-6 space-y-4 shadow-lg hover:border-brand-accent/20 transition-all"
+              >
                 <div className="pb-3 border-b border-white/5 flex items-center justify-between gap-3">
                   {openEnded ? (
                     <select
@@ -287,8 +296,10 @@ export const SubmitCredentialsPage: React.FC = () => {
                       onChange={(e) => updateSlot(index, { cert: e.target.value })}
                       className="flex-1 min-w-0 bg-black/10 border border-[#333] hover:border-[#444] focus:border-brand-accent rounded-lg px-3 py-2 text-xs text-white uppercase font-black tracking-wider outline-none appearance-none"
                     >
-                      {ON_SITE_CERTIFICATIONS.map(cert => (
-                        <option key={cert} value={cert}>{cert}</option>
+                      {ON_SITE_CERTIFICATIONS.map((cert) => (
+                        <option key={cert} value={cert}>
+                          {cert}
+                        </option>
                       ))}
                     </select>
                   ) : (
@@ -312,10 +323,10 @@ export const SubmitCredentialsPage: React.FC = () => {
                 <div>
                   {!slot.uploadedUrl ? (
                     <label className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-700 hover:border-brand-accent/40 rounded-xl p-6 cursor-pointer bg-black/10 transition-colors">
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         accept="application/pdf,image/*"
-                        className="hidden" 
+                        className="hidden"
                         onChange={(e) => {
                           if (e.target.files && e.target.files[0]) {
                             handleFileChange(index, e.target.files[0]);
@@ -324,7 +335,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                       />
                       <FileUp className="w-6 h-6 text-zinc-500 mb-2" />
                       <span className="text-[9.5px] font-black uppercase tracking-wider text-white">
-                        {slot.uploading ? `Uploading (${slot.progress}%)` : 'Select or Drop File'}
+                        {slot.uploading ? `Uploading (${slot.progress}%)` : "Select or Drop File"}
                       </span>
                       <span className="text-[8px] text-zinc-500 uppercase tracking-widest mt-1">
                         PDF, PNG, or JPG up to 5MB
@@ -342,7 +353,9 @@ export const SubmitCredentialsPage: React.FC = () => {
                       </div>
                       <button
                         type="button"
-                        onClick={() => updateSlot(index, { file: null, uploadedUrl: null, progress: 0 })}
+                        onClick={() =>
+                          updateSlot(index, { file: null, uploadedUrl: null, progress: 0 })
+                        }
                         className="text-[9px] font-black uppercase tracking-widest text-zinc-500 hover:text-red-400 transition-colors cursor-pointer"
                       >
                         Remove
@@ -406,7 +419,7 @@ export const SubmitCredentialsPage: React.FC = () => {
             disabled={submitting}
             className="w-full py-4 bg-brand-accent hover:bg-brand-accent/80 text-white transition-all rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-accent/20 min-h-[48px] disabled:opacity-50 cursor-pointer"
           >
-            {submitting ? 'Submitting Documents...' : 'Submit All Documents'}
+            {submitting ? "Submitting Documents..." : "Submit All Documents"}
           </button>
         </form>
       </div>

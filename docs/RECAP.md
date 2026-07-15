@@ -161,4 +161,15 @@
 - Fixed worker compliance validation checks to utilize case-insensitive substring matching for roles (e.g. Telehandler Operator, Pour Supervisor).
 - Added defensive rate string sanitization (removing currency symbols and commas) to prevent NaN calculation failures in QuoteInvoiceBuilder.
 - Overhauled WeekGridProject layout style classes to use theme CSS variables dynamically.
-- Overhauled WeekGridStaff layout style classes to use theme CSS variables dynamically.
+- Overhauled WeekGridStaff layout style classes to use theme CSS variables dynamically.
+
+## 2026-07-16 (Compliance & Personalisation)
+- Created UK GDPR compliance pages (PrivacyNotice, TermsOfService, AcceptableUsePolicy, CookieStatement) using LegalPageLayout.
+- Personalized documents and footer with official Companies House data for Opus Form Ltd (Company No. 17228356).
+- Gated internal policy pages (/portal/terms and /portal/acceptable-use) behind authentication.
+- Configured /portal/privacy and /portal/cookies routes to render nested inside the PortalLayout (sidebar) when logged in.
+- Aligned landing page background color (#111114) with portal auth screen for design consistency.
+- Hardened security headers (HSTS, CSP directives) in public/_headers.
+- Configured Dependabot and PATCH_LOG.md for Cyber Essentials patch management.
+- Shipped ISO 9001 quality management procedures under docs/QMS/.
+

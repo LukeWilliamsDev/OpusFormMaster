@@ -140,14 +140,20 @@ serve(async (req) => {
     emailHtml += '      <p class="text-title" style="margin: 0 0 16px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px; font-weight: 700;" data-ogsc="color: #e5e7eb;">Hello ' + (workerName || 'Worker') + ',</p>';
     emailHtml += '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">An administrator has requested that you submit compliance documentation. Please upload the required credentials before the link expires.</p>';
     emailHtml += '      ';
-    emailHtml += '      <div style="background-color: #1a1b1f; border: 1px solid #2e2e33; border-radius: 8px; padding: 20px; margin-bottom: 32px;">';
-    emailHtml += '        <p style="margin: 0 0 12px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #526E8C;">Required Certifications:</p>';
-    emailHtml += '        <ul style="margin: 0; padding-left: 20px; color: #e5e7eb;">';
-    for (const cert of requestedCerts) {
-      emailHtml += '          <li style="margin-bottom: 6px; font-weight: bold; font-size: 13px;">' + cert + '</li>';
+    if (requestedCerts && requestedCerts.length > 0) {
+      emailHtml += '      <div style="background-color: #1a1b1f; border: 1px solid #2e2e33; border-radius: 8px; padding: 20px; margin-bottom: 32px;">';
+      emailHtml += '        <p style="margin: 0 0 12px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #526E8C;">Required Certifications:</p>';
+      emailHtml += '        <ul style="margin: 0; padding-left: 20px; color: #e5e7eb;">';
+      for (const cert of requestedCerts) {
+        emailHtml += '          <li style="margin-bottom: 6px; font-weight: bold; font-size: 13px;">' + cert + '</li>';
+      }
+      emailHtml += '        </ul>';
+      emailHtml += '      </div>';
+    } else {
+      emailHtml += '      <div style="background-color: #1a1b1f; border: 1px solid #2e2e33; border-radius: 8px; padding: 20px; margin-bottom: 32px;">';
+      emailHtml += '        <p style="margin: 0; font-size: 13px; font-weight: bold; color: #e5e7eb;">Please upload all your on-site certifications and licenses using the secure link below.</p>';
+      emailHtml += '      </div>';
     }
-    emailHtml += '        </ul>';
-    emailHtml += '      </div>';
     emailHtml += '      ';
     emailHtml += '      <div style="text-align: center; margin-bottom: 32px;">';
     emailHtml += '        <a href="' + uploadUrl + '" style="display: inline-block; padding: 14px 28px; background-color: #526E8C; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em; box-shadow: 0 4px 12px rgba(82, 110, 140, 0.3);">Upload Documents</a>';

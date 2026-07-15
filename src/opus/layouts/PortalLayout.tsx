@@ -8,11 +8,13 @@ import {
   Users, 
   FileText, 
   History, 
-  LogOut, 
-  Menu, 
+  LogOut,
+  Menu,
   X,
   User as UserIcon,
-  Shield
+  Shield,
+  PanelLeftClose,
+  PanelLeftOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePortal } from '../context/PortalContext';
@@ -21,6 +23,14 @@ import { getAvatarPresetClass } from '../pages/Settings';
 export const PortalLayout: React.FC = () => {
   const { signOut, role, user, profile } = usePortal();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => localStorage.getItem('portal-sidebar-collapsed') === 'true');
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      localStorage.setItem('portal-sidebar-collapsed', String(!prev));
+      return !prev;
+    });
+  };
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -76,20 +86,31 @@ export const PortalLayout: React.FC = () => {
     <div className="min-h-screen bg-[#111114] text-[#E4E4E7] font-sans selection:bg-[#6C8295]/30 selection:text-white flex flex-col lg:flex-row">
       
       {/* Desktop Sidebar */}
-      <aside className="hidden lg:flex flex-col w-64 xl:w-72 bg-[#0c0c0f] border-r border-[#1e1e24] shrink-0 sticky top-0 h-screen z-40">
+      <aside className={`hidden lg:flex flex-col ${isSidebarCollapsed ? 'w-16' : 'w-52 xl:w-56'} bg-[#0c0c0f] border-r border-[#1e1e24] shrink-0 sticky top-0 h-screen z-40 transition-[width] duration-200`}>
         {/* Sidebar Header */}
-        <div className="p-6 border-b border-[#1e1e24]">
-          <Link to="/portal/dashboard" className="flex items-center group">
-            <img src="/opus-form-primary.svg" alt="Opus Form" className="h-10 w-auto" />
-          </Link>
+        <div className={`p-4 border-b border-[#1e1e24] flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'}`}>
+          {!isSidebarCollapsed && (
+            <Link to="/portal/dashboard" className="flex items-center group min-w-0">
+              <img src="/opus-form-primary.svg" alt="Opus Form" className="h-8 w-auto" />
+            </Link>
+          )}
+          <button
+            onClick={toggleSidebar}
+            className="p-1.5 text-[#888888] hover:text-white hover:bg-[#16161a] rounded-lg transition-colors cursor-pointer shrink-0"
+            title={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={isSidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            {isSidebarCollapsed ? <PanelLeftOpen className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
+          </button>
         </div>
 
         {/* Current Active User Profile Banner (Interactive) */}
-        <Link 
-          to="/portal/settings" 
-          className="px-6 py-4 border-b border-[#1e1e24] bg-[#0c0c0f] hover:bg-[#16161a] transition-all flex items-center space-x-3 group cursor-pointer"
+        <Link
+          to="/portal/settings"
+          className={`${isSidebarCollapsed ? 'px-0 py-3 justify-center' : 'px-4 py-3 space-x-3'} border-b border-[#1e1e24] bg-[#0c0c0f] hover:bg-[#16161a] transition-all flex items-center group cursor-pointer`}
+          title={isSidebarCollapsed ? (profile?.full_name || user?.email || 'User') : undefined}
         >
-          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarPresetClass(profile?.avatar_url)} flex items-center justify-center border border-[#2a2a30] shrink-0`}>
+          <div className={`w-7 h-7 rounded-full bg-gradient-to-br ${getAvatarPresetClass(profile?.avatar_url)} flex items-center justify-center border border-[#2a2a30] shrink-0`}>
             {profile?.full_name ? (
               <span className="text-[11px] font-black tracking-wider text-white">
                 {profile.full_name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)}
@@ -98,47 +119,51 @@ export const PortalLayout: React.FC = () => {
               <UserIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
             )}
           </div>
-          <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-[12px] font-semibold text-white truncate group-hover:text-[#6C8295] transition-colors">
-              {profile?.full_name || user?.email || 'User'}
-            </span>
-            <div className="flex items-center space-x-1.5 mt-0.5">
-              <Shield className="w-3 h-3 text-[#10b981]" />
-              <span className="text-[11px] text-[#10b981] capitalize font-medium">{role || 'operative'}</span>
+          {!isSidebarCollapsed && (
+            <div className="flex flex-col min-w-0 flex-1">
+              <span className="text-[12px] font-semibold text-white truncate group-hover:text-[#6C8295] transition-colors">
+                {profile?.full_name || user?.email || 'User'}
+              </span>
+              <div className="flex items-center space-x-1.5 mt-0.5">
+                <Shield className="w-3 h-3 text-[#10b981]" />
+                <span className="text-[11px] text-[#10b981] capitalize font-medium">{role || 'operative'}</span>
+              </div>
             </div>
-          </div>
+          )}
         </Link>
 
         {/* Desktop Sidebar Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+        <nav className={`flex-1 py-4 space-y-1 overflow-y-auto ${isSidebarCollapsed ? 'px-2' : 'px-3'}`}>
           {navItems.map((item) => {
             const isActive = checkIsActive(item.path);
             const Icon = item.icon;
             return (
-              <NavLink 
+              <NavLink
                 key={item.name}
                 to={item.path}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-[13px] font-semibold tracking-wide transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-[#6C8295] text-white pl-3' 
+                title={isSidebarCollapsed ? item.name : undefined}
+                className={`flex items-center ${isSidebarCollapsed ? 'justify-center px-0' : 'space-x-3 px-3'} py-2.5 rounded-lg text-[13px] font-semibold tracking-wide transition-all duration-200 ${
+                  isActive
+                    ? 'bg-[#6C8295] text-white'
                     : 'text-[#888888] hover:text-white hover:bg-[#16161a]'
                 }`}
               >
-                <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-white' : 'text-[#888888] group-hover:text-white'}`} />
-                <span>{item.name}</span>
+                <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-white' : 'text-[#888888] group-hover:text-white'}`} />
+                {!isSidebarCollapsed && <span>{item.name}</span>}
               </NavLink>
             );
           })}
         </nav>
 
         {/* Sidebar Footer Logout Button */}
-        <div className="p-4 border-t border-[#1e1e24] bg-[#0c0c0f]">
-          <button 
+        <div className={`border-t border-[#1e1e24] bg-[#0c0c0f] ${isSidebarCollapsed ? 'p-2' : 'p-3'}`}>
+          <button
             onClick={handleLogoutClick}
-            className="flex items-center justify-between w-full px-4 py-3 text-[13px] font-semibold text-[#888888] hover:text-white hover:bg-[#ef4444]/10 hover:border-l-4 hover:border-[#ef4444] rounded-lg transition-all cursor-pointer"
+            title={isSidebarCollapsed ? 'Log Out' : undefined}
+            className={`flex items-center w-full py-2.5 text-[13px] font-semibold text-[#888888] hover:text-white hover:bg-[#ef4444]/10 rounded-lg transition-all cursor-pointer ${isSidebarCollapsed ? 'justify-center px-0' : 'justify-between px-3 hover:border-l-4 hover:border-[#ef4444]'}`}
           >
-            <span className="tracking-wide">Log Out</span>
-            <LogOut className="w-4 h-4" />
+            {!isSidebarCollapsed && <span className="tracking-wide">Log Out</span>}
+            <LogOut className="w-4 h-4 shrink-0" />
           </button>
         </div>
       </aside>

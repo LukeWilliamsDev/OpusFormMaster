@@ -16,7 +16,7 @@ const INITIAL_JOBS: Job[] = [
 export type AppRole = 'admin' | 'dispatcher' | 'operative';
 
 // ---- Row <-> App mappers -----------------------------------------------
-const workerToRow = (w: Worker) => ({
+export const workerToRow = (w: Worker) => ({
   id: w.id,
   name: w.name,
   role: w.role,

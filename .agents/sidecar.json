@@ -1,0 +1,9 @@
+{
+  "sidecars": [
+    {
+      "name": "pages-dev-server",
+      "command": "npx wrangler pages dev ./dist --port 8788",
+      "restartOnFailure": true
+    }
+  ]
+}

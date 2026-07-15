@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../integrations/supabase/client';
-import { ShieldAlert, FileUp, Check, AlertCircle, Calendar, Hash } from 'lucide-react';
+import { ShieldAlert, FileUp, Check, AlertCircle, Calendar, Hash, Plus, X } from 'lucide-react';
+import { ON_SITE_CERTIFICATIONS } from '../components/RosterView';
 
 interface UploadSlot {
+  id: string;
   cert: string;
   file: File | null;
   refNo: string;
@@ -14,6 +16,20 @@ interface UploadSlot {
   error: string | null;
 }
 
+const makeSlotId = () => `slot-${Math.random().toString(36).slice(2)}`;
+
+const emptySlot = (): UploadSlot => ({
+  id: makeSlotId(),
+  cert: ON_SITE_CERTIFICATIONS[0],
+  file: null,
+  refNo: '',
+  expiryDate: '',
+  uploading: false,
+  progress: 0,
+  uploadedUrl: null,
+  error: null
+});
+
 export const SubmitCredentialsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -22,6 +38,7 @@ export const SubmitCredentialsPage: React.FC = () => {
   const [requestData, setRequestData] = useState<any>(null);
   const [staffName, setStaffName] = useState<string>('');
   const [slots, setSlots] = useState<UploadSlot[]>([]);
+  const [openEnded, setOpenEnded] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -49,19 +66,26 @@ export const SubmitCredentialsPage: React.FC = () => {
 
       setRequestData(data);
       setStaffName(data.staff?.name || 'Staff Member');
-      
-      // Initialize slots for each requested cert
-      const initialSlots = data.requested_certs.map((cert: string) => ({
-        cert,
-        file: null,
-        refNo: '',
-        expiryDate: '',
-        uploading: false,
-        progress: 0,
-        uploadedUrl: null,
-        error: null
-      }));
-      setSlots(initialSlots);
+
+      if (!data.requested_certs || data.requested_certs.length === 0) {
+        // Open-ended request: let the worker add every cert they hold.
+        setOpenEnded(true);
+        setSlots([emptySlot()]);
+      } else {
+        // Initialize slots for each requested cert
+        const initialSlots = data.requested_certs.map((cert: string) => ({
+          id: makeSlotId(),
+          cert,
+          file: null,
+          refNo: '',
+          expiryDate: '',
+          uploading: false,
+          progress: 0,
+          uploadedUrl: null,
+          error: null
+        }));
+        setSlots(initialSlots);
+      }
 
     } catch (err: any) {
       console.error(err);
@@ -129,9 +153,22 @@ export const SubmitCredentialsPage: React.FC = () => {
     setSlots(prev => prev.map((s, idx) => idx === index ? { ...s, ...updates } : s));
   };
 
+  const addSlot = () => {
+    setSlots(prev => [...prev, emptySlot()]);
+  };
+
+  const removeSlot = (index: number) => {
+    setSlots(prev => prev.filter((_, idx) => idx !== index));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+
+    if (slots.length === 0) {
+      setErrorMsg('Please add at least one certification.');
+      return;
+    }
 
     // Validate all slots
     for (const slot of slots) {
@@ -231,7 +268,9 @@ export const SubmitCredentialsPage: React.FC = () => {
           <div>
             <h4 className="text-xs font-black uppercase tracking-wider text-white">Hi, {staffName}</h4>
             <p className="text-[9px] text-[#aaa] uppercase tracking-widest mt-1.5 leading-relaxed">
-              Please upload clear copies of the requested certifications below. Enter the correct reference number and expiration dates as stated on the cards.
+              {openEnded
+                ? 'Please add and upload every on-site certification you currently hold. Enter the correct reference number and expiration date as stated on each card.'
+                : 'Please upload clear copies of the requested certifications below. Enter the correct reference number and expiration dates as stated on the cards.'}
             </p>
           </div>
         </div>
@@ -240,11 +279,33 @@ export const SubmitCredentialsPage: React.FC = () => {
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             {slots.map((slot, index) => (
-              <div key={slot.cert} className="bg-[#222428] border border-white/10 rounded-2xl p-6 space-y-4 shadow-lg hover:border-brand-accent/20 transition-all">
-                <div className="pb-3 border-b border-white/5">
-                  <h4 className="text-xs font-black uppercase tracking-widest text-white leading-normal">
-                    {slot.cert}
-                  </h4>
+              <div key={slot.id} className="bg-[#222428] border border-white/10 rounded-2xl p-6 space-y-4 shadow-lg hover:border-brand-accent/20 transition-all">
+                <div className="pb-3 border-b border-white/5 flex items-center justify-between gap-3">
+                  {openEnded ? (
+                    <select
+                      value={slot.cert}
+                      onChange={(e) => updateSlot(index, { cert: e.target.value })}
+                      className="flex-1 min-w-0 bg-black/10 border border-[#333] hover:border-[#444] focus:border-brand-accent rounded-lg px-3 py-2 text-xs text-white uppercase font-black tracking-wider outline-none appearance-none"
+                    >
+                      {ON_SITE_CERTIFICATIONS.map(cert => (
+                        <option key={cert} value={cert}>{cert}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <h4 className="text-xs font-black uppercase tracking-widest text-white leading-normal">
+                      {slot.cert}
+                    </h4>
+                  )}
+                  {openEnded && slots.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeSlot(index)}
+                      className="shrink-0 text-zinc-500 hover:text-red-400 transition-colors cursor-pointer"
+                      aria-label="Remove certification"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
 
                 {/* Dropzone */}
@@ -327,6 +388,17 @@ export const SubmitCredentialsPage: React.FC = () => {
               </div>
             ))}
           </div>
+
+          {openEnded && (
+            <button
+              type="button"
+              onClick={addSlot}
+              className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-zinc-700 hover:border-brand-accent/40 rounded-xl text-[9.5px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              Add Certification
+            </button>
+          )}
 
           {/* Submit */}
           <button

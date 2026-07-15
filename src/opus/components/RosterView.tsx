@@ -9,6 +9,7 @@ import { isValidUKPostcode } from '../utils/geo';
 import { TicketStatusBadge } from './TicketStatusBadge';
 import { RequestCredentialsModal } from './RequestCredentialsModal';
 import { supabase } from '../../integrations/supabase/client';
+import { workerToRow } from '../context/PortalContext';
 import { computeDiff } from '../utils/auditDiff';
 import { AuditDiffTable } from './AuditDiffTable';
 
@@ -85,10 +86,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [newWorkerRole, setNewWorkerRole] = useState<string>('Concrete Operative');
   const [newWorkerPhone, setNewWorkerPhone] = useState('');
   const [newWorkerEmail, setNewWorkerEmail] = useState('');
-  const [newTicketType, setNewTicketType] = useState('CSCS Labourer Card');
-  const [newTicketExpiry, setNewTicketExpiry] = useState('2027-12-31');
-  const [includeCertifications, setIncludeCertifications] = useState(true);
   const [formError, setFormError] = useState<string | null>(null);
+  const [submittingWorker, setSubmittingWorker] = useState(false);
   
   const [localSelectedWorkerDetailsId, setLocalSelectedWorkerDetailsId] = useState<string | null>(null);
   
@@ -111,15 +110,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
   const [rosterMode, setRosterMode] = useState<'active' | 'archived'>('active');
   const [showAllHistory, setShowAllHistory] = useState(false);
-
-  // Auto toggle cert inclusion checkbox off for office roles
-  useEffect(() => {
-    if (OFFICE_ROLES.includes(newWorkerRole)) {
-      setIncludeCertifications(false);
-    } else {
-      setIncludeCertifications(true);
-    }
-  }, [newWorkerRole]);
 
   const [editPhone, setEditPhone] = useState('');
   const [editEmail, setEditEmail] = useState('');
@@ -410,7 +400,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     setShowReminderConfirm(false);
   };
   
-  const handleAddWorkerSubmit = (e: React.FormEvent) => {
+  const handleAddWorkerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
@@ -425,53 +415,86 @@ export const RosterView: React.FC<RosterViewProps> = ({
     }
 
     const newId = `worker-${Date.now()}`;
-    const tickets: Ticket[] = [];
-    if (includeCertifications) {
-      tickets.push({
-        id: `t-${Date.now()}-1`,
-        type: newTicketType,
-        expiryDate: newTicketExpiry,
-        ticketNumber: `OP-${Math.floor(100000 + Math.random() * 900000)}`
-      });
-
-      const isCscsSelected = newTicketType.includes('CSCS');
-      if (newWorkerRole === 'Concrete Pour Supervisor' && !isCscsSelected) {
-        tickets.push({
-          id: `t-${Date.now()}-2`,
-          type: 'CSCS Labourer Card',
-          expiryDate: '2028-12-31',
-          ticketNumber: `CSCS-${Math.floor(100000 + Math.random() * 900000)}`
-        });
-      } else if (newWorkerRole === 'Telehandler Operator' && !isCscsSelected) {
-        tickets.push({
-          id: `t-${Date.now()}-2`,
-          type: 'CSCS Labourer Card',
-          expiryDate: '2028-12-31',
-          ticketNumber: `CSCS-${Math.floor(100000 + Math.random() * 900000)}`
-        });
-      }
-    }
+    const trimmedEmail = newWorkerEmail.trim();
 
     const createdWorker: Worker = {
       id: newId,
       name: newWorkerName,
       role: newWorkerRole,
       phone: newWorkerPhone.trim() || undefined,
-      email: newWorkerEmail.trim() || undefined,
+      email: trimmedEmail || undefined,
       postcode: newWorkerPostcode.trim().toUpperCase() || undefined,
-      tickets,
+      tickets: [],
       uploadedCertificates: []
     };
 
-    setWorkers(prev => [createdWorker, ...prev]);
-    setSelectedWorkerDetailsId(newId);
-    
-    // Reset form
-    setNewWorkerName('');
-    setNewWorkerPhone('');
-    setNewWorkerEmail('');
-    setNewWorkerPostcode('');
-    setShowAddWorkerForm(false);
+    setSubmittingWorker(true);
+    try {
+      const { error: insertError } = await supabase.from('staff').insert(workerToRow(createdWorker));
+      if (insertError) {
+        setFormError('Failed to save worker. Please try again.');
+        return;
+      }
+
+      // Site roles (everything except the office roles) automatically get an
+      // open-ended compliance request so they can self-upload every cert they hold.
+      if (!OFFICE_ROLES.includes(newWorkerRole) && trimmedEmail) {
+        try {
+          const expiresAt = new Date();
+          expiresAt.setHours(expiresAt.getHours() + 48);
+
+          const { data: requestRow, error: requestError } = await supabase
+            .from('document_requests')
+            .insert({
+              worker_id: newId,
+              requested_certs: [],
+              expires_at: expiresAt.toISOString()
+            })
+            .select()
+            .single();
+
+          if (!requestError && requestRow) {
+            const uploadUrl = `${window.location.origin}/submit-credentials?token=${requestRow.id}`;
+
+            const { error: emailError } = await supabase.functions.invoke('send-compliance-email', {
+              body: {
+                toEmail: trimmedEmail,
+                workerName: createdWorker.name,
+                requestedCerts: [],
+                uploadUrl,
+                expiresAt: expiresAt.toISOString()
+              }
+            });
+            if (emailError) console.error('Failed to send compliance email:', emailError);
+
+            const { error: auditError } = await supabase.rpc('log_anonymous_audit', {
+              p_user_email: 'admin@opusform.co.uk',
+              p_action: 'CREATE_DOCUMENT_REQUEST',
+              p_target_type: 'staff',
+              p_target_id: newId,
+              p_details: { request_id: requestRow.id, requested_certs: [], email_sent: !emailError }
+            });
+            if (auditError) console.error('Failed to log audit:', auditError);
+          } else if (requestError) {
+            console.error('Failed to create document request:', requestError);
+          }
+        } catch (err) {
+          console.error('Compliance request flow failed:', err);
+        }
+      }
+
+      setWorkers(prev => [createdWorker, ...prev]);
+      setSelectedWorkerDetailsId(newId);
+
+      // Reset form
+      setNewWorkerName('');
+      setNewWorkerPhone('');
+      setNewWorkerEmail('');
+      setNewWorkerPostcode('');
+      setShowAddWorkerForm(false);
+    } finally {
+      setSubmittingWorker(false);
+    }
   };
 
   const filteredWorkersList = workers.filter(w => {
@@ -1885,131 +1908,126 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
       
 
-      {/* Add Worker Form */}
+      {/* Add Worker Modal */}
       {showAddWorkerForm && (
-        <form onSubmit={handleAddWorkerSubmit} className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl p-6 space-y-5 shadow-2xl animate-in fade-in slide-in-from-top-4">
-          <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[#aaa] border-b border-[#333] pb-3">
-            <UserPlus className="w-4 h-4 text-[#5C7285]" />
-            New Operative Registration
-          </div>
-          
-          {formError && (
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 p-3 rounded-lg border border-red-500/20">
-              <AlertTriangle className="w-4 h-4" />
-              {formError}
-            </div>
-          )}
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Full Name</label>
-              <input
-                type="text"
-                value={newWorkerName}
-                onChange={(e) => setNewWorkerName(e.target.value)}
-                placeholder="e.g. John Doe"
-                className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Phone Number</label>
-              <input
-                type="text"
-                value={newWorkerPhone}
-                onChange={(e) => setNewWorkerPhone(e.target.value)}
-                placeholder="e.g. 07700900123"
-                className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Email Address</label>
-              <input
-                type="email"
-                value={newWorkerEmail}
-                onChange={(e) => setNewWorkerEmail(e.target.value)}
-                placeholder="e.g. john.doe@opusform.co.uk"
-                className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Home Postcode</label>
-              <input
-                type="text"
-                value={newWorkerPostcode}
-                onChange={(e) => setNewWorkerPostcode(e.target.value)}
-                placeholder="e.g. M1 1AE"
-                className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-sm text-white outline-none focus:border-[#5C7285] transition-colors uppercase tracking-wider"
-              />
-              {newWorkerPostcode.trim() && !isValidUKPostcode(newWorkerPostcode) && (
-                <p className="text-[9.5px] font-black text-red-500 uppercase tracking-widest mt-1">Invalid UK Postcode format</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Role</label>
-              <select
-                value={newWorkerRole}
-                onChange={(e) => setNewWorkerRole(e.target.value)}
-                className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-[11px] font-bold tracking-widest text-white uppercase outline-none focus:border-[#5C7285] transition-colors appearance-none"
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            onClick={() => setShowAddWorkerForm(false)}
+          />
+          <form
+            onSubmit={handleAddWorkerSubmit}
+            className="relative w-full max-w-md bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-[#333]">
+              <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[#aaa]">
+                <UserPlus className="w-4 h-4 text-[#5C7285]" />
+                Register Staff
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddWorkerForm(false)}
+                className="p-1 text-[#666] hover:text-white transition-colors cursor-pointer"
+                aria-label="Close"
               >
-                {STAFF_ROLES.map(role => (
-                  <option key={role} value={role}>{role}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="flex items-center gap-2 pt-2 md:col-span-2">
-              <input
-                type="checkbox"
-                id="includeCertifications"
-                checked={includeCertifications}
-                onChange={(e) => setIncludeCertifications(e.target.checked)}
-                className="w-4 h-4 bg-[#1a1a1a] border border-[#333] rounded focus:ring-0 accent-[#5C7285] cursor-pointer"
-              />
-              <label htmlFor="includeCertifications" className="text-[10px] font-black uppercase tracking-widest text-[#bbb] cursor-pointer">
-                Include On-site Certification
-              </label>
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
-            {includeCertifications && (
-              <div className="space-y-2 md:col-span-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">On-site Certifications</label>
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <select
-                    value={newTicketType}
-                    onChange={(e) => setNewTicketType(e.target.value)}
-                    className="flex-1 w-full min-w-0 bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-[11px] font-bold tracking-widest text-white uppercase outline-none focus:border-[#5C7285] transition-colors appearance-none truncate"
-                  >
-                    {ON_SITE_CERTIFICATIONS.map(cert => (
-                      <option key={cert} value={cert}>{cert}</option>
-                    ))}
-                  </select>
-                  <input
-                    type="date"
-                    value={newTicketExpiry}
-                    onChange={(e) => setNewTicketExpiry(e.target.value)}
-                    className="flex-1 w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-4 py-2.5 text-[11px] font-bold tracking-widest text-white uppercase outline-none focus:border-[#5C7285] transition-colors"
-                  />
+            <div className="p-5 space-y-3.5">
+              {formError && (
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 p-2.5 rounded-lg border border-red-500/20">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  {formError}
                 </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Full Name</label>
+                <input
+                  type="text"
+                  value={newWorkerName}
+                  onChange={(e) => setNewWorkerName(e.target.value)}
+                  placeholder="e.g. John Doe"
+                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
+                />
               </div>
-            )}
-          </div>
-          
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={() => setShowAddWorkerForm(false)}
-              className="px-6 py-2.5 bg-[#252525] hover:bg-[#333] border border-[#333] text-[#aaa] text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-8 py-2.5 bg-[#5C7285] hover:bg-[#6c8295] text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors shadow-lg shadow-[#5C7285]/20"
-            >
-              Submit Registration
-            </button>
-          </div>
-        </form>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Email Address</label>
+                <input
+                  type="email"
+                  value={newWorkerEmail}
+                  onChange={(e) => setNewWorkerEmail(e.target.value)}
+                  placeholder="e.g. john.doe@opusform.co.uk"
+                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Phone Number</label>
+                <input
+                  type="text"
+                  value={newWorkerPhone}
+                  onChange={(e) => setNewWorkerPhone(e.target.value)}
+                  placeholder="e.g. 07700900123"
+                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Home Postcode</label>
+                <input
+                  type="text"
+                  value={newWorkerPostcode}
+                  onChange={(e) => setNewWorkerPostcode(e.target.value)}
+                  placeholder="e.g. M1 1AE"
+                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors uppercase tracking-wider"
+                />
+                {newWorkerPostcode.trim() && !isValidUKPostcode(newWorkerPostcode) && (
+                  <p className="text-[9.5px] font-black text-red-500 uppercase tracking-widest mt-1">Invalid UK Postcode format</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Role</label>
+                <select
+                  value={newWorkerRole}
+                  onChange={(e) => setNewWorkerRole(e.target.value)}
+                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-[11px] font-bold tracking-widest text-white uppercase outline-none focus:border-[#5C7285] transition-colors appearance-none"
+                >
+                  {STAFF_ROLES.map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                </select>
+              </div>
+
+              {!OFFICE_ROLES.includes(newWorkerRole) && (
+                <div className="flex items-start gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#5C7285]/90 pt-0.5">
+                  <UploadCloud className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    {newWorkerEmail.trim()
+                      ? 'An automated email will be sent so this worker can upload their own on-site certifications.'
+                      : 'Add an email address to automatically request this worker\'s on-site certifications.'}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setShowAddWorkerForm(false)}
+                  className="px-5 py-2 bg-[#252525] hover:bg-[#333] border border-[#333] text-[#aaa] text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingWorker}
+                  className="px-6 py-2 bg-[#5C7285] hover:bg-[#6c8295] text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors shadow-lg shadow-[#5C7285]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submittingWorker ? 'Registering...' : 'Register'}
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       )}
 
       {/* Staff Roster Grid Layout */}

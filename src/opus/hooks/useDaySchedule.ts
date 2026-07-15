@@ -20,6 +20,49 @@ export interface DaySchedule {
  * excluded; searchQuery matches staff name/role and assigned project
  * name/ref.
  */
+export const computeDaySchedule = (
+  workers: Worker[],
+  jobs: Job[],
+  shifts: ScheduledShift[],
+  date: string,
+  searchQuery: string,
+): DaySchedule => {
+  const query = searchQuery.trim().toLowerCase();
+  const dayShifts = shifts.filter((s) => s.date === date);
+  const shiftByWorker = new Map(dayShifts.map((s) => [s.workerId, s]));
+  const jobById = new Map(jobs.map((j) => [j.id, j]));
+
+  const assigned: DayAssignment[] = [];
+  const unassigned: Worker[] = [];
+
+  for (const worker of workers) {
+    if (worker.isArchived) continue;
+    const shift = shiftByWorker.get(worker.id);
+    const job = shift ? jobById.get(shift.jobId) : undefined;
+    const matches =
+      !query ||
+      worker.name.toLowerCase().includes(query) ||
+      worker.role.toLowerCase().includes(query) ||
+      (job &&
+        (job.siteName.toLowerCase().includes(query) || job.jobRef.toLowerCase().includes(query)));
+    if (!matches) continue;
+    if (shift) {
+      assigned.push({ worker, shift, job });
+    } else {
+      unassigned.push(worker);
+    }
+  }
+
+  const byJob = new Map<string, DayAssignment[]>();
+  for (const entry of assigned) {
+    const list = byJob.get(entry.shift.jobId);
+    if (list) list.push(entry);
+    else byJob.set(entry.shift.jobId, [entry]);
+  }
+
+  return { assigned, unassigned, byJob, deployedCount: assigned.length };
+};
+
 export const useDaySchedule = (
   workers: Worker[],
   jobs: Job[],
@@ -27,39 +70,7 @@ export const useDaySchedule = (
   date: string,
   searchQuery: string,
 ): DaySchedule =>
-  useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    const dayShifts = shifts.filter((s) => s.date === date);
-    const shiftByWorker = new Map(dayShifts.map((s) => [s.workerId, s]));
-    const jobById = new Map(jobs.map((j) => [j.id, j]));
-
-    const assigned: DayAssignment[] = [];
-    const unassigned: Worker[] = [];
-
-    for (const worker of workers) {
-      if (worker.isArchived) continue;
-      const shift = shiftByWorker.get(worker.id);
-      const job = shift ? jobById.get(shift.jobId) : undefined;
-      const matches =
-        !query ||
-        worker.name.toLowerCase().includes(query) ||
-        worker.role.toLowerCase().includes(query) ||
-        (job &&
-          (job.siteName.toLowerCase().includes(query) || job.jobRef.toLowerCase().includes(query)));
-      if (!matches) continue;
-      if (shift) {
-        assigned.push({ worker, shift, job });
-      } else {
-        unassigned.push(worker);
-      }
-    }
-
-    const byJob = new Map<string, DayAssignment[]>();
-    for (const entry of assigned) {
-      const list = byJob.get(entry.shift.jobId);
-      if (list) list.push(entry);
-      else byJob.set(entry.shift.jobId, [entry]);
-    }
-
-    return { assigned, unassigned, byJob, deployedCount: assigned.length };
-  }, [workers, jobs, shifts, date, searchQuery]);
+  useMemo(
+    () => computeDaySchedule(workers, jobs, shifts, date, searchQuery),
+    [workers, jobs, shifts, date, searchQuery],
+  );

@@ -131,4 +131,17 @@
 - Removal of redundant dummy navigation menu icon from staff roster sub-header.
 - Refactoring of staff roster sub-header actions into search bar inline responsive button (icon-only on mobile, full text on desktop/tablet).
 - Simplification of staff audit log cards into timeline dot and text list with interactive inline expand/collapse details.
-- Integration of edit profile form, compliance tickets, and deployment history views with rounded-xl borders, bold/semibold font weights, and scaled typography.
+- Integration of edit profile form, compliance tickets, and deployment history views with rounded-xl borders, bold/semibold font weights, and scaled typography.
+
+## 2026-07-15 23:58
+- Applied Supabase migration `20260716090000_drop_assigned_workers.sql` dropping `jobs.assigned_workers` and `shifts.is_removed` columns.
+- Recorded migration `20260716090000` in the `supabase_migrations.schema_migrations` table.
+- Verified schema updates via Supabase MCP tool ensuring legacy columns are dropped.
+
+## 2026-07-16
+- Added week-grid (5-day-column) desktop/tablet layout to the Labor Roster scheduling calendar (`WeekGridStaff`, `WeekGridProject`); mobile keeps the single-day tab view unchanged.
+- Removed the `max-w-3xl` width cap on `CalendarBoard` at `md`+ so it fills the page's full container width on tablet/desktop.
+- Extracted `computeDaySchedule` from `useDaySchedule` and added `useWeekSchedule` to derive all 5 weekdays' schedules at once.
+- Added a `size="dense"` variant to `StaffCard` for narrow week-grid columns.
+- Extended `AssignTarget`/`AssignSheet` to carry a per-click date so assigning staff from any week-grid column opens the sheet for the correct day.
+- Updated `.agents/AGENTS.md` ui-ux-engineer and qa-automation persona descriptions to reflect the shipped week-grid design and clarify drag-and-drop is not yet implemented.

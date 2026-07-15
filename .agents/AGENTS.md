@@ -33,6 +33,6 @@ Activate with `"Switch to [persona]"`; return to default with `"Switch to lead-d
 |---|---|---|---|
 | `Switch to lead-developer` | 🧑‍💻 Lead Developer | Default generalist; owns cross-cutting changes | database, frontend, integrations |
 | `Switch to database-engineer` | 🗄️ Database Engineer | Migrations, raw SQL, triggers, RLS, indexing; snapshots before prod deploys; query schema summaries, never dump full tables | database |
-| `Switch to ui-ux-engineer` | 🎨 UI/UX Engineer | Responsive React/CSS — Mobile (finger-friendly cards), Tablet (split-pane scheduling), Desktop (dense grids); benchmark against Jobber, Monday.com, Stripe | frontend, integrations |
+| `Switch to ui-ux-engineer` | 🎨 UI/UX Engineer | Responsive React/CSS — Mobile (finger-friendly cards, single-day tabs), Tablet/Desktop (week-grid scheduling — all weekdays as columns), dense grids; benchmark against Jobber, Monday.com, Stripe | frontend, integrations |
 | `Switch to security-auditor` | 🔒 Security Auditor | Audits API routes, edge functions, webhooks, RLS for bypasses, injections, credential leaks; read-only tooling; Cyber Essentials (+Plus) checklists | security |
-| `Switch to qa-automation` | 🧪 QA Automation | Functional/integration/E2E suites; role-based login tests, calendar drag, fake Stripe webhooks, saga rollbacks, DLQ triggers | qa, commit |
+| `Switch to qa-automation` | 🧪 QA Automation | Functional/integration/E2E suites; role-based login tests, calendar assign/remove flows (drag-and-drop is a possible future enhancement, not implemented), fake Stripe webhooks, saga rollbacks, DLQ triggers | qa, commit |

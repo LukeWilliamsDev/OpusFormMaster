@@ -2,7 +2,7 @@
 
 ## System Architecture & State
 - **Core**: Local dashboard system. GitHub source control (`Dev` branch). Cloudflare Pages deployment (`nodejs_compat`).
-- **Database**: Standalone Supabase (`fgpthpxmiroyebrzjdzo`). Live schemas (profiles, staff, shifts, jobs, quotes). 
+- **Database**: Standalone Supabase (`fgpthpxmiroyebrzjdzo`). Live schemas (profiles, staff, shifts, jobs, quotes). Consolidation of deployments into `shifts` table as the single source of truth; dropped `jobs.assigned_workers` and `shifts.is_removed` columns.
 - **Security**: Strict RLS policies. SMTP credentials encrypted in `vault.secrets`. Secure HTTP headers (CSP, MIME protections). Admin-only `public.audit_logs` tracks all system actions.
 - **Email**: Resend HTTP API via Supabase Edge Function to bypass anti-bot throttling.
 

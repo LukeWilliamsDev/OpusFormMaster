@@ -65,6 +65,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
   const [convertingQuote, setConvertingQuote] = useState<Quote | null>(null);
   const [selectedQuoteForControl, setSelectedQuoteForControl] = useState<Quote | null>(null);
   const [showToast, setShowToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Sort states
   const [sortField, setSortField] = useState<'ref' | 'client' | 'date' | 'value' | 'status'>('date');
@@ -82,6 +83,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
   // Load quotes from Supabase
   const loadQuotes = async () => {
     try {
+      setIsLoading(true);
       const { data, error } = await supabase
         .from('quotes')
         .select('*')
@@ -103,6 +105,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
     } catch (e) {
       console.error('Failed to load quotes from Supabase', e);
       triggerToast('Failed to load quotes', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -256,7 +260,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({ onEditQuote,
       </div>
 
       <main className="mt-0 pb-8 space-y-6">
-        {sortedQuotes.length === 0 && (
+        {!isLoading && sortedQuotes.length === 0 && (
           <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl px-4 py-12 text-center text-xs font-bold uppercase tracking-wider text-gray-500">
             No matching pipeline estimates found
           </div>

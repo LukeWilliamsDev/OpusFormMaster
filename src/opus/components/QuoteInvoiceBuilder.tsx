@@ -394,9 +394,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     if (!clientInfo.entity.trim()) missingFields.push("Client Name");
     if (!clientInfo.email.trim()) missingFields.push("Client Email");
     if (!clientInfo.site.trim()) missingFields.push("Project/Site Name");
-    if (!clientInfo.postcode.trim()) {
-      missingFields.push("Site Postcode");
-    } else if (!isValidUKPostcode(clientInfo.postcode)) {
+    if (clientInfo.postcode.trim() && !isValidUKPostcode(clientInfo.postcode)) {
       missingFields.push("Invalid Site Postcode format (e.g. M1 1AE)");
     }
     if (items.length === 0) missingFields.push("Line Items (at least one is required)");

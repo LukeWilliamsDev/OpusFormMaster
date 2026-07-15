@@ -11,10 +11,13 @@ import {
 } from "../../utils/week";
 import { useDaySchedule } from "../../hooks/useDaySchedule";
 import { useShiftActions } from "../../hooks/useShiftActions";
+import { useWeekSchedule } from "../../hooks/useWeekSchedule";
 import { AssignSheet, AssignTarget } from "./AssignSheet";
 import { DayTabs } from "./DayTabs";
 import { ProjectDayList } from "./ProjectDayList";
 import { StaffDayList } from "./StaffDayList";
+import { WeekGridProject } from "./WeekGridProject";
+import { WeekGridStaff } from "./WeekGridStaff";
 import { WeekHeader } from "./WeekHeader";
 
 export type CalendarGroup = "staff" | "project";
@@ -45,9 +48,13 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
 
   const weekDays = getWeekDays(toLocalISODate(getMonday(parseLocalISODate(date))));
   const schedule = useDaySchedule(workers, jobs, shifts, date, searchQuery);
+  const weekSchedule = useWeekSchedule(workers, jobs, shifts, weekDays, searchQuery);
   // Unfiltered view for the assign sheet: true crew counts and the full
-  // available-staff list, regardless of what's typed in the search box.
-  const fullSchedule = useDaySchedule(workers, jobs, shifts, date, "");
+  // available-staff list, regardless of what's typed in the search box. Keyed
+  // off the assign target's own date since a week-grid click can target any
+  // visible weekday, not just the page's currently-selected date.
+  const assignSheetDate = assignTarget?.date ?? date;
+  const fullSchedule = useDaySchedule(workers, jobs, shifts, assignSheetDate, "");
   const { assignWorker, confirmReallocate, removeShift } = useShiftActions(
     workers,
     jobs,
@@ -60,7 +67,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   };
 
   return (
-    <div className="max-w-3xl mx-auto space-y-4">
+    <div className="max-w-3xl md:max-w-none mx-auto space-y-4">
       {/* Toggle + search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
@@ -103,43 +110,68 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
       </div>
 
       <WeekHeader weekDays={weekDays} onNavigate={handleNavigateWeek} />
-      <DayTabs weekDays={weekDays} selectedDate={date} onSelect={onChangeDate} />
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={`${group}-${date}`}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.15 }}
-        >
-          {group === "staff" ? (
-            <StaffDayList
-              schedule={schedule}
-              date={date}
-              onAssign={(worker) => setAssignTarget({ mode: "pickProject", worker })}
-              onRemoveShift={removeShift}
-            />
-          ) : (
-            <ProjectDayList
-              jobs={jobs}
-              schedule={schedule}
-              date={date}
-              onAddStaff={(job) => setAssignTarget({ mode: "pickWorker", job })}
-              onRemoveShift={removeShift}
-            />
-          )}
-        </motion.div>
-      </AnimatePresence>
+      <div className="md:hidden space-y-4">
+        <DayTabs weekDays={weekDays} selectedDate={date} onSelect={onChangeDate} />
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${group}-${date}`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.15 }}
+          >
+            {group === "staff" ? (
+              <StaffDayList
+                schedule={schedule}
+                date={date}
+                onAssign={(worker) => setAssignTarget({ mode: "pickProject", worker, date })}
+                onRemoveShift={removeShift}
+              />
+            ) : (
+              <ProjectDayList
+                jobs={jobs}
+                schedule={schedule}
+                date={date}
+                onAddStaff={(job) => setAssignTarget({ mode: "pickWorker", job, date })}
+                onRemoveShift={removeShift}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+
+      <div className="hidden md:grid md:grid-cols-5 gap-3">
+        {group === "staff" ? (
+          <WeekGridStaff
+            weekDays={weekDays}
+            weekSchedule={weekSchedule}
+            onAssign={(worker, assignDate) =>
+              setAssignTarget({ mode: "pickProject", worker, date: assignDate })
+            }
+            onRemoveShift={removeShift}
+          />
+        ) : (
+          <WeekGridProject
+            jobs={jobs}
+            weekDays={weekDays}
+            weekSchedule={weekSchedule}
+            onAddStaff={(job, assignDate) =>
+              setAssignTarget({ mode: "pickWorker", job, date: assignDate })
+            }
+            onRemoveShift={removeShift}
+          />
+        )}
+      </div>
 
       <AssignSheet
         target={assignTarget}
-        date={date}
         jobs={jobs}
         schedule={fullSchedule}
-        onAssign={(workerId, jobId) => assignWorker(workerId, jobId, date)}
+        onAssign={(workerId, jobId) => assignWorker(workerId, jobId, assignSheetDate)}
         onConfirmReallocate={(workerId, jobId, existingShiftId) =>
-          confirmReallocate(workerId, jobId, date, existingShiftId)
+          confirmReallocate(workerId, jobId, assignSheetDate, existingShiftId)
         }
         onClose={() => setAssignTarget(null)}
       />

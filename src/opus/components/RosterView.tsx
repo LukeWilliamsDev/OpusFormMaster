@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { Worker, Ticket, Job } from '../types/erp';
 import { getTicketStatus } from '../utils/workerValidation';
-import { isValidUKPostcode } from '../utils/geo';
 import { TicketStatusBadge } from './TicketStatusBadge';
 import { RequestCredentialsModal } from './RequestCredentialsModal';
 import { supabase } from '../../integrations/supabase/client';
@@ -113,8 +112,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [editTickets, setEditTickets] = useState<Ticket[]>([]);
   const [editError, setEditError] = useState<string | null>(null);
   const [showReminderConfirm, setShowReminderConfirm] = useState(false);
-  const [newWorkerPostcode, setNewWorkerPostcode] = useState('');
-  const [editPostcode, setEditPostcode] = useState('');
 
   const [activeDossierTab, setActiveDossierTab] = useState<'general' | 'assignments' | 'audit_log'>('general');
   const [dossierAuditLogs, setDossierAuditLogs] = useState<any[]>([]);
@@ -408,11 +405,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
       return;
     }
 
-    if (newWorkerPostcode.trim() && !isValidUKPostcode(newWorkerPostcode)) {
-      setFormError('Invalid Home Postcode format');
-      return;
-    }
-
     const newId = `worker-${Date.now()}`;
     const trimmedEmail = newWorkerEmail.trim();
 
@@ -422,7 +414,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       role: newWorkerRole,
       phone: newWorkerPhone.trim() || undefined,
       email: trimmedEmail || undefined,
-      postcode: newWorkerPostcode.trim().toUpperCase() || undefined,
+      postcode: undefined,
       tickets: [],
       uploadedCertificates: []
     };
@@ -490,7 +482,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
       setNewWorkerName('');
       setNewWorkerPhone('');
       setNewWorkerEmail('');
-      setNewWorkerPostcode('');
       setShowAddWorkerForm(false);
     } finally {
       setSubmittingWorker(false);
@@ -590,11 +581,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
             return;
           }
 
-          if (editPostcode.trim() && !isValidUKPostcode(editPostcode)) {
-            setEditError('Invalid Home Postcode format');
-            return;
-          }
-          
           // Validate tickets if any
           for (const ticket of editTickets) {
             if (!ticket.type.trim()) {
@@ -613,7 +599,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             role: editRole,
             phone: editPhone.trim() || undefined,
             email: editEmail.trim() || undefined,
-            postcode: editPostcode.trim().toUpperCase() || undefined,
+            postcode: workerToEdit.postcode,
             tickets: editTickets
           };
 
@@ -680,19 +666,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           <option key={role} value={role}>{role}</option>
                         ))}
                       </select>
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-[#666] mb-1.5 block">Home Postcode</label>
-                      <input 
-                        type="text" 
-                        value={editPostcode}
-                        onChange={(e) => setEditPostcode(e.target.value)}
-                        className="w-full bg-[#161616] border border-[#333] rounded-xl px-3 py-2.5 text-[11px] font-semibold text-white uppercase focus:outline-none focus:border-[#5C7285] transition-colors"
-                        placeholder="e.g. M1 1AE"
-                      />
-                      {editPostcode.trim() && !isValidUKPostcode(editPostcode) && (
-                        <p className="text-[10px] font-bold text-red-500 uppercase mt-1">Invalid UK Postcode format</p>
-                      )}
                     </div>
                   </div>
 
@@ -1194,14 +1167,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
         {/* Tab 3: Audit & Requests Log */}
         {activeDossierTab === 'audit_log' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            {loadingDossierLogs && (
-              <div className="flex justify-end">
-                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1">
-                  <RefreshCw className="w-3 h-3 animate-spin text-[#facc15]" />
-                  Syncing logs...
-                </span>
-              </div>
-            )}
+
 
             {loadingDossierLogs && allEvents.length === 0 ? (
               <div className="text-center py-12 border border-[#2a2a2a] bg-[#1c1c1c] rounded-xl">
@@ -1748,7 +1714,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       setEditRole(selectedWorkerDetails.role);
                       setEditPhone(selectedWorkerDetails.phone || '');
                       setEditEmail(selectedWorkerDetails.email || '');
-                      setEditPostcode(selectedWorkerDetails.postcode || '');
                       setEditTickets([...selectedWorkerDetails.tickets]);
                       setEditError(null);
                     }}
@@ -1817,7 +1782,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       {selectedWorkerDetails.name}
                     </h2>
                     <p className="text-[11px] font-medium text-zinc-400 mt-0.5 tracking-wide">
-                      {selectedWorkerDetails.role} {selectedWorkerDetails.postcode ? `• ${selectedWorkerDetails.postcode}` : ''}
+                      {selectedWorkerDetails.role}
                     </p>
                   </div>
                 </div>
@@ -1969,19 +1934,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   placeholder="e.g. 07700900123"
                   className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
                 />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Home Postcode</label>
-                <input
-                  type="text"
-                  value={newWorkerPostcode}
-                  onChange={(e) => setNewWorkerPostcode(e.target.value)}
-                  placeholder="e.g. M1 1AE"
-                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors uppercase tracking-wider"
-                />
-                {newWorkerPostcode.trim() && !isValidUKPostcode(newWorkerPostcode) && (
-                  <p className="text-[9.5px] font-black text-red-500 uppercase tracking-widest mt-1">Invalid UK Postcode format</p>
-                )}
               </div>
               <div className="space-y-1.5">
                 <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Role</label>

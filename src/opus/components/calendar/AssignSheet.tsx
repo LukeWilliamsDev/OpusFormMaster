@@ -9,7 +9,8 @@ import { getJobColorClasses } from "./jobColors";
 import { TicketWarningBadge } from "./TicketWarningBadge";
 
 export type AssignTarget =
-  { mode: "pickProject"; worker: Worker } | { mode: "pickWorker"; job: Job };
+  | { mode: "pickProject"; worker: Worker; date: string }
+  | { mode: "pickWorker"; job: Job; date: string };
 
 interface PendingReallocation {
   workerId: string;
@@ -21,7 +22,6 @@ interface PendingReallocation {
 
 interface AssignSheetProps {
   target: AssignTarget | null;
-  date: string;
   jobs: Job[];
   schedule: DaySchedule;
   onAssign: (workerId: string, jobId: string) => AssignResult;
@@ -32,10 +32,11 @@ interface AssignSheetProps {
 /**
  * Bottom sheet on mobile, centered dialog on md+. Validation failures and the
  * reallocate confirmation render inline instead of window.alert/confirm.
+ * The date shown/used is sourced from target.date, since in the week-grid
+ * view an assign action can originate from any of the visible weekdays.
  */
 export const AssignSheet: React.FC<AssignSheetProps> = ({
   target,
-  date,
   jobs,
   schedule,
   onAssign,
@@ -48,7 +49,7 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
   useEffect(() => {
     setError(null);
     setPending(null);
-  }, [target, date]);
+  }, [target]);
 
   const handlePick = (workerId: string, workerName: string, jobId: string) => {
     setError(null);
@@ -99,7 +100,7 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                       : `Add staff to ${target.job.siteName}`}
                   </h3>
                   <p className="text-[11px] text-gray-500 font-bold uppercase tracking-widest mt-1">
-                    {formatDayHeading(date)}
+                    {formatDayHeading(target.date)}
                   </p>
                 </div>
                 <button

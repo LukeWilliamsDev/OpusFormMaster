@@ -57,31 +57,3 @@ The application connects to a standalone Supabase project ref `fgpthpxmiroyebrzj
 * **Client-Side PDF**: Compiled via `html2pdf.js`.
 * **CSS Sanitization**: Programmatically clones target DOM nodes and strips modern CSS values (like `oklch()`) that crash the `html2canvas` parser before rendering.
 * **Email Delivery**: Offloaded to a Supabase Edge Function (`supabase/functions/send-quote-pdf`) using the Resend HTTP API to bypass standard SMTP throttling.
-
----
-
-## 5. Collaboration Guide for Supplementary Agents
-When generating or invoking additional specialized agents, configure them with the following prompt-level boundaries:
-
-```mermaid
-graph TD
-    MainAgent[Lead Developer Agent] --> DBA[DBA Subagent]
-    MainAgent --> UX[UX/PDF Templater Subagent]
-    MainAgent --> Logistics[Logistics & Routing Subagent]
-    MainAgent --> Compliance[Security & Compliance Subagent]
-
-    DBA -->|Generates Migrations & Types| Supabase[(Supabase DB)]
-    UX -->|Sanitizes Styles & Assets| HTML2PDF[PDF Compiler]
-    Logistics -->|Computes Proximity & Schedules| Map[Leaflet Maps]
-    Compliance -->|Audits RLS & Logs| Audit[Audit Trail]
-```
-
-1. **DBA Agent Instruction**:
-   * *Scope*: Write migrations in `supabase/migrations/`, verify RLS policies, and generate TypeScript types.
-   * *Rule*: Always fetch the current schema using `list_tables` before proposing table alters.
-2. **PDF & Templating Agent Instruction**:
-   * *Scope*: Style quotes and print sheets under `src/components/quotes/`.
-   * *Rule*: Lock PDF export frame boundaries to exactly `794px x 1122px` (A4 standard) to avoid page-break offsets.
-3. **Compliance & Audit Agent Instruction**:
-   * *Scope*: Audit `public.audit_logs` and verify RLS boundaries.
-   * *Rule*: Ensure all destructive actions (such as worker or quote deletion) trigger warning modal overlays before processing.

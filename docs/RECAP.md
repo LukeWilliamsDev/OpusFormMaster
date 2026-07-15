@@ -122,3 +122,7 @@
 - Renamed delete modal to "Delete Quote" and convert modal to "Job Creation" / "Accept Job", replacing leftover pipeline/estimate jargon.
 - Rebuilt Quote Management as responsive: table on desktop (`lg`+), stacked card list on tablet/mobile; header search bar stacks on narrow screens.
 - Removed redundant Edit/Convert shortcut buttons from Quote Management list (desktop Actions column and mobile card row); row/card click now solely opens the drawer for Edit/Convert/Delete.
+
+## 2026-07-15 13:30
+- Diagnosis of missing host Node.js/npm dependencies blocking local server and GitHub MCP server execution.
+- Migration of GitHub MCP configuration from Docker to local npx runner in global mcp_config.json.

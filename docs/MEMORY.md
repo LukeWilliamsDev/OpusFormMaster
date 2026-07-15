@@ -17,6 +17,8 @@
 - **Workspace Customizations**: Workspace instructions, persona switching, mandatory implementation plan + user approval requirements, and manual-verification-only rules (no automated localhost/browser preview) configured in `.agents/AGENTS.md`. Removed all `.claude/` subagents and configuration directories.
 - **Skill coverage**: Custom agent skills wired in `.agents/skills/`. Created `dev-server` skill to automate server startup and UI preview guidance.
 - **VS Code Tasks**: Integrated `.vscode/tasks.json` configuration with `Open Live Preview` to automatically start the server and load the site inside VS Code Simple Browser on folder open.
+- **MCP Servers**: GitHub MCP server configured to run locally via global `npx` command.
+
 
 
 ## Roadmap

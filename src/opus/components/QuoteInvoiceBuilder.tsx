@@ -74,6 +74,8 @@ const SUGGESTED_ITEMS = [
   { description: "Site Supervisor Day Rate", unit: "Day", rate: 280.00 }
 ];
 
+const COMMON_UNITS = ['m²', 'm³', 'm', 'No.', 'Sum'];
+
 const INITIAL_ITEMS: MeasuredItem[] = [];
 
 const capitalizeWords = (str: string) => {
@@ -91,6 +93,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
+  const [unitFocusedItemId, setUnitFocusedItemId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; title: string; message: string; } | null>(null);
   const [items, setItems] = useState<MeasuredItem[]>(INITIAL_ITEMS);
@@ -989,31 +992,39 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                           onChange={e => updateItem(item.id, { quantity: Number(e.target.value) })}
                         />
                       </div>
-                      <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1 w-[128px] shrink-0">
+                      <div className="relative flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 w-[128px] shrink-0">
                         <input
                           type="text"
-                          className="w-7 bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
+                          className="w-full bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
                           value={item.unit}
                           onChange={e => updateItem(item.id, { unit: e.target.value })}
-                          placeholder="m²"
+                          onFocus={() => setUnitFocusedItemId(item.id)}
+                          onBlur={() => { setTimeout(() => setUnitFocusedItemId(null), 200); }}
+                          placeholder="Unit..."
                         />
-                        <div className="flex gap-1 shrink-0">
-                          {['m²', 'Sum'].map(u => {
-                            const isSelected = item.unit.toUpperCase() === u.toUpperCase() || (u === 'm²' && item.unit === 'm2');
-                            return (
-                              <button
-                                key={u}
-                                type="button"
-                                onClick={() => updateItem(item.id, { unit: isSelected ? '' : u })}
-                                className={`px-1.5 py-1 rounded text-[9px] font-black uppercase tracking-wide shrink-0 transition-all ${
-                                  isSelected ? 'bg-[#6C8295] text-white shadow-sm' : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
-                                }`}
-                              >
-                                {u === 'm²' ? 'm²' : 'SUM'}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        <AnimatePresence>
+                          {unitFocusedItemId === item.id && (
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              exit={{ opacity: 0, y: -10 }}
+                              className="absolute left-0 right-0 top-full mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
+                            >
+                              {COMMON_UNITS.filter(u =>
+                                !item.unit || u.toLowerCase().includes(item.unit.toLowerCase())
+                              ).map((u) => (
+                                <button
+                                  key={u}
+                                  type="button"
+                                  onClick={() => updateItem(item.id, { unit: u })}
+                                  className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-gray-400 hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
+                                >
+                                  {u}
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
                       <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1.5 w-[132px] shrink-0">
                         <input
@@ -1062,31 +1073,39 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       </div>
                       <div className="flex flex-col gap-1">
                         <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">Unit</span>
-                        <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1">
+                        <div className="relative flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2">
                           <input
                             type="text"
-                            className="w-7 bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
+                            className="w-full bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
                             value={item.unit}
                             onChange={e => updateItem(item.id, { unit: e.target.value })}
-                            placeholder="m²"
+                            onFocus={() => setUnitFocusedItemId(item.id)}
+                            onBlur={() => { setTimeout(() => setUnitFocusedItemId(null), 200); }}
+                            placeholder="Unit..."
                           />
-                          <div className="flex gap-1 shrink-0">
-                            {['m²', 'Sum'].map(u => {
-                              const isSelected = item.unit.toUpperCase() === u.toUpperCase() || (u === 'm²' && item.unit === 'm2');
-                              return (
-                                <button
-                                  key={u}
-                                  type="button"
-                                  onClick={() => updateItem(item.id, { unit: isSelected ? '' : u })}
-                                  className={`px-1.5 py-1 rounded text-[9px] font-black uppercase tracking-wide shrink-0 transition-all ${
-                                    isSelected ? 'bg-[#6C8295] text-white shadow-sm' : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
-                                  }`}
-                                >
-                                  {u === 'm²' ? 'm²' : 'SUM'}
-                                </button>
-                              );
-                            })}
-                          </div>
+                          <AnimatePresence>
+                            {unitFocusedItemId === item.id && (
+                              <motion.div
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="absolute left-0 right-0 top-full mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
+                              >
+                                {COMMON_UNITS.filter(u =>
+                                  !item.unit || u.toLowerCase().includes(item.unit.toLowerCase())
+                                ).map((u) => (
+                                  <button
+                                    key={u}
+                                    type="button"
+                                    onClick={() => updateItem(item.id, { unit: u })}
+                                    className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-gray-400 hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
+                                  >
+                                    {u}
+                                  </button>
+                                ))}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">

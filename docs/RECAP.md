@@ -174,4 +174,5 @@
 - Shipped ISO 9001 quality management procedures under docs/QMS/.
 - Renaming of Key Recovery to Password Recovery in the authentication interface.
 - Resolution of password reset redirection issues under HashRouter by updating redirect URLs and listening for the `PASSWORD_RESET` auth event.
+- Correction of redirect URL to clean base path for successful Supabase auth session token parsing.
 

@@ -417,7 +417,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const baseUrl = window.location.origin + window.location.pathname;
     const normalizedUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${normalizedUrl}#/portal`,
+      redirectTo: normalizedUrl,
     });
     if (!error) {
       await supabase.rpc('log_anonymous_audit', {

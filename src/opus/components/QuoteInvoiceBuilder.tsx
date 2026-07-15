@@ -912,7 +912,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             <div className="flex flex-col gap-2">
               {/* Column headers, wide screens only (single-row table mode) */}
               {items.length > 0 && (
-                <div className="hidden xl:flex items-center gap-3 px-3 text-[10px] font-black tracking-widest text-gray-600 uppercase">
+                <div className="hidden 2xl:flex items-center gap-3 px-3 text-[10px] font-black tracking-widest text-gray-600 uppercase">
                   <span className="flex-1">Description</span>
                   <span className="w-16 text-right">Qty</span>
                   <span className="w-28">Unit</span>
@@ -927,14 +927,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   <button
                     type="button"
                     onClick={() => removeItem(item.id)}
-                    className="xl:hidden absolute top-2.5 right-2.5 text-gray-600 hover:text-red-400 transition-colors p-1 cursor-pointer z-10"
+                    className="2xl:hidden absolute top-2.5 right-2.5 text-gray-600 hover:text-red-400 transition-colors p-1 cursor-pointer z-10"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
 
-                  <div className="flex flex-col xl:flex-row xl:items-center gap-2.5">
+                  <div className="flex flex-col 2xl:flex-row 2xl:items-center gap-2.5">
                     {/* Description */}
-                    <div className="relative flex-1 xl:min-w-[200px] pr-7 xl:pr-0">
+                    <div className="relative flex-1 2xl:min-w-[200px] pr-7 2xl:pr-0">
                       <input
                         type="text"
                         className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider py-1.5"
@@ -979,8 +979,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       </AnimatePresence>
                     </div>
 
-                    {/* xl+: single inline row */}
-                    <div className="hidden xl:flex items-center gap-2">
+                    {/* 2xl+: single inline row */}
+                    <div className="hidden 2xl:flex items-center gap-2">
                       <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 w-[76px] shrink-0">
                         <input
                           type="number"
@@ -1047,8 +1047,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       </button>
                     </div>
 
-                    {/* <xl: labeled grid, self-explanatory without column headers */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 xl:hidden">
+                    {/* <2xl: labeled grid, self-explanatory without column headers */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 2xl:hidden">
                       <div className="flex flex-col gap-1">
                         <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">Qty</span>
                         <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2">
@@ -1170,7 +1170,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     onClick={() => setTerms(terms.filter((_, i) => i !== index))}
                     className="text-gray-600 hover:text-red-400 transition-colors p-1"
                   >
-                    âœ•
+                    <X className="w-3.5 h-3.5" />
                   </button>
                 </div>
               ))}

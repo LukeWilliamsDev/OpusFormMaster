@@ -101,7 +101,7 @@ export const DashboardPage: React.FC = () => {
 
   const scheduledWorkersCount = useMemo(() => {
     const todayStr = new Date().toISOString().split('T')[0];
-    const todaysShifts = shifts.filter(s => s.date === todayStr && !s.isRemoved);
+    const todaysShifts = shifts.filter(s => s.date === todayStr);
     // Count unique workers active today
     return new Set(todaysShifts.map(s => s.workerId)).size;
   }, [shifts]);
@@ -296,8 +296,7 @@ export const DashboardPage: React.FC = () => {
       currentPours: 0,
       contractMaxPours: Number(jobForm.contractMaxPours),
       status: 'pending',
-      scheduleValue: Number(jobForm.scheduleValue),
-      assignedWorkers: []
+      scheduleValue: Number(jobForm.scheduleValue)
     };
 
     setJobs(prev => [...prev, newJob]);

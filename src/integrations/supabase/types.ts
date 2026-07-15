@@ -84,7 +84,6 @@ export type Database = {
       }
       jobs: {
         Row: {
-          assigned_workers: string[]
           contract_max_pours: number
           created_at: string
           current_pours: number
@@ -98,7 +97,6 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          assigned_workers?: string[]
           contract_max_pours?: number
           created_at?: string
           current_pours?: number
@@ -112,7 +110,6 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          assigned_workers?: string[]
           contract_max_pours?: number
           created_at?: string
           current_pours?: number
@@ -198,7 +195,6 @@ export type Database = {
           created_at: string
           date: string
           id: string
-          is_removed: boolean
           job_id: string
           updated_at: string
           worker_id: string
@@ -207,7 +203,6 @@ export type Database = {
           created_at?: string
           date: string
           id: string
-          is_removed?: boolean
           job_id: string
           updated_at?: string
           worker_id: string
@@ -216,7 +211,6 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
-          is_removed?: boolean
           job_id?: string
           updated_at?: string
           worker_id?: string

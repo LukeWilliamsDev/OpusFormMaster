@@ -1,5 +1,15 @@
 // @ts-nocheck
 import { Worker, ScheduledShift } from '../types/erp';
+import { getMonday, toLocalISODate } from '../utils/week';
+
+// Seed dates are relative to the current week so demo data always populates
+// the visible calendar. d(0, 0) = this week's Monday; d(-1, 2) = last
+// Wednesday.
+const d = (weekDelta: number, dayIndex: number): string => {
+  const monday = getMonday(new Date());
+  monday.setDate(monday.getDate() + weekDelta * 7 + dayIndex);
+  return toLocalISODate(monday);
+};
 
 export const INITIAL_ROSTER: Worker[] = [
   {
@@ -109,104 +119,104 @@ export const INITIAL_ROSTER: Worker[] = [
 ];
 
 export const INITIAL_SHIFTS: ScheduledShift[] = [
-  // === ACTIVE DEPLOYMENTS (Current Week: July 6 - July 10, 2026) ===
+  // === ACTIVE DEPLOYMENTS (current week) ===
   // w-1 (Marcus Vance - Supervisor) deployed to Riverside Phase 2 (jobId '1')
-  { id: 's-act-1-1', workerId: 'w-1', jobId: '1', date: '2026-07-06' },
-  { id: 's-act-1-2', workerId: 'w-1', jobId: '1', date: '2026-07-07' },
-  { id: 's-act-1-3', workerId: 'w-1', jobId: '1', date: '2026-07-08' },
-  { id: 's-act-1-4', workerId: 'w-1', jobId: '1', date: '2026-07-09' },
-  { id: 's-act-1-5', workerId: 'w-1', jobId: '1', date: '2026-07-10' },
+  { id: 's-act-1-1', workerId: 'w-1', jobId: '1', date: d(0, 0) },
+  { id: 's-act-1-2', workerId: 'w-1', jobId: '1', date: d(0, 1) },
+  { id: 's-act-1-3', workerId: 'w-1', jobId: '1', date: d(0, 2) },
+  { id: 's-act-1-4', workerId: 'w-1', jobId: '1', date: d(0, 3) },
+  { id: 's-act-1-5', workerId: 'w-1', jobId: '1', date: d(0, 4) },
 
   // w-2 (Declan Brody - Operative) deployed to Riverside Phase 2 (jobId '1')
-  { id: 's-act-2-1', workerId: 'w-2', jobId: '1', date: '2026-07-06' },
-  { id: 's-act-2-2', workerId: 'w-2', jobId: '1', date: '2026-07-07' },
-  { id: 's-act-2-3', workerId: 'w-2', jobId: '1', date: '2026-07-08' },
+  { id: 's-act-2-1', workerId: 'w-2', jobId: '1', date: d(0, 0) },
+  { id: 's-act-2-2', workerId: 'w-2', jobId: '1', date: d(0, 1) },
+  { id: 's-act-2-3', workerId: 'w-2', jobId: '1', date: d(0, 2) },
 
   // w-4 (Gareth Evans - Telehandler) deployed to Oakwood Grounds (jobId '2')
-  { id: 's-act-4-1', workerId: 'w-4', jobId: '2', date: '2026-07-07' },
-  { id: 's-act-4-2', workerId: 'w-4', jobId: '2', date: '2026-07-08' },
-  { id: 's-act-4-3', workerId: 'w-4', jobId: '2', date: '2026-07-09' },
-  { id: 's-act-4-4', workerId: 'w-4', jobId: '2', date: '2026-07-10' },
+  { id: 's-act-4-1', workerId: 'w-4', jobId: '2', date: d(0, 1) },
+  { id: 's-act-4-2', workerId: 'w-4', jobId: '2', date: d(0, 2) },
+  { id: 's-act-4-3', workerId: 'w-4', jobId: '2', date: d(0, 3) },
+  { id: 's-act-4-4', workerId: 'w-4', jobId: '2', date: d(0, 4) },
 
   // w-5 (Liam Sterling - Groundworker) deployed to Marina Development (jobId '5')
-  { id: 's-act-5-1', workerId: 'w-5', jobId: '5', date: '2026-07-06' },
-  { id: 's-act-5-2', workerId: 'w-5', jobId: '5', date: '2026-07-07' },
-  { id: 's-act-5-3', workerId: 'w-5', jobId: '5', date: '2026-07-08' },
+  { id: 's-act-5-1', workerId: 'w-5', jobId: '5', date: d(0, 0) },
+  { id: 's-act-5-2', workerId: 'w-5', jobId: '5', date: d(0, 1) },
+  { id: 's-act-5-3', workerId: 'w-5', jobId: '5', date: d(0, 2) },
 
   // w-7 (Kallum Finch - Operative) deployed to Central Square (jobId '4')
-  { id: 's-act-7-1', workerId: 'w-7', jobId: '4', date: '2026-07-08' },
-  { id: 's-act-7-2', workerId: 'w-7', jobId: '4', date: '2026-07-09' },
-  { id: 's-act-7-3', workerId: 'w-7', jobId: '4', date: '2026-07-10' },
+  { id: 's-act-7-1', workerId: 'w-7', jobId: '4', date: d(0, 2) },
+  { id: 's-act-7-2', workerId: 'w-7', jobId: '4', date: d(0, 3) },
+  { id: 's-act-7-3', workerId: 'w-7', jobId: '4', date: d(0, 4) },
 
   // w-8 (Niall Gallagher - Groundworker) deployed to Central Square (jobId '4')
-  { id: 's-act-8-1', workerId: 'w-8', jobId: '4', date: '2026-07-08' },
-  { id: 's-act-8-2', workerId: 'w-8', jobId: '4', date: '2026-07-09' },
-  { id: 's-act-8-3', workerId: 'w-8', jobId: '4', date: '2026-07-10' },
+  { id: 's-act-8-1', workerId: 'w-8', jobId: '4', date: d(0, 2) },
+  { id: 's-act-8-2', workerId: 'w-8', jobId: '4', date: d(0, 3) },
+  { id: 's-act-8-3', workerId: 'w-8', jobId: '4', date: d(0, 4) },
 
 
-  // === DEPLOYMENT HISTORY: HISTORICAL PAST SHIFTS (Completed / Older than Today) ===
-  
-  // w-1 (Marcus Vance - Supervisor) - Brentwood Hub (jobId '3', completed) - Week of June 15
-  { id: 's-hist-1-1', workerId: 'w-1', jobId: '3', date: '2026-06-15' },
-  { id: 's-hist-1-2', workerId: 'w-1', jobId: '3', date: '2026-06-16' },
-  { id: 's-hist-1-3', workerId: 'w-1', jobId: '3', date: '2026-06-17' },
-  { id: 's-hist-1-4', workerId: 'w-1', jobId: '3', date: '2026-06-18' },
-  { id: 's-hist-1-5', workerId: 'w-1', jobId: '3', date: '2026-06-19' },
-  // w-1 (Marcus Vance) - Brentwood Hub (jobId '3', completed) - Week of June 22
-  { id: 's-hist-1-6', workerId: 'w-1', jobId: '3', date: '2026-06-22' },
-  { id: 's-hist-1-7', workerId: 'w-1', jobId: '3', date: '2026-06-23' },
-  { id: 's-hist-1-8', workerId: 'w-1', jobId: '3', date: '2026-06-24' },
-  { id: 's-hist-1-9', workerId: 'w-1', jobId: '3', date: '2026-06-25' },
-  { id: 's-hist-1-10', workerId: 'w-1', jobId: '3', date: '2026-06-26' },
-  // w-1 (Marcus Vance) - Central Square (jobId '4', active) - Week of June 29 (Past dates, so counts as history)
-  { id: 's-hist-1-11', workerId: 'w-1', jobId: '4', date: '2026-07-01' },
-  { id: 's-hist-1-12', workerId: 'w-1', jobId: '4', date: '2026-07-02' },
-  { id: 's-hist-1-13', workerId: 'w-1', jobId: '4', date: '2026-07-03' },
+  // === DEPLOYMENT HISTORY: PAST SHIFTS (previous weeks) ===
 
-  // w-2 (Declan Brody - Operative) - Brentwood Hub (jobId '3', completed) - Week of June 15
-  { id: 's-hist-2-1', workerId: 'w-2', jobId: '3', date: '2026-06-15' },
-  { id: 's-hist-2-2', workerId: 'w-2', jobId: '3', date: '2026-06-16' },
-  { id: 's-hist-2-3', workerId: 'w-2', jobId: '3', date: '2026-06-17' },
-  { id: 's-hist-2-4', workerId: 'w-2', jobId: '3', date: '2026-06-18' },
-  { id: 's-hist-2-5', workerId: 'w-2', jobId: '3', date: '2026-06-19' },
-  // w-2 (Declan Brody) - Brentwood Hub (jobId '3', completed) - Week of June 22
-  { id: 's-hist-2-6', workerId: 'w-2', jobId: '3', date: '2026-06-22' },
-  { id: 's-hist-2-7', workerId: 'w-2', jobId: '3', date: '2026-06-23' },
-  { id: 's-hist-2-8', workerId: 'w-2', jobId: '3', date: '2026-06-24' },
-  { id: 's-hist-2-9', workerId: 'w-2', jobId: '3', date: '2026-06-25' },
-  { id: 's-hist-2-10', workerId: 'w-2', jobId: '3', date: '2026-06-26' },
-  // w-2 (Declan Brody) - Central Square (jobId '4', active) - Week of June 29 (Past dates, so counts as history)
-  { id: 's-hist-2-11', workerId: 'w-2', jobId: '4', date: '2026-07-01' },
-  { id: 's-hist-2-12', workerId: 'w-2', jobId: '4', date: '2026-07-02' },
-  { id: 's-hist-2-13', workerId: 'w-2', jobId: '4', date: '2026-07-03' },
+  // w-1 (Marcus Vance - Supervisor) - Brentwood Hub (jobId '3', completed) - 3 weeks ago
+  { id: 's-hist-1-1', workerId: 'w-1', jobId: '3', date: d(-3, 0) },
+  { id: 's-hist-1-2', workerId: 'w-1', jobId: '3', date: d(-3, 1) },
+  { id: 's-hist-1-3', workerId: 'w-1', jobId: '3', date: d(-3, 2) },
+  { id: 's-hist-1-4', workerId: 'w-1', jobId: '3', date: d(-3, 3) },
+  { id: 's-hist-1-5', workerId: 'w-1', jobId: '3', date: d(-3, 4) },
+  // w-1 (Marcus Vance) - Brentwood Hub (jobId '3', completed) - 2 weeks ago
+  { id: 's-hist-1-6', workerId: 'w-1', jobId: '3', date: d(-2, 0) },
+  { id: 's-hist-1-7', workerId: 'w-1', jobId: '3', date: d(-2, 1) },
+  { id: 's-hist-1-8', workerId: 'w-1', jobId: '3', date: d(-2, 2) },
+  { id: 's-hist-1-9', workerId: 'w-1', jobId: '3', date: d(-2, 3) },
+  { id: 's-hist-1-10', workerId: 'w-1', jobId: '3', date: d(-2, 4) },
+  // w-1 (Marcus Vance) - Central Square (jobId '4', active) - last week
+  { id: 's-hist-1-11', workerId: 'w-1', jobId: '4', date: d(-1, 2) },
+  { id: 's-hist-1-12', workerId: 'w-1', jobId: '4', date: d(-1, 3) },
+  { id: 's-hist-1-13', workerId: 'w-1', jobId: '4', date: d(-1, 4) },
 
-  // w-4 (Gareth Evans - Telehandler) - Brentwood Hub (jobId '3', completed) - Week of June 15
-  { id: 's-hist-4-1', workerId: 'w-4', jobId: '3', date: '2026-06-15' },
-  { id: 's-hist-4-2', workerId: 'w-4', jobId: '3', date: '2026-06-16' },
-  { id: 's-hist-4-3', workerId: 'w-4', jobId: '3', date: '2026-06-17' },
-  { id: 's-hist-4-4', workerId: 'w-4', jobId: '3', date: '2026-06-18' },
-  { id: 's-hist-4-5', workerId: 'w-4', jobId: '3', date: '2026-06-19' },
+  // w-2 (Declan Brody - Operative) - Brentwood Hub (jobId '3', completed) - 3 weeks ago
+  { id: 's-hist-2-1', workerId: 'w-2', jobId: '3', date: d(-3, 0) },
+  { id: 's-hist-2-2', workerId: 'w-2', jobId: '3', date: d(-3, 1) },
+  { id: 's-hist-2-3', workerId: 'w-2', jobId: '3', date: d(-3, 2) },
+  { id: 's-hist-2-4', workerId: 'w-2', jobId: '3', date: d(-3, 3) },
+  { id: 's-hist-2-5', workerId: 'w-2', jobId: '3', date: d(-3, 4) },
+  // w-2 (Declan Brody) - Brentwood Hub (jobId '3', completed) - 2 weeks ago
+  { id: 's-hist-2-6', workerId: 'w-2', jobId: '3', date: d(-2, 0) },
+  { id: 's-hist-2-7', workerId: 'w-2', jobId: '3', date: d(-2, 1) },
+  { id: 's-hist-2-8', workerId: 'w-2', jobId: '3', date: d(-2, 2) },
+  { id: 's-hist-2-9', workerId: 'w-2', jobId: '3', date: d(-2, 3) },
+  { id: 's-hist-2-10', workerId: 'w-2', jobId: '3', date: d(-2, 4) },
+  // w-2 (Declan Brody) - Central Square (jobId '4', active) - last week
+  { id: 's-hist-2-11', workerId: 'w-2', jobId: '4', date: d(-1, 2) },
+  { id: 's-hist-2-12', workerId: 'w-2', jobId: '4', date: d(-1, 3) },
+  { id: 's-hist-2-13', workerId: 'w-2', jobId: '4', date: d(-1, 4) },
 
-  // w-5 (Liam Sterling - Groundworker) - Brentwood Hub (jobId '3', completed) - Week of June 15
-  { id: 's-hist-5-1', workerId: 'w-5', jobId: '3', date: '2026-06-15' },
-  { id: 's-hist-5-2', workerId: 'w-5', jobId: '3', date: '2026-06-16' },
-  { id: 's-hist-5-3', workerId: 'w-5', jobId: '3', date: '2026-06-17' },
-  { id: 's-hist-5-4', workerId: 'w-5', jobId: '3', date: '2026-06-18' },
-  { id: 's-hist-5-5', workerId: 'w-5', jobId: '3', date: '2026-06-19' },
-  // w-5 (Liam Sterling) - Oakwood Grounds (jobId '2', active) - Week of June 29 (Past dates, so counts as history)
-  { id: 's-hist-5-6', workerId: 'w-5', jobId: '2', date: '2026-06-29' },
-  { id: 's-hist-5-7', workerId: 'w-5', jobId: '2', date: '2026-06-30' },
-  { id: 's-hist-5-8', workerId: 'w-5', jobId: '2', date: '2026-07-01' },
+  // w-4 (Gareth Evans - Telehandler) - Brentwood Hub (jobId '3', completed) - 3 weeks ago
+  { id: 's-hist-4-1', workerId: 'w-4', jobId: '3', date: d(-3, 0) },
+  { id: 's-hist-4-2', workerId: 'w-4', jobId: '3', date: d(-3, 1) },
+  { id: 's-hist-4-3', workerId: 'w-4', jobId: '3', date: d(-3, 2) },
+  { id: 's-hist-4-4', workerId: 'w-4', jobId: '3', date: d(-3, 3) },
+  { id: 's-hist-4-5', workerId: 'w-4', jobId: '3', date: d(-3, 4) },
 
-  // w-7 (Kallum Finch - Operative) - Riverside Phase 2 (jobId '1', active) - Week of June 29 (Past dates, so counts as history)
-  { id: 's-hist-7-1', workerId: 'w-7', jobId: '1', date: '2026-06-29' },
-  { id: 's-hist-7-2', workerId: 'w-7', jobId: '1', date: '2026-06-30' },
-  { id: 's-hist-7-3', workerId: 'w-7', jobId: '1', date: '2026-07-01' },
+  // w-5 (Liam Sterling - Groundworker) - Brentwood Hub (jobId '3', completed) - 3 weeks ago
+  { id: 's-hist-5-1', workerId: 'w-5', jobId: '3', date: d(-3, 0) },
+  { id: 's-hist-5-2', workerId: 'w-5', jobId: '3', date: d(-3, 1) },
+  { id: 's-hist-5-3', workerId: 'w-5', jobId: '3', date: d(-3, 2) },
+  { id: 's-hist-5-4', workerId: 'w-5', jobId: '3', date: d(-3, 3) },
+  { id: 's-hist-5-5', workerId: 'w-5', jobId: '3', date: d(-3, 4) },
+  // w-5 (Liam Sterling) - Oakwood Grounds (jobId '2', active) - last week
+  { id: 's-hist-5-6', workerId: 'w-5', jobId: '2', date: d(-1, 0) },
+  { id: 's-hist-5-7', workerId: 'w-5', jobId: '2', date: d(-1, 1) },
+  { id: 's-hist-5-8', workerId: 'w-5', jobId: '2', date: d(-1, 2) },
 
-  // w-8 (Niall Gallagher - Groundworker) - Brentwood Hub (jobId '3', completed) - Week of June 22
-  { id: 's-hist-8-1', workerId: 'w-8', jobId: '3', date: '2026-06-22' },
-  { id: 's-hist-8-2', workerId: 'w-8', jobId: '3', date: '2026-06-23' },
-  { id: 's-hist-8-3', workerId: 'w-8', jobId: '3', date: '2026-06-24' },
-  { id: 's-hist-8-4', workerId: 'w-8', jobId: '3', date: '2026-06-25' },
-  { id: 's-hist-8-5', workerId: 'w-8', jobId: '3', date: '2026-06-26' }
+  // w-7 (Kallum Finch - Operative) - Riverside Phase 2 (jobId '1', active) - last week
+  { id: 's-hist-7-1', workerId: 'w-7', jobId: '1', date: d(-1, 0) },
+  { id: 's-hist-7-2', workerId: 'w-7', jobId: '1', date: d(-1, 1) },
+  { id: 's-hist-7-3', workerId: 'w-7', jobId: '1', date: d(-1, 2) },
+
+  // w-8 (Niall Gallagher - Groundworker) - Brentwood Hub (jobId '3', completed) - 2 weeks ago
+  { id: 's-hist-8-1', workerId: 'w-8', jobId: '3', date: d(-2, 0) },
+  { id: 's-hist-8-2', workerId: 'w-8', jobId: '3', date: d(-2, 1) },
+  { id: 's-hist-8-3', workerId: 'w-8', jobId: '3', date: d(-2, 2) },
+  { id: 's-hist-8-4', workerId: 'w-8', jobId: '3', date: d(-2, 3) },
+  { id: 's-hist-8-5', workerId: 'w-8', jobId: '3', date: d(-2, 4) }
 ];

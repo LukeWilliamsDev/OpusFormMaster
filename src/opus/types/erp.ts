@@ -11,7 +11,6 @@ export interface Job {
   contractMaxPours: number;
   status: 'active' | 'completed' | 'on-hold' | 'pending' | 'in-progress';
   scheduleValue: number;
-  assignedWorkers?: string[];
 }
 
 export interface Ticket {
@@ -84,5 +83,4 @@ export interface ScheduledShift {
   workerId: string;
   jobId: string;
   date: string; // YYYY-MM-DD
-  isRemoved?: boolean;
 }

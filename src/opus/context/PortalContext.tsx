@@ -50,7 +50,6 @@ const jobToRow = (j: Job, tenantId?: string) => ({
   contract_max_pours: j.contractMaxPours ?? 0,
   status: j.status,
   schedule_value: j.scheduleValue ?? 0,
-  assigned_workers: j.assignedWorkers ?? [],
   ...(tenantId ? { tenant_id: tenantId } : {}),
 });
 const rowToJob = (r: any): Job => ({
@@ -63,7 +62,6 @@ const rowToJob = (r: any): Job => ({
   contractMaxPours: r.contract_max_pours ?? 0,
   status: r.status,
   scheduleValue: Number(r.schedule_value ?? 0),
-  assignedWorkers: r.assigned_workers ?? [],
 });
 
 const shiftToRow = (s: ScheduledShift, tenantId?: string) => ({
@@ -71,7 +69,6 @@ const shiftToRow = (s: ScheduledShift, tenantId?: string) => ({
   worker_id: s.workerId,
   job_id: s.jobId,
   date: s.date,
-  is_removed: s.isRemoved ?? false,
   ...(tenantId ? { tenant_id: tenantId } : {}),
 });
 const rowToShift = (r: any): ScheduledShift => ({
@@ -79,7 +76,6 @@ const rowToShift = (r: any): ScheduledShift => ({
   workerId: r.worker_id,
   jobId: r.job_id,
   date: r.date,
-  isRemoved: r.is_removed ?? false,
 });
 
 interface PortalContextType {

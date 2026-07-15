@@ -125,4 +125,10 @@
 
 ## 2026-07-15 13:30
 - Diagnosis of missing host Node.js/npm dependencies blocking local server and GitHub MCP server execution.
-- Migration of GitHub MCP configuration from Docker to local npx runner in global mcp_config.json.
+- Migration of GitHub MCP configuration from Docker to local npx runner in global mcp_config.json.
+
+## 2026-07-15 23:53
+- Removal of redundant dummy navigation menu icon from staff roster sub-header.
+- Refactoring of staff roster sub-header actions into search bar inline responsive button (icon-only on mobile, full text on desktop/tablet).
+- Simplification of staff audit log cards into timeline dot and text list with interactive inline expand/collapse details.
+- Integration of edit profile form, compliance tickets, and deployment history views with rounded-xl borders, bold/semibold font weights, and scaled typography.

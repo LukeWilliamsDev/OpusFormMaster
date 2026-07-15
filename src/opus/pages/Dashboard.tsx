@@ -35,6 +35,8 @@ export const DashboardPage: React.FC = () => {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [quotes, setQuotes] = useState([]);
   const [snoozedAlertIds, setSnoozedAlertIds] = useState(new Set());
+  const [remindConfirmAlert, setRemindConfirmAlert] = useState(null);
+  const [isSendingRemind, setIsSendingRemind] = useState(false);
   const [notifications, setNotifications] = useState([]);
 
   // Modals state
@@ -193,8 +195,73 @@ export const DashboardPage: React.FC = () => {
   };
 
   // Inline Alert Actions
-  const handleRemindAlert = (alert) => {
-    triggerNotification(`SMS & Email compliance warning dispatched to ${alert.workerName} (${alert.workerPhone || 'no phone'})`, 'success');
+  const handleRemindAlert = async (alert) => {
+    const worker = workers.find(w => w.id === alert.workerId);
+    if (!worker?.email) {
+      triggerNotification('No email address on file for this worker', 'warning');
+      return;
+    }
+
+    setIsSendingRemind(true);
+    try {
+      // 1. Create document_request row (7-day window)
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const { data, error: insertError } = await supabase
+        .from('document_requests')
+        .insert({
+          worker_id: alert.workerId,
+          requested_certs: [alert.ticketType],
+          expires_at: expiresAt.toISOString()
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // 2. Build secure upload URL
+      const uploadUrl = `${window.location.origin}/submit-credentials?token=${data.id}`;
+
+      // 3. Invoke send-compliance-email edge function
+      const { error: emailError } = await supabase.functions.invoke('send-compliance-email', {
+        body: {
+          toEmail: worker.email,
+          workerName: worker.name,
+          requestedCerts: [alert.ticketType],
+          uploadUrl,
+          expiresAt: expiresAt.toISOString()
+        }
+      });
+
+      if (emailError) throw new Error(emailError.message);
+
+      // 4. Audit log
+      await supabase.rpc('log_anonymous_audit', {
+        p_user_email: 'admin@opusform.co.uk',
+        p_action: 'COMPLIANCE_REMINDER_SENT',
+        p_target_type: 'staff',
+        p_target_id: alert.workerId,
+        p_details: {
+          ticket_type: alert.ticketType,
+          request_id: data.id,
+          worker_email: worker.email
+        }
+      });
+
+      triggerNotification(`Compliance reminder sent to ${worker.name}`, 'success');
+    } catch (e: any) {
+      console.error('Failed to send compliance reminder:', e);
+      triggerNotification('Failed to send reminder: ' + (e.message || 'Unknown error'), 'warning');
+
+      // Fire-and-forget admin failure alert
+      supabase.functions.invoke('send-admin-alert', {
+        body: {
+          subject: `Compliance Reminder Failed — ${alert.workerName}`,
+          body: `A compliance reminder for ${alert.workerName} (${alert.ticketType}) could not be sent.\n\nWorker ID: ${alert.workerId}\nError: ${e.message || 'Unknown error'}\n\nPlease review the document_requests table and retry manually.`
+        }
+      }).catch(adminErr => console.error('Admin alert also failed:', adminErr));
+    } finally {
+      setIsSendingRemind(false);
+    }
   };
 
   const handleSnoozeAlert = (alertId) => {
@@ -520,56 +587,46 @@ export const DashboardPage: React.FC = () => {
             </span>
           </div>
 
-          <div className="space-y-3.5 flex-1 overflow-y-auto max-h-[360px] pr-1">
+          <div className="divide-y divide-[#2a2a30] flex-1 overflow-y-auto max-h-[360px]">
             {expiringTickets.map((alert) => (
-              <div 
+              <div
                 key={alert.alertId}
-                className={`p-4 rounded-xl border flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 transition-all duration-200 hover:bg-[#16161a] ${
-                  alert.isExpired ? 'bg-[#ef4444]/5 border-[#ef4444]/20' : 'bg-[#f59e0b]/5 border-[#f59e0b]/20'
+                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2.5 border-l-[3px] hover:bg-[#16161a] transition-colors ${
+                  alert.isExpired ? 'border-l-[#ef4444]' : 'border-l-[#f59e0b]'
                 }`}
               >
-                {/* Alert Info */}
-                <div className="flex items-start space-x-3.5">
-                  <div className={`mt-0.5 p-2 rounded-lg ${alert.isExpired ? 'bg-[#ef4444]/10 text-[#ef4444]' : 'bg-[#f59e0b]/10 text-[#f59e0b]'}`}>
-                    <AlertTriangle className="w-4 h-4" />
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-[12px] font-bold text-white leading-none">{alert.workerName}</span>
+                    {alert.workerRole && (
+                      <span className="text-[10px] text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded font-medium">{alert.workerRole}</span>
+                    )}
+                    <span className={`text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded ${
+                      alert.isExpired ? 'bg-[#ef4444]/10 text-[#ef4444]' : 'bg-[#f59e0b]/10 text-[#f59e0b]'
+                    }`}>
+                      {alert.isExpired ? `EXPIRED ${Math.abs(alert.diffDays)}d ago` : `EXPIRING ${alert.diffDays}d`}
+                    </span>
                   </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h4 className="text-[13px] font-bold text-white leading-none">{alert.workerName}</h4>
-                      <span className="text-[11px] text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded font-medium">{alert.workerRole}</span>
-                    </div>
-                    <p className="text-[12px] text-[#E4E4E7] font-medium mt-1">
-                      {alert.ticketType} Card expiry: <span className="font-mono text-white font-bold">{alert.expiryDate}</span>
-                    </p>
-                    <p className="text-[11px] text-[#9a9a9e] mt-0.5">
-                      No: <span className="font-mono">{alert.ticketNumber}</span> &bull; {
-                        alert.isExpired 
-                          ? <span className="text-[#ef4444] font-bold">EXPIRED {Math.abs(alert.diffDays)} days ago</span>
-                          : <span className="text-[#f59e0b] font-bold">Expires in {alert.diffDays} days</span>
-                      }
-                    </p>
-                  </div>
+                  <p className="text-[11px] text-[#9a9a9e] mt-0.5 truncate">
+                    {alert.ticketType} &bull; <span className="font-mono">{alert.expiryDate}</span>
+                    {alert.ticketNumber && <> &bull; <span className="font-mono">{alert.ticketNumber}</span></>}
+                  </p>
                 </div>
 
-                {/* Alert Actions */}
-                <div className="flex items-center space-x-2 self-end sm:self-center shrink-0">
+                {/* Actions */}
+                <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
                   <button
-                    onClick={() => handleRemindAlert(alert)}
-                    className="h-9 px-3.5 rounded bg-[#2a2a30] hover:bg-[#3a3a42] text-[12px] font-semibold text-white transition-colors cursor-pointer min-h-[36px]"
+                    onClick={() => setRemindConfirmAlert(alert)}
+                    className="text-[11px] font-black uppercase tracking-widest px-2.5 py-1 rounded bg-[#2a2a30] hover:bg-[#3a3a42] text-white transition-colors cursor-pointer"
                   >
                     Remind
                   </button>
                   <button
-                    onClick={() => handleSnoozeAlert(alert.alertId)}
-                    className="h-9 px-3.5 rounded bg-[#2a2a30] hover:bg-[#3a3a42] text-[12px] font-semibold text-[#9a9a9e] hover:text-white transition-colors cursor-pointer min-h-[36px]"
-                  >
-                    Snooze
-                  </button>
-                  <button
                     onClick={() => handleUpdateAlert(alert.workerId)}
-                    className="h-9 px-3.5 rounded bg-[#6C8295] hover:bg-[#6C8295]/80 text-[12px] font-semibold text-white transition-colors cursor-pointer min-h-[36px]"
+                    className="text-[11px] font-bold text-[#6C8295] hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
                   >
-                    Update
+                    Update <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
               </div>
@@ -585,6 +642,65 @@ export const DashboardPage: React.FC = () => {
               </div>
             )}
           </div>
+
+          {/* Remind Confirmation Modal */}
+          <AnimatePresence>
+            {remindConfirmAlert && (
+              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl max-w-sm w-full p-5 shadow-2xl"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Send className="w-4 h-4 text-[#6C8295]" />
+                      <span className="text-[11px] font-black uppercase tracking-widest text-white">Send Compliance Reminder</span>
+                    </div>
+                    <button onClick={() => setRemindConfirmAlert(null)} className="text-gray-500 hover:text-white transition-colors cursor-pointer">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-[12px] text-[#9a9a9e] leading-relaxed mb-4">
+                    Send a compliance reminder email to{' '}
+                    <span className="text-white font-bold">{remindConfirmAlert.workerName}</span>{' '}
+                    requesting they update their{' '}
+                    <span className="text-white font-bold">{remindConfirmAlert.ticketType}</span>{' '}
+                    credential which{' '}
+                    {remindConfirmAlert.isExpired
+                      ? <span className="text-[#ef4444] font-bold">expired {Math.abs(remindConfirmAlert.diffDays)} days ago</span>
+                      : <span className="text-[#f59e0b] font-bold">expires in {remindConfirmAlert.diffDays} days</span>
+                    }.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        handleRemindAlert(remindConfirmAlert);
+                        setRemindConfirmAlert(null);
+                      }}
+                      disabled={isSendingRemind}
+                      className="flex-1 flex items-center justify-center gap-1.5 bg-[#6C8295] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-2 text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
+                    >
+                      {isSendingRemind ? (
+                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ) : (
+                        <Send className="w-3.5 h-3.5" />
+                      )}
+                      {isSendingRemind ? 'Sending...' : 'Confirm Send'}
+                    </button>
+                    <button
+                      onClick={() => setRemindConfirmAlert(null)}
+                      className="flex-1 bg-[#2a2a30] hover:bg-[#3a3a42] text-[#9a9a9e] hover:text-white rounded-lg py-2 text-[11px] font-black uppercase tracking-widest cursor-pointer transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
         </div>
 
         {/* Right Column: Quick Actions Panel (1/3 width) */}

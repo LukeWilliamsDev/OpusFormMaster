@@ -82,6 +82,14 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
 
       if (insertError) throw insertError;
 
+      // Expire other pending requests for the same worker
+      await supabase
+        .from('document_requests')
+        .update({ expires_at: new Date().toISOString() })
+        .eq('worker_id', worker.id)
+        .neq('id', data.id)
+        .is('completed_at', null);
+
       // Construct the secure upload link
       const uploadUrl = `${window.location.origin}/submit-credentials?token=${data.id}`;
 

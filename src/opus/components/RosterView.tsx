@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
 import { 
-  Users, Search, Plus, Trash2, ShieldAlert, X, Phone, Mail, FileText, UploadCloud, Download, FilePlus, UserCheck, AlertTriangle, UserPlus, Calendar, MapPin, ChevronLeft, Edit, Send, LayoutGrid, List, RefreshCw, CheckCircle2, Clock, Link2, Copy, Menu
+  Users, Search, Plus, Trash2, ShieldAlert, X, Phone, Mail, FileText, UploadCloud, Download, FilePlus, UserCheck, AlertTriangle, UserPlus, Calendar, MapPin, ChevronLeft, Edit, Send, LayoutGrid, List, RefreshCw, CheckCircle2, Clock, Link2, Copy, Menu, History
 } from 'lucide-react';
 import { Worker, Ticket, Job } from '../types/erp';
 import { getTicketStatus } from '../utils/workerValidation';
@@ -103,6 +103,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [selectedWorkerToDelete, setSelectedWorkerToDelete] = useState<Worker | null>(null);
   const [selectedWorkerToPermanentDelete, setSelectedWorkerToPermanentDelete] = useState<Worker | null>(null);
   const [selectedWorkerToRestore, setSelectedWorkerToRestore] = useState<Worker | null>(null);
+  const [revertConfirmTarget, setRevertConfirmTarget] = useState<{ oldDetails: any; currentDetails: any; workerId: string } | null>(null);
   
   const [workerToEdit, setWorkerToEdit] = useState<Worker | null>(null);
   const [editName, setEditName] = useState('');
@@ -227,6 +228,14 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
       if (updateError) throw updateError;
 
+      // Expire other pending requests for the same worker
+      await supabase
+        .from('document_requests')
+        .update({ expires_at: new Date().toISOString() })
+        .eq('worker_id', selectedWorkerDetailsId)
+        .neq('id', request.id)
+        .is('completed_at', null);
+
       const uploadUrl = `${window.location.origin}/submit-credentials?token=${request.id}`;
 
       const { error: emailError } = await supabase.functions.invoke('send-compliance-email', {
@@ -300,6 +309,57 @@ export const RosterView: React.FC<RosterViewProps> = ({
     window.open(documentUrl, '_blank');
   };
 
+  const executeRevertUpdate = async (oldDetails: any, workerId: string) => {
+    if (!oldDetails || !workerId) return;
+    try {
+      const name = oldDetails.name;
+      const role = oldDetails.role;
+      const phone = oldDetails.phone ?? null;
+      const email = oldDetails.email ?? null;
+      const postcode = oldDetails.postcode ?? null;
+      const tickets = oldDetails.tickets ?? [];
+      const uploaded_certificates = oldDetails.uploaded_certificates ?? [];
+      const is_archived = oldDetails.is_archived ?? false;
+
+      const { error } = await supabase
+        .from('staff')
+        .update({
+          name,
+          role,
+          phone,
+          email,
+          postcode,
+          tickets,
+          uploaded_certificates,
+          is_archived
+        })
+        .eq('id', workerId);
+        
+      if (error) throw error;
+      
+      setWorkers(prev => prev.map(w => w.id === workerId ? {
+        ...w,
+        name,
+        role,
+        phone: phone ?? undefined,
+        email: email ?? undefined,
+        postcode: postcode ?? undefined,
+        tickets,
+        uploadedCertificates: uploaded_certificates,
+        isArchived: is_archived
+      } : w));
+      
+      setRevertConfirmTarget(null);
+      
+      setTimeout(() => {
+        fetchLogsAndRequests();
+      }, 150);
+    } catch (err: any) {
+      console.error("Failed to revert staff changes:", err);
+      alert(`Error reverting changes: ${err.message}`);
+    }
+  };
+
   const verifyTicket = async (workerId: string, ticketId: string, approve: boolean) => {
     const worker = workers.find(w => w.id === workerId);
     if (!worker) return;
@@ -321,6 +381,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
     setWorkers(prev => prev.map(w => w.id === workerId ? updatedWorker : w));
 
     try {
+      const { error: dbError } = await supabase
+        .from('staff')
+        .update({ tickets: updatedTickets })
+        .eq('id', workerId);
+      
+      if (dbError) throw dbError;
+
       const ticket = worker.tickets.find(t => t.id === ticketId);
       await supabase.rpc('log_anonymous_audit', {
         p_user_email: 'admin@opusform.co.uk',
@@ -329,8 +396,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
         p_target_id: workerId,
         p_details: { ticket_id: ticketId, ticket_type: ticket?.type, ticket_number: ticket?.ticketNumber }
       });
+      
+      fetchLogsAndRequests();
     } catch (e) {
-      console.error('Failed to log audit:', e);
+      console.error('Failed to update tickets or log audit:', e);
     }
   };
 
@@ -546,6 +615,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 // Update UI state and close modal only after successful persistence
                 setWorkers(prev => prev.map(w => w.id === workerToEdit.id ? updatedWorker : w));
                 setWorkerToEdit(null);
+                fetchLogsAndRequests();
               }
             });
         }} className="space-y-6">
@@ -780,12 +850,18 @@ export const RosterView: React.FC<RosterViewProps> = ({
       if (isCompleted) status = 'completed';
       else if (isExpired) status = 'expired';
 
+      // If the request was resent, expires_at is renewed to now + 48 hours.
+      // So effective date of the action is expires_at - 48 hours.
+      const effectiveDate = new Date(new Date(r.expires_at).getTime() - 48 * 60 * 60 * 1000);
+      const isResent = effectiveDate.getTime() > new Date(r.created_at).getTime();
+      const actionDate = isResent ? effectiveDate.toISOString() : r.created_at;
+
       return {
         id: `req-${r.id}`,
         rawId: r.id,
         type: 'request',
         action: 'CREATE_DOCUMENT_REQUEST',
-        created_at: r.created_at,
+        created_at: actionDate,
         actor: 'admin@opusform.co.uk',
         details: {
           requested_certs: r.requested_certs,
@@ -798,16 +874,27 @@ export const RosterView: React.FC<RosterViewProps> = ({
       };
     });
 
-    const auditEvents = dossierAuditLogs.map(l => ({
-      id: `audit-${l.id}`,
-      rawId: l.id,
-      type: 'audit',
-      action: l.action,
-      created_at: l.created_at,
-      actor: l.user_email || 'System / Operative',
-      details: l.details,
-      rawRecord: l
-    }));
+    const auditEvents = dossierAuditLogs
+      .map(l => ({
+        id: `audit-${l.id}`,
+        rawId: l.id,
+        type: 'audit',
+        action: l.action,
+        created_at: l.created_at,
+        actor: l.user_email || 'System / Operative',
+        details: l.details,
+        rawRecord: l
+      }))
+      .filter(event => {
+        if (event.action === 'CREATE_DOCUMENT_REQUEST') {
+          return false;
+        }
+        if (event.action === 'UPDATE') {
+          const diff = event.details?.old ? computeDiff(event.details.old, event.details.new) : [];
+          return diff.length > 0;
+        }
+        return true;
+      });
 
     const allEvents = [...requestEvents, ...auditEvents].sort(
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -1078,47 +1165,20 @@ export const RosterView: React.FC<RosterViewProps> = ({
               )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => handleCopyLink(selectedWorkerDetails.dossierUrl || '', 'dossier-link')}
-                className="bg-[#151518] border border-[#232326] py-2.5 rounded-lg flex items-center justify-center gap-2 group hover:bg-[#1a1a1e] transition-colors cursor-pointer"
-              >
-                <Copy className="h-3.5 w-3.5 text-zinc-400 group-hover:text-white" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-300">Copy Dossier Link</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setLoadingDossierLogs(true);
-                  setTimeout(() => setLoadingDossierLogs(false), 800);
-                }}
-                className="bg-[#151518] border border-[#232326] py-2.5 rounded-lg flex items-center justify-center gap-2 group hover:bg-[#1a1a1e] transition-colors cursor-pointer"
-              >
-                <RefreshCw className="h-3.5 w-3.5 text-zinc-400 group-hover:text-white" />
-                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-300">Refresh Data</span>
-              </button>
-            </div>
           </div>
         )}
 
         {/* Tab 3: Audit & Requests Log */}
         {activeDossierTab === 'audit_log' && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <div className="flex items-center justify-between border-b border-white/10 pb-3">
-              <div className="flex items-center gap-2 text-sm font-bold uppercase tracking-widest text-gray-300">
-                <FileText className="w-5 h-5 text-gray-400" />
-                <h2>Compliance & Audit History Log</h2>
-              </div>
-              
-              {loadingDossierLogs && (
+            {loadingDossierLogs && (
+              <div className="flex justify-end">
                 <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest flex items-center gap-1">
                   <RefreshCw className="w-3 h-3 animate-spin text-[#facc15]" />
                   Syncing logs...
                 </span>
-              )}
-            </div>
+              </div>
+            )}
 
             {loadingDossierLogs && allEvents.length === 0 ? (
               <div className="text-center py-12 border border-[#2a2a2a] bg-[#1c1c1c] rounded-xl">
@@ -1140,25 +1200,33 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     const isCompleted = event.details?.status === 'completed';
                     const isPending = event.details?.status === 'pending';
 
+                    let statusColorClass = 'bg-[#2c2100] border-[#facc15]/20 text-[#ffd666]';
+                    let iconColorClass = 'text-[#facc15]';
+                    let footerColorClass = 'text-[#facc15]';
+
+                    if (isCompleted) {
+                      statusColorClass = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400';
+                      iconColorClass = 'text-emerald-400';
+                      footerColorClass = 'text-emerald-400';
+                    } else if (isExpired) {
+                      statusColorClass = 'bg-red-500/10 border-red-500/30 text-red-450';
+                      iconColorClass = 'text-red-400';
+                      footerColorClass = 'text-red-400';
+                    }
+
                     return (
                       <article key={event.id} className="bg-[#151518]/40 rounded-lg p-3 border border-[#222] space-y-3">
                         <div className="flex justify-between items-start">
                           <div className="flex gap-2">
                             <div className="mt-0.5">
-                              <Send className="h-4 w-4 text-[#facc15]" />
+                              <Send className={`h-4 w-4 ${iconColorClass}`} />
                             </div>
                             <div>
-                              <h3 className="text-xs font-bold uppercase tracking-wide text-white">Document Request Dispatched</h3>
+                              <h3 className="text-xs font-bold uppercase tracking-wide text-white">Document Request Sent</h3>
                               <p className="text-[9px] font-semibold text-zinc-500 mt-0.5">{date} &bull; BY: {event.actor}</p>
                             </div>
                           </div>
-                          <span className={`px-1.5 py-0.5 text-[8px] font-black uppercase rounded border tracking-wide ${
-                            isCompleted
-                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                              : isExpired
-                              ? 'bg-red-500/10 border-red-500/30 text-red-450'
-                              : 'bg-[#2c2100] border-[#facc15]/20 text-[#ffd666]'
-                          }`}>
+                          <span className={`px-1.5 py-0.5 text-[8px] font-black uppercase rounded border tracking-wide ${statusColorClass}`}>
                             {event.details?.status}
                           </span>
                         </div>
@@ -1175,7 +1243,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         </div>
 
                         <div className="pt-2 border-t border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                          <div className="flex items-center gap-1.5 text-[#facc15]">
+                          <div className={`flex items-center gap-1.5 ${footerColorClass}`}>
                             <Clock className="h-3.5 w-3.5" />
                             <p className="text-[10px] font-bold">
                               {isPending ? (
@@ -1245,11 +1313,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       badgeColor = "bg-emerald-950/20 border-emerald-900/30 text-emerald-400";
                     } else if (action === 'RESEND_DOCUMENT_REQUEST') {
                       logIcon = <RefreshCw className="w-3 h-3 text-brand-accent" />;
-                      logTitle = "Document Request Link Renewed & Resent";
+                      logTitle = "Document Request Link Resent";
                       badgeColor = "bg-brand-accent/5 border-brand-accent/20 text-brand-accent";
                     } else if (action === 'CREATE' || action === 'UPDATE') {
                       logIcon = <Edit className="w-3 h-3 text-zinc-550 text-zinc-500" />;
-                      logTitle = "Staff Profile Mutation Recorded";
+                      logTitle = "Staff Profile Change";
                       badgeColor = "bg-zinc-900/40 border-zinc-800 text-zinc-400";
                     } else if (action === 'INSPECT') {
                       logIcon = <User className="w-3 h-3 text-blue-400" />;
@@ -1269,6 +1337,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       summaryText = "Initial database record created for staff member";
                     } else if (action === 'INSPECT') {
                       summaryText = "Staff dossier profile viewed by administrator";
+                    } else if (action === 'RESEND_DOCUMENT_REQUEST') {
+                      summaryText = "Document request email renewed and dispatched to operative.";
                     } else {
                       summaryText = typeof event.details === 'string' ? event.details : JSON.stringify(event.details || {});
                     }
@@ -1279,7 +1349,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       : [];
 
                     return (
-                      <div key={event.id} className="py-2 space-y-1 hover:bg-zinc-900/10 transition-colors px-1 rounded-lg">
+                      <div key={event.id} className="bg-[#151518]/40 rounded-lg p-3 border border-[#222] space-y-3 hover:bg-[#1c1c22]/30 transition-colors">
                         <div className="flex items-start justify-between gap-3">
                           <div className="flex items-start gap-2">
                             <div className="text-zinc-550 mt-0.5 shrink-0">
@@ -1295,14 +1365,47 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             </div>
                           </div>
                           
-                          <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border ${badgeColor}`}>
-                            {action}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {action === 'UPDATE' && diff.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setRevertConfirmTarget({
+                                  oldDetails: event.details?.old,
+                                  currentDetails: {
+                                    name: selectedWorkerDetails?.name,
+                                    role: selectedWorkerDetails?.role,
+                                    phone: selectedWorkerDetails?.phone,
+                                    email: selectedWorkerDetails?.email,
+                                    postcode: selectedWorkerDetails?.postcode,
+                                  },
+                                  workerId: event.rawRecord?.target_id || selectedWorkerDetailsId || ''
+                                })}
+                                className="px-2 py-0.5 rounded bg-zinc-800 hover:bg-[#facc15]/10 text-zinc-300 hover:text-[#facc15] border border-zinc-700 hover:border-[#facc15]/30 text-[8px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                              >
+                                Revert Changes
+                              </button>
+                            )}
+                            <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border ${badgeColor}`}>
+                              {action}
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="pl-5">
-                          {/* Only render AuditDiffTable if there are non-empty changes in the diff */}
-                          {diff.length > 0 ? (
+                        <div className="pl-5 space-y-2">
+                          {action === 'RESEND_DOCUMENT_REQUEST' && event.details?.requested_certs ? (
+                            <div className="space-y-1.5">
+                              <p className="text-[10px] font-bold text-zinc-400 font-sans leading-relaxed">
+                                {summaryText}
+                              </p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {event.details.requested_certs.map((c: string) => (
+                                  <span key={c} className="px-2.5 py-1 bg-[#202024] text-[9.5px] font-semibold text-zinc-300 rounded border border-[#2d2d33] whitespace-nowrap">
+                                    {c}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          ) : diff.length > 0 ? (
                             <AuditDiffTable diff={diff} />
                           ) : summaryText ? (
                             <p className="text-[10px] font-bold text-zinc-400 font-sans leading-relaxed">
@@ -1398,6 +1501,87 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white transition-all rounded text-[12px] font-bold uppercase tracking-wider shadow-lg shadow-amber-600/10 cursor-pointer"
                   >
                     Archive Profile
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Revert Changes Confirmation Modal */}
+          {revertConfirmTarget && (
+            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 text-left">
+              <div className="fixed inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setRevertConfirmTarget(null)} />
+              <div className="bg-[#1f2125] border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
+                <div className="p-6 pb-4 border-b border-zinc-850 bg-zinc-950/10 flex items-center space-x-3.5">
+                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+                    <History className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-[13px] font-bold uppercase tracking-wider text-zinc-100">Revert Profile Changes</h3>
+                    <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-normal mt-0.5">Restore previous snapshot</p>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <p className="text-[13px] font-medium text-zinc-300 leading-relaxed">
+                    The following values will be restored to the staff profile:
+                  </p>
+                  <div className="bg-zinc-950/40 border border-zinc-900 rounded-lg divide-y divide-zinc-900 text-[12px]">
+                    {(() => {
+                      const { oldDetails: old, currentDetails: cur } = revertConfirmTarget;
+                      const fields: { key: keyof typeof old; label: string }[] = [
+                        { key: 'name', label: 'Name' },
+                        { key: 'role', label: 'Role' },
+                        { key: 'phone', label: 'Phone' },
+                        { key: 'email', label: 'Email' },
+                        { key: 'postcode', label: 'Postcode' },
+                      ];
+                      return fields
+                        .filter(f => old?.[f.key])
+                        .map(f => {
+                          const oldVal = old?.[f.key];
+                          const curVal = cur?.[f.key];
+                          const changed = oldVal !== curVal;
+                          return (
+                            <div
+                              key={f.key}
+                              className={`flex items-center justify-between px-4 py-2.5 ${
+                                changed ? 'bg-amber-500/5 border-l-2 border-amber-500/40' : ''
+                              }`}
+                            >
+                              <span className={`font-semibold uppercase tracking-wider text-[10px] ${
+                                changed ? 'text-amber-400/70' : 'text-zinc-500'
+                              }`}>{f.label}</span>
+                              <div className="flex items-center gap-2 text-right">
+                                {changed && curVal && (
+                                  <span className="line-through text-zinc-600 text-[11px]">{curVal}</span>
+                                )}
+                                {changed && curVal && (
+                                  <span className="text-zinc-500 text-[10px]">→</span>
+                                )}
+                                <span className={`font-bold ${
+                                  changed ? 'text-amber-300' : 'text-white'
+                                }`}>{oldVal}</span>
+                              </div>
+                            </div>
+                          );
+                        });
+                    })()}
+                  </div>
+                </div>
+
+                <div className="p-6 bg-zinc-950/10 border-t border-zinc-850 flex items-center space-x-3">
+                  <button
+                    onClick={() => setRevertConfirmTarget(null)}
+                    className="flex-1 py-3 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all rounded text-[12px] font-bold uppercase tracking-wider cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => executeRevertUpdate(revertConfirmTarget.oldDetails, revertConfirmTarget.workerId)}
+                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white transition-all rounded text-[12px] font-bold uppercase tracking-wider shadow-lg shadow-blue-600/10 cursor-pointer"
+                  >
+                    Revert Profile
                   </button>
                 </div>
               </div>
@@ -1505,20 +1689,20 @@ export const RosterView: React.FC<RosterViewProps> = ({
       {selectedWorkerDetails ? (
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* Top Navigation Row */}
-          <div className="flex items-center justify-between pb-4 mb-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-4 mb-2">
             <button
               type="button"
               onClick={() => {
                 setSelectedWorkerDetailsId(null);
                 setWorkerToEdit(null);
               }}
-              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer"
+              className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer self-start"
             >
               <ChevronLeft className="w-4 h-4 text-zinc-400" />
               <span>Back to Staff</span>
             </button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-start sm:justify-end">
               {!workerToEdit ? (
                 <>
                   <button
@@ -1533,7 +1717,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       setEditTickets([...selectedWorkerDetails.tickets]);
                       setEditError(null);
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 border border-zinc-800 hover:bg-zinc-800 rounded-lg text-xs font-bold text-zinc-300 uppercase tracking-wider transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-2 border border-zinc-800 hover:bg-zinc-800 rounded-lg text-xs font-bold text-zinc-300 uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap"
                   >
                     <Edit className="w-3.5 h-3.5 text-zinc-400" />
                     <span>Edit</span>
@@ -1541,7 +1725,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowReminderConfirm(true)}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-[#5c7285] hover:bg-[#6c8295] text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border border-[#5c7285]"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-[#5c7285] hover:bg-[#6c8295] text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border border-[#5c7285] whitespace-nowrap"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Request Docs</span>
@@ -1550,7 +1734,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedWorkerToRestore(selectedWorkerDetails)}
-                      className="px-3 py-2 bg-emerald-950/30 hover:bg-emerald-950/60 border border-emerald-900/30 text-emerald-450 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer"
+                      className="px-3 py-2 bg-emerald-950/30 hover:bg-emerald-950/60 border border-emerald-900/30 text-emerald-450 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer whitespace-nowrap"
                     >
                       Restore
                     </button>
@@ -1558,7 +1742,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedWorkerToDelete(selectedWorkerDetails)}
-                      className="px-3 py-2 bg-red-950/30 hover:bg-red-950/60 border border-red-900/30 text-red-400 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer"
+                      className="px-3 py-2 bg-red-950/30 hover:bg-red-950/60 border border-red-900/30 text-red-400 text-xs font-bold uppercase tracking-wider rounded transition-all cursor-pointer whitespace-nowrap"
                     >
                       Archive
                     </button>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { AlertCircle, Users, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Job, Worker } from "../../types/erp";
@@ -7,6 +7,7 @@ import { DaySchedule } from "../../hooks/useDaySchedule";
 import { AssignResult } from "../../hooks/useShiftActions";
 import { getJobColorClasses } from "./jobColors";
 import { TicketWarningBadge } from "./TicketWarningBadge";
+import { getPostcodeCoordinates, calculateDistance } from "../../utils/geo";
 
 export type AssignTarget =
   | { mode: "pickProject"; worker: Worker; date: string }
@@ -71,6 +72,29 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
   };
 
   const activeJobs = jobs.filter((j) => j.status !== "completed");
+
+  // Sort and calculate distances of unassigned workers if target mode is pickWorker
+  const unassignedWorkersWithDistance = useMemo(() => {
+    if (!target || target.mode !== "pickWorker" || !target.job || !target.job.postcode) {
+      return schedule.unassigned.map(worker => ({ worker, distance: null }));
+    }
+
+    const jobCoords = getPostcodeCoordinates(target.job.postcode);
+    const withDist = schedule.unassigned.map(worker => {
+      let distance: number | null = null;
+      if (worker.postcode) {
+        const workerCoords = getPostcodeCoordinates(worker.postcode);
+        distance = calculateDistance(jobCoords, workerCoords);
+      }
+      return { worker, distance };
+    });
+
+    return withDist.sort((a, b) => {
+      if (a.distance === null) return 1;
+      if (b.distance === null) return -1;
+      return a.distance - b.distance;
+    });
+  }, [target, schedule.unassigned]);
 
   return (
     <AnimatePresence>
@@ -187,12 +211,12 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                       );
                     })
                   )
-                ) : schedule.unassigned.length === 0 ? (
+                ) : unassignedWorkersWithDistance.length === 0 ? (
                   <p className="text-xs text-gray-500 font-bold text-center py-6">
                     Everyone is already deployed on this day.
                   </p>
                 ) : (
-                  schedule.unassigned.map((worker) => (
+                  unassignedWorkersWithDistance.map(({ worker, distance }) => (
                     <button
                       key={worker.id}
                       type="button"
@@ -202,10 +226,17 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-white truncate">{worker.name}</div>
                         <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
-                          {worker.role}
+                          {worker.role} {worker.postcode ? `• ${worker.postcode}` : ''}
                         </div>
                       </div>
-                      <TicketWarningBadge worker={worker} />
+                      <div className="flex items-center gap-2">
+                        {distance !== null && (
+                          <span className="text-[10px] font-mono font-bold bg-[#6C8295]/10 text-[#6C8295] px-1.5 py-0.5 rounded shrink-0">
+                            📍 {distance.toFixed(1)}m
+                          </span>
+                        )}
+                        <TicketWarningBadge worker={worker} />
+                      </div>
                     </button>
                   ))
                 )}

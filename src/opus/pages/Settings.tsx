@@ -18,7 +18,15 @@ export const getAvatarPresetClass = (presetId: string) => {
 };
 
 export const SettingsPage: React.FC = () => {
-  const { user, role, profile, updateProfile, updatePassword } = usePortal();
+  const { user, role, profile, updateProfile, updatePassword, theme, setTheme } = usePortal();
+  
+  // Theme state
+  const [tempTheme, setTempTheme] = useState<'dark' | 'light'>('dark');
+  useEffect(() => {
+    if (theme) {
+      setTempTheme(theme);
+    }
+  }, [theme]);
   
   // Profile fields state
   const [fullName, setFullName] = useState('');
@@ -286,6 +294,55 @@ export const SettingsPage: React.FC = () => {
                 {isUpdatingPassword ? 'Updating...' : 'Update Password'}
               </button>
             </form>
+          </div>
+
+          {/* Theme Preference Card */}
+          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-6 space-y-5">
+            <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
+              <span className="text-[#6C8295] text-sm">🎨</span>
+              <h3 className="text-xs font-black uppercase tracking-widest text-white">System Preferences / Interface Theme</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setTempTheme('dark')}
+                  className={`p-4 rounded-xl border text-center transition-all flex flex-col items-center gap-2 ${
+                    tempTheme === 'dark'
+                      ? 'bg-[#111114] border-[#6C8295] text-white'
+                      : 'bg-[#111114]/40 border-[#2a2a30] text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <span className="text-xl">🌙</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">Cyber-Industrial (Dark)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTempTheme('light')}
+                  className={`p-4 rounded-xl border text-center transition-all flex flex-col items-center gap-2 ${
+                    tempTheme === 'light'
+                      ? 'bg-[#F8F9FA] border-[#6C8295] text-black shadow-sm'
+                      : 'bg-[#F8F9FA]/5 border-[#2a2a30] text-gray-400 hover:text-slate-600'
+                  }`}
+                >
+                  <span className="text-xl">☀️</span>
+                  <span className="text-xs font-bold uppercase tracking-wider">Slate & Alabaster (Light)</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setTheme(tempTheme);
+                  window.location.reload();
+                }}
+                className="w-full sm:w-auto bg-[#2e2e2e] border border-[#3a3a3a] hover:bg-[#383838] text-white text-[11px] font-black tracking-widest uppercase py-3 px-6 rounded-lg transition-colors"
+              >
+                Save Theme & Apply
+              </button>
+            </div>
           </div>
         </div>
       </div>

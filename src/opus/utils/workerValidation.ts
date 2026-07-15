@@ -20,7 +20,7 @@ export const validateWorkerForDeployment = (worker: Worker, roleNeeded: string):
   }
 
   // Role-specific machine qualifications
-  if (roleNeeded === 'Telehandler' || worker.role === 'Telehandler') {
+  if (roleNeeded?.toLowerCase().includes('telehandler') || worker.role?.toLowerCase().includes('telehandler')) {
     const teleTicket = worker.tickets.find(t => t.type === 'Telehandler');
     if (!teleTicket) {
       return { isValid: false, reason: 'Requires active Telehandler operator ticket' };
@@ -30,7 +30,7 @@ export const validateWorkerForDeployment = (worker: Worker, roleNeeded: string):
     }
   }
 
-  if (roleNeeded === 'Supervisor' || worker.role === 'Supervisor') {
+  if (roleNeeded?.toLowerCase().includes('supervisor') || worker.role?.toLowerCase().includes('supervisor')) {
     const superTicket = worker.tickets.find(t => t.type === 'Supervisor');
     if (!superTicket) {
       return { isValid: false, reason: 'Requires active Supervisor qualification ticket' };

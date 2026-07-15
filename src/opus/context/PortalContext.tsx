@@ -98,6 +98,8 @@ interface PortalContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
   updatePassword: (password: string) => Promise<{ error: string | null }>;
+  theme: 'dark' | 'light';
+  setTheme: (theme: 'dark' | 'light') => void;
 }
 
 const PortalContext = createContext<PortalContextType | undefined>(undefined);
@@ -113,6 +115,28 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [shifts, setShifts] = useState<ScheduledShift[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+
+  // Theme Management
+  const [theme, setThemeState] = useState<'dark' | 'light'>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('opus_portal_theme');
+      return saved === 'light' ? 'light' : 'dark';
+    }
+    return 'dark';
+  });
+
+  const setTheme = (t: 'dark' | 'light') => {
+    setThemeState(t);
+    localStorage.setItem('opus_portal_theme', t);
+  };
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-theme');
+    } else {
+      document.documentElement.classList.remove('light-theme');
+    }
+  }, [theme]);
 
   // Track previous ids per table so we can compute deletions on sync.
   const prevWorkerIdsRef = useRef<Set<string>>(new Set());
@@ -195,10 +219,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     let cancelled = false;
     (async () => {
       setDataLoading(true);
+      const startStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const endStr = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
       const [wRes, jRes, sRes] = await Promise.all([
         supabase.from('staff').select('*'),
         supabase.from('jobs').select('*'),
-        supabase.from('shifts').select('*'),
+        supabase.from('shifts').select('*').gte('date', startStr).lte('date', endStr),
       ]);
       if (cancelled) return;
       if (wRes.error) console.error('load workers', wRes.error);
@@ -464,6 +490,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       signOut,
       resetPassword,
       updatePassword,
+      theme,
+      setTheme,
     }}>
       {children}
     </PortalContext.Provider>

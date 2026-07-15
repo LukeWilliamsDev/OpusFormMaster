@@ -202,9 +202,19 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
   const totals = useMemo(() => {
     const netTotal = items.reduce((acc, item) => {
-      const rateValue = typeof item.rate === 'string' && (item.rate.toUpperCase() === 'INCLUDED' || item.rate.toUpperCase() === 'INCL') 
-        ? 0 
-        : Number(item.rate || 0);
+      let rateValue = 0;
+      if (typeof item.rate === 'string') {
+        const uppercaseRate = item.rate.toUpperCase();
+        if (uppercaseRate === 'INCLUDED' || uppercaseRate === 'INCL') {
+          rateValue = 0;
+        } else {
+          const cleanRateStr = item.rate.replace(/[£$,\s]/g, '');
+          const parsed = parseFloat(cleanRateStr);
+          rateValue = isNaN(parsed) ? 0 : parsed;
+        }
+      } else {
+        rateValue = Number(item.rate || 0);
+      }
       return acc + (item.quantity * rateValue);
     }, 0);
     const vatAmount = netTotal * (vatRate / 100);
@@ -580,8 +590,18 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   const isIncludedRate = (rate: number | string) =>
     typeof rate === 'string' && (rate.toUpperCase() === 'INCLUDED' || rate.toUpperCase() === 'INCL');
 
-  const getLineTotal = (item: MeasuredItem) =>
-    isIncludedRate(item.rate) ? 0 : item.quantity * Number(item.rate || 0);
+  const getLineTotal = (item: MeasuredItem) => {
+    if (isIncludedRate(item.rate)) return 0;
+    let rateValue = 0;
+    if (typeof item.rate === 'string') {
+      const cleanRateStr = item.rate.replace(/[£$,\s]/g, '');
+      const parsed = parseFloat(cleanRateStr);
+      rateValue = isNaN(parsed) ? 0 : parsed;
+    } else {
+      rateValue = Number(item.rate || 0);
+    }
+    return item.quantity * rateValue;
+  };
 
   const pdfDocument = (scaleValue: number, isPrintTarget = false) => (
     <div

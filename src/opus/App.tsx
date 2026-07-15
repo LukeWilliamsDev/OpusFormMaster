@@ -13,6 +13,10 @@ import { AuditLogPage } from './pages/AuditLog';
 import { SubmitCredentialsPage } from './pages/SubmitCredentials';
 import { SettingsPage } from './pages/Settings';
 import { JobUploadPortalPage } from './pages/JobUploadPortal';
+import { PrivacyNoticePage } from './pages/PrivacyNotice';
+import { TermsOfServicePage } from './pages/TermsOfService';
+import { AcceptableUsePolicyPage } from './pages/AcceptableUsePolicy';
+import { CookieStatementPage } from './pages/CookieStatement';
 
 // Session gate — any /portal/* view requires a valid Supabase session.
 const ProtectedRoute: React.FC = () => {
@@ -71,6 +75,8 @@ export default function App() {
           <Route path="/portal" element={<PortalAuthPage />} />
           <Route path="/submit-credentials" element={<SubmitCredentialsPage />} />
           <Route path="/job-upload/:token" element={<JobUploadPortalPage />} />
+          <Route path="/privacy" element={<PrivacyNoticePage />} />
+          <Route path="/cookies" element={<CookieStatementPage />} />
 
           {/* Secure Portal Application Views */}
           <Route element={<ProtectedRoute />}>
@@ -92,6 +98,18 @@ export default function App() {
             } />
             <Route path="/portal/settings" element={
               <RoleGuard allow={['admin', 'dispatcher', 'operative']}><SettingsPage /></RoleGuard>
+            } />
+            <Route path="/portal/terms" element={
+              <RoleGuard allow={['admin', 'dispatcher', 'operative']}><TermsOfServicePage /></RoleGuard>
+            } />
+            <Route path="/portal/acceptable-use" element={
+              <RoleGuard allow={['admin', 'dispatcher', 'operative']}><AcceptableUsePolicyPage /></RoleGuard>
+            } />
+            <Route path="/portal/privacy" element={
+              <RoleGuard allow={['admin', 'dispatcher', 'operative']}><PrivacyNoticePage /></RoleGuard>
+            } />
+            <Route path="/portal/cookies" element={
+              <RoleGuard allow={['admin', 'dispatcher', 'operative']}><CookieStatementPage /></RoleGuard>
             } />
             
             {/* Fallback internal routes — send operatives to their calendar. */}

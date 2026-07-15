@@ -22,3 +22,12 @@
 - **MCP Servers**: GitHub MCP server configured to run locally via global `npx` command.
 
 ## Roadmap
+- **MFA (Supabase TOTP)**: Enable for admin and dispatcher roles. Operatives excluded (field-worker friction). Deferred from v1 — target when pursuing Cyber Essentials Plus.
+- **ISO 27001**: Natural progression from Cyber Essentials basic. Pursue when revenue justifies audit cost (£5k–15k).
+- **Self-service DSR portal**: Build data subject access/erasure request workflow in portal. Currently manual via admin@opusform.co.uk.
+
+## Compliance Status
+- **UK GDPR**: Privacy Notice, Terms of Service, Acceptable Use Policy, Cookie Statement live at `/privacy`, `/terms`, `/acceptable-use`, `/cookies`. Lawful bases documented (blended: Contract + Legal Obligation + Legitimate Interest). Tiered data retention policy defined. DSRs handled manually via admin email.
+- **Cyber Essentials (Basic)**: Targeting certification. HSTS + CSP + security headers hardened. Dependabot enabled. Quarterly patch audit process in `docs/PATCH_LOG.md`. MFA deferred to future phase.
+- **ISO 9001**: Principles adopted internally. QMS process documentation in `docs/QMS/`. Formal certification deferred.
+- **Accessibility**: WCAG 2.1 AA target. Audit and fixes pending.

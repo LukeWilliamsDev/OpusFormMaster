@@ -94,21 +94,46 @@ export const DashboardPage: React.FC = () => {
     loadQuotes();
   }, []);
 
-  // Compute metrics
-  const activeJobs = useMemo(() => jobs.filter(j => j.status === 'in-progress' || j.status === 'active'), [jobs]);
-  const activePoursCount = useMemo(() => activeJobs.reduce((sum, j) => sum + (j.currentPours || 0), 0), [activeJobs]);
-  const contractMaxPoursCount = useMemo(() => activeJobs.reduce((sum, j) => sum + (j.contractMaxPours || 0), 0), [activeJobs]);
+  // Timeframe State for metrics
+  const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
 
-  const scheduledWorkersCount = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const todaysShifts = shifts.filter(s => s.date === todayStr);
-    // Count unique workers active today
-    return new Set(todaysShifts.map(s => s.workerId)).size;
-  }, [shifts]);
+  const activeJobsFiltered = useMemo(() => {
+    if (timeframe === 'daily') {
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayJobIds = new Set(shifts.filter(s => s.date === todayStr).map(s => s.jobId));
+      return jobs.filter(j => todayJobIds.has(j.id) && (j.status === 'in-progress' || j.status === 'active'));
+    }
+    if (timeframe === 'weekly') {
+      return jobs.filter(j => j.status === 'in-progress' || j.status === 'active');
+    }
+    return jobs.filter(j => j.status === 'in-progress' || j.status === 'active' || j.status === 'pending');
+  }, [jobs, shifts, timeframe]);
 
-  const pipelineValue = useMemo(() => {
-    return activeJobs.reduce((sum, j) => sum + (Number(j.scheduleValue) || 0), 0);
-  }, [activeJobs]);
+  const activePoursCountFiltered = useMemo(() => activeJobsFiltered.reduce((sum, j) => sum + (j.currentPours || 0), 0), [activeJobsFiltered]);
+  const contractMaxPoursCountFiltered = useMemo(() => activeJobsFiltered.reduce((sum, j) => sum + (j.contractMaxPours || 0), 0), [activeJobsFiltered]);
+
+  const scheduledWorkersCountFiltered = useMemo(() => {
+    const today = new Date();
+    const dates = [];
+    let limit = 1;
+    if (timeframe === 'weekly') limit = 7;
+    if (timeframe === 'monthly') limit = 30;
+
+    for (let i = 0; i < limit; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      dates.push(d.toISOString().split('T')[0]);
+    }
+    const filteredShifts = shifts.filter(s => dates.includes(s.date));
+    return new Set(filteredShifts.map(s => s.workerId)).size;
+  }, [shifts, timeframe]);
+
+  const pipelineValueFiltered = useMemo(() => {
+    const fullValue = jobs.filter(j => j.status === 'in-progress' || j.status === 'active').reduce((sum, j) => sum + (Number(j.scheduleValue) || 0), 0);
+    if (timeframe === 'daily') return Math.round(fullValue / 30);
+    if (timeframe === 'weekly') return Math.round(fullValue / 4);
+    return fullValue;
+  }, [jobs, timeframe]);
 
   // Compute expiring tickets
   const expiringTickets = useMemo(() => {
@@ -516,56 +541,167 @@ export const DashboardPage: React.FC = () => {
         </AnimatePresence>
       </div>
 
+      {/* Timeframe selector header */}
+      <div className="flex items-center justify-between mt-1">
+        <h2 className="text-xs font-black uppercase tracking-widest text-[#9a9a9e]">Operations Summary</h2>
+        <div className="flex bg-[#16161a] border border-[#2a2a30] rounded-lg p-0.5">
+          {(['daily', 'weekly', 'monthly'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTimeframe(t)}
+              className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
+                timeframe === t
+                  ? 'bg-[#6C8295] text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* 3 Metric Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         {/* Metric 1 */}
         <div className="bg-[#1a1a1e] border border-[#2a2a30] hover:border-[#6C8295]/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute right-0 top-0 h-16 w-16 bg-[#6C8295]/5 rounded-bl-full flex items-center justify-center">
-            <ClipboardList className="w-5 h-5 text-[#6C8295] group-hover:scale-110 transition-transform" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">Active Job Sites</span>
-            <div className="text-3xl font-bold text-white mt-1 font-mono tracking-tight">
-              {activeJobs.length}
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">Active Job Sites</span>
+              <div className="text-3xl font-bold text-white mt-1 font-mono tracking-tight">
+                {activeJobsFiltered.length}
+              </div>
+            </div>
+            
+            {/* SVG Circular Gauge */}
+            <div className="relative w-11 h-11 flex items-center justify-center shrink-0">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle cx="22" cy="22" r="18" stroke="#2a2a30" strokeWidth="2.5" fill="transparent" />
+                <circle
+                  cx="22"
+                  cy="22"
+                  r="18"
+                  stroke="#6C8295"
+                  strokeWidth="2.5"
+                  fill="transparent"
+                  strokeDasharray={2 * Math.PI * 18}
+                  strokeDashoffset={
+                    2 * Math.PI * 18 * (1 - (contractMaxPoursCountFiltered ? activePoursCountFiltered / contractMaxPoursCountFiltered : 0))
+                  }
+                />
+              </svg>
+              <span className="absolute text-[8px] font-black text-white font-mono">
+                {contractMaxPoursCountFiltered ? Math.round((activePoursCountFiltered / contractMaxPoursCountFiltered) * 100) : 0}%
+              </span>
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-[#2a2a30] flex items-center justify-between text-[12px] text-[#9a9a9e]">
-            <span className="font-medium">Active pours progress</span>
-            <span className="font-mono text-white font-bold">{activePoursCount} / {contractMaxPoursCount} Pours</span>
+
+          <div className="mt-4 pt-3 border-t border-[#2a2a30] flex flex-col gap-2">
+            <div className="flex items-center justify-between text-[11px] text-[#9a9a9e]">
+              <span className="font-medium">Pours progress</span>
+              <span className="font-mono text-white font-bold">{activePoursCountFiltered} / {contractMaxPoursCountFiltered} Pours</span>
+            </div>
+            <button
+              onClick={() => navigate('/portal/ledger')}
+              className="text-[10px] font-black uppercase tracking-wider text-[#6C8295] hover:text-white transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
+            >
+              Log Pour / Inspect Ledger &rarr;
+            </button>
           </div>
         </div>
 
         {/* Metric 2 */}
         <div className="bg-[#1a1a1e] border border-[#2a2a30] hover:border-[#6C8295]/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute right-0 top-0 h-16 w-16 bg-[#10b981]/5 rounded-bl-full flex items-center justify-center">
-            <UserCheck className="w-5 h-5 text-[#10b981] group-hover:scale-110 transition-transform" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">Scheduled Crew Today</span>
-            <div className="text-3xl font-bold text-white mt-1 font-mono tracking-tight">
-              {scheduledWorkersCount}
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">Scheduled Crew</span>
+              <div className="text-3xl font-bold text-white mt-1 font-mono tracking-tight">
+                {scheduledWorkersCountFiltered}
+              </div>
             </div>
+            <UserCheck className="w-5 h-5 text-[#10b981] opacity-80" />
           </div>
-          <div className="mt-4 pt-3 border-t border-[#2a2a30] flex items-center justify-between text-[12px] text-[#9a9a9e]">
-            <span className="font-medium">Total available staff</span>
-            <span className="font-mono text-white font-bold">{workers.length} Personnel</span>
+
+          <div className="mt-4 pt-3 border-t border-[#2a2a30] flex flex-col gap-2">
+            {/* Progress bar */}
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-[11px] text-[#9a9a9e]">
+                <span>Crew active:</span>
+                <span className="font-mono text-white font-bold">{workers.length ? Math.round((scheduledWorkersCountFiltered / workers.length) * 100) : 0}%</span>
+              </div>
+              <div className="w-full bg-[#2a2a30] h-1 rounded-full overflow-hidden">
+                <div
+                  className="bg-[#10b981] h-full rounded-full transition-all duration-500"
+                  style={{ width: `${workers.length ? (scheduledWorkersCountFiltered / workers.length) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/portal/roster')}
+              className="text-[10px] font-black uppercase tracking-wider text-[#10b981] hover:text-white transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
+            >
+              Manage Shift Dispatch &rarr;
+            </button>
           </div>
         </div>
 
         {/* Metric 3 */}
         <div className="bg-[#1a1a1e] border border-[#2a2a30] hover:border-[#6C8295]/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute right-0 top-0 h-16 w-16 bg-[#6C8295]/5 rounded-bl-full flex items-center justify-center">
-            <TrendingUp className="w-5 h-5 text-[#6C8295] group-hover:scale-110 transition-transform" />
-          </div>
-          <div>
-            <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">Active Pipeline Value</span>
-            <div className="text-3xl font-bold text-[#6C8295] mt-1 font-mono tracking-tight">
-              £{pipelineValue.toLocaleString('en-GB')}
+          <div className="flex justify-between items-start">
+            <div>
+              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">Pipeline Run-Rate</span>
+              <div className="text-3xl font-bold text-[#6C8295] mt-1 font-mono tracking-tight">
+                £{pipelineValueFiltered.toLocaleString('en-GB')}
+              </div>
+            </div>
+            
+            {/* Sparkline mini-graph */}
+            <div className="w-14 h-7 shrink-0">
+              <svg className="w-full h-full" viewBox="0 0 100 40">
+                <path
+                  d={
+                    timeframe === 'daily'
+                      ? "M 0 35 Q 25 30 50 15 T 100 10"
+                      : timeframe === 'weekly'
+                      ? "M 0 30 Q 25 25 50 20 T 100 5"
+                      : "M 0 25 Q 25 20 50 18 T 100 2"
+                  }
+                  fill="none"
+                  stroke="#6C8295"
+                  strokeWidth="2.5"
+                />
+                <path
+                  d={
+                    timeframe === 'daily'
+                      ? "M 0 35 Q 25 30 50 15 T 100 10 L 100 40 L 0 40 Z"
+                      : timeframe === 'weekly'
+                      ? "M 0 30 Q 25 25 50 20 T 100 5 L 100 40 L 0 40 Z"
+                      : "M 0 25 Q 25 20 50 18 T 100 2 L 100 40 L 0 40 Z"
+                  }
+                  fill="url(#sparkline-grad)"
+                  opacity="0.15"
+                />
+                <defs>
+                  <linearGradient id="sparkline-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#6C8295" />
+                    <stop offset="100%" stopColor="#6C8295" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+              </svg>
             </div>
           </div>
-          <div className="mt-4 pt-3 border-t border-[#2a2a30] flex items-center justify-between text-[12px] text-[#9a9a9e]">
-            <span className="font-medium">Total contracts ledger</span>
-            <span className="font-mono text-white font-bold">Excludes VAT</span>
+
+          <div className="mt-4 pt-3 border-t border-[#2a2a30] flex flex-col gap-2">
+            <div className="flex items-center justify-between text-[11px] text-[#9a9a9e]">
+              <span className="font-medium">Contracts ledger</span>
+              <span className="font-mono text-white font-bold">Excludes VAT</span>
+            </div>
+            <button
+              onClick={() => navigate('/portal/pipeline')}
+              className="text-[10px] font-black uppercase tracking-wider text-[#6C8295] hover:text-white transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
+            >
+              Open Quotes & Billing Board &rarr;
+            </button>
           </div>
         </div>
       </div>

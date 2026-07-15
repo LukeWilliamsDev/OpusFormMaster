@@ -51,11 +51,11 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
         return (
           <div
             key={day.date}
-            className="min-w-0 border border-[#2a2a30] rounded-xl bg-[#1a1a1e] p-2.5 space-y-2.5"
+            className="min-w-0 border border-border rounded-xl bg-card p-2.5 space-y-2.5"
           >
             <div className="flex items-center justify-between gap-1.5 px-0.5">
               <div className="flex items-baseline gap-1.5 min-w-0">
-                <span className="text-[10px] font-black uppercase tracking-widest text-gray-300">
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                   {day.shortName}
                 </span>
                 <span className="text-[10px] font-bold font-mono text-gray-500">
@@ -79,7 +79,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                 return (
                   <div
                     key={job.id}
-                    className={`border rounded-lg bg-[#16161a] p-2 space-y-2 ${colors.border}`}
+                    className={`border rounded-lg bg-muted/30 p-2 space-y-2 ${colors.border}`}
                   >
                     <div className="flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1.5 min-w-0">
@@ -115,7 +115,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                       type="button"
                       onClick={() => onAddStaff(job, day.date)}
                       aria-label={`Add staff to ${job.siteName}`}
-                      className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-[#3a3a42] text-gray-500 hover:text-white hover:border-[#6C8295] text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                      className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-gray-500 hover:text-foreground hover:border-[#6C8295] text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
                     >
                       <Plus className="w-3 h-3" />
                       <span className="hidden xl:inline">Add Staff</span>

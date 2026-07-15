@@ -153,4 +153,12 @@
 - Integrated OpenStreetMap geocoding and Leaflet map displaying nearby suppliers sorted by distance.
 - Implemented daily Site Diary notes and Health & Safety checklist form, enforcing complete safety sign-off before pours can be logged.
 - Added before/after site media upload galleries and document upload sections.
-- Created public upload page at route /job-upload/:token for secure external document requests.
+- Created public upload page at route /job-upload/:token for secure external document requests.
+- Integrated a premium Slate & Alabaster Light theme toggle and overhauled PortalLayout to use theme variables.
+- Upgraded the operational Dashboard widgets with time-based filters, inline actions, and custom SVG progress gauges.
+- Enhanced Week-Grid scheduling with role filtering and postcode proximity sorting in AssignSheet.
+- Overhauled ActiveJobLedger layout style classes to use theme CSS variables dynamically.
+- Fixed worker compliance validation checks to utilize case-insensitive substring matching for roles (e.g. Telehandler Operator, Pour Supervisor).
+- Added defensive rate string sanitization (removing currency symbols and commas) to prevent NaN calculation failures in QuoteInvoiceBuilder.
+- Overhauled WeekGridProject layout style classes to use theme CSS variables dynamically.
+- Overhauled WeekGridStaff layout style classes to use theme CSS variables dynamically.

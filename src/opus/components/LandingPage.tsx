@@ -25,7 +25,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
     <div
       id="opus-landing-root"
       className="min-h-screen flex flex-col justify-between relative overflow-hidden font-sans"
-      style={{ backgroundColor: "#1A1B1E" }}
+      style={{ backgroundColor: "#111114" }}
     >
       {/* Subtle concrete-texture grid overlay */}
       <div
@@ -90,23 +90,47 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
 
       {/* Footer */}
       <footer
-        className="w-full flex flex-col sm:flex-row justify-center items-center gap-3 z-20 px-8 pb-7 pt-4 text-[9px] font-mono font-bold uppercase"
+        className="w-full z-20 px-8 pb-7 pt-5"
         style={{
           borderTop: '1px solid #2e2e33',
-          color: '#3d3d44',
-          letterSpacing: '0.18em',
           opacity: footerVisible ? 1 : 0,
           transition: 'opacity 500ms ease-out',
         }}
       >
-        <a
-          href="mailto:admin@opusform.co.uk"
-          style={{ color: '#3d3d44', transition: 'color 200ms' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#526E8C')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#3d3d44')}
-        >
-          admin@opusform.co.uk
-        </a>
+        {/* Legal links row */}
+        <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 mb-4">
+          {[
+            { label: 'Privacy Notice', path: '#/privacy' },
+            { label: 'Cookies', path: '#/cookies' },
+          ].map(link => (
+            <a
+              key={link.path}
+              href={link.path}
+              className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200"
+              style={{ color: '#3d3d44' }}
+              onMouseEnter={e => (e.currentTarget.style.color = '#526E8C')}
+              onMouseLeave={e => (e.currentTarget.style.color = '#3d3d44')}
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+
+        {/* Company details + contact */}
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-2 text-[8px] font-mono uppercase" style={{ color: '#2e2e33', letterSpacing: '0.15em' }}>
+          <span>Opus Form Ltd · Company No. 17228356 · 128 City Road, London, EC1V 2NX</span>
+          <span className="hidden sm:inline">·</span>
+          <a
+            href="mailto:admin@opusform.co.uk"
+            style={{ color: '#2e2e33', transition: 'color 200ms' }}
+            onMouseEnter={e => (e.currentTarget.style.color = '#526E8C')}
+            onMouseLeave={e => (e.currentTarget.style.color = '#2e2e33')}
+          >
+            admin@opusform.co.uk
+          </a>
+          <span className="hidden sm:inline">·</span>
+          <span>© {new Date().getFullYear()} All Rights Reserved</span>
+        </div>
       </footer>
     </div>
   );

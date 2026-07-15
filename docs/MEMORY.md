@@ -1,0 +1,23 @@
+# Project Memory: Opus Form
+
+## System Architecture & State
+- **Core**: Local dashboard system. GitHub source control (`Dev` branch). Cloudflare Pages deployment (`nodejs_compat`).
+- **Database**: Standalone Supabase (`fgpthpxmiroyebrzjdzo`). Live schemas (profiles, staff, shifts, jobs, quotes). 
+- **Security**: Strict RLS policies. SMTP credentials encrypted in `vault.secrets`. Secure HTTP headers (CSP, MIME protections). Admin-only `public.audit_logs` tracks all system actions.
+- **Email**: Resend HTTP API via Supabase Edge Function to bypass anti-bot throttling.
+
+## Core Features
+- **Quote Builder**: Client-side PDF generation (`html2pdf.js` clamped to 794x1122px). Stepper animations, strict UI validation overlays, custom toast modals. Quotes saved to `public.quotes`.
+- **Staff Management**: 13 defined roles. Roster list view only with A-Z sorting. Map proximity scheduling (postcode geocoding/Haversine distance). Removed redundant dossier action buttons (Copy Link and Refresh Data). Updated dossier header and compliance cards (Active, Expired, Expiring Soon) to match Dark Industrial mockup specs across all screens, with scaled down compact styling, streamlined Site Assignments lists, compact Audit Log timeline rows, and matching header buttons layout.
+- **Compliance & Security**: Passwordless document submission via 48-hour expiring signed URLs to private Supabase bucket. Edge functions enforce JWT & role checks. Data restoration utility built into audit logs with on-screen diff-highlighting confirmation modal (amber strikethrough for changed fields). Detailed changed-fields-only diff tracking for record updates. Logging for dossier inspections. Auto-expiry of all other pending document request links on new request create or resend. Effective resend timestamp derived from `expires_at - 48h` for correct card ordering. Dashboard compliance warnings panel redesigned into compact table-style rows featuring colored left-border severity indicators and integrated inline validation/reminder confirmation modals. Added a dedicated `send-admin-alert` Supabase edge function to handle administrative notifications upon worker email dispatch failures. Logged `COMPLIANCE_REMINDER_SENT` events to track dispatch outcomes.
+- **UI**: Redesigned Job Details page to match mockup layout (side-by-side Project Status and Pour Progress cards, rain warning banner, and a reversed Pour History log list, removing map and workforce panels). Slide-out drawers for staff dossiers. Scaled typography for legibility. Dark corporate theme (background `#111114`, cards `#1a1a1e`, borders `#2a2a30`, accent `#6C8295`). Event Type mappings on System Audit Trail. Memoized audit diff grid rendering to minimize jank. Touch targets ≥44px on mobile navigation and selectors. Removed mobile/tablet bottom navigation bar and adjusted layout paddings. Removed `/commands` dropdown, matching logic, and updated input placeholder in the Dashboard search. Implemented complete dark portal UI redesign matching the Claude Design handoff (PortalLayout navigation and command top bar, PortalAuth centered login card, PipelineRegistry searchable quote pipeline grid, QuoteInvoiceBuilder split items/summary configuration, and AuditLog severity event timeline). Portal header (desktop sidebar, mobile header, mobile drawer) uses the `opus-form-primary.svg` wordmark logo only — no icon glyph, no "ERP PORTAL" caption.
+- **Quote Management**: Responsive layout — full sortable table on desktop (`lg`+), stacked card list on tablet/mobile. Row/card click opens the Quote Control Center drawer as the sole path to Edit/Convert/Delete (inline shortcut buttons removed from both table and cards to avoid duplicate affordances). Drawer styling matches the list's card/badge/table-header palette. Delete confirmation modal titled "Delete Quote"; convert-to-job modal titled "Job Creation" with "Accept Job" confirm button. Modal z-index raised above the drawer's to avoid appearing hidden during the drawer's close animation.
+
+## Agent Architecture
+- **Workspace Customizations**: Workspace instructions, persona switching, mandatory implementation plan + user approval requirements, and manual-verification-only rules (no automated localhost/browser preview) configured in `.agents/AGENTS.md`. Removed all `.claude/` subagents and configuration directories.
+- **Skill coverage**: Custom agent skills wired in `.agents/skills/`. Created `dev-server` skill to automate server startup and UI preview guidance.
+- **VS Code Tasks**: Integrated `.vscode/tasks.json` configuration with `Open Live Preview` to automatically start the server and load the site inside VS Code Simple Browser on folder open.
+
+
+## Roadmap
+

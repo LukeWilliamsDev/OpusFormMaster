@@ -343,7 +343,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   return (
-    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl mx-auto space-y-8 animate-fade-in font-sans">
+    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-8 animate-fade-in font-sans">
       
       {/* Toast Notification Container */}
       <div className="fixed top-4 right-4 z-50 space-y-2 pointer-events-none max-w-sm w-full">

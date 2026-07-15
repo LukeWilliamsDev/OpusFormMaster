@@ -52,7 +52,7 @@ export const JobLedgerPage: React.FC = () => {
   // If a jobId is selected, render the Job Details in full-page mode instead of the ledger grid list.
   if (selectedJobId && jobs.find(j => j.id === selectedJobId)) {
     return (
-      <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
+      <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in">
         <JobDetails 
           job={jobs.find(j => j.id === selectedJobId)!}
           workers={workers}
@@ -64,7 +64,7 @@ export const JobLedgerPage: React.FC = () => {
   }
 
   return (
-    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl mx-auto space-y-8 animate-fade-in">
+    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-8 animate-fade-in">
       <ActiveJobLedger 
         filteredJobs={filteredJobs}
         filterStatus={filterStatus}

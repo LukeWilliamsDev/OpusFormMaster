@@ -201,7 +201,7 @@ export const AuditLogPage: React.FC = () => {
   };
 
   return (
-    <div className="pt-24 pb-12 px-4 sm:px-6 max-w-7xl mx-auto space-y-8 animate-fade-in text-white flex flex-col min-h-[calc(100vh-4rem)] bg-[#111114]">
+    <div className="pt-24 pb-12 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-8 animate-fade-in text-white flex flex-col min-h-[calc(100vh-4rem)] bg-[#111114]">
       {/* Header matching 2d */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#1e1e24] pb-6">
         <div>

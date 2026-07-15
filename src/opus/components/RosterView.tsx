@@ -1,16 +1,43 @@
 // @ts-nocheck
-import React, { useState, useEffect } from 'react';
-import { 
-  Users, Search, Plus, Trash2, ShieldAlert, X, Phone, Mail, FileText, UploadCloud, Download, FilePlus, UserCheck, AlertTriangle, UserPlus, Calendar, MapPin, ChevronLeft, Edit, Send, LayoutGrid, List, RefreshCw, CheckCircle2, Clock, Link2, Copy, History
-} from 'lucide-react';
-import { Worker, Ticket, Job } from '../types/erp';
-import { getTicketStatus } from '../utils/workerValidation';
-import { TicketStatusBadge } from './TicketStatusBadge';
-import { RequestCredentialsModal } from './RequestCredentialsModal';
-import { supabase } from '../../integrations/supabase/client';
-import { workerToRow, usePortal } from '../context/PortalContext';
-import { computeDiff } from '../utils/auditDiff';
-import { AuditDiffTable } from './AuditDiffTable';
+import React, { useState, useEffect } from "react";
+import {
+  Users,
+  Search,
+  Plus,
+  Trash2,
+  ShieldAlert,
+  X,
+  Phone,
+  Mail,
+  FileText,
+  UploadCloud,
+  Download,
+  FilePlus,
+  AlertTriangle,
+  UserPlus,
+  Calendar,
+  MapPin,
+  ChevronLeft,
+  Edit,
+  Send,
+  LayoutGrid,
+  List,
+  RefreshCw,
+  CheckCircle2,
+  Clock,
+  Link2,
+  Copy,
+} from "lucide-react";
+import { Worker, Ticket, Job } from "../types/erp";
+import { getTicketStatus } from "../utils/workerValidation";
+import { TicketStatusBadge } from "./TicketStatusBadge";
+import { RequestCredentialsModal } from "./RequestCredentialsModal";
+import { supabase } from "../../integrations/supabase/client";
+import { workerToRow, usePortal } from "../context/PortalContext";
+import { computeDiff } from "../utils/auditDiff";
+import { AuditDiffTable } from "./AuditDiffTable";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 interface RosterViewProps {
   workers: Worker[];
@@ -39,7 +66,7 @@ export const ON_SITE_CERTIFICATIONS = [
   "Manual Handling",
   "Site Supervisor Safety Training Scheme",
   "Suspended Loads Endorsement",
-  "Working at Heights Certification"
+  "Working at Heights Certification",
 ];
 
 export const STAFF_ROLES = [
@@ -55,65 +82,76 @@ export const STAFF_ROLES = [
   "IT",
   "Logistics and Operations Coordinator",
   "Material Handler",
-  "Telehandler Operator"
+  "Telehandler Operator",
 ];
 
 export const OFFICE_ROLES = [
   "Director",
   "IT",
   "Inbound Sales Representative",
-  "Logistics and Operations Coordinator"
+  "Logistics and Operations Coordinator",
 ];
 
-export const RosterView: React.FC<RosterViewProps> = ({ 
+export const RosterView: React.FC<RosterViewProps> = ({
   workers,
   setWorkers,
   setShifts,
   shifts = [],
   jobs = [],
   selectedWorkerDetailsId: propSelectedWorkerDetailsId,
-  setSelectedWorkerDetailsId: propSetSelectedWorkerDetailsId
+  setSelectedWorkerDetailsId: propSetSelectedWorkerDetailsId,
 }) => {
   const { profile } = usePortal();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [showAddWorkerForm, setShowAddWorkerForm] = useState(false);
-  
-  const [newWorkerName, setNewWorkerName] = useState('');
-  const [newWorkerRole, setNewWorkerRole] = useState<string>('Concrete Operative');
-  const [newWorkerPhone, setNewWorkerPhone] = useState('');
-  const [newWorkerEmail, setNewWorkerEmail] = useState('');
+
+  const [newWorkerName, setNewWorkerName] = useState("");
+  const [newWorkerRole, setNewWorkerRole] = useState<string>("Concrete Operative");
+  const [newWorkerPhone, setNewWorkerPhone] = useState("");
+  const [newWorkerEmail, setNewWorkerEmail] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
   const [submittingWorker, setSubmittingWorker] = useState(false);
-  
-  const [localSelectedWorkerDetailsId, setLocalSelectedWorkerDetailsId] = useState<string | null>(null);
-  
-  const selectedWorkerDetailsId = propSelectedWorkerDetailsId !== undefined 
-    ? propSelectedWorkerDetailsId 
-    : localSelectedWorkerDetailsId;
-    
-  const setSelectedWorkerDetailsId = propSetSelectedWorkerDetailsId !== undefined 
-    ? propSetSelectedWorkerDetailsId 
-    : setLocalSelectedWorkerDetailsId;
+
+  const [localSelectedWorkerDetailsId, setLocalSelectedWorkerDetailsId] = useState<string | null>(
+    null,
+  );
+
+  const selectedWorkerDetailsId =
+    propSelectedWorkerDetailsId !== undefined
+      ? propSelectedWorkerDetailsId
+      : localSelectedWorkerDetailsId;
+
+  const setSelectedWorkerDetailsId =
+    propSetSelectedWorkerDetailsId !== undefined
+      ? propSetSelectedWorkerDetailsId
+      : setLocalSelectedWorkerDetailsId;
 
   const [selectedWorkerToDelete, setSelectedWorkerToDelete] = useState<Worker | null>(null);
-  const [selectedWorkerToPermanentDelete, setSelectedWorkerToPermanentDelete] = useState<Worker | null>(null);
+  const [selectedWorkerToPermanentDelete, setSelectedWorkerToPermanentDelete] =
+    useState<Worker | null>(null);
   const [selectedWorkerToRestore, setSelectedWorkerToRestore] = useState<Worker | null>(null);
-  const [revertConfirmTarget, setRevertConfirmTarget] = useState<{ oldDetails: any; currentDetails: any; workerId: string } | null>(null);
-  
-  const [workerToEdit, setWorkerToEdit] = useState<Worker | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editRole, setEditRole] = useState<string>('Concrete Operative');
+  const [revertConfirmTarget, setRevertConfirmTarget] = useState<{
+    oldDetails: any;
+    currentDetails: any;
+    workerId: string;
+  } | null>(null);
 
-  const [rosterMode, setRosterMode] = useState<'active' | 'archived'>('active');
+  const [workerToEdit, setWorkerToEdit] = useState<Worker | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editRole, setEditRole] = useState<string>("Concrete Operative");
+
+  const [rosterMode, setRosterMode] = useState<"active" | "archived">("active");
   const [showAllHistory, setShowAllHistory] = useState(false);
 
-  const [editPhone, setEditPhone] = useState('');
-  const [editEmail, setEditEmail] = useState('');
+  const [editPhone, setEditPhone] = useState("");
+  const [editEmail, setEditEmail] = useState("");
   const [editTickets, setEditTickets] = useState<Ticket[]>([]);
   const [editError, setEditError] = useState<string | null>(null);
   const [showReminderConfirm, setShowReminderConfirm] = useState(false);
 
-  const [activeDossierTab, setActiveDossierTab] = useState<'general' | 'assignments' | 'audit_log'>('general');
+  const [activeDossierTab, setActiveDossierTab] = useState<"general" | "assignments" | "audit_log">(
+    "general",
+  );
   const [dossierAuditLogs, setDossierAuditLogs] = useState<any[]>([]);
   const [dossierDocRequests, setDossierDocRequests] = useState<any[]>([]);
   const [loadingDossierLogs, setLoadingDossierLogs] = useState(false);
@@ -130,7 +168,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
   useEffect(() => {
     setShowAllHistory(false);
-    setActiveDossierTab('general');
+    setActiveDossierTab("general");
     setAuditLogPage(1);
     setExpandedEventId(null);
 
@@ -138,13 +176,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
     if (selectedWorkerDetailsId) {
       // Fetch the authenticated user email from Supabase to dynamically log the actor
       supabase.auth.getUser().then(({ data: { user } }) => {
-        supabase.rpc('log_anonymous_audit', {
-          p_user_email: user?.email || 'admin@opusform.co.uk',
-          p_action: 'INSPECT',
-          p_target_type: 'staff',
-          p_target_id: selectedWorkerDetailsId,
-          p_details: { inspected: true }
-        }).catch(err => console.error('Failed to log INSPECT audit event:', err));
+        supabase
+          .rpc("log_anonymous_audit", {
+            p_user_email: user?.email || "admin@opusform.co.uk",
+            p_action: "INSPECT",
+            p_target_type: "staff",
+            p_target_id: selectedWorkerDetailsId,
+            p_details: { inspected: true },
+          })
+          .catch((err) => console.error("Failed to log INSPECT audit event:", err));
       });
     }
   }, [selectedWorkerDetailsId]);
@@ -155,25 +195,25 @@ export const RosterView: React.FC<RosterViewProps> = ({
     try {
       const [logsRes, reqsRes] = await Promise.all([
         supabase
-          .from('audit_logs')
-          .select('*')
-          .eq('target_type', 'staff')
-          .eq('target_id', selectedWorkerDetailsId)
-          .order('created_at', { ascending: false }),
+          .from("audit_logs")
+          .select("*")
+          .eq("target_type", "staff")
+          .eq("target_id", selectedWorkerDetailsId)
+          .order("created_at", { ascending: false }),
         supabase
-          .from('document_requests')
-          .select('*')
-          .eq('worker_id', selectedWorkerDetailsId)
-          .order('created_at', { ascending: false })
+          .from("document_requests")
+          .select("*")
+          .eq("worker_id", selectedWorkerDetailsId)
+          .order("created_at", { ascending: false }),
       ]);
 
-      if (logsRes.error) console.error('Error loading audit logs:', logsRes.error);
-      if (reqsRes.error) console.error('Error loading document requests:', reqsRes.error);
+      if (logsRes.error) console.error("Error loading audit logs:", logsRes.error);
+      if (reqsRes.error) console.error("Error loading document requests:", reqsRes.error);
 
       setDossierAuditLogs(logsRes.data || []);
       setDossierDocRequests(reqsRes.data || []);
     } catch (err) {
-      console.error('Fetch logs error:', err);
+      console.error("Fetch logs error:", err);
     } finally {
       setLoadingDossierLogs(false);
     }
@@ -190,12 +230,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
   const handleResendRequest = async (request: any) => {
     if (resendingRequestMap[request.id]) return;
-    setResendingRequestMap(prev => ({ ...prev, [request.id]: true }));
+    setResendingRequestMap((prev) => ({ ...prev, [request.id]: true }));
 
     try {
-      const worker = workers.find(w => w.id === selectedWorkerDetailsId);
+      const worker = workers.find((w) => w.id === selectedWorkerDetailsId);
       if (!worker || !worker.email) {
-        alert('Worker email is missing. Cannot resend request.');
+        toast.error("Worker email is missing", { description: "Cannot resend request." });
         return;
       }
 
@@ -203,12 +243,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
       newExpiresAt.setHours(newExpiresAt.getHours() + 48);
 
       const { data, error: updateError } = await supabase
-        .from('document_requests')
+        .from("document_requests")
         .update({
           expires_at: newExpiresAt.toISOString(),
-          completed_at: null
+          completed_at: null,
         })
-        .eq('id', request.id)
+        .eq("id", request.id)
         .select()
         .single();
 
@@ -216,83 +256,90 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
       // Expire other pending requests for the same worker
       await supabase
-        .from('document_requests')
+        .from("document_requests")
         .update({ expires_at: new Date().toISOString() })
-        .eq('worker_id', selectedWorkerDetailsId)
-        .neq('id', request.id)
-        .is('completed_at', null);
+        .eq("worker_id", selectedWorkerDetailsId)
+        .neq("id", request.id)
+        .is("completed_at", null);
 
       const uploadUrl = `${window.location.origin}/submit-credentials?token=${request.id}`;
 
-      const { error: emailError } = await supabase.functions.invoke('send-compliance-email', {
+      const { error: emailError } = await supabase.functions.invoke("send-compliance-email", {
         body: {
           toEmail: worker.email,
           workerName: worker.name,
           requestedCerts: request.requested_certs,
           uploadUrl: uploadUrl,
-          expiresAt: newExpiresAt.toISOString()
-        }
+          expiresAt: newExpiresAt.toISOString(),
+        },
       });
 
-      let emailSentResult = !emailError;
-      let emailErrorResult = emailError ? emailError.message : '';
+      const emailSentResult = !emailError;
+      const emailErrorResult = emailError ? emailError.message : "";
 
-      await supabase.rpc('log_anonymous_audit', {
-        p_user_email: 'admin@opusform.co.uk',
-        p_action: 'RESEND_DOCUMENT_REQUEST',
-        p_target_type: 'staff',
+      await supabase.rpc("log_anonymous_audit", {
+        p_user_email: "admin@opusform.co.uk",
+        p_action: "RESEND_DOCUMENT_REQUEST",
+        p_target_type: "staff",
         p_target_id: worker.id,
-        p_details: { 
-          request_id: request.id, 
+        p_details: {
+          request_id: request.id,
           requested_certs: request.requested_certs,
           email_sent: emailSentResult,
-          email_error: emailErrorResult || undefined
-        }
+          email_error: emailErrorResult || undefined,
+        },
       });
 
       // Refresh data
       const [updatedReqs, updatedLogs] = await Promise.all([
-        supabase.from('document_requests').select('*').eq('worker_id', selectedWorkerDetailsId).order('created_at', { ascending: false }),
-        supabase.from('audit_logs').select('*').eq('target_type', 'staff').eq('target_id', selectedWorkerDetailsId).order('created_at', { ascending: false })
+        supabase
+          .from("document_requests")
+          .select("*")
+          .eq("worker_id", selectedWorkerDetailsId)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("audit_logs")
+          .select("*")
+          .eq("target_type", "staff")
+          .eq("target_id", selectedWorkerDetailsId)
+          .order("created_at", { ascending: false }),
       ]);
-      
+
       setDossierDocRequests(updatedReqs.data || []);
       setDossierAuditLogs(updatedLogs.data || []);
-
     } catch (e: any) {
-      console.error('Failed to resend request:', e);
-      alert('Failed to resend request: ' + (e.message || e));
+      console.error("Failed to resend request:", e);
+      toast.error("Failed to resend request", { description: e.message || String(e) });
     } finally {
-      setResendingRequestMap(prev => ({ ...prev, [request.id]: false }));
+      setResendingRequestMap((prev) => ({ ...prev, [request.id]: false }));
     }
   };
 
-
   const handleViewDocument = async (documentUrl: string) => {
     if (!documentUrl) return;
-    
-    if (documentUrl.includes('/compliance-documents/')) {
+
+    if (documentUrl.includes("/compliance-documents/")) {
       try {
-        const parts = documentUrl.split('/compliance-documents/');
+        const parts = documentUrl.split("/compliance-documents/");
         const filePath = parts[1];
-        
+
         const { data, error } = await supabase.storage
-          .from('compliance-documents')
+          .from("compliance-documents")
           .createSignedUrl(filePath, 60);
-          
+
         if (error) throw error;
         if (data?.signedUrl) {
-          window.open(data.signedUrl, '_blank');
+          window.open(data.signedUrl, "_blank");
           return;
         }
       } catch (err) {
-        console.error('Failed to generate signed URL:', err);
-        window.open(documentUrl, '_blank');
+        console.error("Failed to generate signed URL:", err);
+        window.open(documentUrl, "_blank");
         return;
       }
     }
-    
-    window.open(documentUrl, '_blank');
+
+    window.open(documentUrl, "_blank");
   };
 
   const executeRevertUpdate = async (oldDetails: any, workerId: string) => {
@@ -308,7 +355,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       const is_archived = oldDetails.is_archived ?? false;
 
       const { error } = await supabase
-        .from('staff')
+        .from("staff")
         .update({
           name,
           role,
@@ -317,91 +364,103 @@ export const RosterView: React.FC<RosterViewProps> = ({
           postcode,
           tickets,
           uploaded_certificates,
-          is_archived
+          is_archived,
         })
-        .eq('id', workerId);
-        
+        .eq("id", workerId);
+
       if (error) throw error;
-      
-      setWorkers(prev => prev.map(w => w.id === workerId ? {
-        ...w,
-        name,
-        role,
-        phone: phone ?? undefined,
-        email: email ?? undefined,
-        postcode: postcode ?? undefined,
-        tickets,
-        uploadedCertificates: uploaded_certificates,
-        isArchived: is_archived
-      } : w));
-      
+
+      setWorkers((prev) =>
+        prev.map((w) =>
+          w.id === workerId
+            ? {
+                ...w,
+                name,
+                role,
+                phone: phone ?? undefined,
+                email: email ?? undefined,
+                postcode: postcode ?? undefined,
+                tickets,
+                uploadedCertificates: uploaded_certificates,
+                isArchived: is_archived,
+              }
+            : w,
+        ),
+      );
+
       setRevertConfirmTarget(null);
-      
+
       setTimeout(() => {
         fetchLogsAndRequests();
       }, 150);
     } catch (err: any) {
       console.error("Failed to revert staff changes:", err);
-      alert(`Error reverting changes: ${err.message}`);
+      toast.error("Error reverting changes", { description: err.message });
     }
   };
 
   const verifyTicket = async (workerId: string, ticketId: string, approve: boolean) => {
-    const worker = workers.find(w => w.id === workerId);
+    const worker = workers.find((w) => w.id === workerId);
     if (!worker) return;
 
     let updatedTickets = [];
     if (approve) {
-      updatedTickets = worker.tickets.map(t => 
-        t.id === ticketId ? { ...t, verified: true } : t
+      updatedTickets = worker.tickets.map((t) =>
+        t.id === ticketId ? { ...t, verified: true } : t,
       );
     } else {
-      updatedTickets = worker.tickets.filter(t => t.id !== ticketId);
+      updatedTickets = worker.tickets.filter((t) => t.id !== ticketId);
     }
 
     const updatedWorker = {
       ...worker,
-      tickets: updatedTickets
+      tickets: updatedTickets,
     };
 
-    setWorkers(prev => prev.map(w => w.id === workerId ? updatedWorker : w));
+    setWorkers((prev) => prev.map((w) => (w.id === workerId ? updatedWorker : w)));
 
     try {
       const { error: dbError } = await supabase
-        .from('staff')
+        .from("staff")
         .update({ tickets: updatedTickets })
-        .eq('id', workerId);
-      
+        .eq("id", workerId);
+
       if (dbError) throw dbError;
 
-      const ticket = worker.tickets.find(t => t.id === ticketId);
-      await supabase.rpc('log_anonymous_audit', {
-        p_user_email: 'admin@opusform.co.uk',
-        p_action: approve ? 'APPROVE_DOCUMENT' : 'REJECT_DOCUMENT',
-        p_target_type: 'staff',
+      const ticket = worker.tickets.find((t) => t.id === ticketId);
+      await supabase.rpc("log_anonymous_audit", {
+        p_user_email: "admin@opusform.co.uk",
+        p_action: approve ? "APPROVE_DOCUMENT" : "REJECT_DOCUMENT",
+        p_target_type: "staff",
         p_target_id: workerId,
-        p_details: { ticket_id: ticketId, ticket_type: ticket?.type, ticket_number: ticket?.ticketNumber }
+        p_details: {
+          ticket_id: ticketId,
+          ticket_type: ticket?.type,
+          ticket_number: ticket?.ticketNumber,
+        },
       });
-      
+
       fetchLogsAndRequests();
     } catch (e) {
-      console.error('Failed to update tickets or log audit:', e);
+      console.error("Failed to update tickets or log audit:", e);
     }
   };
 
   const handleSendReminder = () => {
     if (selectedWorkerDetails) {
-      console.log(`[DISPATCH] Compliance update requested for worker ${selectedWorkerDetails.name}. Automated SMS sent to ${selectedWorkerDetails.phone || 'N/A'} and Email sent to ${selectedWorkerDetails.email || 'N/A'}.`);
+      console.log(
+        `[DISPATCH] Compliance update requested for worker ${selectedWorkerDetails.name}. Automated SMS sent to ${selectedWorkerDetails.phone || "N/A"} and Email sent to ${selectedWorkerDetails.email || "N/A"}.`,
+      );
     }
     setShowReminderConfirm(false);
   };
-  
+
   const handleAddWorkerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
 
     if (!newWorkerName.trim()) {
-      setFormError('Please enter worker name');
+      setFormError("Please enter worker name");
       return;
     }
 
@@ -416,14 +475,16 @@ export const RosterView: React.FC<RosterViewProps> = ({
       email: trimmedEmail || undefined,
       postcode: undefined,
       tickets: [],
-      uploadedCertificates: []
+      uploadedCertificates: [],
     };
 
     setSubmittingWorker(true);
     try {
-      const { error: insertError } = await supabase.from('staff').insert(workerToRow(createdWorker, profile?.tenant_id));
+      const { error: insertError } = await supabase
+        .from("staff")
+        .insert(workerToRow(createdWorker, profile?.tenant_id));
       if (insertError) {
-        setFormError('Failed to save worker. Please try again.');
+        setFormError("Failed to save worker. Please try again.");
         return;
       }
 
@@ -435,12 +496,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
           expiresAt.setHours(expiresAt.getHours() + 48);
 
           const { data: requestRow, error: requestError } = await supabase
-            .from('document_requests')
+            .from("document_requests")
             .insert({
               worker_id: newId,
               requested_certs: [],
               expires_at: expiresAt.toISOString(),
-              tenant_id: profile?.tenant_id
+              tenant_id: profile?.tenant_id,
             })
             .select()
             .single();
@@ -448,68 +509,75 @@ export const RosterView: React.FC<RosterViewProps> = ({
           if (!requestError && requestRow) {
             const uploadUrl = `${window.location.origin}/submit-credentials?token=${requestRow.id}`;
 
-            const { error: emailError } = await supabase.functions.invoke('send-compliance-email', {
+            const { error: emailError } = await supabase.functions.invoke("send-compliance-email", {
               body: {
                 toEmail: trimmedEmail,
                 workerName: createdWorker.name,
                 requestedCerts: [],
                 uploadUrl,
-                expiresAt: expiresAt.toISOString()
-              }
+                expiresAt: expiresAt.toISOString(),
+              },
             });
-            if (emailError) console.error('Failed to send compliance email:', emailError);
+            if (emailError) console.error("Failed to send compliance email:", emailError);
 
-            const { error: auditError } = await supabase.rpc('log_anonymous_audit', {
-              p_user_email: 'admin@opusform.co.uk',
-              p_action: 'CREATE_DOCUMENT_REQUEST',
-              p_target_type: 'staff',
+            const { error: auditError } = await supabase.rpc("log_anonymous_audit", {
+              p_user_email: "admin@opusform.co.uk",
+              p_action: "CREATE_DOCUMENT_REQUEST",
+              p_target_type: "staff",
               p_target_id: newId,
-              p_details: { request_id: requestRow.id, requested_certs: [], email_sent: !emailError }
+              p_details: {
+                request_id: requestRow.id,
+                requested_certs: [],
+                email_sent: !emailError,
+              },
             });
-            if (auditError) console.error('Failed to log audit:', auditError);
+            if (auditError) console.error("Failed to log audit:", auditError);
           } else if (requestError) {
-            console.error('Failed to create document request:', requestError);
+            console.error("Failed to create document request:", requestError);
           }
         } catch (err) {
-          console.error('Compliance request flow failed:', err);
+          console.error("Compliance request flow failed:", err);
         }
       }
 
-      setWorkers(prev => [createdWorker, ...prev]);
+      setWorkers((prev) => [createdWorker, ...prev]);
       setSelectedWorkerDetailsId(newId);
 
       // Reset form
-      setNewWorkerName('');
-      setNewWorkerPhone('');
-      setNewWorkerEmail('');
+      setNewWorkerName("");
+      setNewWorkerPhone("");
+      setNewWorkerEmail("");
       setShowAddWorkerForm(false);
     } finally {
       setSubmittingWorker(false);
     }
   };
 
-  const filteredWorkersList = workers.filter(w => {
-    const query = searchQuery.toLowerCase();
-    
-    // Check if worker's scheduled jobs match the query
-    const workerJobMatches = (shifts || [])
-      .filter(s => s.workerId === w.id)
-      .some(s => {
-        const job = (jobs || []).find(j => j.id === s.jobId);
-        return job && job.siteName.toLowerCase().includes(query);
-      });
+  const filteredWorkersList = workers
+    .filter((w) => {
+      const query = searchQuery.toLowerCase();
 
-    const matchesSearch = !query || 
-                          w.name.toLowerCase().includes(query) || 
-                          (w.phone || '').toLowerCase().includes(query) || 
-                          (w.email || '').toLowerCase().includes(query) || 
-                          workerJobMatches;
-                          
-    const matchesMode = rosterMode === 'active' ? !w.isArchived : w.isArchived;
-    return matchesSearch && matchesMode;
-  }).sort((a, b) => a.name.localeCompare(b.name));
+      // Check if worker's scheduled jobs match the query
+      const workerJobMatches = (shifts || [])
+        .filter((s) => s.workerId === w.id)
+        .some((s) => {
+          const job = (jobs || []).find((j) => j.id === s.jobId);
+          return job && job.siteName.toLowerCase().includes(query);
+        });
 
-  const selectedWorkerDetails = workers.find(w => w.id === selectedWorkerDetailsId) || null;
+      const matchesSearch =
+        !query ||
+        w.name.toLowerCase().includes(query) ||
+        (w.phone || "").toLowerCase().includes(query) ||
+        (w.email || "").toLowerCase().includes(query) ||
+        workerJobMatches;
+
+      const matchesMode = rosterMode === "active" ? !w.isArchived : w.isArchived;
+      return matchesSearch && matchesMode;
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const selectedWorkerDetails = workers.find((w) => w.id === selectedWorkerDetailsId) || null;
   const anchorDate = (() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -517,27 +585,29 @@ export const RosterView: React.FC<RosterViewProps> = ({
   })();
 
   const renderMobileWorkerCard = (worker: Worker) => {
-    const expiredCount = worker.tickets?.filter(t => getTicketStatus(t) === 'EXPIRED').length || 0;
-    const expiringCount = worker.tickets?.filter(t => getTicketStatus(t) === 'EXPIRING_SOON').length || 0;
+    const expiredCount =
+      worker.tickets?.filter((t) => getTicketStatus(t) === "EXPIRED").length || 0;
+    const expiringCount =
+      worker.tickets?.filter((t) => getTicketStatus(t) === "EXPIRING_SOON").length || 0;
     const ticketCount = worker.tickets?.length || 0;
 
-    let statusText = 'ALL CLEAR';
-    let badgeColorClasses = 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold';
-    let avatarBorderColorClasses = 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5';
+    let statusText = "ALL CLEAR";
+    let badgeColorClasses =
+      "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold";
+    let avatarBorderColorClasses = "border-emerald-500/30 text-emerald-400 bg-emerald-500/5";
     if (expiredCount > 0) {
       statusText = `${expiredCount} EXPIRED`;
-      badgeColorClasses = 'bg-red-500/20 border border-red-500/30 text-red-400 font-bold';
-      avatarBorderColorClasses = 'border-red-500/30 text-red-400 bg-red-500/5';
+      badgeColorClasses = "bg-red-500/20 border border-red-500/30 text-red-400 font-bold";
+      avatarBorderColorClasses = "border-red-500/30 text-red-400 bg-red-500/5";
     } else if (expiringCount > 0) {
-      statusText = 'EXPIRING';
-      badgeColorClasses = 'bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold';
-      avatarBorderColorClasses = 'border-amber-500/30 text-amber-400 bg-amber-500/5';
+      statusText = "EXPIRING";
+      badgeColorClasses = "bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold";
+      avatarBorderColorClasses = "border-amber-500/30 text-amber-400 bg-amber-500/5";
     }
 
-    const nameParts = worker.name.split(' ');
-    const initials = nameParts.length > 1 
-      ? `${nameParts[0][0]}${nameParts[1][0]}` 
-      : `${nameParts[0][0] || ''}`;
+    const nameParts = worker.name.split(" ");
+    const initials =
+      nameParts.length > 1 ? `${nameParts[0][0]}${nameParts[1][0]}` : `${nameParts[0][0] || ""}`;
 
     return (
       <div
@@ -546,7 +616,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
         className="bg-[#151518] hover:bg-[#1a1a1e] border border-[#232326] rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all duration-150"
       >
         <div className="flex items-center space-x-3 min-w-0">
-          <div className={`w-9 h-9 rounded-full border flex items-center justify-center font-semibold text-[12px] tracking-wide shrink-0 ${avatarBorderColorClasses}`}>
+          <div
+            className={`w-9 h-9 rounded-full border flex items-center justify-center font-semibold text-[12px] tracking-wide shrink-0 ${avatarBorderColorClasses}`}
+          >
             {initials.toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -559,11 +631,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
           </div>
         </div>
         <div className="flex flex-col items-end shrink-0 space-y-1">
-          <span className={`px-2 py-0.5 rounded text-[9.5px] font-semibold tracking-wider uppercase ${badgeColorClasses}`}>
+          <span
+            className={`px-2 py-0.5 rounded text-[9.5px] font-semibold tracking-wider uppercase ${badgeColorClasses}`}
+          >
             {statusText}
           </span>
           <span className="text-[10px] text-zinc-550 font-medium tracking-wide">
-            {ticketCount} {ticketCount === 1 ? 'ticket' : 'tickets'}
+            {ticketCount} {ticketCount === 1 ? "ticket" : "tickets"}
           </span>
         </div>
       </div>
@@ -573,22 +647,23 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const renderEditForm = () => {
     if (!workerToEdit) return null;
     return (
-      <form onSubmit={(e) => {
+      <form
+        onSubmit={(e) => {
           e.preventDefault();
           setEditError(null);
           if (!editName.trim()) {
-            setEditError('Please enter worker name');
+            setEditError("Please enter worker name");
             return;
           }
 
           // Validate tickets if any
           for (const ticket of editTickets) {
             if (!ticket.type.trim()) {
-              setEditError('Ticket Type cannot be empty');
+              setEditError("Ticket Type cannot be empty");
               return;
             }
             if (!ticket.expiryDate) {
-              setEditError('Expiry Date cannot be empty');
+              setEditError("Expiry Date cannot be empty");
               return;
             }
           }
@@ -600,206 +675,233 @@ export const RosterView: React.FC<RosterViewProps> = ({
             phone: editPhone.trim() || undefined,
             email: editEmail.trim() || undefined,
             postcode: workerToEdit.postcode,
-            tickets: editTickets
+            tickets: editTickets,
           };
 
           // Save to Supabase to trigger automatic audit log capturing
           supabase
-            .from('staff')
+            .from("staff")
             .update({
               name: updatedWorker.name,
               role: updatedWorker.role,
               phone: updatedWorker.phone,
               email: updatedWorker.email,
               postcode: updatedWorker.postcode,
-              tickets: updatedWorker.tickets
+              tickets: updatedWorker.tickets,
             })
-            .eq('id', workerToEdit.id)
+            .eq("id", workerToEdit.id)
             .then(({ error }) => {
               if (error) {
-                console.error('Failed to persist staff changes to Supabase:', error);
-                // Trigger alert on DB failure
-                alert('Failed to save staff changes. Please try again.');
+                console.error("Failed to persist staff changes to Supabase:", error);
+                // Trigger toast on DB failure
+                toast.error("Failed to save staff changes", { description: "Please try again." });
               } else {
                 // Update UI state and close modal only after successful persistence
-                setWorkers(prev => prev.map(w => w.id === workerToEdit.id ? updatedWorker : w));
+                setWorkers((prev) =>
+                  prev.map((w) => (w.id === workerToEdit.id ? updatedWorker : w)),
+                );
                 setWorkerToEdit(null);
                 fetchLogsAndRequests();
               }
             });
-        }} className="space-y-6">
-          
-          {editError && (
-            <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-xs font-bold text-red-400 uppercase tracking-wider">
-              {editError}
-            </div>
-          )}
+        }}
+        className="space-y-6"
+      >
+        {editError && (
+          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-xs font-bold text-red-400 uppercase tracking-wider">
+            {editError}
+          </div>
+        )}
 
-          {/* Form Content Grid */}
-          <div className="grid grid-cols-1 gap-6">
-            {/* General Info */}
-            <div className="flex flex-col">
-              <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
-                <div className="p-5 pb-4 border-b border-white/5 bg-[#161616] flex items-center space-x-3 shrink-0">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-white">General Information</span>
+        {/* Form Content Grid */}
+        <div className="grid grid-cols-1 gap-6">
+          {/* General Info */}
+          <div className="flex flex-col">
+            <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
+              <div className="p-5 pb-4 border-b border-white/5 bg-[#161616] flex items-center space-x-3 shrink-0">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-white">
+                  General Information
+                </span>
+              </div>
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-[#666] mb-1.5 block">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="w-full bg-[#161616] border border-[#333] rounded-xl px-3 py-2.5 text-[11px] font-medium text-white focus:outline-none focus:border-[#5C7285] transition-colors"
+                  />
                 </div>
-                <div className="p-5 space-y-4">
+
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-[#666] mb-1.5 block">Full Name</label>
-                    <input 
-                      type="text" 
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-[#666] mb-1.5 block">
+                      Role
+                    </label>
+                    <select
+                      value={editRole}
+                      onChange={(e) => setEditRole(e.target.value)}
+                      className="w-full bg-[#161616] border border-[#333] rounded-xl px-3 py-2.5 text-[11px] font-medium text-white focus:outline-none focus:border-[#5C7285] transition-colors uppercase font-bold"
+                    >
+                      {STAFF_ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-[#666] mb-1.5 block">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
                       className="w-full bg-[#161616] border border-[#333] rounded-xl px-3 py-2.5 text-[11px] font-medium text-white focus:outline-none focus:border-[#5C7285] transition-colors"
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-[#666] mb-1.5 block">Role</label>
-                      <select
-                        value={editRole}
-                        onChange={(e) => setEditRole(e.target.value)}
-                        className="w-full bg-[#161616] border border-[#333] rounded-xl px-3 py-2.5 text-[11px] font-medium text-white focus:outline-none focus:border-[#5C7285] transition-colors uppercase font-bold"
-                      >
-                        {STAFF_ROLES.map(role => (
-                          <option key={role} value={role}>{role}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-[#666] mb-1.5 block">Phone</label>
-                      <input 
-                        type="tel" 
-                        value={editPhone}
-                        onChange={(e) => setEditPhone(e.target.value)}
-                        className="w-full bg-[#161616] border border-[#333] rounded-xl px-3 py-2.5 text-[11px] font-medium text-white focus:outline-none focus:border-[#5C7285] transition-colors"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-[10px] font-semibold uppercase tracking-wider text-[#666] mb-1.5 block">Email</label>
-                      <input 
-                        type="email" 
-                        value={editEmail}
-                        onChange={(e) => setEditEmail(e.target.value)}
-                        className="w-full bg-[#161616] border border-[#333] rounded-xl px-3 py-2.5 text-[11px] font-medium text-white focus:outline-none focus:border-[#5C7285] transition-colors"
-                      />
-                    </div>
+                  <div>
+                    <label className="text-[10px] font-semibold uppercase tracking-wider text-[#666] mb-1.5 block">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      className="w-full bg-[#161616] border border-[#333] rounded-xl px-3 py-2.5 text-[11px] font-medium text-white focus:outline-none focus:border-[#5C7285] transition-colors"
+                    />
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Tickets Info */}
-            <div className="flex flex-col">
-              <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
-                <div className="p-5 pb-4 border-b border-white/5 bg-[#161616] flex items-center space-x-3 shrink-0">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-white">Tickets & Certifications</span>
-                </div>
-                <div className="p-5 space-y-3">
-                  {editTickets.map((ticket, index) => (
-                    <div key={ticket.id} className="grid grid-cols-12 gap-2 bg-[#161616] p-2 rounded-xl border border-[#2e2e2e]">
-                      <div className="col-span-5">
-                        <input 
-                          type="text" 
-                          value={ticket.type}
-                          onChange={(e) => {
-                            const newTickets = [...editTickets];
-                            newTickets[index].type = e.target.value;
-                            setEditTickets(newTickets);
-                          }}
-                          className="w-full bg-transparent border-none text-[10px] font-bold text-white uppercase px-1 py-1 focus:ring-0"
-                          placeholder="Ticket Type"
-                        />
-                      </div>
-                      <div className="col-span-5">
-                        <input 
-                          type="date" 
-                          value={ticket.expiryDate}
-                          onChange={(e) => {
-                            const newTickets = [...editTickets];
-                            newTickets[index].expiryDate = e.target.value;
-                            setEditTickets(newTickets);
-                          }}
-                          className="w-full bg-transparent border-none text-[10px] text-[#aaa] px-1 py-1 focus:ring-0"
-                        />
-                      </div>
-                      <button 
-                        type="button"
-                        onClick={() => setEditTickets(editTickets.filter((_, i) => i !== index))}
-                        className="col-span-2 text-red-500 hover:text-red-400 flex items-center justify-center"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setEditTickets([...editTickets, { id: `new-${Date.now()}`, type: '', expiryDate: '', ticketNumber: '' }])}
-                    className="w-full py-2 border border-dashed border-[#333] hover:border-[#5C7285]/50 text-[#666] hover:text-[#5C7285] rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all"
+          {/* Tickets Info */}
+          <div className="flex flex-col">
+            <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
+              <div className="p-5 pb-4 border-b border-white/5 bg-[#161616] flex items-center space-x-3 shrink-0">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-white">
+                  Tickets & Certifications
+                </span>
+              </div>
+              <div className="p-5 space-y-3">
+                {editTickets.map((ticket, index) => (
+                  <div
+                    key={ticket.id}
+                    className="grid grid-cols-12 gap-2 bg-[#161616] p-2 rounded-xl border border-[#2e2e2e]"
                   >
-                    + Add New Ticket
-                  </button>
-                </div>
+                    <div className="col-span-5">
+                      <input
+                        type="text"
+                        value={ticket.type}
+                        onChange={(e) => {
+                          const newTickets = [...editTickets];
+                          newTickets[index].type = e.target.value;
+                          setEditTickets(newTickets);
+                        }}
+                        className="w-full bg-transparent border-none text-[10px] font-bold text-white uppercase px-1 py-1 focus:ring-0"
+                        placeholder="Ticket Type"
+                      />
+                    </div>
+                    <div className="col-span-5">
+                      <input
+                        type="date"
+                        value={ticket.expiryDate}
+                        onChange={(e) => {
+                          const newTickets = [...editTickets];
+                          newTickets[index].expiryDate = e.target.value;
+                          setEditTickets(newTickets);
+                        }}
+                        className="w-full bg-transparent border-none text-[10px] text-[#aaa] px-1 py-1 focus:ring-0"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setEditTickets(editTickets.filter((_, i) => i !== index))}
+                      className="col-span-2 text-red-500 hover:text-red-400 flex items-center justify-center"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setEditTickets([
+                      ...editTickets,
+                      { id: `new-${Date.now()}`, type: "", expiryDate: "", ticketNumber: "" },
+                    ])
+                  }
+                  className="w-full py-2 border border-dashed border-[#333] hover:border-[#5C7285]/50 text-[#666] hover:text-[#5C7285] rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all"
+                >
+                  + Add New Ticket
+                </button>
               </div>
             </div>
+          </div>
+        </div>
 
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-[#2e2e2e]">
-            <button
-              type="button"
-              onClick={() => setWorkerToEdit(null)}
-              className="w-full sm:flex-1 py-3.5 border border-[#333] hover:bg-[#222] text-[#aaa] hover:text-white transition-all rounded-xl text-[11px] font-bold uppercase tracking-wider"
-            >
-              Discard Changes
-            </button>
-            <button
-              type="submit"
-              className="w-full sm:flex-1 py-3.5 bg-[#5C7285] hover:bg-[#6c8295] text-white transition-all rounded-xl text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-[#5C7285]/20"
-            >
-              Save & Apply
-            </button>
-          </div>
-        </form>
+        <div className="flex flex-col sm:flex-row items-center gap-3 pt-4 border-t border-[#2e2e2e]">
+          <button
+            type="button"
+            onClick={() => setWorkerToEdit(null)}
+            className="w-full sm:flex-1 py-3.5 border border-[#333] hover:bg-[#222] text-[#aaa] hover:text-white transition-all rounded-xl text-[11px] font-bold uppercase tracking-wider"
+          >
+            Discard Changes
+          </button>
+          <button
+            type="submit"
+            className="w-full sm:flex-1 py-3.5 bg-[#5C7285] hover:bg-[#6c8295] text-white transition-all rounded-xl text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-[#5C7285]/20"
+          >
+            Save & Apply
+          </button>
+        </div>
+      </form>
     );
   };
 
   const renderDetailsDossier = () => {
     if (!selectedWorkerDetails) return null;
     const isShiftHistory = (shift: any) => {
-      const job = (jobs || []).find(j => j.id === shift.jobId);
-      const isJobCompleted = job?.status === 'completed';
-      
+      const job = (jobs || []).find((j) => j.id === shift.jobId);
+      const isJobCompleted = job?.status === "completed";
+
       const shiftDate = new Date(shift.date);
-      shiftDate.setHours(0,0,0,0);
-      
+      shiftDate.setHours(0, 0, 0, 0);
+
       const today = new Date();
-      today.setHours(0,0,0,0);
-      
+      today.setHours(0, 0, 0, 0);
+
       return shiftDate < today || isJobCompleted;
     };
 
     const activeWorkerShifts = (shifts || []).filter(
-      s => s.workerId === selectedWorkerDetails.id && !isShiftHistory(s)
+      (s) => s.workerId === selectedWorkerDetails.id && !isShiftHistory(s),
     );
     const historyWorkerShifts = (shifts || []).filter(
-      s => s.workerId === selectedWorkerDetails.id && isShiftHistory(s)
+      (s) => s.workerId === selectedWorkerDetails.id && isShiftHistory(s),
     );
 
     const groupShifts = (shiftsList: any[]) => {
-      const grouped = shiftsList.reduce((acc, shift) => {
-        if (!acc[shift.jobId]) {
-          acc[shift.jobId] = [];
-        }
-        acc[shift.jobId].push(shift.date);
-        return acc;
-      }, {} as Record<string, string[]>);
+      const grouped = shiftsList.reduce(
+        (acc, shift) => {
+          if (!acc[shift.jobId]) {
+            acc[shift.jobId] = [];
+          }
+          acc[shift.jobId].push(shift.date);
+          return acc;
+        },
+        {} as Record<string, string[]>,
+      );
 
-      Object.keys(grouped).forEach(jobId => {
+      Object.keys(grouped).forEach((jobId) => {
         grouped[jobId].sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
       });
 
@@ -810,9 +912,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
     const groupedHistoryShifts = groupShifts(historyWorkerShifts);
 
     const formatDateRange = (dates: string[]) => {
-      if (dates.length === 0) return 'No dates scheduled';
+      if (dates.length === 0) return "No dates scheduled";
       if (dates.length === 1) return getDayName(dates[0]);
-      
+
       const start = dates[0];
       const end = dates[dates.length - 1];
       return `${getDayName(start)} - ${getDayName(end)}`;
@@ -820,31 +922,44 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
     const getDayName = (dateStr: string) => {
       try {
-        const parts = dateStr.split('-');
+        const parts = dateStr.split("-");
         if (parts.length === 3) {
           const year = parseInt(parts[0], 10);
           const month = parseInt(parts[1], 10) - 1;
           const day = parseInt(parts[2], 10);
           const date = new Date(Date.UTC(year, month, day));
-          
-          const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+          const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+          const monthNames = [
+            "Jan",
+            "Feb",
+            "Mar",
+            "Apr",
+            "May",
+            "Jun",
+            "Jul",
+            "Aug",
+            "Sep",
+            "Oct",
+            "Nov",
+            "Dec",
+          ];
           const dayIndex = date.getUTCDay();
           return `${dayNames[dayIndex]}, ${monthNames[month]} ${day}`;
         }
         return dateStr;
-    } catch {
+      } catch {
         return dateStr;
       }
     };
 
     // Prepare events feed for Audit Log tab
-    const requestEvents = dossierDocRequests.map(r => {
+    const requestEvents = dossierDocRequests.map((r) => {
       const isExpired = new Date(r.expires_at) < new Date();
       const isCompleted = !!r.completed_at;
-      let status = 'pending';
-      if (isCompleted) status = 'completed';
-      else if (isExpired) status = 'expired';
+      let status = "pending";
+      if (isCompleted) status = "completed";
+      else if (isExpired) status = "expired";
 
       // If the request was resent, expires_at is renewed to now + 48 hours.
       // So effective date of the action is expires_at - 48 hours.
@@ -855,37 +970,37 @@ export const RosterView: React.FC<RosterViewProps> = ({
       return {
         id: `req-${r.id}`,
         rawId: r.id,
-        type: 'request',
-        action: 'CREATE_DOCUMENT_REQUEST',
+        type: "request",
+        action: "CREATE_DOCUMENT_REQUEST",
         created_at: actionDate,
-        actor: 'admin@opusform.co.uk',
+        actor: "admin@opusform.co.uk",
         details: {
           requested_certs: r.requested_certs,
           expires_at: r.expires_at,
           completed_at: r.completed_at,
           status,
-          uploadUrl: `${window.location.origin}/submit-credentials?token=${r.id}`
+          uploadUrl: `${window.location.origin}/submit-credentials?token=${r.id}`,
         },
-        rawRecord: r
+        rawRecord: r,
       };
     });
 
     const auditEvents = dossierAuditLogs
-      .map(l => ({
+      .map((l) => ({
         id: `audit-${l.id}`,
         rawId: l.id,
-        type: 'audit',
+        type: "audit",
         action: l.action,
         created_at: l.created_at,
-        actor: l.user_email || 'System / Operative',
+        actor: l.user_email || "System / Operative",
         details: l.details,
-        rawRecord: l
+        rawRecord: l,
       }))
-      .filter(event => {
-        if (event.action === 'CREATE_DOCUMENT_REQUEST') {
+      .filter((event) => {
+        if (event.action === "CREATE_DOCUMENT_REQUEST") {
           return false;
         }
-        if (event.action === 'UPDATE') {
+        if (event.action === "UPDATE") {
           const diff = event.details?.old ? computeDiff(event.details.old, event.details.new) : [];
           return diff.length > 0;
         }
@@ -893,7 +1008,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       });
 
     const allEvents = [...requestEvents, ...auditEvents].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
 
     const ITEMS_PER_PAGE = 10;
@@ -907,33 +1022,33 @@ export const RosterView: React.FC<RosterViewProps> = ({
         <div className="flex border-b border-zinc-800 pb-0 gap-6 mb-4">
           <button
             type="button"
-            onClick={() => setActiveDossierTab('general')}
+            onClick={() => setActiveDossierTab("general")}
             className={`pb-3 text-[11px] font-semibold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-              activeDossierTab === 'general'
-                ? 'border-brand-accent text-white'
-                : 'border-transparent text-[#666] hover:text-white'
+              activeDossierTab === "general"
+                ? "border-brand-accent text-white"
+                : "border-transparent text-[#666] hover:text-white"
             }`}
           >
             Compliance
           </button>
           <button
             type="button"
-            onClick={() => setActiveDossierTab('assignments')}
+            onClick={() => setActiveDossierTab("assignments")}
             className={`pb-3 text-[11px] font-semibold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-              activeDossierTab === 'assignments'
-                ? 'border-brand-accent text-white'
-                : 'border-transparent text-[#666] hover:text-white'
+              activeDossierTab === "assignments"
+                ? "border-brand-accent text-white"
+                : "border-transparent text-[#666] hover:text-white"
             }`}
           >
             Site Assignments
           </button>
           <button
             type="button"
-            onClick={() => setActiveDossierTab('audit_log')}
+            onClick={() => setActiveDossierTab("audit_log")}
             className={`pb-3 text-[11px] font-semibold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-              activeDossierTab === 'audit_log'
-                ? 'border-brand-accent text-white'
-                : 'border-transparent text-[#666] hover:text-white'
+              activeDossierTab === "audit_log"
+                ? "border-brand-accent text-white"
+                : "border-transparent text-[#666] hover:text-white"
             }`}
           >
             Audit Log
@@ -941,20 +1056,20 @@ export const RosterView: React.FC<RosterViewProps> = ({
         </div>
 
         {/* Tab 1: Compliance */}
-        {activeDossierTab === 'general' && (
+        {activeDossierTab === "general" && (
           <div className="space-y-4 animate-in fade-in duration-200">
             {selectedWorkerDetails.tickets.length === 0 ? (
               <div className="p-8 text-center border border-dashed border-[#2a2a2a] rounded-xl text-neutral-500 text-[11px] font-bold uppercase tracking-wider">
                 No compliance certificates or tickets registered
               </div>
             ) : (
-              selectedWorkerDetails.tickets.map(ticket => {
+              selectedWorkerDetails.tickets.map((ticket) => {
                 const status = getTicketStatus(ticket);
                 const isPending = ticket.verified === false;
                 const expiryDate = new Date(ticket.expiryDate);
-                const isExpired = status === 'EXPIRED';
-                const isExpiringSoon = status === 'EXPIRING_SOON';
-                
+                const isExpired = status === "EXPIRED";
+                const isExpiringSoon = status === "EXPIRING_SOON";
+
                 let cardBg = "bg-[#0e1612] border-[#1b2b22] hover:bg-[#121c17]";
                 let iconBox = "border-[#1b2b22] bg-[#121c17] text-[#2ecc71]";
                 let badgeClass = "bg-[#1b2b22] border-[#223d2e] text-[#2ecc71]";
@@ -978,35 +1093,45 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   iconBox = "border-[#382a17] bg-[#221c12] text-[#e67e22]";
                   badgeClass = "bg-[#382a17] border-[#503d22] text-[#e67e22]";
                   LeftIcon = Clock;
-                  
+
                   const anchorDate = new Date();
-                  anchorDate.setHours(0,0,0,0);
+                  anchorDate.setHours(0, 0, 0, 0);
                   const diffTime = expiryDate.getTime() - anchorDate.getTime();
                   const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
                   statusText = `${diffDays} DAYS LEFT`;
                 }
 
-                const formattedDate = expiryDate.toLocaleDateString('en-GB', {
-                  day: '2-digit',
-                  month: 'short',
-                  year: 'numeric'
+                const formattedDate = expiryDate.toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
                 });
 
                 return (
-                  <div key={ticket.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl border gap-3 ${cardBg} transition-all duration-150`}>
+                  <div
+                    key={ticket.id}
+                    className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl border gap-3 ${cardBg} transition-all duration-150`}
+                  >
                     <div className="flex items-center space-x-3.5">
-                      <div className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconBox}`}>
+                      <div
+                        className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconBox}`}
+                      >
                         <LeftIcon className="w-4 h-4" />
                       </div>
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="text-xs font-bold text-white tracking-wide">{ticket.type}</h4>
-                          <span className={`px-2 py-0.5 text-[9.5px] font-semibold rounded-xl uppercase tracking-wider border ${badgeClass}`}>
+                          <h4 className="text-xs font-bold text-white tracking-wide">
+                            {ticket.type}
+                          </h4>
+                          <span
+                            className={`px-2 py-0.5 text-[9.5px] font-semibold rounded-xl uppercase tracking-wider border ${badgeClass}`}
+                          >
                             {statusText}
                           </span>
                         </div>
                         <p className="text-[10px] font-medium text-neutral-500 mt-1">
-                          Ref: {ticket.ticketNumber || 'N/A'} &bull; {isExpired ? 'Expired' : 'Expires'}: {formattedDate}
+                          Ref: {ticket.ticketNumber || "N/A"} &bull;{" "}
+                          {isExpired ? "Expired" : "Expires"}: {formattedDate}
                         </p>
                       </div>
                     </div>
@@ -1024,7 +1149,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         <div className="flex gap-2 w-full sm:w-auto">
                           <button
                             type="button"
-                            onClick={() => ticket.documentUrl ? handleViewDocument(ticket.documentUrl) : alert('No document attached')}
+                            onClick={() =>
+                              ticket.documentUrl
+                                ? handleViewDocument(ticket.documentUrl)
+                                : toast("No document attached")
+                            }
                             className="w-full sm:w-auto px-3.5 py-1.5 border border-zinc-800 hover:bg-zinc-800 text-white rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
                           >
                             View File
@@ -1033,14 +1162,18 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             <>
                               <button
                                 type="button"
-                                onClick={() => verifyTicket(selectedWorkerDetails.id, ticket.id, true)}
+                                onClick={() =>
+                                  verifyTicket(selectedWorkerDetails.id, ticket.id, true)
+                                }
                                 className="w-full sm:w-auto px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                               >
                                 Approve
                               </button>
                               <button
                                 type="button"
-                                onClick={() => verifyTicket(selectedWorkerDetails.id, ticket.id, false)}
+                                onClick={() =>
+                                  verifyTicket(selectedWorkerDetails.id, ticket.id, false)
+                                }
                                 className="w-full sm:w-auto px-3.5 py-1.5 bg-[#4a1a1a] hover:bg-[#6b2121] text-[#ef4444] border border-[#6b2121] rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                               >
                                 Reject
@@ -1057,41 +1190,52 @@ export const RosterView: React.FC<RosterViewProps> = ({
           </div>
         )}
         {/* Tab 2: Site Assignments */}
-        {activeDossierTab === 'assignments' && (
+        {activeDossierTab === "assignments" && (
           <div className="space-y-5 animate-in fade-in duration-200">
             {/* Active Deployments */}
             <div className="space-y-3">
               <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
                 <Calendar className="h-4 w-4 text-[#facc15]" />
-                <h3 className="text-xs font-bold uppercase tracking-wide text-white">Active Site Deployments</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wide text-white">
+                  Active Site Deployments
+                </h3>
               </div>
               {Object.keys(groupedShifts).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(groupedShifts).map(([jobId, shiftDates]) => {
-                    const job = (jobs || []).find(j => j.id === jobId);
+                    const job = (jobs || []).find((j) => j.id === jobId);
                     if (!job) return null;
                     return (
-                      <div key={jobId} className="p-3.5 rounded-xl border border-[#2a2a2a] bg-[#151518]/60 hover:bg-[#1a1a1e] hover:border-zinc-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div
+                        key={jobId}
+                        className="p-3.5 rounded-xl border border-[#2a2a2a] bg-[#151518]/60 hover:bg-[#1a1a1e] hover:border-zinc-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      >
                         <div className="space-y-1">
                           <h4 className="text-xs font-bold text-white tracking-wide flex items-center gap-1.5">
                             <MapPin className="w-3 h-3 text-[#facc15]" />
                             {job.siteName}
                           </h4>
                           <p className="text-[10px] font-medium text-gray-500 leading-none mt-0.5">
-                            Contractor: {job.mainContractor} &bull; Ref: {job.jobRef} &bull; Postcode: {job.postcode || 'N/A'}
+                            Contractor: {job.mainContractor} &bull; Ref: {job.jobRef} &bull;
+                            Postcode: {job.postcode || "N/A"}
                           </p>
                         </div>
                         <div className="flex flex-wrap items-center gap-1.5">
-                          {(shiftDates as string[]).map(dateStr => (
-                            <span key={dateStr} className="px-2 py-0.5 rounded-xl bg-[#202024] border border-[#2d2d33] text-[10px] font-semibold text-zinc-300 tracking-wide">
+                          {(shiftDates as string[]).map((dateStr) => (
+                            <span
+                              key={dateStr}
+                              className="px-2 py-0.5 rounded-xl bg-[#202024] border border-[#2d2d33] text-[10px] font-semibold text-zinc-300 tracking-wide"
+                            >
                               {getDayName(dateStr)}
                             </span>
                           ))}
-                          <span className={`px-2 py-0.5 rounded-xl text-[9px] font-semibold tracking-wider uppercase border ${
-                            job.status === 'active' || job.status === 'in-progress'
-                              ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                              : 'bg-[#252525] border-[#333] text-white/50'
-                          }`}>
+                          <span
+                            className={`px-2 py-0.5 rounded-xl text-[9px] font-semibold tracking-wider uppercase border ${
+                              job.status === "active" || job.status === "in-progress"
+                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                : "bg-[#252525] border-[#333] text-white/50"
+                            }`}
+                          >
                             {job.status}
                           </span>
                         </div>
@@ -1100,7 +1244,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   })}
                 </div>
               ) : (
-                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider py-2">No active site assignments found</p>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider py-2">
+                  No active site assignments found
+                </p>
               )}
             </div>
 
@@ -1108,19 +1254,24 @@ export const RosterView: React.FC<RosterViewProps> = ({
             <div className="space-y-3 pt-2">
               <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
                 <Clock className="h-4 w-4 text-zinc-400" />
-                <h3 className="text-xs font-bold uppercase tracking-wide text-white">Deployment History</h3>
+                <h3 className="text-xs font-bold uppercase tracking-wide text-white">
+                  Deployment History
+                </h3>
               </div>
               {Object.keys(groupedHistoryShifts).length > 0 ? (
                 <div className="space-y-2">
                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                    {(showAllHistory 
+                    {(showAllHistory
                       ? Object.entries(groupedHistoryShifts)
                       : Object.entries(groupedHistoryShifts).slice(0, 5)
                     ).map(([jobId, shiftDates]) => {
-                      const job = (jobs || []).find(j => j.id === jobId);
+                      const job = (jobs || []).find((j) => j.id === jobId);
                       if (!job) return null;
                       return (
-                        <div key={jobId} className="p-3.5 rounded-xl border border-[#222] bg-[#121214]/40 hover:bg-[#151518]/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div
+                          key={jobId}
+                          className="p-3.5 rounded-xl border border-[#222] bg-[#121214]/40 hover:bg-[#151518]/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        >
                           <div className="space-y-1">
                             <h4 className="text-xs font-bold text-zinc-400 tracking-wide flex items-center gap-1.5">
                               <MapPin className="w-3 h-3 text-zinc-650" />
@@ -1131,8 +1282,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             </p>
                           </div>
                           <div className="flex flex-wrap items-center gap-1.5">
-                            {(shiftDates as string[]).map(dateStr => (
-                              <span key={dateStr} className="px-2 py-0.5 rounded-xl bg-[#1a1a1c] border border-zinc-900 text-[10px] font-semibold text-zinc-500 tracking-wide">
+                            {(shiftDates as string[]).map((dateStr) => (
+                              <span
+                                key={dateStr}
+                                className="px-2 py-0.5 rounded-xl bg-[#1a1a1c] border border-zinc-900 text-[10px] font-semibold text-zinc-500 tracking-wide"
+                              >
                                 {getDayName(dateStr)}
                               </span>
                             ))}
@@ -1151,76 +1305,82 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         onClick={() => setShowAllHistory(!showAllHistory)}
                         className="text-[10px] font-bold text-[#facc15] hover:text-[#eab308] uppercase tracking-wider px-3.5 py-2 rounded-xl bg-[#151518] border border-[#232326] transition-all hover:bg-[#1c1c1c] active:scale-95"
                       >
-                        {showAllHistory ? 'Show Less History' : `View All History (${Object.keys(groupedHistoryShifts).length} total)`}
+                        {showAllHistory
+                          ? "Show Less History"
+                          : `View All History (${Object.keys(groupedHistoryShifts).length} total)`}
                       </button>
                     </div>
                   )}
                 </div>
               ) : (
-                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider py-2">No completed or archived shifts found</p>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider py-2">
+                  No completed or archived shifts found
+                </p>
               )}
             </div>
-
           </div>
         )}
 
         {/* Tab 3: Audit & Requests Log */}
-        {activeDossierTab === 'audit_log' && (
+        {activeDossierTab === "audit_log" && (
           <div className="space-y-4 animate-in fade-in duration-200">
-
-
             {loadingDossierLogs && allEvents.length === 0 ? (
               <div className="text-center py-12 border border-[#2a2a2a] bg-[#1c1c1c] rounded-xl">
                 <RefreshCw className="w-8 h-8 text-[#facc15]/60 animate-spin mx-auto mb-3" />
-                <p className="text-[10px] font-black text-[#888] uppercase tracking-widest">Loading history log...</p>
+                <p className="text-[10px] font-black text-[#888] uppercase tracking-widest">
+                  Loading history log...
+                </p>
               </div>
             ) : allEvents.length > 0 ? (
               <div className="divide-y divide-[#1e1e24] px-1">
-                {paginatedEvents.map(event => {
-                  const date = new Date(event.created_at).toLocaleString('en-GB', {
-                    day: '2-digit', month: 'short', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit'
+                {paginatedEvents.map((event) => {
+                  const date = new Date(event.created_at).toLocaleString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
                   });
 
                   const isExpanded = expandedEventId === event.id;
 
                   // Colored severity bullets matching Audit Trail
-                  let bulletColor = 'bg-[#6C8295]';
+                  let bulletColor = "bg-[#6C8295]";
                   let logTitle = "System Event";
 
-                  if (event.type === 'request') {
+                  if (event.type === "request") {
                     const status = event.details?.status;
-                    if (status === 'completed') {
-                      bulletColor = 'bg-[#10b981]';
-                    } else if (status === 'expired') {
-                      bulletColor = 'bg-[#ef4444]';
+                    if (status === "completed") {
+                      bulletColor = "bg-[#10b981]";
+                    } else if (status === "expired") {
+                      bulletColor = "bg-[#ef4444]";
                     } else {
-                      bulletColor = 'bg-[#f59e0b]'; // pending
+                      bulletColor = "bg-[#f59e0b]"; // pending
                     }
                     logTitle = "Document Request Sent";
                   } else {
                     const action = event.action;
-                    if (action === 'APPROVE_DOCUMENT' || action === 'SUBMIT_DOCUMENTS') {
-                      bulletColor = 'bg-[#10b981]';
-                    } else if (action === 'REJECT_DOCUMENT') {
-                      bulletColor = 'bg-[#ef4444]';
-                    } else if (action === 'CREATE' || action === 'UPDATE') {
-                      bulletColor = 'bg-[#6C8295]';
+                    if (action === "APPROVE_DOCUMENT" || action === "SUBMIT_DOCUMENTS") {
+                      bulletColor = "bg-[#10b981]";
+                    } else if (action === "REJECT_DOCUMENT") {
+                      bulletColor = "bg-[#ef4444]";
+                    } else if (action === "CREATE" || action === "UPDATE") {
+                      bulletColor = "bg-[#6C8295]";
                     } else {
-                      bulletColor = 'bg-[#f59e0b]';
+                      bulletColor = "bg-[#f59e0b]";
                     }
 
-                    if (action === 'APPROVE_DOCUMENT') {
+                    if (action === "APPROVE_DOCUMENT") {
                       logTitle = "Compliance Document Approved";
-                    } else if (action === 'REJECT_DOCUMENT') {
+                    } else if (action === "REJECT_DOCUMENT") {
                       logTitle = "Compliance Document Rejected/Purged";
-                    } else if (action === 'SUBMIT_DOCUMENTS') {
+                    } else if (action === "SUBMIT_DOCUMENTS") {
                       logTitle = "Operative Documents Uploaded";
-                    } else if (action === 'RESEND_DOCUMENT_REQUEST') {
+                    } else if (action === "RESEND_DOCUMENT_REQUEST") {
                       logTitle = "Document Request Link Resent";
-                    } else if (action === 'CREATE' || action === 'UPDATE') {
+                    } else if (action === "CREATE" || action === "UPDATE") {
                       logTitle = "Staff Profile Change";
-                    } else if (action === 'INSPECT') {
+                    } else if (action === "INSPECT") {
                       logTitle = "Staff Dossier Inspected";
                     } else {
                       logTitle = "System Action Logged";
@@ -1232,44 +1392,51 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   let diff: any[] = [];
                   let badgeColor = "bg-zinc-900/40 border-zinc-800 text-zinc-500";
 
-                  if (event.type !== 'request') {
+                  if (event.type !== "request") {
                     const action = event.action;
-                    if (action === 'APPROVE_DOCUMENT') {
+                    if (action === "APPROVE_DOCUMENT") {
                       badgeColor = "bg-emerald-950/20 border-emerald-900/30 text-emerald-400";
-                      summaryText = `${event.details?.ticket_type || 'Certificate'} (Ref: ${event.details?.ticket_number || 'N/A'})`;
-                    } else if (action === 'REJECT_DOCUMENT') {
+                      summaryText = `${event.details?.ticket_type || "Certificate"} (Ref: ${event.details?.ticket_number || "N/A"})`;
+                    } else if (action === "REJECT_DOCUMENT") {
                       badgeColor = "bg-red-950/20 border-red-900/30 text-red-400";
-                      summaryText = `${event.details?.ticket_type || 'Certificate'} (Ref: ${event.details?.ticket_number || 'N/A'})`;
-                    } else if (action === 'SUBMIT_DOCUMENTS') {
+                      summaryText = `${event.details?.ticket_type || "Certificate"} (Ref: ${event.details?.ticket_number || "N/A"})`;
+                    } else if (action === "SUBMIT_DOCUMENTS") {
                       badgeColor = "bg-emerald-950/20 border-emerald-900/30 text-emerald-400";
                       const submittedCerts = event.details?.tickets_submitted || [];
-                      summaryText = `Submitted: ${submittedCerts.map((c: any) => c.type).join(', ')}`;
-                    } else if (action === 'RESEND_DOCUMENT_REQUEST') {
+                      summaryText = `Submitted: ${submittedCerts.map((c: any) => c.type).join(", ")}`;
+                    } else if (action === "RESEND_DOCUMENT_REQUEST") {
                       badgeColor = "bg-brand-accent/5 border-brand-accent/20 text-brand-accent";
                       summaryText = "Document request email renewed and dispatched to operative.";
-                    } else if (action === 'CREATE' || action === 'UPDATE') {
+                    } else if (action === "CREATE" || action === "UPDATE") {
                       badgeColor = "bg-zinc-900/40 border-zinc-800 text-zinc-400";
-                      if (action === 'CREATE') {
+                      if (action === "CREATE") {
                         summaryText = "Initial database record created for staff member";
                       } else {
                         summaryText = "Administrative updates applied to database record";
-                        diff = event.details?.old ? computeDiff(event.details.old, event.details.new) : [];
+                        diff = event.details?.old
+                          ? computeDiff(event.details.old, event.details.new)
+                          : [];
                       }
-                    } else if (action === 'INSPECT') {
+                    } else if (action === "INSPECT") {
                       badgeColor = "bg-blue-950/20 border-blue-900/30 text-blue-400";
                       summaryText = "Staff dossier profile viewed by administrator";
                     } else {
-                      summaryText = typeof event.details === 'string' ? event.details : JSON.stringify(event.details || {});
+                      summaryText =
+                        typeof event.details === "string"
+                          ? event.details
+                          : JSON.stringify(event.details || {});
                     }
                   }
 
                   return (
                     <div key={event.id} className="py-3.5 transition-all">
-                      <div 
+                      <div
                         onClick={() => setExpandedEventId(isExpanded ? null : event.id)}
                         className="flex gap-4 cursor-pointer hover:bg-white/[0.02] px-2.5 py-2.5 rounded-xl transition-all"
                       >
-                        <div className={`w-2.5 h-2.5 rounded-full ${bulletColor} mt-1.5 shrink-0`} />
+                        <div
+                          className={`w-2.5 h-2.5 rounded-full ${bulletColor} mt-1.5 shrink-0`}
+                        />
                         <div className="flex-1 min-w-0">
                           <h4 className="text-[13px] font-semibold text-white uppercase tracking-wider leading-tight">
                             {logTitle}
@@ -1282,54 +1449,63 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
                       {isExpanded && (
                         <div className="pl-[26px] pr-2.5 pt-2 pb-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                          {event.type === 'request' ? (
+                          {event.type === "request" ? (
                             <div className="space-y-3 bg-[#151518]/60 border border-zinc-800 rounded-xl p-3.5 mt-1">
                               <div className="flex items-center justify-between">
-                                <span className={`px-2 py-0.5 text-[8.5px] font-black uppercase rounded border tracking-widest ${
-                                  event.details?.status === 'completed' 
-                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400' 
-                                    : event.details?.status === 'expired' 
-                                      ? 'bg-red-500/10 border-red-500/30 text-red-400' 
-                                      : 'bg-[#2c2100] border-[#facc15]/20 text-[#ffd666]'
-                                }`}>
+                                <span
+                                  className={`px-2 py-0.5 text-[8.5px] font-black uppercase rounded border tracking-widest ${
+                                    event.details?.status === "completed"
+                                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                      : event.details?.status === "expired"
+                                        ? "bg-red-500/10 border-red-500/30 text-red-400"
+                                        : "bg-[#2c2100] border-[#facc15]/20 text-[#ffd666]"
+                                  }`}
+                                >
                                   Status: {event.details?.status}
                                 </span>
-                                <div className={`flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-wider ${
-                                  event.details?.status === 'completed'
-                                    ? 'text-emerald-400'
-                                    : event.details?.status === 'expired'
-                                      ? 'text-red-400'
-                                      : 'text-[#ffd666]'
-                                }`}>
+                                <div
+                                  className={`flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-wider ${
+                                    event.details?.status === "completed"
+                                      ? "text-emerald-400"
+                                      : event.details?.status === "expired"
+                                        ? "text-red-400"
+                                        : "text-[#ffd666]"
+                                  }`}
+                                >
                                   <Clock className="h-3.5 w-3.5" />
                                   <span>
-                                    {event.details?.status === 'pending' ? (
-                                      `Expires: ${new Date(event.details?.expires_at).toLocaleString('en-GB')}`
-                                    ) : event.details?.status === 'completed' ? (
-                                      `Completed: ${new Date(event.details?.completed_at).toLocaleString('en-GB')}`
-                                    ) : (
-                                      "Link Expired"
-                                    )}
+                                    {event.details?.status === "pending"
+                                      ? `Expires: ${new Date(event.details?.expires_at).toLocaleString("en-GB")}`
+                                      : event.details?.status === "completed"
+                                        ? `Completed: ${new Date(event.details?.completed_at).toLocaleString("en-GB")}`
+                                        : "Link Expired"}
                                   </span>
                                 </div>
                               </div>
 
                               <div>
-                                <h5 className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Requested Certifications</h5>
+                                <h5 className="text-[9px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">
+                                  Requested Certifications
+                                </h5>
                                 <div className="flex flex-wrap gap-1.5">
                                   {(event.details?.requested_certs || []).map((c: string) => (
-                                    <span key={c} className="px-2.5 py-1 bg-[#202024] text-[9.5px] font-semibold text-zinc-300 rounded border border-[#2d2d33]">
+                                    <span
+                                      key={c}
+                                      className="px-2.5 py-1 bg-[#202024] text-[9.5px] font-semibold text-zinc-300 rounded border border-[#2d2d33]"
+                                    >
                                       {c}
                                     </span>
                                   ))}
                                 </div>
                               </div>
 
-                              {event.details?.status === 'pending' && (
+                              {event.details?.status === "pending" && (
                                 <div className="flex gap-2 pt-2 border-t border-zinc-800">
                                   <button
                                     type="button"
-                                    onClick={() => handleCopyLink(event.details?.uploadUrl, event.id)}
+                                    onClick={() =>
+                                      handleCopyLink(event.details?.uploadUrl, event.id)
+                                    }
                                     className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#202024] hover:bg-[#28282f] rounded text-[9px] font-bold uppercase border border-[#2d2d33] cursor-pointer text-white"
                                   >
                                     {copiedRequestId === event.id ? (
@@ -1363,23 +1539,30 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           ) : (
                             <div className="space-y-3 bg-[#151518]/60 border border-zinc-800 rounded-xl p-3.5 mt-1">
                               <div className="flex items-center justify-between">
-                                <span className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border ${badgeColor}`}>
+                                <span
+                                  className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border ${badgeColor}`}
+                                >
                                   Action: {event.action}
                                 </span>
-                                {event.action === 'UPDATE' && diff.length > 0 && (
+                                {event.action === "UPDATE" && diff.length > 0 && (
                                   <button
                                     type="button"
-                                    onClick={() => setRevertConfirmTarget({
-                                      oldDetails: event.details?.old,
-                                      currentDetails: {
-                                        name: selectedWorkerDetails?.name,
-                                        role: selectedWorkerDetails?.role,
-                                        phone: selectedWorkerDetails?.phone,
-                                        email: selectedWorkerDetails?.email,
-                                        postcode: selectedWorkerDetails?.postcode,
-                                      },
-                                      workerId: event.rawRecord?.target_id || selectedWorkerDetailsId || ''
-                                    })}
+                                    onClick={() =>
+                                      setRevertConfirmTarget({
+                                        oldDetails: event.details?.old,
+                                        currentDetails: {
+                                          name: selectedWorkerDetails?.name,
+                                          role: selectedWorkerDetails?.role,
+                                          phone: selectedWorkerDetails?.phone,
+                                          email: selectedWorkerDetails?.email,
+                                          postcode: selectedWorkerDetails?.postcode,
+                                        },
+                                        workerId:
+                                          event.rawRecord?.target_id ||
+                                          selectedWorkerDetailsId ||
+                                          "",
+                                      })
+                                    }
                                     className="px-2.5 py-1 rounded bg-zinc-800 hover:bg-[#facc15]/10 text-zinc-300 hover:text-[#facc15] border border-zinc-700 hover:border-[#facc15]/30 text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer"
                                   >
                                     Revert Changes
@@ -1388,14 +1571,18 @@ export const RosterView: React.FC<RosterViewProps> = ({
                               </div>
 
                               <div className="space-y-2">
-                                {event.action === 'RESEND_DOCUMENT_REQUEST' && event.details?.requested_certs ? (
+                                {event.action === "RESEND_DOCUMENT_REQUEST" &&
+                                event.details?.requested_certs ? (
                                   <div className="space-y-2">
                                     <p className="text-[10.5px] font-bold text-zinc-350 font-sans leading-relaxed">
                                       {summaryText}
                                     </p>
                                     <div className="flex flex-wrap gap-1.5">
                                       {event.details.requested_certs.map((c: string) => (
-                                        <span key={c} className="px-2.5 py-1 bg-[#202024] text-[9.5px] font-semibold text-zinc-300 rounded border border-[#2d2d33] whitespace-nowrap">
+                                        <span
+                                          key={c}
+                                          className="px-2.5 py-1 bg-[#202024] text-[9.5px] font-semibold text-zinc-300 rounded border border-[#2d2d33] whitespace-nowrap"
+                                        >
                                           {c}
                                         </span>
                                       ))}
@@ -1424,7 +1611,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   <div className="flex items-center justify-between pt-3 border-t border-zinc-900">
                     <button
                       type="button"
-                      onClick={() => setAuditLogPage(prev => Math.max(1, prev - 1))}
+                      onClick={() => setAuditLogPage((prev) => Math.max(1, prev - 1))}
                       disabled={auditLogPage === 1}
                       className="px-3.5 py-1.5 bg-[#151518]/60 border border-[#232326] text-[10px] font-bold uppercase tracking-wider rounded-lg text-zinc-400 hover:text-white transition-all disabled:opacity-40 cursor-pointer"
                     >
@@ -1435,7 +1622,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setAuditLogPage(prev => Math.min(totalPages, prev + 1))}
+                      onClick={() => setAuditLogPage((prev) => Math.min(totalPages, prev + 1))}
                       disabled={auditLogPage === totalPages}
                       className="px-3.5 py-1.5 bg-[#151518]/60 border border-[#232326] text-[10px] font-bold uppercase tracking-wider rounded-lg text-zinc-400 hover:text-white transition-all disabled:opacity-40 cursor-pointer"
                     >
@@ -1447,7 +1634,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
             ) : (
               <div className="text-center py-12 border border-dashed border-zinc-800 rounded-xl bg-zinc-950/10">
                 <FileText className="w-8 h-8 text-zinc-700 mx-auto mb-3" />
-                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">No audit or request events logged</p>
+                <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest">
+                  No audit or request events logged
+                </p>
               </div>
             )}
           </div>
@@ -1455,232 +1644,186 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
         {/* Request Compliance Update Modal */}
         {selectedWorkerDetails && (
-          <RequestCredentialsModal 
-            isOpen={showReminderConfirm} 
-            onClose={() => setShowReminderConfirm(false)} 
-            worker={selectedWorkerDetails} 
+          <RequestCredentialsModal
+            isOpen={showReminderConfirm}
+            onClose={() => setShowReminderConfirm(false)}
+            worker={selectedWorkerDetails}
           />
         )}
 
-          {/* Archive Confirmation Modal */}
-          {selectedWorkerToDelete && (
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 text-left">
-              <div className="fixed inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setSelectedWorkerToDelete(null)} />
-              <div className="bg-[#1f2125] border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
-                <div className="p-6 pb-4 border-b border-zinc-850 bg-zinc-950/10 flex items-center space-x-3.5">
-                  <div className="w-10 h-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
-                    <AlertTriangle className="w-5 h-5 text-amber-500" />
-                  </div>
-                  <div>
-                    <h3 className="text-[13px] font-bold uppercase tracking-wider text-zinc-100">Archive Staff Profile</h3>
-                    <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-normal mt-0.5">Soft delete worker record</p>
-                  </div>
-                </div>
-                
-                <div className="p-6 space-y-4">
-                  <p className="text-[13px] font-medium text-zinc-300 leading-relaxed">
-                    Are you sure you want to archive the profile of <span className="font-bold text-white">{selectedWorkerToDelete.name}</span> (<span className="text-brand-accent">{selectedWorkerToDelete.role}</span>)?
-                  </p>
-                  <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-lg text-[12px] font-medium text-zinc-400 leading-relaxed">
-                    This worker will be soft-deleted and removed from the active roster and shift planner. However, their historic deployments and records will be preserved.
-                  </div>
-                </div>
+        {/* Archive Confirmation Modal */}
+        <ConfirmDialog
+          open={!!selectedWorkerToDelete}
+          onOpenChange={(open) => {
+            if (!open) setSelectedWorkerToDelete(null);
+          }}
+          tone="destructive"
+          title="Archive Staff Profile"
+          message={
+            selectedWorkerToDelete && (
+              <>
+                Are you sure you want to archive the profile of{" "}
+                <span className="font-bold text-foreground">{selectedWorkerToDelete.name}</span> (
+                {selectedWorkerToDelete.role})?
+                <br />
+                <br />
+                This worker will be soft-deleted and removed from the active roster and shift
+                planner. However, their historic deployments and records will be preserved.
+              </>
+            )
+          }
+          confirmLabel="Archive Profile"
+          onConfirm={() => {
+            if (!selectedWorkerToDelete) return;
+            setWorkers((prev) =>
+              prev.map((w) =>
+                w.id === selectedWorkerToDelete.id ? { ...w, isArchived: true } : w,
+              ),
+            );
+            setSelectedWorkerDetailsId(null);
+            setSelectedWorkerToDelete(null);
+          }}
+        />
 
-                <div className="p-6 bg-zinc-950/10 border-t border-zinc-850 flex items-center space-x-3">
-                  <button
-                    onClick={() => setSelectedWorkerToDelete(null)}
-                    className="flex-1 py-3 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all rounded text-[12px] font-bold uppercase tracking-wider cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      setWorkers(prev => prev.map(w => w.id === selectedWorkerToDelete.id ? { ...w, isArchived: true } : w));
-                      setSelectedWorkerDetailsId(null);
-                      setSelectedWorkerToDelete(null);
-                    }}
-                    className="flex-1 py-3 bg-amber-600 hover:bg-amber-500 text-white transition-all rounded text-[12px] font-bold uppercase tracking-wider shadow-lg shadow-amber-600/10 cursor-pointer"
-                  >
-                    Archive Profile
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Revert Changes Confirmation Modal */}
-          {revertConfirmTarget && (
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 text-left">
-              <div className="fixed inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setRevertConfirmTarget(null)} />
-              <div className="bg-[#1f2125] border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
-                <div className="p-6 pb-4 border-b border-zinc-850 bg-zinc-950/10 flex items-center space-x-3.5">
-                  <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-                    <History className="w-5 h-5 text-blue-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-[13px] font-bold uppercase tracking-wider text-zinc-100">Revert Profile Changes</h3>
-                    <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-normal mt-0.5">Restore previous snapshot</p>
-                  </div>
-                </div>
-
-                <div className="p-6 space-y-4">
-                  <p className="text-[13px] font-medium text-zinc-300 leading-relaxed">
-                    The following values will be restored to the staff profile:
-                  </p>
-                  <div className="bg-zinc-950/40 border border-zinc-900 rounded-lg divide-y divide-zinc-900 text-[12px]">
-                    {(() => {
-                      const { oldDetails: old, currentDetails: cur } = revertConfirmTarget;
-                      const fields: { key: keyof typeof old; label: string }[] = [
-                        { key: 'name', label: 'Name' },
-                        { key: 'role', label: 'Role' },
-                        { key: 'phone', label: 'Phone' },
-                        { key: 'email', label: 'Email' },
-                        { key: 'postcode', label: 'Postcode' },
-                      ];
-                      return fields
-                        .filter(f => old?.[f.key])
-                        .map(f => {
-                          const oldVal = old?.[f.key];
-                          const curVal = cur?.[f.key];
-                          const changed = oldVal !== curVal;
-                          return (
-                            <div
-                              key={f.key}
-                              className={`flex items-center justify-between px-4 py-2.5 ${
-                                changed ? 'bg-amber-500/5 border-l-2 border-amber-500/40' : ''
+        {/* Revert Changes Confirmation Modal */}
+        <ConfirmDialog
+          open={!!revertConfirmTarget}
+          onOpenChange={(open) => {
+            if (!open) setRevertConfirmTarget(null);
+          }}
+          tone="neutral"
+          title="Revert Profile Changes"
+          message={
+            revertConfirmTarget && (
+              <>
+                The following values will be restored to the staff profile:
+                <div className="bg-muted/40 border border-border rounded-lg divide-y divide-border text-[12px] mt-3">
+                  {(() => {
+                    const { oldDetails: old, currentDetails: cur } = revertConfirmTarget;
+                    const fields: { key: keyof typeof old; label: string }[] = [
+                      { key: "name", label: "Name" },
+                      { key: "role", label: "Role" },
+                      { key: "phone", label: "Phone" },
+                      { key: "email", label: "Email" },
+                      { key: "postcode", label: "Postcode" },
+                    ];
+                    return fields
+                      .filter((f) => old?.[f.key])
+                      .map((f) => {
+                        const oldVal = old?.[f.key];
+                        const curVal = cur?.[f.key];
+                        const changed = oldVal !== curVal;
+                        return (
+                          <div
+                            key={f.key}
+                            className={`flex items-center justify-between px-4 py-2.5 ${
+                              changed ? "bg-amber-500/5 border-l-2 border-amber-500/40" : ""
+                            }`}
+                          >
+                            <span
+                              className={`font-semibold uppercase tracking-wider text-[10px] ${
+                                changed ? "text-amber-400/70" : "text-muted-foreground"
                               }`}
                             >
-                              <span className={`font-semibold uppercase tracking-wider text-[10px] ${
-                                changed ? 'text-amber-400/70' : 'text-zinc-500'
-                              }`}>{f.label}</span>
-                              <div className="flex items-center gap-2 text-right">
-                                {changed && curVal && (
-                                  <span className="line-through text-zinc-600 text-[11px]">{curVal}</span>
-                                )}
-                                {changed && curVal && (
-                                  <span className="text-zinc-500 text-[10px]">→</span>
-                                )}
-                                <span className={`font-bold ${
-                                  changed ? 'text-amber-300' : 'text-white'
-                                }`}>{oldVal}</span>
-                              </div>
+                              {f.label}
+                            </span>
+                            <div className="flex items-center gap-2 text-right">
+                              {changed && curVal && (
+                                <span className="line-through text-muted-foreground text-[11px]">
+                                  {curVal}
+                                </span>
+                              )}
+                              {changed && curVal && (
+                                <span className="text-muted-foreground text-[10px]">→</span>
+                              )}
+                              <span
+                                className={`font-bold ${
+                                  changed ? "text-amber-300" : "text-foreground"
+                                }`}
+                              >
+                                {oldVal}
+                              </span>
                             </div>
-                          );
-                        });
-                    })()}
-                  </div>
+                          </div>
+                        );
+                      });
+                  })()}
                 </div>
+              </>
+            )
+          }
+          confirmLabel="Revert Profile"
+          onConfirm={() => {
+            if (!revertConfirmTarget) return;
+            executeRevertUpdate(revertConfirmTarget.oldDetails, revertConfirmTarget.workerId);
+          }}
+        />
 
-                <div className="p-6 bg-zinc-950/10 border-t border-zinc-850 flex items-center space-x-3">
-                  <button
-                    onClick={() => setRevertConfirmTarget(null)}
-                    className="flex-1 py-3 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all rounded text-[12px] font-bold uppercase tracking-wider cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => executeRevertUpdate(revertConfirmTarget.oldDetails, revertConfirmTarget.workerId)}
-                    className="flex-1 py-3 bg-blue-600 hover:bg-blue-500 text-white transition-all rounded text-[12px] font-bold uppercase tracking-wider shadow-lg shadow-blue-600/10 cursor-pointer"
-                  >
-                    Revert Profile
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+        {/* Permanent Delete Confirmation Modal */}
+        <ConfirmDialog
+          open={!!selectedWorkerToPermanentDelete}
+          onOpenChange={(open) => {
+            if (!open) setSelectedWorkerToPermanentDelete(null);
+          }}
+          tone="destructive"
+          title="Delete Staff Member"
+          message={
+            selectedWorkerToPermanentDelete && (
+              <>
+                Are you absolutely sure you want to permanently delete{" "}
+                <span className="font-bold text-foreground">
+                  {selectedWorkerToPermanentDelete.name}
+                </span>
+                ?
+                <br />
+                <br />
+                WARNING: This action is irreversible. All records, compliance certificates, and
+                schedules associated with this staff member will be permanently purged from the
+                database.
+              </>
+            )
+          }
+          confirmLabel="Purge Record"
+          onConfirm={() => {
+            if (!selectedWorkerToPermanentDelete) return;
+            setWorkers((prev) => prev.filter((w) => w.id !== selectedWorkerToPermanentDelete.id));
+            setSelectedWorkerDetailsId(null);
+            setSelectedWorkerToPermanentDelete(null);
+          }}
+        />
 
-          {/* Permanent Delete Confirmation Modal */}
-          {selectedWorkerToPermanentDelete && (
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 text-left">
-              <div className="fixed inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setSelectedWorkerToPermanentDelete(null)} />
-              <div className="bg-[#1f2125] border border-red-900/30 rounded-2xl w-full max-w-md overflow-hidden relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
-                <div className="p-6 pb-4 border-b border-red-950/10 bg-red-950/10 flex items-center space-x-3.5">
-                  <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center shrink-0">
-                    <AlertTriangle className="w-5 h-5 text-red-500 animate-pulse" />
-                  </div>
-                  <div>
-                    <h3 className="text-[13px] font-bold uppercase tracking-wider text-red-400">Delete Staff Member</h3>
-                    <p className="text-[11px] font-medium text-red-500/50 uppercase tracking-normal mt-0.5">Permanent record deletion</p>
-                  </div>
-                </div>
-                
-                <div className="p-6 space-y-4">
-                  <p className="text-[13px] font-medium text-zinc-300 leading-relaxed">
-                    Are you absolutely sure you want to permanently delete <span className="font-bold text-white">{selectedWorkerToPermanentDelete.name}</span>?
-                  </p>
-                  <div className="p-4 bg-red-950/10 border border-red-900/20 rounded-lg text-[12px] font-semibold text-red-400/90 leading-relaxed uppercase tracking-wider">
-                    WARNING: This action is irreversible. All records, compliance certificates, and schedules associated with this staff member will be permanently purged from the database.
-                  </div>
-                </div>
-
-                <div className="p-6 bg-zinc-950/10 border-t border-zinc-850 flex items-center space-x-3">
-                  <button
-                    onClick={() => setSelectedWorkerToPermanentDelete(null)}
-                    className="flex-1 py-3 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all rounded text-[12px] font-bold uppercase tracking-wider cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      setWorkers(prev => prev.filter(w => w.id !== selectedWorkerToPermanentDelete.id));
-                      setSelectedWorkerDetailsId(null);
-                      setSelectedWorkerToPermanentDelete(null);
-                    }}
-                    className="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white transition-all rounded text-[12px] font-bold uppercase tracking-wider shadow-lg shadow-red-600/10 cursor-pointer"
-                  >
-                    Purge Record
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Restore Confirmation Modal */}
-          {selectedWorkerToRestore && (
-            <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 text-left">
-              <div className="fixed inset-0 bg-black/85 backdrop-blur-sm" onClick={() => setSelectedWorkerToRestore(null)} />
-              <div className="bg-[#1f2125] border border-zinc-800 rounded-2xl w-full max-w-md overflow-hidden relative z-10 shadow-2xl animate-in zoom-in-95 duration-200">
-                <div className="p-6 pb-4 border-b border-zinc-850 bg-zinc-950/10 flex items-center space-x-3.5">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 flex items-center justify-center shrink-0">
-                    <UserCheck className="w-5 h-5 text-emerald-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-[13px] font-bold uppercase tracking-wider text-emerald-450 text-emerald-400">Restore Staff Member</h3>
-                    <p className="text-[11px] font-medium text-zinc-500 uppercase tracking-normal mt-0.5">Activate archived record</p>
-                  </div>
-                </div>
-                
-                <div className="p-6 space-y-4">
-                  <p className="text-[13px] font-medium text-zinc-300 leading-relaxed">
-                    Are you sure you want to restore <span className="font-bold text-white">{selectedWorkerToRestore.name}</span> to the active staff roster?
-                  </p>
-                  <div className="p-4 bg-emerald-950/10 border border-emerald-900/20 rounded-lg text-[12px] font-medium text-emerald-400/90 leading-relaxed">
-                    This staff member will be returned to the active staff roster and made available for site assignments.
-                  </div>
-                </div>
-
-                <div className="p-6 bg-zinc-950/10 border-t border-zinc-850 flex items-center space-x-3">
-                  <button
-                    onClick={() => setSelectedWorkerToRestore(null)}
-                    className="flex-1 py-3 border border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 transition-all rounded text-[12px] font-bold uppercase tracking-wider cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={() => {
-                      setWorkers(prev => prev.map(w => w.id === selectedWorkerToRestore.id ? { ...w, isArchived: false } : w));
-                      setSelectedWorkerToRestore(null);
-                    }}
-                    className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white transition-all rounded text-[12px] font-bold uppercase tracking-wider shadow-lg shadow-emerald-600/10 cursor-pointer"
-                  >
-                    Restore Record
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-
+        {/* Restore Confirmation Modal */}
+        <ConfirmDialog
+          open={!!selectedWorkerToRestore}
+          onOpenChange={(open) => {
+            if (!open) setSelectedWorkerToRestore(null);
+          }}
+          tone="neutral"
+          title="Restore Staff Member"
+          message={
+            selectedWorkerToRestore && (
+              <>
+                Are you sure you want to restore{" "}
+                <span className="font-bold text-foreground">{selectedWorkerToRestore.name}</span> to
+                the active staff roster?
+                <br />
+                <br />
+                This staff member will be returned to the active staff roster and made available for
+                site assignments.
+              </>
+            )
+          }
+          confirmLabel="Restore Record"
+          onConfirm={() => {
+            if (!selectedWorkerToRestore) return;
+            setWorkers((prev) =>
+              prev.map((w) =>
+                w.id === selectedWorkerToRestore.id ? { ...w, isArchived: false } : w,
+              ),
+            );
+            setSelectedWorkerToRestore(null);
+          }}
+        />
       </div>
     );
   };
@@ -1712,8 +1855,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       setWorkerToEdit(selectedWorkerDetails);
                       setEditName(selectedWorkerDetails.name);
                       setEditRole(selectedWorkerDetails.role);
-                      setEditPhone(selectedWorkerDetails.phone || '');
-                      setEditEmail(selectedWorkerDetails.email || '');
+                      setEditPhone(selectedWorkerDetails.phone || "");
+                      setEditEmail(selectedWorkerDetails.email || "");
                       setEditTickets([...selectedWorkerDetails.tickets]);
                       setEditError(null);
                     }}
@@ -1759,7 +1902,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
               )}
             </div>
           </div>
- 
+
           {workerToEdit ? (
             <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl p-6 shadow-2xl">
               {renderEditForm()}
@@ -1771,10 +1914,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 <div className="flex items-center space-x-3 min-w-0">
                   <div className="w-10 h-10 rounded-full border border-[#1B4D3E] bg-[#0E2E25] flex items-center justify-center font-bold text-xs text-[#2ECC71] shrink-0 uppercase tracking-wider font-archivo">
                     {(() => {
-                      const nameParts = selectedWorkerDetails.name.split(' ');
-                      return nameParts.length > 1 
-                        ? `${nameParts[0][0]}${nameParts[1][0]}` 
-                        : `${nameParts[0][0] || ''}`;
+                      const nameParts = selectedWorkerDetails.name.split(" ");
+                      return nameParts.length > 1
+                        ? `${nameParts[0][0]}${nameParts[1][0]}`
+                        : `${nameParts[0][0] || ""}`;
                     })().toUpperCase()}
                   </div>
                   <div className="min-w-0">
@@ -1786,12 +1929,17 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     </p>
                   </div>
                 </div>
- 
+
                 <div className="flex flex-wrap items-center gap-4 md:gap-6 shrink-0">
                   {selectedWorkerDetails.phone && (
                     <div className="flex flex-col md:items-end">
-                      <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Phone</span>
-                      <a href={`tel:${selectedWorkerDetails.phone}`} className="text-xs font-medium text-[#6C8295] hover:underline mt-0.5 tracking-wide font-mono">
+                      <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+                        Phone
+                      </span>
+                      <a
+                        href={`tel:${selectedWorkerDetails.phone}`}
+                        className="text-xs font-medium text-[#6C8295] hover:underline mt-0.5 tracking-wide font-mono"
+                      >
                         {selectedWorkerDetails.phone}
                       </a>
                     </div>
@@ -1801,8 +1949,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   )}
                   {selectedWorkerDetails.email && (
                     <div className="flex flex-col md:items-end">
-                      <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Email</span>
-                      <a href={`mailto:${selectedWorkerDetails.email}`} className="text-xs font-medium text-[#6C8295] hover:underline mt-0.5">
+                      <span className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+                        Email
+                      </span>
+                      <a
+                        href={`mailto:${selectedWorkerDetails.email}`}
+                        className="text-xs font-medium text-[#6C8295] hover:underline mt-0.5"
+                      >
                         {selectedWorkerDetails.email}
                       </a>
                     </div>
@@ -1811,190 +1964,195 @@ export const RosterView: React.FC<RosterViewProps> = ({
               </div>
 
               {/* Tab Content */}
-              <div>
-                {renderDetailsDossier()}
-              </div>
+              <div>{renderDetailsDossier()}</div>
             </div>
           )}
         </div>
       ) : (
         <>
-
-      {/* Search & Actions Header */}
-      <div className="flex items-center justify-between gap-3 mb-4 w-full">
-        <div className="flex-1 max-w-xl relative">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[#555]" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search staff by name, role, site..."
-            className="w-full bg-[#111113] border border-[#232326] text-xs text-white rounded-xl pl-11 pr-4 py-2.5 focus:outline-none focus:border-[#5C7285] transition-colors placeholder:text-[#555] shadow-inner font-medium tracking-wide"
-          />
-        </div>
-        <button
-          onClick={() => setShowAddWorkerForm(!showAddWorkerForm)}
-          className="p-2.5 md:px-4 md:py-2.5 bg-[#5C7285] hover:bg-[#6c8295] text-[#E4E4E7] md:text-white rounded-xl transition-all shadow-lg shadow-[#5C7285]/20 flex items-center justify-center gap-2 text-[11.5px] font-semibold tracking-wider whitespace-nowrap cursor-pointer shrink-0"
-        >
-          {showAddWorkerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-          <span className="hidden md:inline">
-            {showAddWorkerForm ? 'Cancel Registration' : 'Register Staff'}
-          </span>
-        </button>
-      </div>
-
-      {/* Active vs Archived Selector */}
-      <div className="flex items-center gap-3.5 mb-5 mt-2">
-        <button
-          type="button"
-          onClick={() => setRosterMode('active')}
-          className={`px-4 py-2 rounded-xl text-[12px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
-            rosterMode === 'active' 
-              ? 'bg-[#5C7285] border-[#5C7285] text-white' 
-              : 'bg-[#151518]/60 border-[#232326] text-[#888] hover:text-white'
-          }`}
-        >
-          Active
-        </button>
-        <button
-          type="button"
-          onClick={() => setRosterMode('archived')}
-          className={`px-4 py-2 rounded-xl text-[12px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
-            rosterMode === 'archived' 
-              ? 'bg-amber-600 border-amber-600 text-white' 
-              : 'bg-[#151518]/60 border-[#232326] text-[#888] hover:text-amber-500'
-          }`}
-        >
-          Archived
-        </button>
-      </div>
-
-      
-
-      {/* Add Worker Modal */}
-      {showAddWorkerForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div
-            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-            onClick={() => setShowAddWorkerForm(false)}
-          />
-          <form
-            onSubmit={handleAddWorkerSubmit}
-            className="relative w-full max-w-md bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150"
-          >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[#333]">
-              <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[#aaa]">
-                <UserPlus className="w-4 h-4 text-[#5C7285]" />
-                Register Staff
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowAddWorkerForm(false)}
-                className="p-1 text-[#666] hover:text-white transition-colors cursor-pointer"
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
+          {/* Search & Actions Header */}
+          <div className="flex items-center justify-between gap-3 mb-4 w-full">
+            <div className="flex-1 max-w-xl relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-[#555]" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search staff by name, role, site..."
+                className="w-full bg-[#111113] border border-[#232326] text-xs text-white rounded-xl pl-11 pr-4 py-2.5 focus:outline-none focus:border-[#5C7285] transition-colors placeholder:text-[#555] shadow-inner font-medium tracking-wide"
+              />
             </div>
-
-            <div className="p-5 space-y-3.5">
-              {formError && (
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 p-2.5 rounded-lg border border-red-500/20">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  {formError}
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Full Name</label>
-                <input
-                  type="text"
-                  value={newWorkerName}
-                  onChange={(e) => setNewWorkerName(e.target.value)}
-                  placeholder="e.g. John Doe"
-                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Email Address</label>
-                <input
-                  type="email"
-                  value={newWorkerEmail}
-                  onChange={(e) => setNewWorkerEmail(e.target.value)}
-                  placeholder="e.g. john.doe@opusform.co.uk"
-                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Phone Number</label>
-                <input
-                  type="text"
-                  value={newWorkerPhone}
-                  onChange={(e) => setNewWorkerPhone(e.target.value)}
-                  placeholder="e.g. 07700900123"
-                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">Role</label>
-                <select
-                  value={newWorkerRole}
-                  onChange={(e) => setNewWorkerRole(e.target.value)}
-                  className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-[11px] font-bold tracking-widest text-white uppercase outline-none focus:border-[#5C7285] transition-colors appearance-none"
-                >
-                  {STAFF_ROLES.map(role => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
-                </select>
-              </div>
-
-              {!OFFICE_ROLES.includes(newWorkerRole) && (
-                <div className="flex items-start gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#5C7285]/90 pt-0.5">
-                  <UploadCloud className="w-3.5 h-3.5 shrink-0" />
-                  <span>
-                    {newWorkerEmail.trim()
-                      ? 'An automated email will be sent so this worker can upload their own on-site certifications.'
-                      : 'Add an email address to automatically request this worker\'s on-site certifications.'}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setShowAddWorkerForm(false)}
-                  className="px-5 py-2 bg-[#252525] hover:bg-[#333] border border-[#333] text-[#aaa] text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingWorker}
-                  className="px-6 py-2 bg-[#5C7285] hover:bg-[#6c8295] text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors shadow-lg shadow-[#5C7285]/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submittingWorker ? 'Registering...' : 'Register'}
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Staff Roster Grid Layout */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredWorkersList.length === 0 ? (
-          <div className="col-span-full bg-[#151518] border border-[#232326] rounded-2xl px-6 py-16 text-center">
-            <Users className="w-10 h-10 text-[#444] mx-auto mb-4" />
-            <div className="text-[11.5px] font-black uppercase tracking-widest text-[#666]">
-              No matching staff found
-            </div>
+            <button
+              onClick={() => setShowAddWorkerForm(!showAddWorkerForm)}
+              className="p-2.5 md:px-4 md:py-2.5 bg-[#5C7285] hover:bg-[#6c8295] text-[#E4E4E7] md:text-white rounded-xl transition-all shadow-lg shadow-[#5C7285]/20 flex items-center justify-center gap-2 text-[11.5px] font-semibold tracking-wider whitespace-nowrap cursor-pointer shrink-0"
+            >
+              {showAddWorkerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              <span className="hidden md:inline">
+                {showAddWorkerForm ? "Cancel Registration" : "Register Staff"}
+              </span>
+            </button>
           </div>
-        ) : (
-          filteredWorkersList.map(worker => renderMobileWorkerCard(worker))
-        )}
-      </div>
 
-        </>)}
+          {/* Active vs Archived Selector */}
+          <div className="flex items-center gap-3.5 mb-5 mt-2">
+            <button
+              type="button"
+              onClick={() => setRosterMode("active")}
+              className={`px-4 py-2 rounded-xl text-[12px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
+                rosterMode === "active"
+                  ? "bg-[#5C7285] border-[#5C7285] text-white"
+                  : "bg-[#151518]/60 border-[#232326] text-[#888] hover:text-white"
+              }`}
+            >
+              Active
+            </button>
+            <button
+              type="button"
+              onClick={() => setRosterMode("archived")}
+              className={`px-4 py-2 rounded-xl text-[12px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
+                rosterMode === "archived"
+                  ? "bg-amber-600 border-amber-600 text-white"
+                  : "bg-[#151518]/60 border-[#232326] text-[#888] hover:text-amber-500"
+              }`}
+            >
+              Archived
+            </button>
+          </div>
+
+          {/* Add Worker Modal */}
+          {showAddWorkerForm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div
+                className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                onClick={() => setShowAddWorkerForm(false)}
+              />
+              <form
+                onSubmit={handleAddWorkerSubmit}
+                className="relative w-full max-w-md bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150"
+              >
+                <div className="flex items-center justify-between px-5 py-4 border-b border-[#333]">
+                  <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-[#aaa]">
+                    <UserPlus className="w-4 h-4 text-[#5C7285]" />
+                    Register Staff
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddWorkerForm(false)}
+                    className="p-1 text-[#666] hover:text-white transition-colors cursor-pointer"
+                    aria-label="Close"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="p-5 space-y-3.5">
+                  {formError && (
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 p-2.5 rounded-lg border border-red-500/20">
+                      <AlertTriangle className="w-4 h-4 shrink-0" />
+                      {formError}
+                    </div>
+                  )}
+
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newWorkerName}
+                      onChange={(e) => setNewWorkerName(e.target.value)}
+                      placeholder="e.g. John Doe"
+                      className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">
+                      Email Address
+                    </label>
+                    <input
+                      type="email"
+                      value={newWorkerEmail}
+                      onChange={(e) => setNewWorkerEmail(e.target.value)}
+                      placeholder="e.g. john.doe@opusform.co.uk"
+                      className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">
+                      Phone Number
+                    </label>
+                    <input
+                      type="text"
+                      value={newWorkerPhone}
+                      onChange={(e) => setNewWorkerPhone(e.target.value)}
+                      placeholder="e.g. 07700900123"
+                      className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-sm text-white outline-none focus:border-[#5C7285] transition-colors"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-[#888]">
+                      Role
+                    </label>
+                    <select
+                      value={newWorkerRole}
+                      onChange={(e) => setNewWorkerRole(e.target.value)}
+                      className="w-full bg-[#1a1a1a] border border-[#333] rounded-lg px-3.5 py-2 text-[11px] font-bold tracking-widest text-white uppercase outline-none focus:border-[#5C7285] transition-colors appearance-none"
+                    >
+                      {STAFF_ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {!OFFICE_ROLES.includes(newWorkerRole) && (
+                    <div className="flex items-start gap-1.5 text-[9px] font-bold uppercase tracking-widest text-[#5C7285]/90 pt-0.5">
+                      <UploadCloud className="w-3.5 h-3.5 shrink-0" />
+                      <span>
+                        {newWorkerEmail.trim()
+                          ? "An automated email will be sent so this worker can upload their own on-site certifications."
+                          : "Add an email address to automatically request this worker's on-site certifications."}
+                      </span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddWorkerForm(false)}
+                      className="px-5 py-2 bg-[#252525] hover:bg-[#333] border border-[#333] text-[#aaa] text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submittingWorker}
+                      className="px-6 py-2 bg-[#5C7285] hover:bg-[#6c8295] text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors shadow-lg shadow-[#5C7285]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {submittingWorker ? "Registering..." : "Register"}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* Staff Roster Grid Layout */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filteredWorkersList.length === 0 ? (
+              <div className="col-span-full bg-[#151518] border border-[#232326] rounded-2xl px-6 py-16 text-center">
+                <Users className="w-10 h-10 text-[#444] mx-auto mb-4" />
+                <div className="text-[11.5px] font-black uppercase tracking-widest text-[#666]">
+                  No matching staff found
+                </div>
+              </div>
+            ) : (
+              filteredWorkersList.map((worker) => renderMobileWorkerCard(worker))
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

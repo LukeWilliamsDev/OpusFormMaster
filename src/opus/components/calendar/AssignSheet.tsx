@@ -8,6 +8,7 @@ import { AssignResult } from "../../hooks/useShiftActions";
 import { getJobColorClasses } from "./jobColors";
 import { TicketWarningBadge } from "./TicketWarningBadge";
 import { getPostcodeCoordinates, calculateDistance } from "../../utils/geo";
+import { Button } from "@/components/ui/button";
 
 export type AssignTarget =
   | { mode: "pickProject"; worker: Worker; date: string }
@@ -76,11 +77,11 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
   // Sort and calculate distances of unassigned workers if target mode is pickWorker
   const unassignedWorkersWithDistance = useMemo(() => {
     if (!target || target.mode !== "pickWorker" || !target.job || !target.job.postcode) {
-      return schedule.unassigned.map(worker => ({ worker, distance: null }));
+      return schedule.unassigned.map((worker) => ({ worker, distance: null }));
     }
 
     const jobCoords = getPostcodeCoordinates(target.job.postcode);
-    const withDist = schedule.unassigned.map(worker => {
+    const withDist = schedule.unassigned.map((worker) => {
       let distance: number | null = null;
       if (worker.postcode) {
         const workerCoords = getPostcodeCoordinates(worker.postcode);
@@ -115,8 +116,8 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
             transition={{ duration: 0.2, ease: "easeOut" }}
             className="fixed z-50 inset-x-0 bottom-0 md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md"
           >
-            <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-t-2xl md:rounded-2xl max-h-[75vh] flex flex-col shadow-2xl">
-              <div className="flex items-start justify-between gap-3 p-4 border-b border-[#2a2a30]">
+            <div className="bg-card border border-border rounded-t-2xl md:rounded-2xl max-h-[75vh] flex flex-col shadow-2xl">
+              <div className="flex items-start justify-between gap-3 p-4 border-b border-border">
                 <div className="min-w-0">
                   <h3 className="text-sm font-bold text-white truncate">
                     {target.mode === "pickProject"
@@ -127,14 +128,16 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                     {formatDayHeading(target.date)}
                   </p>
                 </div>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={onClose}
                   aria-label="Close"
-                  className="p-1.5 text-gray-500 hover:text-white rounded-lg hover:bg-[#2a2a2a] transition-colors cursor-pointer"
+                  className="h-auto w-auto p-1.5 text-gray-500 hover:text-white rounded-lg"
                 >
                   <X className="w-4 h-4" />
-                </button>
+                </Button>
               </div>
 
               {error && (
@@ -151,7 +154,7 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                     day. Reallocate?
                   </p>
                   <div className="flex gap-2">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => {
                         onConfirmReallocate(
@@ -161,17 +164,18 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                         );
                         onClose();
                       }}
-                      className="flex-1 px-3 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-black uppercase tracking-wider hover:bg-amber-500/30 transition-colors cursor-pointer"
+                      className="flex-1 h-auto px-3 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-black uppercase tracking-wider hover:bg-amber-500/30 shadow-none"
                     >
                       Reallocate
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="button"
+                      variant="outline"
                       onClick={() => setPending(null)}
-                      className="flex-1 px-3 py-2 rounded-lg bg-[#16161a] border border-[#2a2a30] text-gray-400 text-[11px] font-black uppercase tracking-wider hover:text-white transition-colors cursor-pointer"
+                      className="flex-1 h-auto px-3 py-2 rounded-lg bg-card border-border text-gray-400 text-[11px] font-black uppercase tracking-wider hover:text-white shadow-none"
                     >
                       Cancel
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -221,17 +225,17 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                       key={worker.id}
                       type="button"
                       onClick={() => handlePick(worker.id, worker.name, target.job.id)}
-                      className="w-full flex items-center justify-between gap-2 px-3 py-3 rounded-xl border border-[#2a2a30] bg-[#16161a] hover:border-[#6C8295] text-left transition-all cursor-pointer"
+                      className="w-full flex items-center justify-between gap-2 px-3 py-3 rounded-xl border border-border bg-card hover:border-primary text-left transition-all cursor-pointer"
                     >
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-white truncate">{worker.name}</div>
                         <div className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-0.5">
-                          {worker.role} {worker.postcode ? `• ${worker.postcode}` : ''}
+                          {worker.role} {worker.postcode ? `• ${worker.postcode}` : ""}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
                         {distance !== null && (
-                          <span className="text-[10px] font-mono font-bold bg-[#6C8295]/10 text-[#6C8295] px-1.5 py-0.5 rounded shrink-0">
+                          <span className="text-[10px] font-mono font-bold bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
                             📍 {distance.toFixed(1)}m
                           </span>
                         )}

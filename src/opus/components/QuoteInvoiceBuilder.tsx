@@ -1,14 +1,16 @@
 // @ts-nocheck
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { usePortal } from '../context/PortalContext';
-import { isValidUKPostcode } from '../utils/geo';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Plus, 
-  Trash2, 
-  Mail, 
-  MapPin, 
+import React, { useState, useMemo, useRef, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { usePortal } from "../context/PortalContext";
+import { isValidUKPostcode } from "../utils/geo";
+import { motion, AnimatePresence } from "motion/react";
+import { toast } from "sonner";
+import { NoticeModal } from "@/components/ui/notice-modal";
+import {
+  Plus,
+  Trash2,
+  Mail,
+  MapPin,
   Building2,
   ChevronDown,
   ChevronUp,
@@ -25,8 +27,8 @@ import {
   History,
   ZoomIn,
   ZoomOut,
-  Maximize2
-} from 'lucide-react';
+  Maximize2,
+} from "lucide-react";
 
 interface MeasuredItem {
   id: string;
@@ -65,74 +67,86 @@ interface ValuationBuilderProps {
 }
 
 const SUGGESTED_ITEMS = [
-  { description: "C30/37 Foundation Slab Pour", unit: "m³", rate: 145.00 },
-  { description: "C40/50 Columns & Reinforced Beam Work", unit: "m³", rate: 185.00 },
-  { description: "A393 Structural Rebar Steel Mesh", unit: "m²", rate: 12.50 },
-  { description: "DPM & Sand Blinding Preparation", unit: "m²", rate: 8.00 },
-  { description: "Double-Sided Formwork Shuttering", unit: "m²", rate: 45.00 },
-  { description: "Concrete Pump Hire - 36m Boom Setup", unit: "Sum", rate: 450.00 },
-  { description: "Operative Labor Day Rate", unit: "Day", rate: 240.00 },
-  { description: "Site Supervisor Day Rate", unit: "Day", rate: 280.00 }
+  { description: "C30/37 Foundation Slab Pour", unit: "m³", rate: 145.0 },
+  { description: "C40/50 Columns & Reinforced Beam Work", unit: "m³", rate: 185.0 },
+  { description: "A393 Structural Rebar Steel Mesh", unit: "m²", rate: 12.5 },
+  { description: "DPM & Sand Blinding Preparation", unit: "m²", rate: 8.0 },
+  { description: "Double-Sided Formwork Shuttering", unit: "m²", rate: 45.0 },
+  { description: "Concrete Pump Hire - 36m Boom Setup", unit: "Sum", rate: 450.0 },
+  { description: "Operative Labor Day Rate", unit: "Day", rate: 240.0 },
+  { description: "Site Supervisor Day Rate", unit: "Day", rate: 280.0 },
 ];
 
-const COMMON_UNITS = ['m²', 'm³', 'm', 'No.', 'Sum'];
+const COMMON_UNITS = ["m²", "m³", "m", "No.", "Sum"];
 
 const INITIAL_ITEMS: MeasuredItem[] = [];
 
 const capitalizeWords = (str: string) => {
-  if (!str) return '';
-  return str.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  if (!str) return "";
+  return str
+    .split(" ")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
 };
 
-export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, quoteToLoadId, onQuoteLoaded }) => {
+export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
+  onBack,
+  quoteToLoadId,
+  onQuoteLoaded,
+}) => {
   const { profile } = usePortal();
   const [clientInfo, setClientInfo] = useState({
-    entity: '',
-    email: '',
-    site: '',
-    postcode: ''
+    entity: "",
+    email: "",
+    site: "",
+    postcode: "",
   });
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [unitFocusedItemId, setUnitFocusedItemId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [notification, setNotification] = useState<{ type: 'success' | 'error'; title: string; message: string; } | null>(null);
   const [items, setItems] = useState<MeasuredItem[]>(INITIAL_ITEMS);
   const [terms, setTerms] = useState<string[]>([
     "Assumed total pours up to 1, additional pours shall be charged minimum of £3,500",
     "Cancelled pours with less than 24hrs notice shall be charged",
     "Day rate per operative is £240 per day and Supervisor rate is £280 per day",
     "All the materials, telehandler and pump to be provided by Client",
-    "Rate includes provision of licenced Telehandler/Forklift Operative"
+    "Rate includes provision of licenced Telehandler/Forklift Operative",
   ]);
 
   useEffect(() => {
-    setTerms(prev => prev.map(t => {
-      if (t.includes("to be provided by")) {
-        return `All the materials, telehandler and pump to be provided by ${clientInfo.entity || 'Client'}`;
-      }
-      return t;
-    }));
+    setTerms((prev) =>
+      prev.map((t) => {
+        if (t.includes("to be provided by")) {
+          return `All the materials, telehandler and pump to be provided by ${clientInfo.entity || "Client"}`;
+        }
+        return t;
+      }),
+    );
   }, [clientInfo.entity]);
 
   const [vatRate, setVatRate] = useState(20);
   const [showSavedQuotes, setShowSavedQuotes] = useState(false);
   const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
-  const [quoteReference, setQuoteReference] = useState(`JOB-${Math.floor(1000 + Math.random() * 9000)}`);
-  const [currentQuoteId, setCurrentQuoteId] = useState<string>(() => quoteToLoadId || crypto.randomUUID());
+  const [quoteReference, setQuoteReference] = useState(
+    `JOB-${Math.floor(1000 + Math.random() * 9000)}`,
+  );
+  const [currentQuoteId, setCurrentQuoteId] = useState<string>(
+    () => quoteToLoadId || crypto.randomUUID(),
+  );
 
   const loadSavedQuotes = async () => {
     try {
       const { data, error } = await supabase
-        .from('quotes')
-        .select('*')
-        .eq('is_sent', false)
-        .order('created_at', { ascending: false });
+        .from("quotes")
+        .select("*")
+        .eq("is_sent", false)
+        .order("created_at", { ascending: false });
       if (error) throw error;
-      
-      const loadedQuotes: Quote[] = (data || []).map(row => ({
+
+      const loadedQuotes: Quote[] = (data || []).map((row) => ({
         id: row.id,
         reference: row.reference,
         date: row.date,
@@ -140,7 +154,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
         items: row.items,
         vatRate: Number(row.vat_rate),
         totals: row.totals,
-        isSent: row.is_sent
+        isSent: row.is_sent,
       }));
       setSavedQuotes(loadedQuotes);
     } catch (e) {
@@ -156,7 +170,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   // Scaling logic for the PDF preview
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
-
 
   useEffect(() => {
     const updateScale = () => {
@@ -203,19 +216,19 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   const totals = useMemo(() => {
     const netTotal = items.reduce((acc, item) => {
       let rateValue = 0;
-      if (typeof item.rate === 'string') {
+      if (typeof item.rate === "string") {
         const uppercaseRate = item.rate.toUpperCase();
-        if (uppercaseRate === 'INCLUDED' || uppercaseRate === 'INCL') {
+        if (uppercaseRate === "INCLUDED" || uppercaseRate === "INCL") {
           rateValue = 0;
         } else {
-          const cleanRateStr = item.rate.replace(/[£$,\s]/g, '');
+          const cleanRateStr = item.rate.replace(/[£$,\s]/g, "");
           const parsed = parseFloat(cleanRateStr);
           rateValue = isNaN(parsed) ? 0 : parsed;
         }
       } else {
         rateValue = Number(item.rate || 0);
       }
-      return acc + (item.quantity * rateValue);
+      return acc + item.quantity * rateValue;
     }, 0);
     const vatAmount = netTotal * (vatRate / 100);
     const grossTotal = netTotal + vatAmount;
@@ -226,7 +239,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
   const handleSaveDraft = async () => {
     if (!clientInfo.entity.trim()) {
-      setNotification({ type: 'error', title: 'VALIDATION FAILURE', message: "Please provide a Client Name to save a draft." });
+      toast.error("VALIDATION FAILURE", {
+        description: "Please provide a Client Name to save a draft.",
+      });
       return;
     }
 
@@ -234,19 +249,17 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     const newQuote = {
       id: quoteId,
       reference: quoteReference,
-      date: new Date().toLocaleDateString('en-GB'),
+      date: new Date().toLocaleDateString("en-GB"),
       client_info: clientInfo,
       items,
       vat_rate: vatRate,
       totals,
       is_sent: false,
-      tenant_id: profile?.tenant_id
+      tenant_id: profile?.tenant_id,
     };
 
     try {
-      const { error } = await supabase
-        .from('quotes')
-        .upsert(newQuote);
+      const { error } = await supabase.from("quotes").upsert(newQuote);
 
       if (error) throw error;
 
@@ -259,7 +272,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       }, 2000);
     } catch (e) {
       console.error("Failed to save draft quote to Supabase", e);
-      setNotification({ type: 'error', title: 'SAVE FAILED', message: "Failed to save draft to database." });
+      toast.error("SAVE FAILED", { description: "Failed to save draft to database." });
     }
   };
 
@@ -275,31 +288,31 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   useEffect(() => {
     if (quoteToLoadId) {
       (async () => {
-         try {
-           const { data, error } = await supabase
-             .from('quotes')
-             .select('*')
-             .eq('id', quoteToLoadId)
-             .maybeSingle();
+        try {
+          const { data, error } = await supabase
+            .from("quotes")
+            .select("*")
+            .eq("id", quoteToLoadId)
+            .maybeSingle();
 
-           if (error) throw error;
-           if (data) {
-             const quote: Quote = {
-               id: data.id,
-               reference: data.reference,
-               date: data.date,
-               clientInfo: data.client_info,
-               items: data.items,
-               vatRate: Number(data.vat_rate),
-               totals: data.totals,
-               isSent: data.is_sent
-             };
-             loadQuote(quote);
-             if (onQuoteLoaded) onQuoteLoaded();
-           }
-         } catch (e) {
-           console.error("Failed to load quote via quoteToLoadId from Supabase", e);
-         }
+          if (error) throw error;
+          if (data) {
+            const quote: Quote = {
+              id: data.id,
+              reference: data.reference,
+              date: data.date,
+              clientInfo: data.client_info,
+              items: data.items,
+              vatRate: Number(data.vat_rate),
+              totals: data.totals,
+              isSent: data.is_sent,
+            };
+            loadQuote(quote);
+            if (onQuoteLoaded) onQuoteLoaded();
+          }
+        } catch (e) {
+          console.error("Failed to load quote via quoteToLoadId from Supabase", e);
+        }
       })();
     }
   }, [quoteToLoadId]);
@@ -307,54 +320,51 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   const deleteQuote = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     try {
-      const { error } = await supabase
-        .from('quotes')
-        .delete()
-        .eq('id', id);
+      const { error } = await supabase.from("quotes").delete().eq("id", id);
       if (error) throw error;
 
-      setSavedQuotes(savedQuotes.filter(q => q.id !== id));
+      setSavedQuotes(savedQuotes.filter((q) => q.id !== id));
     } catch (e) {
       console.error("Failed to delete quote", e);
-      setNotification({ type: 'error', title: 'DELETE FAILED', message: "Failed to delete quote draft from database." });
+      toast.error("DELETE FAILED", { description: "Failed to delete quote draft from database." });
     }
   };
 
   const handleDownloadPDF = async () => {
     try {
-      const originalElement = document.querySelector('.print-area');
+      const originalElement = document.querySelector(".print-area");
       if (!originalElement) {
         throw new Error("Print area not found.");
       }
-      
-      const element = originalElement.cloneNode(true) as HTMLElement;
-      element.style.transform = 'none';
-      element.style.margin = '0';
-      element.style.padding = '0';
-      element.style.width = '794px';
-      element.style.height = '1122px';
-      element.style.minHeight = '1122px';
-      element.style.maxHeight = '1122px';
-      element.style.position = 'relative';
-      element.style.left = '0';
-      element.style.top = '0';
 
-      const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      tempContainer.style.top = '-9999px';
-      tempContainer.style.width = '794px';
-      tempContainer.style.height = '1122px';
-      tempContainer.style.overflow = 'hidden';
+      const element = originalElement.cloneNode(true) as HTMLElement;
+      element.style.transform = "none";
+      element.style.margin = "0";
+      element.style.padding = "0";
+      element.style.width = "794px";
+      element.style.height = "1122px";
+      element.style.minHeight = "1122px";
+      element.style.maxHeight = "1122px";
+      element.style.position = "relative";
+      element.style.left = "0";
+      element.style.top = "0";
+
+      const tempContainer = document.createElement("div");
+      tempContainer.style.position = "absolute";
+      tempContainer.style.left = "-9999px";
+      tempContainer.style.top = "-9999px";
+      tempContainer.style.width = "794px";
+      tempContainer.style.height = "1122px";
+      tempContainer.style.overflow = "hidden";
       tempContainer.appendChild(element);
       document.body.appendChild(tempContainer);
 
       const opt = {
         margin: 0,
         filename: `Quote_${quoteReference}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
           useCORS: true,
           logging: false,
           scrollX: 0,
@@ -362,39 +372,46 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           onclone: (_document: Document, clonedElement: HTMLElement) => {
             const cloneDoc = clonedElement.ownerDocument;
             if (cloneDoc && cloneDoc.body) {
-              cloneDoc.body.style.margin = '0';
-              cloneDoc.body.style.padding = '0';
-              cloneDoc.body.style.background = 'transparent';
+              cloneDoc.body.style.margin = "0";
+              cloneDoc.body.style.padding = "0";
+              cloneDoc.body.style.background = "transparent";
             }
-            let cssText = '';
+            let cssText = "";
             for (let i = 0; i < document.styleSheets.length; i++) {
               const sheet = document.styleSheets[i];
               try {
                 const rules = sheet.cssRules || sheet.rules;
                 for (let j = 0; j < rules.length; j++) {
-                  cssText += rules[j].cssText + '\n';
+                  cssText += rules[j].cssText + "\n";
                 }
               } catch (e) {
                 console.warn("Could not read stylesheet rules: ", e);
               }
             }
-            const safeCss = cssText.replace(/oklch\([^)]+\)/g, '#333333');
+            const safeCss = cssText.replace(/oklch\([^)]+\)/g, "#333333");
             const originalStyles = cloneDoc.querySelectorAll('link[rel="stylesheet"], style');
-            originalStyles.forEach(el => el.remove());
-            const styleEl = cloneDoc.createElement('style');
+            originalStyles.forEach((el) => el.remove());
+            const styleEl = cloneDoc.createElement("style");
             styleEl.textContent = safeCss;
             cloneDoc.head.appendChild(styleEl);
-          }
+          },
         },
-        jsPDF: { unit: 'px', format: [794, 1122], orientation: 'portrait', hotfixes: ['px_scaling'] },
-        pagebreak: { mode: 'avoid' }
+        jsPDF: {
+          unit: "px",
+          format: [794, 1122],
+          orientation: "portrait",
+          hotfixes: ["px_scaling"],
+        },
+        pagebreak: { mode: "avoid" },
       };
 
-      const { default: html2pdf } = await import('html2pdf.js');
+      const { default: html2pdf } = await import("html2pdf.js");
       await html2pdf().from(element).set(opt).save();
       document.body.removeChild(tempContainer);
     } catch (err) {
-      setNotification({ type: 'error', title: 'PDF GENERATION FAILURE', message: "Error generating PDF download: " + err.message });
+      toast.error("PDF GENERATION FAILURE", {
+        description: "Error generating PDF download: " + err.message,
+      });
     }
   };
 
@@ -408,9 +425,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       missingFields.push("Invalid Site Postcode format (e.g. M1 1AE)");
     }
     if (items.length === 0) missingFields.push("Line Items (at least one is required)");
-    
-    const validTerms = terms.filter(t => t.trim() !== "");
-    if (validTerms.length === 0) missingFields.push("Terms & Summary Conditions (at least one condition is required)");
+
+    const validTerms = terms.filter((t) => t.trim() !== "");
+    if (validTerms.length === 0)
+      missingFields.push("Terms & Summary Conditions (at least one condition is required)");
 
     if (missingFields.length > 0) {
       setValidationErrors(missingFields);
@@ -420,32 +438,32 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     setIsSendingEmail(true);
 
     try {
-      const originalElement = document.querySelector('.print-area');
+      const originalElement = document.querySelector(".print-area");
       if (!originalElement) {
         throw new Error("Live Mirror print area not found.");
       }
 
       // 1. Clone the element to render it at its true size without parent scaling/zoom transforms
       const element = originalElement.cloneNode(true) as HTMLElement;
-      element.style.transform = 'none';
-      element.style.margin = '0';
-      element.style.padding = '0';
-      element.style.width = '794px';
-      element.style.height = '1122px';
-      element.style.minHeight = '1122px';
-      element.style.maxHeight = '1122px';
-      element.style.position = 'relative';
-      element.style.left = '0';
-      element.style.top = '0';
+      element.style.transform = "none";
+      element.style.margin = "0";
+      element.style.padding = "0";
+      element.style.width = "794px";
+      element.style.height = "1122px";
+      element.style.minHeight = "1122px";
+      element.style.maxHeight = "1122px";
+      element.style.position = "relative";
+      element.style.left = "0";
+      element.style.top = "0";
 
       // 2. Append the clone to a hidden container on the main document
-      const tempContainer = document.createElement('div');
-      tempContainer.style.position = 'absolute';
-      tempContainer.style.left = '-9999px';
-      tempContainer.style.top = '-9999px';
-      tempContainer.style.width = '794px';
-      tempContainer.style.height = '1122px';
-      tempContainer.style.overflow = 'hidden';
+      const tempContainer = document.createElement("div");
+      tempContainer.style.position = "absolute";
+      tempContainer.style.left = "-9999px";
+      tempContainer.style.top = "-9999px";
+      tempContainer.style.width = "794px";
+      tempContainer.style.height = "1122px";
+      tempContainer.style.overflow = "hidden";
       tempContainer.appendChild(element);
       document.body.appendChild(tempContainer);
 
@@ -453,9 +471,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       const opt = {
         margin: 0,
         filename: `Quote_${quoteReference}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2, 
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
           useCORS: true,
           logging: false,
           scrollX: 0,
@@ -463,54 +481,59 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           onclone: (_document: Document, clonedElement: HTMLElement) => {
             const cloneDoc = clonedElement.ownerDocument;
             if (cloneDoc && cloneDoc.body) {
-              cloneDoc.body.style.margin = '0';
-              cloneDoc.body.style.padding = '0';
-              cloneDoc.body.style.background = 'transparent';
+              cloneDoc.body.style.margin = "0";
+              cloneDoc.body.style.padding = "0";
+              cloneDoc.body.style.background = "transparent";
             }
-            
+
             // Gather all CSS rules from the main document synchronously
-            let cssText = '';
+            let cssText = "";
             for (let i = 0; i < document.styleSheets.length; i++) {
               const sheet = document.styleSheets[i];
               try {
                 const rules = sheet.cssRules || sheet.rules;
                 for (let j = 0; j < rules.length; j++) {
-                  cssText += rules[j].cssText + '\n';
+                  cssText += rules[j].cssText + "\n";
                 }
               } catch (e) {
                 console.warn("Could not read stylesheet rules: ", e);
               }
             }
-            
+
             // Replace all oklch() color functions with a standard hex fallback to prevent parser crash
-            const safeCss = cssText.replace(/oklch\([^)]+\)/g, '#333333');
-            
+            const safeCss = cssText.replace(/oklch\([^)]+\)/g, "#333333");
+
             // Remove all original stylesheet links/styles from the clone
             const originalStyles = cloneDoc.querySelectorAll('link[rel="stylesheet"], style');
-            originalStyles.forEach(el => el.remove());
-            
+            originalStyles.forEach((el) => el.remove());
+
             // Inject the safe parsed CSS rules
-            const styleEl = cloneDoc.createElement('style');
+            const styleEl = cloneDoc.createElement("style");
             styleEl.textContent = safeCss;
             cloneDoc.head.appendChild(styleEl);
-          }
+          },
         },
-        jsPDF: { unit: 'px', format: [794, 1122], orientation: 'portrait', hotfixes: ['px_scaling'] },
-        pagebreak: { mode: 'avoid' }
+        jsPDF: {
+          unit: "px",
+          format: [794, 1122],
+          orientation: "portrait",
+          hotfixes: ["px_scaling"],
+        },
+        pagebreak: { mode: "avoid" },
       };
 
       // Dynamically import html2pdf.js to avoid packaging issues on non-browser environments
-      const { default: html2pdf } = await import('html2pdf.js');
+      const { default: html2pdf } = await import("html2pdf.js");
 
       // Generate PDF data uri
-      const pdfDataUri = await html2pdf().from(element).set(opt).outputPdf('datauristring');
-      const base64 = pdfDataUri.split(',')[1];
+      const pdfDataUri = await html2pdf().from(element).set(opt).outputPdf("datauristring");
+      const base64 = pdfDataUri.split(",")[1];
 
       // Clean up the temporary container
       document.body.removeChild(tempContainer);
 
       // Invoke Supabase Edge Function send-quote-pdf
-      const { data, error } = await supabase.functions.invoke('send-quote-pdf', {
+      const { data, error } = await supabase.functions.invoke("send-quote-pdf", {
         body: {
           toEmail: clientInfo.email,
           clientName: clientInfo.entity,
@@ -518,11 +541,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           postcode: clientInfo.postcode,
           quoteRef: quoteReference,
           pdfBase64: base64,
-          logoUrl: typeof window !== 'undefined' ? `${window.location.origin}/opus-form-primary.svg` : undefined,
+          logoUrl:
+            typeof window !== "undefined"
+              ? `${window.location.origin}/opus-form-primary.svg`
+              : undefined,
           netTotal: totals.netTotal,
           vatAmount: totals.vatAmount,
-          grossTotal: totals.grossTotal
-        }
+          grossTotal: totals.grossTotal,
+        },
       });
 
       if (error) {
@@ -543,26 +569,26 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       const updatedQuote = {
         id: quoteId,
         reference: quoteReference,
-        date: new Date().toLocaleDateString('en-GB'),
+        date: new Date().toLocaleDateString("en-GB"),
         client_info: clientInfo,
         items,
         vat_rate: vatRate,
         totals,
         is_sent: true,
-        tenant_id: profile?.tenant_id
+        tenant_id: profile?.tenant_id,
       };
 
-      const { error: upsertError } = await supabase
-        .from('quotes')
-        .upsert(updatedQuote);
+      const { error: upsertError } = await supabase.from("quotes").upsert(updatedQuote);
 
       if (upsertError) throw upsertError;
 
       loadSavedQuotes();
-      setNotification({ type: 'success', title: 'EMAIL SENT', message: "Email sent successfully." });
+      toast.success("EMAIL SENT", { description: "Email sent successfully." });
     } catch (err) {
       console.error("Failed to send quote PDF:", err);
-      setNotification({ type: 'error', title: 'EMAIL FAILED', message: "Email failed. Please get in contact with admin@opusform.co.uk" });
+      toast.error("EMAIL FAILED", {
+        description: "Email failed. Please get in contact with admin@opusform.co.uk",
+      });
     } finally {
       setIsSendingEmail(false);
     }
@@ -571,30 +597,31 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
   const addItem = () => {
     const newItem: MeasuredItem = {
       id: Math.random().toString(36).substr(2, 9),
-      description: '',
+      description: "",
       quantity: 1,
-      unit: '',
-      rate: 0
+      unit: "",
+      rate: 0,
     };
     setItems([...items, newItem]);
   };
 
   const removeItem = (id: string) => {
-    setItems(items.filter(item => item.id !== id));
+    setItems(items.filter((item) => item.id !== id));
   };
 
   const updateItem = (id: string, updates: Partial<MeasuredItem>) => {
-    setItems(items.map(item => item.id === id ? { ...item, ...updates } : item));
+    setItems(items.map((item) => (item.id === id ? { ...item, ...updates } : item)));
   };
 
   const isIncludedRate = (rate: number | string) =>
-    typeof rate === 'string' && (rate.toUpperCase() === 'INCLUDED' || rate.toUpperCase() === 'INCL');
+    typeof rate === "string" &&
+    (rate.toUpperCase() === "INCLUDED" || rate.toUpperCase() === "INCL");
 
   const getLineTotal = (item: MeasuredItem) => {
     if (isIncludedRate(item.rate)) return 0;
     let rateValue = 0;
-    if (typeof item.rate === 'string') {
-      const cleanRateStr = item.rate.replace(/[£$,\s]/g, '');
+    if (typeof item.rate === "string") {
+      const cleanRateStr = item.rate.replace(/[£$,\s]/g, "");
       const parsed = parseFloat(cleanRateStr);
       rateValue = isNaN(parsed) ? 0 : parsed;
     } else {
@@ -605,63 +632,96 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
   const pdfDocument = (scaleValue: number, isPrintTarget = false) => (
     <div
-      className={`bg-white shadow-2xl text-[#333] flex flex-col origin-top shrink-0 ${isPrintTarget ? 'print-area' : ''}`}
+      className={`bg-white shadow-2xl text-[#333] flex flex-col origin-top shrink-0 ${isPrintTarget ? "print-area" : ""}`}
       style={{
-        width: '794px',
-        height: '1122px',
-        minHeight: '1122px',
-        maxHeight: '1122px',
+        width: "794px",
+        height: "1122px",
+        minHeight: "1122px",
+        maxHeight: "1122px",
         transform: `scale(${scaleValue})`,
         marginLeft: `${(794 * scaleValue - 794) / 2}px`,
         marginRight: `${(794 * scaleValue - 794) / 2}px`,
-        marginBottom: `${(1122 * scaleValue - 1122)}px`
+        marginBottom: `${1122 * scaleValue - 1122}px`,
       }}
     >
       {/* PDF CONTENT â€” header */}
       <div className="bg-[#26262B] p-8 sm:p-12 flex justify-between items-start">
         <div className="flex flex-col">
-          <div className="font-archivo text-[32px] sm:text-[40px] font-black text-white tracking-tight leading-none">OPUS FORM</div>
+          <div className="font-archivo text-[32px] sm:text-[40px] font-black text-white tracking-tight leading-none">
+            OPUS FORM
+          </div>
           <div className="h-1 bg-[#426E91] mt-2 w-full" />
         </div>
         <div className="text-right">
-          <div className="text-[28px] sm:text-[32px] font-black text-[#F4F4F0] tracking-[0.04em] leading-none mb-3">QUOTE</div>
+          <div className="text-[28px] sm:text-[32px] font-black text-[#F4F4F0] tracking-[0.04em] leading-none mb-3">
+            QUOTE
+          </div>
           <table className="ml-auto border-collapse">
             <tbody className="text-[11px] tracking-[0.05em]">
-              <tr><td className="text-[#A8A8A0] py-0.5 px-4">REFERENCE</td><td className="text-[#F4F4F0] font-black text-right">#{quoteReference}</td></tr>
-              <tr><td className="text-[#A8A8A0] py-0.5 px-4">DATE</td><td className="text-[#F4F4F0] font-black text-right">{new Date().toLocaleDateString('en-GB')}</td></tr>
-              <tr><td className="text-[#A8A8A0] py-0.5 px-4">VALID UNTIL</td><td className="text-[#F4F4F0] font-black text-right">{new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB')}</td></tr>
+              <tr>
+                <td className="text-[#A8A8A0] py-0.5 px-4">REFERENCE</td>
+                <td className="text-[#F4F4F0] font-black text-right">#{quoteReference}</td>
+              </tr>
+              <tr>
+                <td className="text-[#A8A8A0] py-0.5 px-4">DATE</td>
+                <td className="text-[#F4F4F0] font-black text-right">
+                  {new Date().toLocaleDateString("en-GB")}
+                </td>
+              </tr>
+              <tr>
+                <td className="text-[#A8A8A0] py-0.5 px-4">VALID UNTIL</td>
+                <td className="text-[#F4F4F0] font-black text-right">
+                  {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB")}
+                </td>
+              </tr>
             </tbody>
           </table>
         </div>
       </div>
       <div className="h-1 bg-[#526E8C]" />
       <div className="bg-[#F8F7F4] px-12 py-3.5 flex flex-wrap gap-10 border-b border-[#E4E0D8]">
-        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">Company No. 14902188</span>
-        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">VAT Reg No. GB 412 8876 21</span>
-        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">operations@opusform.co.uk</span>
+        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">
+          Company No. 14902188
+        </span>
+        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">
+          VAT Reg No. GB 412 8876 21
+        </span>
+        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">
+          operations@opusform.co.uk
+        </span>
       </div>
       <div className="px-12 py-8 flex-1 flex flex-col">
         <div className="mb-7 grid grid-cols-2 gap-4">
           <div>
-            <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Client</div>
+            <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">
+              Client
+            </div>
             <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
               {clientInfo.entity ? (
                 <div className="space-y-1">
                   <p className="font-black text-gray-900 text-sm">{clientInfo.entity}</p>
-                  <p className="text-gray-600 tracking-wide">{clientInfo.email ? clientInfo.email.toLowerCase() : '...'}</p>
+                  <p className="text-gray-600 tracking-wide">
+                    {clientInfo.email ? clientInfo.email.toLowerCase() : "..."}
+                  </p>
                 </div>
-              ) : <span className="text-[#AAA]">No client data entered</span>}
+              ) : (
+                <span className="text-[#AAA]">No client data entered</span>
+              )}
             </div>
           </div>
           <div>
-            <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Project</div>
+            <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">
+              Project
+            </div>
             <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
               {clientInfo.site ? (
                 <div className="space-y-1">
                   <p className="font-black text-gray-900 text-sm">{clientInfo.site}</p>
-                  <p className="text-gray-600 tracking-wide">{clientInfo.postcode || '...'}</p>
+                  <p className="text-gray-600 tracking-wide">{clientInfo.postcode || "..."}</p>
                 </div>
-              ) : <span className="text-[#AAA]">No project data entered</span>}
+              ) : (
+                <span className="text-[#AAA]">No project data entered</span>
+              )}
             </div>
           </div>
         </div>
@@ -669,74 +729,150 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-[#26262B]">
-                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[42%]">Description of Structural Elements</th>
-                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Volume / Qty</th>
-                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[10%]">Unit</th>
-                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Unit Rate</th>
-                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Net Value</th>
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[42%]">
+                  Description of Structural Elements
+                </th>
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">
+                  Volume / Qty
+                </th>
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[10%]">
+                  Unit
+                </th>
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">
+                  Unit Rate
+                </th>
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">
+                  Net Value
+                </th>
               </tr>
             </thead>
             <tbody>
-              {items.length > 0 ? items.map((item, idx) => (
-                <tr key={item.id} className={`border-b border-[#EDEAE4] ${idx % 2 === 1 ? 'bg-[#FAFAF8]' : ''}`}>
-                  <td className="p-3 text-xs leading-relaxed text-[#333]">{item.description || '...'}</td>
-                  <td className="p-3 text-xs text-right text-[#333] font-medium">{item.quantity}</td>
-                  <td className="p-3 text-[11px] text-[#BBB] italic uppercase tracking-wide">{item.unit}</td>
-                  <td className="p-3 text-xs text-right text-[#333]">
-                    {isIncludedRate(item.rate) ? 'INCLUDED' : `£${Number(item.rate || 0).toFixed(2)}`}
-                  </td>
-                  <td className="p-3 text-xs text-right text-[#333] font-black">
-                    {isIncludedRate(item.rate) ? 'INCLUDED' : `£${getLineTotal(item).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-                  </td>
-                </tr>
-              )) : (
+              {items.length > 0 ? (
+                items.map((item, idx) => (
+                  <tr
+                    key={item.id}
+                    className={`border-b border-[#EDEAE4] ${idx % 2 === 1 ? "bg-[#FAFAF8]" : ""}`}
+                  >
+                    <td className="p-3 text-xs leading-relaxed text-[#333]">
+                      {item.description || "..."}
+                    </td>
+                    <td className="p-3 text-xs text-right text-[#333] font-medium">
+                      {item.quantity}
+                    </td>
+                    <td className="p-3 text-[11px] text-[#BBB] italic uppercase tracking-wide">
+                      {item.unit}
+                    </td>
+                    <td className="p-3 text-xs text-right text-[#333]">
+                      {isIncludedRate(item.rate)
+                        ? "INCLUDED"
+                        : `£${Number(item.rate || 0).toFixed(2)}`}
+                    </td>
+                    <td className="p-3 text-xs text-right text-[#333] font-black">
+                      {isIncludedRate(item.rate)
+                        ? "INCLUDED"
+                        : `£${getLineTotal(item).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                    </td>
+                  </tr>
+                ))
+              ) : (
                 <tr className="border-b border-[#EDEAE4]">
-                  <td colSpan={5} className="p-10 text-center text-[#BBB] italic text-[11px] uppercase tracking-widest">No billable items added</td>
+                  <td
+                    colSpan={5}
+                    className="p-10 text-center text-[#BBB] italic text-[11px] uppercase tracking-widest"
+                  >
+                    No billable items added
+                  </td>
                 </tr>
               )}
-              <tr className="h-4 bg-[#FAFAF8]"><td colSpan={5} /></tr>
+              <tr className="h-4 bg-[#FAFAF8]">
+                <td colSpan={5} />
+              </tr>
             </tbody>
           </table>
         </div>
         <div className="flex justify-end border-t-2 border-[#26262B]">
           <div className="w-[280px]">
-            <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]"><span className="uppercase tracking-widest">NET SUBTOTAL</span><span className="font-black text-[#333]">£{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
-            <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]"><span className="uppercase tracking-widest text-[11px]">UK STANDARD VAT ({vatRate}%)</span><span className="font-black text-[#333]">£{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
-            <div className="flex justify-between p-3.5 px-3 bg-[#26262B] text-[#F4F4F0] font-black text-[15px]"><span className="uppercase tracking-widest">Concrete Works Total</span><span>£{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+            <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]">
+              <span className="uppercase tracking-widest">NET SUBTOTAL</span>
+              <span className="font-black text-[#333]">
+                £{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]">
+              <span className="uppercase tracking-widest text-[11px]">
+                UK STANDARD VAT ({vatRate}%)
+              </span>
+              <span className="font-black text-[#333]">
+                £{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="flex justify-between p-3.5 px-3 bg-[#26262B] text-[#F4F4F0] font-black text-[15px]">
+              <span className="uppercase tracking-widest">Concrete Works Total</span>
+              <span>
+                £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </span>
+            </div>
           </div>
         </div>
       </div>
       <div className="px-12 pt-7">
         <div className="bg-[#F4F3F0] border-l-[3px] border-[#526E8C] p-4 mb-6">
-          <div className="text-[11px] font-black tracking-[0.12em] uppercase text-[#526E8C] mb-2.5">Standard Terms & Pour Conditions</div>
+          <div className="text-[11px] font-black tracking-[0.12em] uppercase text-[#526E8C] mb-2.5">
+            Standard Terms & Pour Conditions
+          </div>
           <ul className="list-disc pl-3.5 space-y-1.5">
-            {terms.map((term, index) => term.trim() && (
-              <li key={index} className="text-[10.5px] text-[#555] leading-relaxed">{term}</li>
-            ))}
+            {terms.map(
+              (term, index) =>
+                term.trim() && (
+                  <li key={index} className="text-[10.5px] text-[#555] leading-relaxed">
+                    {term}
+                  </li>
+                ),
+            )}
           </ul>
         </div>
         <div className="mb-8">
-          <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#888] mb-2">Banking Details</div>
+          <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#888] mb-2">
+            Banking Details
+          </div>
           <div className="grid grid-cols-2 gap-x-10 gap-y-2">
-            <div><div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Bank</div><div className="font-black text-[#333] text-[11px]">Barclays Business Banking</div></div>
-            <div><div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Account Name</div><div className="font-black text-[#333] text-[11px]">Opus Form Ltd</div></div>
-            <div><div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Sort Code</div><div className="font-black text-[#333] text-[11px]">20-00-00</div></div>
-            <div><div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Account No.</div><div className="font-black text-[#333] text-[11px]">13319268</div></div>
-            <div><div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">IBAN</div><div className="font-black text-[#333] text-[11px]">GB29 NWBK 6016 1331 9268 19</div></div>
+            <div>
+              <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Bank</div>
+              <div className="font-black text-[#333] text-[11px]">Barclays Business Banking</div>
+            </div>
+            <div>
+              <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">
+                Account Name
+              </div>
+              <div className="font-black text-[#333] text-[11px]">Opus Form Ltd</div>
+            </div>
+            <div>
+              <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Sort Code</div>
+              <div className="font-black text-[#333] text-[11px]">20-00-00</div>
+            </div>
+            <div>
+              <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Account No.</div>
+              <div className="font-black text-[#333] text-[11px]">13319268</div>
+            </div>
+            <div>
+              <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">IBAN</div>
+              <div className="font-black text-[#333] text-[11px]">GB29 NWBK 6016 1331 9268 19</div>
+            </div>
           </div>
         </div>
       </div>
       <div className="bg-[#26262B] px-8 sm:px-12 py-3.5 flex justify-between items-center mt-auto">
         <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">Opus Form Ltd</span>
-        <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">operations@opusform.co.uk</span>
+        <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">
+          operations@opusform.co.uk
+        </span>
       </div>
     </div>
   );
 
   return (
     <div className="flex flex-col flex-1 w-full text-white">
-
-      {/* â”€â”€â”€ STICKY ACTION BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* --- STICKY ACTION BAR --- */}
       <div className="sticky top-16 lg:top-0 z-40 bg-[#111114]/90 backdrop-blur border-b border-[#2a2a30] px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 mb-4">
         <div className="flex items-center gap-3 min-w-0">
           <button
@@ -748,11 +884,13 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           </button>
           <div className="w-px h-4 bg-[#2a2a30] hidden sm:block" />
           <div className="flex items-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg px-3 py-1.5 flex-1 sm:flex-initial min-w-0">
-            <span className="text-[11px] font-black tracking-widest text-[#888] uppercase whitespace-nowrap">Ref</span>
+            <span className="text-[11px] font-black tracking-widest text-[#888] uppercase whitespace-nowrap">
+              Ref
+            </span>
             <input
               className="bg-transparent border-none outline-none text-[#6C8295] text-xs font-black tracking-widest uppercase font-mono w-full sm:w-24 min-w-0"
               value={quoteReference}
-              onChange={e => setQuoteReference(e.target.value)}
+              onChange={(e) => setQuoteReference(e.target.value)}
               placeholder="JOB-0000"
             />
           </div>
@@ -771,7 +909,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
           >
             <Save className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{lastSaved ? 'SAVED' : 'SAVE'}</span>
+            <span className="hidden sm:inline">{lastSaved ? "SAVED" : "SAVE"}</span>
           </button>
           <button
             onClick={handleDownloadPDF}
@@ -791,35 +929,39 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             ) : (
               <Send className="w-3.5 h-3.5" />
             )}
-            <span className="hidden sm:inline">{isSendingEmail ? 'SENDING...' : 'SEND'}</span>
+            <span className="hidden sm:inline">{isSendingEmail ? "SENDING..." : "SEND"}</span>
           </button>
         </div>
       </div>
 
-      {/* â”€â”€â”€ MAIN TWO-PANEL BODY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* --- MAIN TWO-PANEL BODY --- */}
       <div className="flex flex-col lg:flex-row gap-5 px-4 sm:px-6 pb-10">
-
-        {/* â”€â”€ LEFT PANEL: Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* -- LEFT PANEL: Form -- */}
         <div className="flex flex-col gap-5 flex-1 min-w-0">
-
           {/* SAVED HISTORY (collapsed accordion) */}
           <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl overflow-hidden">
             <button
               type="button"
-              onClick={() => setShowHistory(h => !h)}
+              onClick={() => setShowHistory((h) => !h)}
               className="w-full flex items-center justify-between p-4 text-[11px] font-black tracking-widest uppercase text-gray-400 hover:text-white transition-colors"
             >
               <div className="flex items-center gap-2">
                 <History className="w-3.5 h-3.5" />
                 Saved History ({savedQuotes.length})
               </div>
-              {showHistory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showHistory ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
             </button>
             {showHistory && (
               <div className="px-4 pb-4 flex flex-col gap-[5px] max-h-52 overflow-y-auto custom-scrollbar">
                 {savedQuotes.length === 0 ? (
                   <div className="bg-[#111114] border border-dashed border-[#2a2a30] rounded-lg p-6 text-center">
-                    <div className="text-[11px] font-black tracking-widest text-[#555] uppercase">No saved quotes found</div>
+                    <div className="text-[11px] font-black tracking-widest text-[#555] uppercase">
+                      No saved quotes found
+                    </div>
                   </div>
                 ) : (
                   savedQuotes.map((q) => (
@@ -830,13 +972,18 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     >
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-black uppercase tracking-widest text-white">{q.reference}</span>
+                          <span className="text-[11px] font-black uppercase tracking-widest text-white">
+                            {q.reference}
+                          </span>
                           <span className="text-[11px] text-[#888]">{q.date}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2.5">
                         <span className="text-[11px] font-mono font-black uppercase tracking-widest text-[#888]">
-                          £{q.totals?.grossTotal?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
+                          £
+                          {q.totals?.grossTotal?.toLocaleString(undefined, {
+                            maximumFractionDigits: 0,
+                          }) || "0"}
                         </span>
                         <button
                           onClick={(e) => deleteQuote(e, q.id)}
@@ -857,61 +1004,73 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
             <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
               <Building2 className="w-4 h-4 text-[#b0b8c4]" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-white">Client & Project</h3>
+              <h3 className="text-xs font-black uppercase tracking-widest text-white">
+                Client & Project
+              </h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Client Name</span>
+                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                  Client Name
+                </span>
                 <div className="flex items-center bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
                   <input
                     type="text"
                     className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
                     value={clientInfo.entity}
-                    onChange={e => setClientInfo({ ...clientInfo, entity: e.target.value })}
+                    onChange={(e) => setClientInfo({ ...clientInfo, entity: e.target.value })}
                     placeholder="e.g. ABC CONSTRUCTIONS LTD"
                   />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Email</span>
+                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                  Email
+                </span>
                 <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
                   <Mail className="w-4 h-4 text-gray-600 shrink-0" />
                   <input
                     type="email"
                     className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold"
                     value={clientInfo.email}
-                    onChange={e => setClientInfo({ ...clientInfo, email: e.target.value })}
+                    onChange={(e) => setClientInfo({ ...clientInfo, email: e.target.value })}
                     placeholder="accounts@client.com"
                   />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Project / Site Name</span>
+                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                  Project / Site Name
+                </span>
                 <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
                   <LayoutGrid className="w-4 h-4 text-gray-600 shrink-0" />
                   <input
                     type="text"
                     className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
                     value={clientInfo.site}
-                    onChange={e => setClientInfo({ ...clientInfo, site: e.target.value })}
+                    onChange={(e) => setClientInfo({ ...clientInfo, site: e.target.value })}
                     placeholder="e.g. Project Titan"
                   />
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Site Postcode</span>
+                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                  Site Postcode
+                </span>
                 <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
                   <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
                   <input
                     type="text"
                     className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-widest"
                     value={clientInfo.postcode}
-                    onChange={e => setClientInfo({ ...clientInfo, postcode: e.target.value })}
+                    onChange={(e) => setClientInfo({ ...clientInfo, postcode: e.target.value })}
                     placeholder="e.g. SW1A 1AA"
                   />
                 </div>
                 {clientInfo.postcode.trim() && !isValidUKPostcode(clientInfo.postcode) && (
-                  <p className="text-[11px] font-black text-red-500 uppercase tracking-widest">Invalid UK Postcode format</p>
+                  <p className="text-[11px] font-black text-red-500 uppercase tracking-widest">
+                    Invalid UK Postcode format
+                  </p>
                 )}
               </div>
             </div>
@@ -922,7 +1081,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3">
               <div className="flex items-center gap-2">
                 <ClipboardList className="w-4 h-4 text-[#b0b8c4]" />
-                <h3 className="text-xs font-black uppercase tracking-widest text-white">Line Items</h3>
+                <h3 className="text-xs font-black uppercase tracking-widest text-white">
+                  Line Items
+                </h3>
               </div>
               <button
                 type="button"
@@ -936,7 +1097,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
             <div className="flex flex-col gap-2">
               {items.map((item) => (
-                <div key={item.id} className="p-3 bg-[#111114] border border-[#2a2a30] rounded-xl relative group">
+                <div
+                  key={item.id}
+                  className="p-3 bg-[#111114] border border-[#2a2a30] rounded-xl relative group"
+                >
                   {/* Delete button (always visible in corner on all screen sizes) */}
                   <button
                     type="button"
@@ -953,9 +1117,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                         type="text"
                         className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider py-1.5"
                         value={item.description}
-                        onChange={e => updateItem(item.id, { description: e.target.value })}
+                        onChange={(e) => updateItem(item.id, { description: e.target.value })}
                         onFocus={() => setFocusedItemId(item.id)}
-                        onBlur={() => { setTimeout(() => setFocusedItemId(null), 200); }}
+                        onBlur={() => {
+                          setTimeout(() => setFocusedItemId(null), 200);
+                        }}
                         placeholder="Description of item..."
                       />
                       <AnimatePresence>
@@ -966,9 +1132,12 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                             exit={{ opacity: 0, y: -10 }}
                             className="absolute left-0 right-0 top-full mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
                           >
-                            {SUGGESTED_ITEMS.filter(s =>
-                              !item.description ||
-                              s.description.toLowerCase().includes(item.description.toLowerCase())
+                            {SUGGESTED_ITEMS.filter(
+                              (s) =>
+                                !item.description ||
+                                s.description
+                                  .toLowerCase()
+                                  .includes(item.description.toLowerCase()),
                             ).map((suggestion) => (
                               <button
                                 key={suggestion.description}
@@ -977,14 +1146,16 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                                   updateItem(item.id, {
                                     description: suggestion.description,
                                     unit: suggestion.unit,
-                                    rate: suggestion.rate
+                                    rate: suggestion.rate,
                                   });
                                 }}
                                 className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-gray-400 hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
                               >
                                 <div className="flex justify-between items-center">
                                   <span>{suggestion.description}</span>
-                                  <span className="text-[#6C8295]/70 font-mono text-[11px]">£{suggestion.rate}/{suggestion.unit}</span>
+                                  <span className="text-[#6C8295]/70 font-mono text-[11px]">
+                                    £{suggestion.rate}/{suggestion.unit}
+                                  </span>
                                 </div>
                               </button>
                             ))}
@@ -996,26 +1167,34 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     {/* Labeled grid for inputs on all screen sizes */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">Qty</span>
+                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">
+                          Qty
+                        </span>
                         <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2">
                           <input
                             type="number"
                             className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
                             value={item.quantity}
-                            onChange={e => updateItem(item.id, { quantity: Number(e.target.value) })}
+                            onChange={(e) =>
+                              updateItem(item.id, { quantity: Number(e.target.value) })
+                            }
                           />
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">Unit</span>
+                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">
+                          Unit
+                        </span>
                         <div className="relative flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2">
                           <input
                             type="text"
                             className="w-full bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
                             value={item.unit}
-                            onChange={e => updateItem(item.id, { unit: e.target.value })}
+                            onChange={(e) => updateItem(item.id, { unit: e.target.value })}
                             onFocus={() => setUnitFocusedItemId(item.id)}
-                            onBlur={() => { setTimeout(() => setUnitFocusedItemId(null), 200); }}
+                            onBlur={() => {
+                              setTimeout(() => setUnitFocusedItemId(null), 200);
+                            }}
                             placeholder="Unit..."
                           />
                           <AnimatePresence>
@@ -1026,9 +1205,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                                 exit={{ opacity: 0, y: -10 }}
                                 className="absolute left-0 right-0 top-full mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
                               >
-                                {COMMON_UNITS.filter(u =>
-                                  !item.unit || u.toLowerCase().includes(item.unit.toLowerCase())
-                               ).map((u) => (
+                                {COMMON_UNITS.filter(
+                                  (u) =>
+                                    !item.unit || u.toLowerCase().includes(item.unit.toLowerCase()),
+                                ).map((u) => (
                                   <button
                                     key={u}
                                     type="button"
@@ -1044,22 +1224,28 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">Rate (£)</span>
+                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">
+                          Rate (£)
+                        </span>
                         <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1.5">
                           <input
                             type="text"
                             className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
                             value={item.rate}
-                            onChange={e => updateItem(item.id, { rate: e.target.value })}
+                            onChange={(e) => updateItem(item.id, { rate: e.target.value })}
                             placeholder="0.00"
                           />
                           <button
                             type="button"
-                            onClick={() => updateItem(item.id, { rate: isIncludedRate(item.rate) ? 0 : 'INCLUDED' })}
+                            onClick={() =>
+                              updateItem(item.id, {
+                                rate: isIncludedRate(item.rate) ? 0 : "INCLUDED",
+                              })
+                            }
                             className={`px-1.5 py-1 rounded text-[10px] font-black tracking-wide shrink-0 ${
                               isIncludedRate(item.rate)
-                                ? 'bg-[#6C8295] text-white shadow-sm'
-                                : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
+                                ? "bg-[#6C8295] text-white shadow-sm"
+                                : "bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]"
                             }`}
                           >
                             INCL
@@ -1067,9 +1253,13 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">Total</span>
+                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">
+                          Total
+                        </span>
                         <div className="flex items-center h-9 px-1 text-xs font-black font-mono text-[#6C8295]">
-                          {isIncludedRate(item.rate) ? 'INCL' : `£${getLineTotal(item).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                          {isIncludedRate(item.rate)
+                            ? "INCL"
+                            : `£${getLineTotal(item).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
                         </div>
                       </div>
                     </div>
@@ -1078,7 +1268,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
               ))}
               {items.length === 0 && (
                 <div className="bg-[#111114] border border-dashed border-[#2a2a30]/60 rounded-xl p-8 text-center">
-                  <div className="text-[11px] font-black tracking-widest text-gray-600 uppercase mb-3">No line items added yet</div>
+                  <div className="text-[11px] font-black tracking-widest text-gray-600 uppercase mb-3">
+                    No line items added yet
+                  </div>
                   <button
                     type="button"
                     onClick={addItem}
@@ -1096,11 +1288,13 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-[#b0b8c4]" />
-                <h3 className="text-xs font-black uppercase tracking-widest text-white">Terms & Conditions</h3>
+                <h3 className="text-xs font-black uppercase tracking-widest text-white">
+                  Terms & Conditions
+                </h3>
               </div>
               <button
                 type="button"
-                onClick={() => setTerms([...terms, ''])}
+                onClick={() => setTerms([...terms, ""])}
                 className="bg-[#2e2e2e] border border-[#3e3e3e] hover:border-gray-400 rounded-md w-[26px] h-[26px] flex items-center justify-center cursor-pointer text-[#888] hover:text-white transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1108,7 +1302,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             </div>
             <div className="space-y-2.5">
               {terms.map((term, index) => (
-                <div key={index} className="flex items-start justify-between gap-3 bg-[#111114] border border-[#2a2a30] rounded-xl p-3">
+                <div
+                  key={index}
+                  className="flex items-start justify-between gap-3 bg-[#111114] border border-[#2a2a30] rounded-xl p-3"
+                >
                   <textarea
                     value={term}
                     onChange={(e) => {
@@ -1135,20 +1332,26 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
             <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
               <CheckCircle2 className="w-4 h-4 text-[#b0b8c4]" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-white">Summary & Authorization</h3>
+              <h3 className="text-xs font-black uppercase tracking-widest text-white">
+                Summary & Authorization
+              </h3>
             </div>
 
             {/* VAT row */}
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">VAT Rate</span>
+              <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                VAT Rate
+              </span>
               <div className="flex gap-2">
-                {[0, 5, 20].map(v => (
+                {[0, 5, 20].map((v) => (
                   <button
                     key={v}
                     type="button"
                     onClick={() => setVatRate(v)}
                     className={`px-3 py-1 rounded text-[11px] font-black tracking-widest transition-all ${
-                      vatRate === v ? 'bg-[#6C8295] text-white' : 'bg-[#2e2e2e] text-gray-400 border border-[#383838] hover:bg-[#333]'
+                      vatRate === v
+                        ? "bg-[#6C8295] text-white"
+                        : "bg-[#2e2e2e] text-gray-400 border border-[#383838] hover:bg-[#333]"
                     }`}
                   >
                     {v}%
@@ -1161,30 +1364,37 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             <div className="flex flex-col gap-2">
               <div className="flex justify-between text-[13px] border-b border-[#2a2a30] pb-2">
                 <span className="text-gray-500">Net Total</span>
-                <span className="font-semibold font-mono">£{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="font-semibold font-mono">
+                  £{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
               </div>
               <div className="flex justify-between text-[13px] border-b border-[#2a2a30] pb-2">
                 <span className="text-gray-500">VAT ({vatRate}%)</span>
-                <span className="font-semibold font-mono">£{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="font-semibold font-mono">
+                  £{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
               </div>
               <div className="flex justify-between text-[16px] pt-1">
                 <span className="font-bold text-white">Gross Total</span>
-                <span className="font-extrabold text-[#6C8295] font-mono">£{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <span className="font-extrabold text-[#6C8295] font-mono">
+                  £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
               </div>
             </div>
-
           </div>
+        </div>
+        {/* end left panel */}
 
-        </div>{/* end left panel */}
-
-        {/* â”€â”€ RIGHT PANEL: Live PDF Mirror â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* -- RIGHT PANEL: Live PDF Mirror -- */}
         <div className="w-full lg:w-[420px] xl:w-[480px] 2xl:w-[620px] shrink-0">
           {/* Desktop: sticky PDF mirror. Always mounted (hidden via CSS, not unmounted) so it
               remains the single canonical .print-area target at every breakpoint. */}
           <div className="hidden lg:block sticky top-[58px]">
             <div className="flex items-center gap-2 text-white/20 px-1 mb-3">
               <div className="w-2 h-2 rounded-full bg-[#6C8295] animate-pulse" />
-              <span className="text-[11px] font-black uppercase tracking-[0.2em]">PDF Live Mirror</span>
+              <span className="text-[11px] font-black uppercase tracking-[0.2em]">
+                PDF Live Mirror
+              </span>
             </div>
             <div
               ref={containerRef}
@@ -1193,11 +1403,12 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
               {pdfDocument(scale, true)}
             </div>
           </div>
-        </div>{/* end right panel */}
+        </div>
+        {/* end right panel */}
+      </div>
+      {/* end two-panel body */}
 
-      </div>{/* end two-panel body */}
-
-      {/* â”€â”€â”€ TABLET/MOBILE: FULL-SCREEN PDF PREVIEW MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      {/* --- TABLET/MOBILE: FULL-SCREEN PDF PREVIEW MODAL --- */}
       <AnimatePresence>
         {previewOpen && (
           <motion.div
@@ -1229,62 +1440,35 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
         )}
       </AnimatePresence>
 
-      {/* â”€â”€â”€ VALIDATION ERROR MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <AnimatePresence>
-        {validationErrors.length > 0 && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="bg-[#242424] border border-red-500/20 rounded-xl max-w-sm w-full p-5 shadow-2xl relative"
-            >
-              <button onClick={() => setValidationErrors([])} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-              <div className="flex items-center gap-2 text-red-400 border-b border-[#2a2a30] pb-3 mb-4">
-                <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[11px] font-black uppercase tracking-[0.2em]">VALIDATION FAILURE</span>
-              </div>
-              <p className="text-[11px] text-gray-400 uppercase tracking-wider leading-relaxed mb-4">The following fields are required before sending:</p>
-              <ul className="space-y-2 mb-5">
-                {validationErrors.map((error, idx) => (
-                  <li key={idx} className="flex items-center gap-2 text-[11px] text-gray-300 uppercase font-black tracking-widest bg-[#1a1a1c] border border-[#2d2d30] p-2.5 rounded-lg">
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500/80" />
-                    {error}
-                  </li>
-                ))}
-              </ul>
-              <button type="button" onClick={() => setValidationErrors([])} className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#2a2a30] rounded-lg py-2 text-[11px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors">DISMISS</button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* â”€â”€â”€ NOTIFICATION TOAST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <AnimatePresence>
-        {notification && (
-          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className={`bg-[#242424] border ${notification.type === 'success' ? 'border-[#6C8295]/40' : 'border-red-500/20'} rounded-xl max-w-sm w-full p-5 shadow-2xl relative`}
-            >
-              <button onClick={() => setNotification(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer">
-                <X className="w-4 h-4" />
-              </button>
-              <div className={`flex items-center gap-2 ${notification.type === 'success' ? 'text-[#859bb0]' : 'text-red-400'} border-b border-[#2a2a30] pb-3 mb-4`}>
-                <div className={`w-2 h-2 rounded-full ${notification.type === 'success' ? 'bg-[#6C8295]' : 'bg-red-500'} animate-pulse`} />
-                <span className="text-[11px] font-black uppercase tracking-[0.2em]">{notification.title}</span>
-              </div>
-              <p className="text-[11px] text-gray-300 uppercase tracking-widest leading-relaxed mb-5">{notification.message}</p>
-              <button type="button" onClick={() => setNotification(null)} className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#2a2a30] rounded-lg py-2 text-[11px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors">DISMISS</button>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
+      {/* --- VALIDATION ERROR MODAL --- */}
+      <NoticeModal
+        open={validationErrors.length > 0}
+        onOpenChange={(open) => {
+          if (!open) setValidationErrors([]);
+        }}
+        tone="error"
+        tag="VALIDATION FAILURE"
+        title="VALIDATION FAILURE"
+        message={
+          <>
+            <p className="text-[11px] text-gray-400 uppercase tracking-wider leading-relaxed mb-4">
+              The following fields are required before sending:
+            </p>
+            <ul className="space-y-2">
+              {validationErrors.map((error, idx) => (
+                <li
+                  key={idx}
+                  className="flex items-center gap-2 text-[11px] text-gray-300 uppercase font-black tracking-widest bg-[#1a1a1c] border border-[#2d2d30] p-2.5 rounded-lg"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500/80" />
+                  {error}
+                </li>
+              ))}
+            </ul>
+          </>
+        }
+        actionLabel="DISMISS"
+      />
     </div>
   );
 };

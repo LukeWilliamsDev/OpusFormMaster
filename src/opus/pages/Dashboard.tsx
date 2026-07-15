@@ -1,8 +1,8 @@
 // @ts-nocheck
-import React, { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
+import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "motion/react";
+import {
   ClipboardList,
   Target,
   UserCheck,
@@ -12,7 +12,6 @@ import {
   Clock,
   Plus,
   ArrowRight,
-  Send,
   UserPlus,
   Calculator,
   History,
@@ -21,23 +20,23 @@ import {
   X,
   MapPin,
   Briefcase,
-  AlertCircle
-} from 'lucide-react';
-import { usePortal } from '../context/PortalContext';
-import { supabase } from '@/integrations/supabase/client';
+} from "lucide-react";
+import { usePortal } from "../context/PortalContext";
+import { supabase } from "@/integrations/supabase/client";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { toast } from "sonner";
 
 export const DashboardPage: React.FC = () => {
   const { workers, setWorkers, jobs, setJobs, shifts, role, user, profile } = usePortal();
   const navigate = useNavigate();
 
   // Search & Command Bar State
-  const [commandInput, setCommandInput] = useState('');
+  const [commandInput, setCommandInput] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [quotes, setQuotes] = useState([]);
   const [snoozedAlertIds, setSnoozedAlertIds] = useState(new Set());
   const [remindConfirmAlert, setRemindConfirmAlert] = useState(null);
   const [isSendingRemind, setIsSendingRemind] = useState(false);
-  const [notifications, setNotifications] = useState([]);
 
   // Modals state
   const [isJobModalOpen, setIsJobModalOpen] = useState(false);
@@ -45,93 +44,98 @@ export const DashboardPage: React.FC = () => {
 
   // New Job Form State
   const [jobForm, setJobForm] = useState({
-    siteName: '',
-    mainContractor: '',
-    postcode: '',
+    siteName: "",
+    mainContractor: "",
+    postcode: "",
     contractMaxPours: 6,
     scheduleValue: 25000,
   });
 
   // New Worker Form State
   const [workerForm, setWorkerForm] = useState({
-    name: '',
-    role: 'Operative',
-    phone: '',
-    email: '',
-    postcode: '',
-    ticketType: 'CSCS',
-    ticketNo: '',
-    ticketExpiry: '',
+    name: "",
+    role: "Operative",
+    phone: "",
+    email: "",
+    postcode: "",
+    ticketType: "CSCS",
+    ticketNo: "",
+    ticketExpiry: "",
   });
-
-  // Toast trigger
-  const triggerNotification = (message: string, type: 'success' | 'warning' | 'info' = 'success') => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setNotifications(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setNotifications(prev => prev.filter(n => n.id !== id));
-    }, 4000);
-  };
 
   // Load quotes on mount to support global search
   useEffect(() => {
     const loadQuotes = async () => {
       try {
-        const { data } = await supabase.from('quotes').select('*');
+        const { data } = await supabase.from("quotes").select("*");
         if (data) {
-          setQuotes(data.map(q => ({
-            id: q.id,
-            reference: q.reference || 'EST-DRAFT',
-            clientName: q.client_info?.entity || 'Unknown Client',
-            netTotal: q.totals?.netTotal || 0,
-            date: q.date
-          })));
+          setQuotes(
+            data.map((q) => ({
+              id: q.id,
+              reference: q.reference || "EST-DRAFT",
+              clientName: q.client_info?.entity || "Unknown Client",
+              netTotal: q.totals?.netTotal || 0,
+              date: q.date,
+            })),
+          );
         }
       } catch (e) {
-        console.error('Failed to load quotes for dashboard search', e);
+        console.error("Failed to load quotes for dashboard search", e);
       }
     };
     loadQuotes();
   }, []);
 
   // Timeframe State for metrics
-  const [timeframe, setTimeframe] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
+  const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">("weekly");
 
   const activeJobsFiltered = useMemo(() => {
-    if (timeframe === 'daily') {
-      const todayStr = new Date().toISOString().split('T')[0];
-      const todayJobIds = new Set(shifts.filter(s => s.date === todayStr).map(s => s.jobId));
-      return jobs.filter(j => todayJobIds.has(j.id) && (j.status === 'in-progress' || j.status === 'active'));
+    if (timeframe === "daily") {
+      const todayStr = new Date().toISOString().split("T")[0];
+      const todayJobIds = new Set(shifts.filter((s) => s.date === todayStr).map((s) => s.jobId));
+      return jobs.filter(
+        (j) => todayJobIds.has(j.id) && (j.status === "in-progress" || j.status === "active"),
+      );
     }
-    if (timeframe === 'weekly') {
-      return jobs.filter(j => j.status === 'in-progress' || j.status === 'active');
+    if (timeframe === "weekly") {
+      return jobs.filter((j) => j.status === "in-progress" || j.status === "active");
     }
-    return jobs.filter(j => j.status === 'in-progress' || j.status === 'active' || j.status === 'pending');
+    return jobs.filter(
+      (j) => j.status === "in-progress" || j.status === "active" || j.status === "pending",
+    );
   }, [jobs, shifts, timeframe]);
 
-  const activePoursCountFiltered = useMemo(() => activeJobsFiltered.reduce((sum, j) => sum + (j.currentPours || 0), 0), [activeJobsFiltered]);
-  const contractMaxPoursCountFiltered = useMemo(() => activeJobsFiltered.reduce((sum, j) => sum + (j.contractMaxPours || 0), 0), [activeJobsFiltered]);
+  const activePoursCountFiltered = useMemo(
+    () => activeJobsFiltered.reduce((sum, j) => sum + (j.currentPours || 0), 0),
+    [activeJobsFiltered],
+  );
+  const contractMaxPoursCountFiltered = useMemo(
+    () => activeJobsFiltered.reduce((sum, j) => sum + (j.contractMaxPours || 0), 0),
+    [activeJobsFiltered],
+  );
 
   const scheduledWorkersCountFiltered = useMemo(() => {
     const today = new Date();
     const dates = [];
     let limit = 1;
-    if (timeframe === 'weekly') limit = 7;
-    if (timeframe === 'monthly') limit = 30;
+    if (timeframe === "weekly") limit = 7;
+    if (timeframe === "monthly") limit = 30;
 
     for (let i = 0; i < limit; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
-      dates.push(d.toISOString().split('T')[0]);
+      dates.push(d.toISOString().split("T")[0]);
     }
-    const filteredShifts = shifts.filter(s => dates.includes(s.date));
-    return new Set(filteredShifts.map(s => s.workerId)).size;
+    const filteredShifts = shifts.filter((s) => dates.includes(s.date));
+    return new Set(filteredShifts.map((s) => s.workerId)).size;
   }, [shifts, timeframe]);
 
   const pipelineValueFiltered = useMemo(() => {
-    const fullValue = jobs.filter(j => j.status === 'in-progress' || j.status === 'active').reduce((sum, j) => sum + (Number(j.scheduleValue) || 0), 0);
-    if (timeframe === 'daily') return Math.round(fullValue / 30);
-    if (timeframe === 'weekly') return Math.round(fullValue / 4);
+    const fullValue = jobs
+      .filter((j) => j.status === "in-progress" || j.status === "active")
+      .reduce((sum, j) => sum + (Number(j.scheduleValue) || 0), 0);
+    if (timeframe === "daily") return Math.round(fullValue / 30);
+    if (timeframe === "weekly") return Math.round(fullValue / 4);
     return fullValue;
   }, [jobs, timeframe]);
 
@@ -140,20 +144,20 @@ export const DashboardPage: React.FC = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const list = [];
-    
-    workers.forEach(worker => {
-      worker.tickets?.forEach(ticket => {
+
+    workers.forEach((worker) => {
+      worker.tickets?.forEach((ticket) => {
         const expiry = new Date(ticket.expiryDate);
         expiry.setHours(0, 0, 0, 0);
-        
+
         const diffTime = expiry.getTime() - today.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         const isExpired = diffDays < 0;
         const isExpiringSoon = diffDays >= 0 && diffDays <= 30;
-        
+
         const alertId = `${worker.id}-${ticket.id}`;
-        
+
         if ((isExpired || isExpiringSoon) && !snoozedAlertIds.has(alertId)) {
           list.push({
             alertId,
@@ -167,12 +171,12 @@ export const DashboardPage: React.FC = () => {
             ticketNumber: ticket.ticketNumber,
             diffDays,
             isExpired,
-            isExpiringSoon
+            isExpiringSoon,
           });
         }
       });
     });
-    
+
     return list.sort((a, b) => a.diffDays - b.diffDays);
   }, [workers, snoozedAlertIds]);
 
@@ -180,28 +184,37 @@ export const DashboardPage: React.FC = () => {
   const searchResults = useMemo(() => {
     if (!commandInput.trim()) return null;
     const query = commandInput.toLowerCase();
-    
-    const matchedJobs = jobs.filter(j => 
-      (j.siteName || '').toLowerCase().includes(query) || 
-      (j.jobRef || '').toLowerCase().includes(query) ||
-      (j.mainContractor && j.mainContractor.toLowerCase().includes(query))
-    ).slice(0, 4);
 
-    const matchedWorkers = workers.filter(w => 
-      (w.name || '').toLowerCase().includes(query) || 
-      (w.role || '').toLowerCase().includes(query)
-    ).slice(0, 4);
+    const matchedJobs = jobs
+      .filter(
+        (j) =>
+          (j.siteName || "").toLowerCase().includes(query) ||
+          (j.jobRef || "").toLowerCase().includes(query) ||
+          (j.mainContractor && j.mainContractor.toLowerCase().includes(query)),
+      )
+      .slice(0, 4);
 
-    const matchedQuotes = quotes.filter(q => 
-      (q.reference || '').toLowerCase().includes(query) || 
-      (q.clientName || '').toLowerCase().includes(query)
-    ).slice(0, 4);
+    const matchedWorkers = workers
+      .filter(
+        (w) =>
+          (w.name || "").toLowerCase().includes(query) ||
+          (w.role || "").toLowerCase().includes(query),
+      )
+      .slice(0, 4);
+
+    const matchedQuotes = quotes
+      .filter(
+        (q) =>
+          (q.reference || "").toLowerCase().includes(query) ||
+          (q.clientName || "").toLowerCase().includes(query),
+      )
+      .slice(0, 4);
 
     return {
       jobs: matchedJobs,
       workers: matchedWorkers,
       quotes: matchedQuotes,
-      hasAny: matchedJobs.length > 0 || matchedWorkers.length > 0 || matchedQuotes.length > 0
+      hasAny: matchedJobs.length > 0 || matchedWorkers.length > 0 || matchedQuotes.length > 0,
     };
   }, [commandInput, jobs, workers, quotes]);
 
@@ -215,15 +228,15 @@ export const DashboardPage: React.FC = () => {
       } else if (searchResults.workers.length > 0) {
         navigate(`/portal/roster?view=staff&workerId=${searchResults.workers[0].id}`);
       }
-      setCommandInput('');
+      setCommandInput("");
     }
   };
 
   // Inline Alert Actions
   const handleRemindAlert = async (alert) => {
-    const worker = workers.find(w => w.id === alert.workerId);
+    const worker = workers.find((w) => w.id === alert.workerId);
     if (!worker?.email) {
-      triggerNotification('No email address on file for this worker', 'warning');
+      toast.warning("No email address on file for this worker");
       return;
     }
 
@@ -232,7 +245,7 @@ export const DashboardPage: React.FC = () => {
       // 1. Create document_request row (7-day window)
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       const { data, error: insertError } = await supabase
-        .from('document_requests')
+        .from("document_requests")
         .insert({
           worker_id: alert.workerId,
           requested_certs: [alert.ticketType],
@@ -248,55 +261,57 @@ export const DashboardPage: React.FC = () => {
       const uploadUrl = `${window.location.origin}/submit-credentials?token=${data.id}`;
 
       // 3. Invoke send-compliance-email edge function
-      const { error: emailError } = await supabase.functions.invoke('send-compliance-email', {
+      const { error: emailError } = await supabase.functions.invoke("send-compliance-email", {
         body: {
           toEmail: worker.email,
           workerName: worker.name,
           requestedCerts: [alert.ticketType],
           uploadUrl,
-          expiresAt: expiresAt.toISOString()
-        }
+          expiresAt: expiresAt.toISOString(),
+        },
       });
 
       if (emailError) throw new Error(emailError.message);
 
       // 4. Audit log
-      await supabase.rpc('log_anonymous_audit', {
-        p_user_email: 'admin@opusform.co.uk',
-        p_action: 'COMPLIANCE_REMINDER_SENT',
-        p_target_type: 'staff',
+      await supabase.rpc("log_anonymous_audit", {
+        p_user_email: "admin@opusform.co.uk",
+        p_action: "COMPLIANCE_REMINDER_SENT",
+        p_target_type: "staff",
         p_target_id: alert.workerId,
         p_details: {
           ticket_type: alert.ticketType,
           request_id: data.id,
-          worker_email: worker.email
-        }
+          worker_email: worker.email,
+        },
       });
 
-      triggerNotification(`Compliance reminder sent to ${worker.name}`, 'success');
+      toast.success(`Compliance reminder sent to ${worker.name}`);
     } catch (e: any) {
-      console.error('Failed to send compliance reminder:', e);
-      triggerNotification('Failed to send reminder: ' + (e.message || 'Unknown error'), 'warning');
+      console.error("Failed to send compliance reminder:", e);
+      toast.warning("Failed to send reminder: " + (e.message || "Unknown error"));
 
       // Fire-and-forget admin failure alert
-      supabase.functions.invoke('send-admin-alert', {
-        body: {
-          subject: `Compliance Reminder Failed — ${alert.workerName}`,
-          body: `A compliance reminder for ${alert.workerName} (${alert.ticketType}) could not be sent.\n\nWorker ID: ${alert.workerId}\nError: ${e.message || 'Unknown error'}\n\nPlease review the document_requests table and retry manually.`
-        }
-      }).catch(adminErr => console.error('Admin alert also failed:', adminErr));
+      supabase.functions
+        .invoke("send-admin-alert", {
+          body: {
+            subject: `Compliance Reminder Failed — ${alert.workerName}`,
+            body: `A compliance reminder for ${alert.workerName} (${alert.ticketType}) could not be sent.\n\nWorker ID: ${alert.workerId}\nError: ${e.message || "Unknown error"}\n\nPlease review the document_requests table and retry manually.`,
+          },
+        })
+        .catch((adminErr) => console.error("Admin alert also failed:", adminErr));
     } finally {
       setIsSendingRemind(false);
     }
   };
 
   const handleSnoozeAlert = (alertId) => {
-    setSnoozedAlertIds(prev => {
+    setSnoozedAlertIds((prev) => {
       const next = new Set(prev);
       next.add(alertId);
       return next;
     });
-    triggerNotification('Alert snoozed for 24 hours', 'info');
+    toast("Alert snoozed for 24 hours");
   };
 
   const handleUpdateAlert = (workerId) => {
@@ -307,7 +322,7 @@ export const DashboardPage: React.FC = () => {
   const handleAddJobSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!jobForm.siteName.trim() || !jobForm.mainContractor.trim()) {
-      triggerNotification('Site name and Contractor are required', 'warning');
+      toast.warning("Site name and Contractor are required");
       return;
     }
 
@@ -317,24 +332,30 @@ export const DashboardPage: React.FC = () => {
       jobRef: jobRefVal,
       siteName: jobForm.siteName,
       mainContractor: jobForm.mainContractor,
-      postcode: jobForm.postcode || 'SW1A 1AA',
+      postcode: jobForm.postcode || "SW1A 1AA",
       currentPours: 0,
       contractMaxPours: Number(jobForm.contractMaxPours),
-      status: 'pending',
-      scheduleValue: Number(jobForm.scheduleValue)
+      status: "pending",
+      scheduleValue: Number(jobForm.scheduleValue),
     };
 
-    setJobs(prev => [...prev, newJob]);
+    setJobs((prev) => [...prev, newJob]);
     setIsJobModalOpen(false);
-    setJobForm({ siteName: '', mainContractor: '', postcode: '', contractMaxPours: 6, scheduleValue: 25000 });
-    triggerNotification(`New project ${jobRefVal} created!`, 'success');
+    setJobForm({
+      siteName: "",
+      mainContractor: "",
+      postcode: "",
+      contractMaxPours: 6,
+      scheduleValue: 25000,
+    });
+    toast.success(`New project ${jobRefVal} created!`);
   };
 
   // Add new worker submission
   const handleAddWorkerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!workerForm.name.trim()) {
-      triggerNotification('Worker name is required', 'warning');
+      toast.warning("Worker name is required");
       return;
     }
 
@@ -353,53 +374,33 @@ export const DashboardPage: React.FC = () => {
       id: newWorkerId,
       name: workerForm.name,
       role: workerForm.role,
-      phone: workerForm.phone || '+44 7700 900100',
-      email: workerForm.email || `${workerForm.name.toLowerCase().replace(/\s+/g, '.')}@opusconcrete.co.uk`,
-      postcode: workerForm.postcode || 'SW1A 1AA',
+      phone: workerForm.phone || "+44 7700 900100",
+      email:
+        workerForm.email ||
+        `${workerForm.name.toLowerCase().replace(/\s+/g, ".")}@opusconcrete.co.uk`,
+      postcode: workerForm.postcode || "SW1A 1AA",
       tickets: newTickets,
       uploadedCertificates: [],
-      isArchived: false
+      isArchived: false,
     };
 
-    setWorkers(prev => [...prev, newWorker]);
+    setWorkers((prev) => [...prev, newWorker]);
     setIsWorkerModalOpen(false);
-    setWorkerForm({ name: '', role: 'Operative', phone: '', email: '', postcode: '', ticketType: 'CSCS', ticketNo: '', ticketExpiry: '' });
-    triggerNotification(`Worker ${workerForm.name} added to roster!`, 'success');
+    setWorkerForm({
+      name: "",
+      role: "Operative",
+      phone: "",
+      email: "",
+      postcode: "",
+      ticketType: "CSCS",
+      ticketNo: "",
+      ticketExpiry: "",
+    });
+    toast.success(`Worker ${workerForm.name} added to roster!`);
   };
 
   return (
     <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-8 animate-fade-in font-sans">
-      
-      {/* Toast Notification Container */}
-      <div className="fixed top-4 right-4 z-50 space-y-2 pointer-events-none max-w-sm w-full">
-        <AnimatePresence>
-          {notifications.map(n => (
-            <motion.div
-              key={n.id}
-              initial={{ opacity: 0, y: -20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className={`p-4 rounded-lg shadow-lg border text-sm font-semibold flex items-center justify-between pointer-events-auto bg-[#1a1a1e] ${
-                n.type === 'warning' ? 'border-[#f59e0b] text-[#f59e0b]' :
-                n.type === 'info' ? 'border-[#6C8295] text-[#E4E4E7]' :
-                'border-[#10b981] text-[#10b981]'
-              }`}
-            >
-              <div className="flex items-center space-x-2.5">
-                {n.type === 'warning' ? <AlertCircle className="w-5 h-5" /> : <CheckCircle className="w-5 h-5" />}
-                <span>{n.message}</span>
-              </div>
-              <button 
-                onClick={() => setNotifications(prev => prev.filter(item => item.id !== n.id))}
-                className="ml-4 text-white/40 hover:text-white"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-      </div>
-
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -407,12 +408,19 @@ export const DashboardPage: React.FC = () => {
             Concrete Operations Center
           </h1>
           <p className="text-sm text-[#9a9a9e] mt-1 font-medium">
-            Overview for <span className="text-[#6C8295] font-semibold">{user?.email}</span> — role: <span className="text-[#10b981] font-semibold capitalize">{role}</span>
+            Overview for <span className="text-[#6C8295] font-semibold">{user?.email}</span> — role:{" "}
+            <span className="text-[#10b981] font-semibold capitalize">{role}</span>
           </p>
         </div>
         <div className="flex items-center space-x-3 text-[#9a9a9e] text-[13px] bg-[#1a1a1e] border border-[#2a2a30] py-2 px-3 rounded-lg self-start">
           <Clock className="w-4 h-4 text-[#6C8295]" />
-          <span className="font-semibold">{new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}</span>
+          <span className="font-semibold">
+            {new Date().toLocaleDateString("en-GB", {
+              weekday: "long",
+              day: "numeric",
+              month: "short",
+            })}
+          </span>
         </div>
       </div>
 
@@ -420,7 +428,9 @@ export const DashboardPage: React.FC = () => {
       <div className="relative">
         <form onSubmit={handleCommandSubmit} className="relative">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-            <Search className={`w-5 h-5 transition-colors duration-200 ${isSearchFocused ? 'text-[#6C8295]' : 'text-[#9a9a9e]'}`} />
+            <Search
+              className={`w-5 h-5 transition-colors duration-200 ${isSearchFocused ? "text-[#6C8295]" : "text-[#9a9a9e]"}`}
+            />
           </div>
           <input
             type="text"
@@ -438,7 +448,7 @@ export const DashboardPage: React.FC = () => {
             {commandInput && (
               <button
                 type="button"
-                onClick={() => setCommandInput('')}
+                onClick={() => setCommandInput("")}
                 className="p-1 hover:bg-[#2a2a30] rounded text-[#9a9a9e] hover:text-white"
               >
                 <X className="w-4 h-4" />
@@ -456,16 +466,17 @@ export const DashboardPage: React.FC = () => {
               exit={{ opacity: 0, y: 8 }}
               className="absolute left-0 right-0 mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl shadow-2xl z-50 overflow-hidden"
             >
-
               {/* Data search matches */}
               {searchResults && (
                 <div className="max-h-80 overflow-y-auto divide-y divide-[#2a2a30] p-2 space-y-3">
                   {/* Job Matches */}
                   {searchResults.jobs.length > 0 && (
                     <div>
-                      <span className="text-[11px] font-bold text-[#6C8295] uppercase tracking-wider px-3 py-1 block">Matching Jobs</span>
+                      <span className="text-[11px] font-bold text-[#6C8295] uppercase tracking-wider px-3 py-1 block">
+                        Matching Jobs
+                      </span>
                       <div className="space-y-0.5">
-                        {searchResults.jobs.map(job => (
+                        {searchResults.jobs.map((job) => (
                           <div
                             key={job.id}
                             onMouseDown={() => navigate(`/portal/ledger?jobId=${job.id}`)}
@@ -473,10 +484,16 @@ export const DashboardPage: React.FC = () => {
                           >
                             <div className="flex items-center space-x-2.5">
                               <Briefcase className="w-4 h-4 text-[#6C8295]" />
-                              <span className="text-[13px] font-semibold text-white">{job.siteName}</span>
-                              <span className="text-[11px] font-mono text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">{job.jobRef}</span>
+                              <span className="text-[13px] font-semibold text-white">
+                                {job.siteName}
+                              </span>
+                              <span className="text-[11px] font-mono text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">
+                                {job.jobRef}
+                              </span>
                             </div>
-                            <span className="text-[11px] text-[#9a9a9e] uppercase font-bold">{job.status}</span>
+                            <span className="text-[11px] text-[#9a9a9e] uppercase font-bold">
+                              {job.status}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -486,18 +503,26 @@ export const DashboardPage: React.FC = () => {
                   {/* Worker Matches */}
                   {searchResults.workers.length > 0 && (
                     <div className="pt-2">
-                      <span className="text-[11px] font-bold text-[#6C8295] uppercase tracking-wider px-3 py-1 block">Matching Staff</span>
+                      <span className="text-[11px] font-bold text-[#6C8295] uppercase tracking-wider px-3 py-1 block">
+                        Matching Staff
+                      </span>
                       <div className="space-y-0.5">
-                        {searchResults.workers.map(worker => (
+                        {searchResults.workers.map((worker) => (
                           <div
                             key={worker.id}
-                            onMouseDown={() => navigate(`/portal/roster?view=staff&workerId=${worker.id}`)}
+                            onMouseDown={() =>
+                              navigate(`/portal/roster?view=staff&workerId=${worker.id}`)
+                            }
                             className="px-3 py-2 hover:bg-[#2a2a30] rounded-lg cursor-pointer flex items-center justify-between"
                           >
                             <div className="flex items-center space-x-2.5">
                               <UserCheck className="w-4 h-4 text-[#6C8295]" />
-                              <span className="text-[13px] font-semibold text-white">{worker.name}</span>
-                              <span className="text-[11px] text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">{worker.role}</span>
+                              <span className="text-[13px] font-semibold text-white">
+                                {worker.name}
+                              </span>
+                              <span className="text-[11px] text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">
+                                {worker.role}
+                              </span>
                             </div>
                             <span className="text-[11px] text-[#10b981] font-semibold">Ready</span>
                           </div>
@@ -509,9 +534,11 @@ export const DashboardPage: React.FC = () => {
                   {/* Quote Matches */}
                   {searchResults.quotes.length > 0 && (
                     <div className="pt-2">
-                      <span className="text-[11px] font-bold text-[#6C8295] uppercase tracking-wider px-3 py-1 block">Matching Estimates</span>
+                      <span className="text-[11px] font-bold text-[#6C8295] uppercase tracking-wider px-3 py-1 block">
+                        Matching Estimates
+                      </span>
                       <div className="space-y-0.5">
-                        {searchResults.quotes.map(quote => (
+                        {searchResults.quotes.map((quote) => (
                           <div
                             key={quote.id}
                             onMouseDown={() => navigate(`/portal/pipeline?view=pipeline-registry`)}
@@ -519,10 +546,16 @@ export const DashboardPage: React.FC = () => {
                           >
                             <div className="flex items-center space-x-2.5">
                               <FileText className="w-4 h-4 text-[#6C8295]" />
-                              <span className="text-[13px] font-semibold text-white">{quote.clientName}</span>
-                              <span className="text-[11px] font-mono text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">{quote.reference}</span>
+                              <span className="text-[13px] font-semibold text-white">
+                                {quote.clientName}
+                              </span>
+                              <span className="text-[11px] font-mono text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">
+                                {quote.reference}
+                              </span>
                             </div>
-                            <span className="text-[12px] font-mono text-white font-semibold">£{quote.netTotal.toLocaleString('en-GB')}</span>
+                            <span className="text-[12px] font-mono text-white font-semibold">
+                              £{quote.netTotal.toLocaleString("en-GB")}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -543,16 +576,16 @@ export const DashboardPage: React.FC = () => {
 
       {/* Timeframe selector header */}
       <div className="flex items-center justify-between mt-1">
-        <h2 className="text-xs font-black uppercase tracking-widest text-[#9a9a9e]">Operations Summary</h2>
+        <h2 className="text-xs font-black uppercase tracking-widest text-[#9a9a9e]">
+          Operations Summary
+        </h2>
         <div className="flex bg-[#16161a] border border-[#2a2a30] rounded-lg p-0.5">
-          {(['daily', 'weekly', 'monthly'] as const).map((t) => (
+          {(["daily", "weekly", "monthly"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTimeframe(t)}
               className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
-                timeframe === t
-                  ? 'bg-[#6C8295] text-white'
-                  : 'text-gray-400 hover:text-white'
+                timeframe === t ? "bg-[#6C8295] text-white" : "text-gray-400 hover:text-white"
               }`}
             >
               {t}
@@ -567,16 +600,25 @@ export const DashboardPage: React.FC = () => {
         <div className="bg-[#1a1a1e] border border-[#2a2a30] hover:border-[#6C8295]/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">Active Job Sites</span>
+              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">
+                Active Job Sites
+              </span>
               <div className="text-3xl font-bold text-white mt-1 font-mono tracking-tight">
                 {activeJobsFiltered.length}
               </div>
             </div>
-            
+
             {/* SVG Circular Gauge */}
             <div className="relative w-11 h-11 flex items-center justify-center shrink-0">
               <svg className="w-full h-full transform -rotate-90">
-                <circle cx="22" cy="22" r="18" stroke="#2a2a30" strokeWidth="2.5" fill="transparent" />
+                <circle
+                  cx="22"
+                  cy="22"
+                  r="18"
+                  stroke="#2a2a30"
+                  strokeWidth="2.5"
+                  fill="transparent"
+                />
                 <circle
                   cx="22"
                   cy="22"
@@ -586,12 +628,21 @@ export const DashboardPage: React.FC = () => {
                   fill="transparent"
                   strokeDasharray={2 * Math.PI * 18}
                   strokeDashoffset={
-                    2 * Math.PI * 18 * (1 - (contractMaxPoursCountFiltered ? activePoursCountFiltered / contractMaxPoursCountFiltered : 0))
+                    2 *
+                    Math.PI *
+                    18 *
+                    (1 -
+                      (contractMaxPoursCountFiltered
+                        ? activePoursCountFiltered / contractMaxPoursCountFiltered
+                        : 0))
                   }
                 />
               </svg>
               <span className="absolute text-[8px] font-black text-white font-mono">
-                {contractMaxPoursCountFiltered ? Math.round((activePoursCountFiltered / contractMaxPoursCountFiltered) * 100) : 0}%
+                {contractMaxPoursCountFiltered
+                  ? Math.round((activePoursCountFiltered / contractMaxPoursCountFiltered) * 100)
+                  : 0}
+                %
               </span>
             </div>
           </div>
@@ -599,10 +650,12 @@ export const DashboardPage: React.FC = () => {
           <div className="mt-4 pt-3 border-t border-[#2a2a30] flex flex-col gap-2">
             <div className="flex items-center justify-between text-[11px] text-[#9a9a9e]">
               <span className="font-medium">Pours progress</span>
-              <span className="font-mono text-white font-bold">{activePoursCountFiltered} / {contractMaxPoursCountFiltered} Pours</span>
+              <span className="font-mono text-white font-bold">
+                {activePoursCountFiltered} / {contractMaxPoursCountFiltered} Pours
+              </span>
             </div>
             <button
-              onClick={() => navigate('/portal/ledger')}
+              onClick={() => navigate("/portal/ledger")}
               className="text-[10px] font-black uppercase tracking-wider text-[#6C8295] hover:text-white transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
             >
               Log Pour / Inspect Ledger &rarr;
@@ -614,7 +667,9 @@ export const DashboardPage: React.FC = () => {
         <div className="bg-[#1a1a1e] border border-[#2a2a30] hover:border-[#6C8295]/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">Scheduled Crew</span>
+              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">
+                Scheduled Crew
+              </span>
               <div className="text-3xl font-bold text-white mt-1 font-mono tracking-tight">
                 {scheduledWorkersCountFiltered}
               </div>
@@ -627,17 +682,24 @@ export const DashboardPage: React.FC = () => {
             <div className="space-y-1">
               <div className="flex items-center justify-between text-[11px] text-[#9a9a9e]">
                 <span>Crew active:</span>
-                <span className="font-mono text-white font-bold">{workers.length ? Math.round((scheduledWorkersCountFiltered / workers.length) * 100) : 0}%</span>
+                <span className="font-mono text-white font-bold">
+                  {workers.length
+                    ? Math.round((scheduledWorkersCountFiltered / workers.length) * 100)
+                    : 0}
+                  %
+                </span>
               </div>
               <div className="w-full bg-[#2a2a30] h-1 rounded-full overflow-hidden">
                 <div
                   className="bg-[#10b981] h-full rounded-full transition-all duration-500"
-                  style={{ width: `${workers.length ? (scheduledWorkersCountFiltered / workers.length) * 100 : 0}%` }}
+                  style={{
+                    width: `${workers.length ? (scheduledWorkersCountFiltered / workers.length) * 100 : 0}%`,
+                  }}
                 />
               </div>
             </div>
             <button
-              onClick={() => navigate('/portal/roster')}
+              onClick={() => navigate("/portal/roster")}
               className="text-[10px] font-black uppercase tracking-wider text-[#10b981] hover:text-white transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
             >
               Manage Shift Dispatch &rarr;
@@ -649,22 +711,24 @@ export const DashboardPage: React.FC = () => {
         <div className="bg-[#1a1a1e] border border-[#2a2a30] hover:border-[#6C8295]/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">Pipeline Run-Rate</span>
+              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">
+                Pipeline Run-Rate
+              </span>
               <div className="text-3xl font-bold text-[#6C8295] mt-1 font-mono tracking-tight">
-                £{pipelineValueFiltered.toLocaleString('en-GB')}
+                £{pipelineValueFiltered.toLocaleString("en-GB")}
               </div>
             </div>
-            
+
             {/* Sparkline mini-graph */}
             <div className="w-14 h-7 shrink-0">
               <svg className="w-full h-full" viewBox="0 0 100 40">
                 <path
                   d={
-                    timeframe === 'daily'
+                    timeframe === "daily"
                       ? "M 0 35 Q 25 30 50 15 T 100 10"
-                      : timeframe === 'weekly'
-                      ? "M 0 30 Q 25 25 50 20 T 100 5"
-                      : "M 0 25 Q 25 20 50 18 T 100 2"
+                      : timeframe === "weekly"
+                        ? "M 0 30 Q 25 25 50 20 T 100 5"
+                        : "M 0 25 Q 25 20 50 18 T 100 2"
                   }
                   fill="none"
                   stroke="#6C8295"
@@ -672,11 +736,11 @@ export const DashboardPage: React.FC = () => {
                 />
                 <path
                   d={
-                    timeframe === 'daily'
+                    timeframe === "daily"
                       ? "M 0 35 Q 25 30 50 15 T 100 10 L 100 40 L 0 40 Z"
-                      : timeframe === 'weekly'
-                      ? "M 0 30 Q 25 25 50 20 T 100 5 L 100 40 L 0 40 Z"
-                      : "M 0 25 Q 25 20 50 18 T 100 2 L 100 40 L 0 40 Z"
+                      : timeframe === "weekly"
+                        ? "M 0 30 Q 25 25 50 20 T 100 5 L 100 40 L 0 40 Z"
+                        : "M 0 25 Q 25 20 50 18 T 100 2 L 100 40 L 0 40 Z"
                   }
                   fill="url(#sparkline-grad)"
                   opacity="0.15"
@@ -697,7 +761,7 @@ export const DashboardPage: React.FC = () => {
               <span className="font-mono text-white font-bold">Excludes VAT</span>
             </div>
             <button
-              onClick={() => navigate('/portal/pipeline')}
+              onClick={() => navigate("/portal/pipeline")}
               className="text-[10px] font-black uppercase tracking-wider text-[#6C8295] hover:text-white transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
             >
               Open Quotes & Billing Board &rarr;
@@ -708,7 +772,6 @@ export const DashboardPage: React.FC = () => {
 
       {/* Main Grid: Compliance Alerts and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         {/* Left Column: Compliance Alerts (2/3 width) */}
         <div className="lg:col-span-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-6 flex flex-col space-y-6">
           <div className="flex items-center justify-between border-b border-[#2a2a30] pb-4">
@@ -728,25 +791,40 @@ export const DashboardPage: React.FC = () => {
               <div
                 key={alert.alertId}
                 className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2.5 border-l-[3px] hover:bg-[#16161a] transition-colors ${
-                  alert.isExpired ? 'border-l-[#ef4444]' : 'border-l-[#f59e0b]'
+                  alert.isExpired ? "border-l-[#ef4444]" : "border-l-[#f59e0b]"
                 }`}
               >
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[12px] font-bold text-white leading-none">{alert.workerName}</span>
+                    <span className="text-[12px] font-bold text-white leading-none">
+                      {alert.workerName}
+                    </span>
                     {alert.workerRole && (
-                      <span className="text-[10px] text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded font-medium">{alert.workerRole}</span>
+                      <span className="text-[10px] text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded font-medium">
+                        {alert.workerRole}
+                      </span>
                     )}
-                    <span className={`text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded ${
-                      alert.isExpired ? 'bg-[#ef4444]/10 text-[#ef4444]' : 'bg-[#f59e0b]/10 text-[#f59e0b]'
-                    }`}>
-                      {alert.isExpired ? `EXPIRED ${Math.abs(alert.diffDays)}d ago` : `EXPIRING ${alert.diffDays}d`}
+                    <span
+                      className={`text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded ${
+                        alert.isExpired
+                          ? "bg-[#ef4444]/10 text-[#ef4444]"
+                          : "bg-[#f59e0b]/10 text-[#f59e0b]"
+                      }`}
+                    >
+                      {alert.isExpired
+                        ? `EXPIRED ${Math.abs(alert.diffDays)}d ago`
+                        : `EXPIRING ${alert.diffDays}d`}
                     </span>
                   </div>
                   <p className="text-[11px] text-[#9a9a9e] mt-0.5 truncate">
                     {alert.ticketType} &bull; <span className="font-mono">{alert.expiryDate}</span>
-                    {alert.ticketNumber && <> &bull; <span className="font-mono">{alert.ticketNumber}</span></>}
+                    {alert.ticketNumber && (
+                      <>
+                        {" "}
+                        &bull; <span className="font-mono">{alert.ticketNumber}</span>
+                      </>
+                    )}
                   </p>
                 </div>
 
@@ -773,70 +851,51 @@ export const DashboardPage: React.FC = () => {
                 <CheckCircle className="w-12 h-12 text-[#10b981]/80" />
                 <div>
                   <h4 className="text-[13px] font-bold text-white">Roster Fully Compliant</h4>
-                  <p className="text-[12px] text-[#9a9a9e] mt-1">All active operatives have up-to-date qualifications.</p>
+                  <p className="text-[12px] text-[#9a9a9e] mt-1">
+                    All active operatives have up-to-date qualifications.
+                  </p>
                 </div>
               </div>
             )}
           </div>
 
           {/* Remind Confirmation Modal */}
-          <AnimatePresence>
-            {remindConfirmAlert && (
-              <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.15 }}
-                  className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl max-w-sm w-full p-5 shadow-2xl"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <Send className="w-4 h-4 text-[#6C8295]" />
-                      <span className="text-[11px] font-black uppercase tracking-widest text-white">Send Compliance Reminder</span>
-                    </div>
-                    <button onClick={() => setRemindConfirmAlert(null)} className="text-gray-500 hover:text-white transition-colors cursor-pointer">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <p className="text-[12px] text-[#9a9a9e] leading-relaxed mb-4">
-                    Send a compliance reminder email to{' '}
-                    <span className="text-white font-bold">{remindConfirmAlert.workerName}</span>{' '}
-                    requesting they update their{' '}
-                    <span className="text-white font-bold">{remindConfirmAlert.ticketType}</span>{' '}
-                    credential which{' '}
-                    {remindConfirmAlert.isExpired
-                      ? <span className="text-[#ef4444] font-bold">expired {Math.abs(remindConfirmAlert.diffDays)} days ago</span>
-                      : <span className="text-[#f59e0b] font-bold">expires in {remindConfirmAlert.diffDays} days</span>
-                    }.
-                  </p>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        handleRemindAlert(remindConfirmAlert);
-                        setRemindConfirmAlert(null);
-                      }}
-                      disabled={isSendingRemind}
-                      className="flex-1 flex items-center justify-center gap-1.5 bg-[#6C8295] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg py-2 text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
-                    >
-                      {isSendingRemind ? (
-                        <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ) : (
-                        <Send className="w-3.5 h-3.5" />
-                      )}
-                      {isSendingRemind ? 'Sending...' : 'Confirm Send'}
-                    </button>
-                    <button
-                      onClick={() => setRemindConfirmAlert(null)}
-                      className="flex-1 bg-[#2a2a30] hover:bg-[#3a3a42] text-[#9a9a9e] hover:text-white rounded-lg py-2 text-[11px] font-black uppercase tracking-widest cursor-pointer transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </motion.div>
-              </div>
-            )}
-          </AnimatePresence>
+          <ConfirmDialog
+            open={!!remindConfirmAlert}
+            onOpenChange={(open) => {
+              if (!open) setRemindConfirmAlert(null);
+            }}
+            tone="neutral"
+            tag="Send Compliance Reminder"
+            title="Send Compliance Reminder"
+            message={
+              remindConfirmAlert && (
+                <>
+                  Send a compliance reminder email to{" "}
+                  <span className="text-white font-bold">{remindConfirmAlert.workerName}</span>{" "}
+                  requesting they update their{" "}
+                  <span className="text-white font-bold">{remindConfirmAlert.ticketType}</span>{" "}
+                  credential which{" "}
+                  {remindConfirmAlert.isExpired ? (
+                    <span className="text-[#ef4444] font-bold">
+                      expired {Math.abs(remindConfirmAlert.diffDays)} days ago
+                    </span>
+                  ) : (
+                    <span className="text-[#f59e0b] font-bold">
+                      expires in {remindConfirmAlert.diffDays} days
+                    </span>
+                  )}
+                  .
+                </>
+              )
+            }
+            confirmLabel={isSendingRemind ? "Sending..." : "Confirm Send"}
+            cancelLabel="Cancel"
+            onConfirm={() => {
+              handleRemindAlert(remindConfirmAlert);
+              setRemindConfirmAlert(null);
+            }}
+          />
         </div>
 
         {/* Right Column: Quick Actions Panel (1/3 width) */}
@@ -859,7 +918,9 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-[13px] font-bold text-white">Create New Job</h3>
-                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">Initialize a site reference and set pour limits</p>
+                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">
+                    Initialize a site reference and set pour limits
+                  </p>
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white group-hover:translate-x-1 transition-all" />
@@ -876,7 +937,9 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-[13px] font-bold text-white">Add New Staff</h3>
-                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">Register a worker and upload safety certifications</p>
+                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">
+                    Register a worker and upload safety certifications
+                  </p>
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white group-hover:translate-x-1 transition-all" />
@@ -884,7 +947,7 @@ export const DashboardPage: React.FC = () => {
 
             {/* Create Quote */}
             <button
-              onClick={() => navigate('/portal/pipeline?view=quote-builder')}
+              onClick={() => navigate("/portal/pipeline?view=quote-builder")}
               className="w-full text-left p-4 rounded-xl bg-[#16161a] border border-[#2a2a30] hover:border-[#6C8295]/40 hover:bg-[#202026] transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
             >
               <div className="flex items-center space-x-3.5">
@@ -893,7 +956,9 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-[13px] font-bold text-white">Create Quote</h3>
-                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">Build a client invoice with custom VAT/CIS settings</p>
+                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">
+                    Build a client invoice with custom VAT/CIS settings
+                  </p>
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white group-hover:translate-x-1 transition-all" />
@@ -901,7 +966,7 @@ export const DashboardPage: React.FC = () => {
 
             {/* View Audit Trail */}
             <button
-              onClick={() => navigate('/portal/audit')}
+              onClick={() => navigate("/portal/audit")}
               className="w-full text-left p-4 rounded-xl bg-[#16161a] border border-[#2a2a30] hover:border-[#f59e0b]/40 hover:bg-[#202026] transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
             >
               <div className="flex items-center space-x-3.5">
@@ -910,98 +975,118 @@ export const DashboardPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-[13px] font-bold text-white">View Audit Trail</h3>
-                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">Inspect system change history and operator events</p>
+                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">
+                    Inspect system change history and operator events
+                  </p>
                 </div>
               </div>
               <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white group-hover:translate-x-1 transition-all" />
             </button>
           </div>
         </div>
-
       </div>
 
       {/* JOB CREATION MODAL */}
       <AnimatePresence>
         {isJobModalOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsJobModalOpen(false)}
               className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             />
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#1a1a1e] border border-[#2a2a30] rounded-xl shadow-2xl z-50 overflow-hidden"
             >
               <div className="p-6 border-b border-[#2a2a30] flex items-center justify-between">
-                <h3 className="text-base font-bold text-white font-archivo uppercase">Create New Project Job</h3>
-                <button onClick={() => setIsJobModalOpen(false)} className="text-[#9a9a9e] hover:text-white p-1">
+                <h3 className="text-base font-bold text-white font-archivo uppercase">
+                  Create New Project Job
+                </h3>
+                <button
+                  onClick={() => setIsJobModalOpen(false)}
+                  className="text-[#9a9a9e] hover:text-white p-1"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               <form onSubmit={handleAddJobSubmit} className="p-6 space-y-4 text-[13px]">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Site Name *</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                    Site Name *
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Riverside Phase 3"
                     className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
                     value={jobForm.siteName}
-                    onChange={e => setJobForm({...jobForm, siteName: e.target.value})}
+                    onChange={(e) => setJobForm({ ...jobForm, siteName: e.target.value })}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Main Contractor *</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                      Main Contractor *
+                    </label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Balfour Beatty"
                       className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
                       value={jobForm.mainContractor}
-                      onChange={e => setJobForm({...jobForm, mainContractor: e.target.value})}
+                      onChange={(e) => setJobForm({ ...jobForm, mainContractor: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Postcode</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                      Postcode
+                    </label>
                     <input
                       type="text"
                       placeholder="e.g. SW1A 1AA"
                       className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
                       value={jobForm.postcode}
-                      onChange={e => setJobForm({...jobForm, postcode: e.target.value})}
+                      onChange={(e) => setJobForm({ ...jobForm, postcode: e.target.value })}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Contract Max Pours</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                      Contract Max Pours
+                    </label>
                     <input
                       type="number"
                       required
                       min="1"
                       className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none font-mono min-h-[44px]"
                       value={jobForm.contractMaxPours}
-                      onChange={e => setJobForm({...jobForm, contractMaxPours: Number(e.target.value)})}
+                      onChange={(e) =>
+                        setJobForm({ ...jobForm, contractMaxPours: Number(e.target.value) })
+                      }
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Schedule Value (£)</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                      Schedule Value (£)
+                    </label>
                     <input
                       type="number"
                       required
                       min="0"
                       className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none font-mono min-h-[44px]"
                       value={jobForm.scheduleValue}
-                      onChange={e => setJobForm({...jobForm, scheduleValue: Number(e.target.value)})}
+                      onChange={(e) =>
+                        setJobForm({ ...jobForm, scheduleValue: Number(e.target.value) })
+                      }
                     />
                   </div>
                 </div>
@@ -1031,46 +1116,58 @@ export const DashboardPage: React.FC = () => {
       <AnimatePresence>
         {isWorkerModalOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsWorkerModalOpen(false)}
               className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             />
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#1a1a1e] border border-[#2a2a30] rounded-xl shadow-2xl z-50 overflow-hidden"
             >
               <div className="p-6 border-b border-[#2a2a30] flex items-center justify-between">
-                <h3 className="text-base font-bold text-white font-archivo uppercase">Register New Operative</h3>
-                <button onClick={() => setIsWorkerModalOpen(false)} className="text-[#9a9a9e] hover:text-white p-1">
+                <h3 className="text-base font-bold text-white font-archivo uppercase">
+                  Register New Operative
+                </h3>
+                <button
+                  onClick={() => setIsWorkerModalOpen(false)}
+                  className="text-[#9a9a9e] hover:text-white p-1"
+                >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleAddWorkerSubmit} className="p-6 space-y-4 text-[13px] max-h-[500px] overflow-y-auto">
+              <form
+                onSubmit={handleAddWorkerSubmit}
+                className="p-6 space-y-4 text-[13px] max-h-[500px] overflow-y-auto"
+              >
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Worker Name *</label>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                    Worker Name *
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Connor O'Neill"
                     className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
                     value={workerForm.name}
-                    onChange={e => setWorkerForm({...workerForm, name: e.target.value})}
+                    onChange={(e) => setWorkerForm({ ...workerForm, name: e.target.value })}
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Operational Role</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                      Operational Role
+                    </label>
                     <select
                       className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px] cursor-pointer"
                       value={workerForm.role}
-                      onChange={e => setWorkerForm({...workerForm, role: e.target.value})}
+                      onChange={(e) => setWorkerForm({ ...workerForm, role: e.target.value })}
                     >
                       <option value="Operative">Operative</option>
                       <option value="Supervisor">Supervisor</option>
@@ -1079,50 +1176,62 @@ export const DashboardPage: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Postcode</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                      Postcode
+                    </label>
                     <input
                       type="text"
                       placeholder="e.g. SW1A 1AA"
                       className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
                       value={workerForm.postcode}
-                      onChange={e => setWorkerForm({...workerForm, postcode: e.target.value})}
+                      onChange={(e) => setWorkerForm({ ...workerForm, postcode: e.target.value })}
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Phone Number</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                      Phone Number
+                    </label>
                     <input
                       type="tel"
                       placeholder="e.g. +44 7700 900100"
                       className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
                       value={workerForm.phone}
-                      onChange={e => setWorkerForm({...workerForm, phone: e.target.value})}
+                      onChange={(e) => setWorkerForm({ ...workerForm, phone: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Email Address</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                      Email Address
+                    </label>
                     <input
                       type="email"
                       placeholder="e.g. connor@opusconcrete.co.uk"
                       className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
                       value={workerForm.email}
-                      onChange={e => setWorkerForm({...workerForm, email: e.target.value})}
+                      onChange={(e) => setWorkerForm({ ...workerForm, email: e.target.value })}
                     />
                   </div>
                 </div>
 
                 {/* Inline Ticket fields */}
                 <div className="border-t border-[#2a2a30] pt-4 mt-2 space-y-3.5">
-                  <span className="text-[11px] font-bold text-[#6C8295] uppercase tracking-wider block">Compliance Qualification Ticket</span>
+                  <span className="text-[11px] font-bold text-[#6C8295] uppercase tracking-wider block">
+                    Compliance Qualification Ticket
+                  </span>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Ticket Type</label>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                        Ticket Type
+                      </label>
                       <select
                         className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px] cursor-pointer"
                         value={workerForm.ticketType}
-                        onChange={e => setWorkerForm({...workerForm, ticketType: e.target.value})}
+                        onChange={(e) =>
+                          setWorkerForm({ ...workerForm, ticketType: e.target.value })
+                        }
                       >
                         <option value="CSCS">CSCS</option>
                         <option value="NPORS">NPORS</option>
@@ -1132,23 +1241,29 @@ export const DashboardPage: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Ticket Number</label>
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                        Ticket Number
+                      </label>
                       <input
                         type="text"
                         placeholder="e.g. CSCS-449200"
                         className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none font-mono min-h-[44px]"
                         value={workerForm.ticketNo}
-                        onChange={e => setWorkerForm({...workerForm, ticketNo: e.target.value})}
+                        onChange={(e) => setWorkerForm({ ...workerForm, ticketNo: e.target.value })}
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">Expiry Date</label>
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                      Expiry Date
+                    </label>
                     <input
                       type="date"
                       className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-[#6C8295] focus:ring-1 focus:ring-[#6C8295] rounded-lg px-3.5 py-2.5 text-white outline-none font-mono min-h-[44px]"
                       value={workerForm.ticketExpiry}
-                      onChange={e => setWorkerForm({...workerForm, ticketExpiry: e.target.value})}
+                      onChange={(e) =>
+                        setWorkerForm({ ...workerForm, ticketExpiry: e.target.value })
+                      }
                     />
                   </div>
                 </div>
@@ -1173,7 +1288,6 @@ export const DashboardPage: React.FC = () => {
           </>
         )}
       </AnimatePresence>
-
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { Layers, LayoutGrid, Search } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Job, Worker, ScheduledShift } from "../../types/erp";
@@ -50,12 +50,12 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   // Filter workers based on selected role
   const filteredWorkers = useMemo(() => {
     if (selectedRole === "all") return workers;
-    return workers.filter(w => w.role?.toLowerCase() === selectedRole.toLowerCase());
+    return workers.filter((w) => w.role?.toLowerCase() === selectedRole.toLowerCase());
   }, [workers, selectedRole]);
 
   // Extract unique roles from workers for the filter dropdown
   const uniqueRoles = useMemo(() => {
-    const rolesSet = new Set(workers.map(w => w.role).filter(Boolean));
+    const rolesSet = new Set(workers.map((w) => w.role).filter(Boolean));
     return Array.from(rolesSet).sort();
   }, [workers]);
 
@@ -119,8 +119,10 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
               className="bg-[#16161a] border border-[#2a2a30] rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-[#5C7285] transition-colors"
             >
               <option value="all">All Roles</option>
-              {uniqueRoles.map(role => (
-                <option key={role} value={role}>{role}</option>
+              {uniqueRoles.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
               ))}
             </select>
           )}

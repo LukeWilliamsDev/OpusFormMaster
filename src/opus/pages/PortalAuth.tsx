@@ -41,13 +41,20 @@ export const PortalAuthPage: React.FC = () => {
   const [ruleVisible, setRuleVisible] = useState(false);
   const [formVisible, setFormVisible] = useState(false);
 
-  // Check for recovery token/type in URL on mount
+  // Check for recovery token/type in URL on mount, or listen for PASSWORD_RESET event
   useEffect(() => {
     const hash = window.location.hash;
     const search = window.location.search;
     if (hash.includes('type=recovery') || search.includes('type=recovery')) {
       setFormMode('reset');
     }
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RESET') {
+        setFormMode('reset');
+      }
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
   // Redirect if already authenticated and not resetting password or showing success modal
@@ -326,7 +333,7 @@ export const PortalAuthPage: React.FC = () => {
 
                 <div className="flex items-center gap-2.5 text-[11px] font-extrabold tracking-widest uppercase text-[#e0e0e0] mb-4">
                   <div className="w-[3px] h-4 bg-[#b0b8c4] rounded-[2px]" />
-                  Key Recovery
+                  Password Recovery
                 </div>
                 <p className="text-[10px] text-[#555] mb-8 font-bold leading-relaxed uppercase tracking-widest">Enter your authorized email to receive a secure restoration link.</p>
 

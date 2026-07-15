@@ -414,8 +414,10 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const resetPassword = async (email: string) => {
+    const baseUrl = window.location.origin + window.location.pathname;
+    const normalizedUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/portal`,
+      redirectTo: `${normalizedUrl}#/portal`,
     });
     if (!error) {
       await supabase.rpc('log_anonymous_audit', {

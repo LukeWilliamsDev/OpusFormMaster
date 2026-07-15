@@ -1,6 +1,6 @@
 // @ts-nocheck
-import React from 'react';
-import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { PortalProvider, usePortal } from './context/PortalContext';
 import { PortalLayout } from './layouts/PortalLayout';
 import { LandingPage } from './components/LandingPage';
@@ -17,6 +17,24 @@ import { PrivacyNoticePage } from './pages/PrivacyNotice';
 import { TermsOfServicePage } from './pages/TermsOfService';
 import { AcceptableUsePolicyPage } from './pages/AcceptableUsePolicy';
 import { CookieStatementPage } from './pages/CookieStatement';
+
+// Global listener to redirect password reset recovery URLs to /portal when using HashRouter
+const AuthRedirectListener: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const hash = window.location.hash;
+    const search = window.location.search;
+    const isRecovery = hash.includes('type=recovery') || search.includes('type=recovery');
+
+    if (isRecovery && location.pathname !== '/portal') {
+      navigate('/portal' + search + hash, { replace: true });
+    }
+  }, [location.pathname, navigate]);
+
+  return null;
+};
 
 // Session gate — any /portal/* view requires a valid Supabase session.
 const ProtectedRoute: React.FC = () => {
@@ -69,6 +87,7 @@ export default function App() {
   return (
     <PortalProvider>
       <HashRouter>
+        <AuthRedirectListener />
         <Routes>
           {/* Public Views */}
           <Route path="/" element={<LandingPageWrapper />} />

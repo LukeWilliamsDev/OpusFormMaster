@@ -15,6 +15,7 @@ import {
   ClipboardList,
   Save,
   Send,
+  Eye,
   Download,
   Printer,
   FileText,
@@ -711,7 +712,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     <div className="flex flex-col flex-1 w-full text-white">
 
       {/* â”€â”€â”€ STICKY ACTION BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <div className="sticky top-0 z-40 bg-[#111114]/90 backdrop-blur border-b border-[#2a2a30] px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 mb-4">
+      <div className="sticky top-16 lg:top-0 z-40 bg-[#111114]/90 backdrop-blur border-b border-[#2a2a30] px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 mb-4">
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
@@ -732,6 +733,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           </div>
         </div>
         <div className="flex items-center gap-2 sm:shrink-0">
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="lg:hidden flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Preview</span>
+          </button>
           <button
             onClick={handleSaveDraft}
             className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
@@ -763,10 +772,61 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       </div>
 
       {/* â”€â”€â”€ MAIN TWO-PANEL BODY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <div className="flex flex-col lg:flex-row gap-5 px-4 sm:px-6 pb-24 lg:pb-10">
+      <div className="flex flex-col lg:flex-row gap-5 px-4 sm:px-6 pb-10">
 
         {/* â”€â”€ LEFT PANEL: Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="flex flex-col gap-5 flex-1 min-w-0">
+
+          {/* SAVED HISTORY (collapsed accordion) */}
+          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowHistory(h => !h)}
+              className="w-full flex items-center justify-between p-4 text-[11px] font-black tracking-widest uppercase text-gray-400 hover:text-white transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <History className="w-3.5 h-3.5" />
+                Saved History ({savedQuotes.length})
+              </div>
+              {showHistory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+            {showHistory && (
+              <div className="px-4 pb-4 flex flex-col gap-[5px] max-h-52 overflow-y-auto custom-scrollbar">
+                {savedQuotes.length === 0 ? (
+                  <div className="bg-[#111114] border border-dashed border-[#2a2a30] rounded-lg p-6 text-center">
+                    <div className="text-[11px] font-black tracking-widest text-[#555] uppercase">No saved quotes found</div>
+                  </div>
+                ) : (
+                  savedQuotes.map((q) => (
+                    <div
+                      key={q.id}
+                      onClick={() => loadQuote(q)}
+                      className="flex items-center justify-between bg-[#111114] border border-[#2a2a30] rounded-lg p-2.5 px-3 hover:border-[#6C8295]/30 cursor-pointer transition-all duration-200"
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] font-black uppercase tracking-widest text-white">{q.reference}</span>
+                          <span className="text-[11px] text-[#888]">{q.date}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[11px] font-mono font-black uppercase tracking-widest text-[#888]">
+                          £{q.totals?.grossTotal?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
+                        </span>
+                        <button
+                          onClick={(e) => deleteQuote(e, q.id)}
+                          className="bg-transparent border-none cursor-pointer text-[#555] p-0.5 flex items-center hover:text-red-500 transition-colors"
+                          title="Delete saved quote"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
 
           {/* CLIENT DETAILS */}
           <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
@@ -850,12 +910,12 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             </div>
 
             <div className="flex flex-col gap-2">
-              {/* Column headers, desktop/tablet only */}
+              {/* Column headers, wide screens only (single-row table mode) */}
               {items.length > 0 && (
-                <div className="hidden sm:flex items-center gap-3 px-3 text-[10px] font-black tracking-widest text-gray-600 uppercase">
+                <div className="hidden xl:flex items-center gap-3 px-3 text-[10px] font-black tracking-widest text-gray-600 uppercase">
                   <span className="flex-1">Description</span>
                   <span className="w-16 text-right">Qty</span>
-                  <span className="w-20">Unit</span>
+                  <span className="w-28">Unit</span>
                   <span className="w-28 text-right">Rate (£)</span>
                   <span className="w-24 text-right">Total</span>
                   <span className="w-6" />
@@ -863,12 +923,21 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
               )}
               {items.map((item) => (
                 <div key={item.id} className="p-3 bg-[#111114] border border-[#2a2a30] rounded-xl relative group">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+                  {/* Delete, compact-grid mode only: shown as a corner icon since it has no natural grid cell */}
+                  <button
+                    type="button"
+                    onClick={() => removeItem(item.id)}
+                    className="xl:hidden absolute top-2.5 right-2.5 text-gray-600 hover:text-red-400 transition-colors p-1 cursor-pointer z-10"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+
+                  <div className="flex flex-col xl:flex-row xl:items-center gap-2.5">
                     {/* Description */}
-                    <div className="relative flex-1 min-w-0">
+                    <div className="relative flex-1 xl:min-w-[200px] pr-7 xl:pr-0">
                       <input
                         type="text"
-                        className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
+                        className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider py-1.5"
                         value={item.description}
                         onChange={e => updateItem(item.id, { description: e.target.value })}
                         onFocus={() => setFocusedItemId(item.id)}
@@ -910,8 +979,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       </AnimatePresence>
                     </div>
 
-                    {/* Qty / Unit / Rate / Total / Delete */}
-                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    {/* xl+: single inline row */}
+                    <div className="hidden xl:flex items-center gap-2">
                       <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 w-[76px] shrink-0">
                         <input
                           type="number"
@@ -920,10 +989,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                           onChange={e => updateItem(item.id, { quantity: Number(e.target.value) })}
                         />
                       </div>
-                      <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1 w-[92px] shrink-0">
+                      <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1 w-[128px] shrink-0">
                         <input
                           type="text"
-                          className="w-9 bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
+                          className="w-7 bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
                           value={item.unit}
                           onChange={e => updateItem(item.id, { unit: e.target.value })}
                           placeholder="m²"
@@ -936,11 +1005,12 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                                 key={u}
                                 type="button"
                                 onClick={() => updateItem(item.id, { unit: isSelected ? '' : u })}
-                                title={u}
-                                className={`w-2 h-2 rounded-full shrink-0 transition-all ${
-                                  isSelected ? 'bg-[#6C8295]' : 'bg-[#383838] hover:bg-[#555]'
+                                className={`px-1.5 py-1 rounded text-[9px] font-black uppercase tracking-wide shrink-0 transition-all ${
+                                  isSelected ? 'bg-[#6C8295] text-white shadow-sm' : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
                                 }`}
-                              />
+                              >
+                                {u === 'm²' ? 'm²' : 'SUM'}
+                              </button>
                             );
                           })}
                         </div>
@@ -975,6 +1045,79 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
+                    </div>
+
+                    {/* <xl: labeled grid, self-explanatory without column headers */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 xl:hidden">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">Qty</span>
+                        <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2">
+                          <input
+                            type="number"
+                            className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
+                            value={item.quantity}
+                            onChange={e => updateItem(item.id, { quantity: Number(e.target.value) })}
+                          />
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">Unit</span>
+                        <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1">
+                          <input
+                            type="text"
+                            className="w-7 bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
+                            value={item.unit}
+                            onChange={e => updateItem(item.id, { unit: e.target.value })}
+                            placeholder="m²"
+                          />
+                          <div className="flex gap-1 shrink-0">
+                            {['m²', 'Sum'].map(u => {
+                              const isSelected = item.unit.toUpperCase() === u.toUpperCase() || (u === 'm²' && item.unit === 'm2');
+                              return (
+                                <button
+                                  key={u}
+                                  type="button"
+                                  onClick={() => updateItem(item.id, { unit: isSelected ? '' : u })}
+                                  className={`px-1.5 py-1 rounded text-[9px] font-black uppercase tracking-wide shrink-0 transition-all ${
+                                    isSelected ? 'bg-[#6C8295] text-white shadow-sm' : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
+                                  }`}
+                                >
+                                  {u === 'm²' ? 'm²' : 'SUM'}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">Rate (£)</span>
+                        <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1.5">
+                          <input
+                            type="text"
+                            className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
+                            value={item.rate}
+                            onChange={e => updateItem(item.id, { rate: e.target.value })}
+                            placeholder="0.00"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => updateItem(item.id, { rate: isIncludedRate(item.rate) ? 0 : 'INCLUDED' })}
+                            className={`px-1.5 py-1 rounded text-[10px] font-black tracking-wide shrink-0 ${
+                              isIncludedRate(item.rate)
+                                ? 'bg-[#6C8295] text-white shadow-sm'
+                                : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
+                            }`}
+                          >
+                            INCL
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">Total</span>
+                        <div className="flex items-center h-9 px-1 text-xs font-black font-mono text-[#6C8295]">
+                          {isIncludedRate(item.rate) ? 'INCL' : `£${getLineTotal(item).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1076,95 +1219,12 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
               </div>
             </div>
 
-            {/* Authorize & Send */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-[#2a2a30]">
-              <div className="space-y-1 text-center sm:text-left">
-                <h4 className="text-[11px] font-black tracking-widest uppercase text-white">Authorization Required</h4>
-                <p className="text-[11px] text-[#888] tracking-wide uppercase leading-normal">
-                  Confirm all billable items, units, and terms have been verified.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={isSendingEmail}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#6C8295] hover:brightness-110 disabled:bg-[#6C8295]/50 disabled:cursor-not-allowed border-none rounded-lg py-3 px-5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer shadow-lg shadow-[#6C8295]/20 transition-all whitespace-nowrap"
-              >
-                {isSendingEmail ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <Send className="w-3.5 h-3.5" />
-                )}
-                <span>{isSendingEmail ? 'SENDING...' : 'Authorize & Send'}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* SAVED HISTORY (collapsed accordion) */}
-          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setShowHistory(h => !h)}
-              className="w-full flex items-center justify-between p-4 text-[11px] font-black tracking-widest uppercase text-gray-400 hover:text-white transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <History className="w-3.5 h-3.5" />
-                Saved History ({savedQuotes.length})
-              </div>
-              {showHistory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-            </button>
-            {showHistory && (
-              <div className="px-4 pb-4 flex flex-col gap-[5px] max-h-52 overflow-y-auto custom-scrollbar">
-                {savedQuotes.length === 0 ? (
-                  <div className="bg-[#111114] border border-dashed border-[#2a2a30] rounded-lg p-6 text-center">
-                    <div className="text-[11px] font-black tracking-widest text-[#555] uppercase">No saved quotes found</div>
-                  </div>
-                ) : (
-                  savedQuotes.map((q) => (
-                    <div
-                      key={q.id}
-                      onClick={() => loadQuote(q)}
-                      className="flex items-center justify-between bg-[#111114] border border-[#2a2a30] rounded-lg p-2.5 px-3 hover:border-[#6C8295]/30 cursor-pointer transition-all duration-200"
-                    >
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-black uppercase tracking-widest text-white">{q.reference}</span>
-                          <span className="text-[11px] text-[#888]">{q.date}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-[11px] font-mono font-black uppercase tracking-widest text-[#888]">
-                          £{q.totals?.grossTotal?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
-                        </span>
-                        <button
-                          onClick={(e) => deleteQuote(e, q.id)}
-                          className="bg-transparent border-none cursor-pointer text-[#555] p-0.5 flex items-center hover:text-red-500 transition-colors"
-                          title="Delete saved quote"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
           </div>
 
         </div>{/* end left panel */}
 
         {/* â”€â”€ RIGHT PANEL: Live PDF Mirror â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="w-full lg:w-[420px] xl:w-[480px] shrink-0">
-          {/* Tablet/Mobile: opens the live document full-screen instead of a cramped inline mirror */}
-          <button
-            type="button"
-            onClick={() => setPreviewOpen(true)}
-            className="lg:hidden w-full flex items-center justify-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl px-4 py-3 mb-4 text-[11px] font-black tracking-widest uppercase text-gray-300 hover:text-white hover:border-[#6C8295]/40 transition-colors"
-          >
-            <div className="w-2 h-2 rounded-full bg-[#6C8295] animate-pulse" />
-            Preview PDF
-          </button>
-
           {/* Desktop: sticky PDF mirror. Always mounted (hidden via CSS, not unmounted) so it
               remains the single canonical .print-area target at every breakpoint. */}
           <div className="hidden lg:block sticky top-[58px]">
@@ -1182,24 +1242,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
         </div>{/* end right panel */}
 
       </div>{/* end two-panel body */}
-
-      {/* â”€â”€â”€ TABLET/MOBILE: STICKY TOTALS BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-      <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 bg-[#111114]/95 backdrop-blur border-t border-[#2a2a30] px-4 py-3 flex items-center justify-between gap-3">
-        <div className="flex flex-col leading-tight min-w-0">
-          <span className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Gross Total</span>
-          <span className="text-sm font-extrabold text-[#6C8295] font-mono truncate">
-            £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-          </span>
-        </div>
-        <button
-          type="button"
-          onClick={() => setPreviewOpen(true)}
-          className="flex items-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg px-4 py-2 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors shrink-0"
-        >
-          <div className="w-2 h-2 rounded-full bg-[#6C8295] animate-pulse" />
-          Preview PDF
-        </button>
-      </div>
 
       {/* â”€â”€â”€ TABLET/MOBILE: FULL-SCREEN PDF PREVIEW MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <AnimatePresence>

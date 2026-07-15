@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { isValidUKPostcode } from '../utils/geo';
@@ -913,31 +913,20 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             </div>
 
             <div className="flex flex-col gap-2">
-              {/* Column headers, wide screens only (single-row table mode) */}
-              {items.length > 0 && (
-                <div className="hidden 2xl:flex items-center gap-3 px-3 text-[10px] font-black tracking-widest text-gray-600 uppercase">
-                  <span className="flex-1">Description</span>
-                  <span className="w-16 text-right">Qty</span>
-                  <span className="w-28">Unit</span>
-                  <span className="w-28 text-right">Rate (£)</span>
-                  <span className="w-24 text-right">Total</span>
-                  <span className="w-6" />
-                </div>
-              )}
               {items.map((item) => (
                 <div key={item.id} className="p-3 bg-[#111114] border border-[#2a2a30] rounded-xl relative group">
-                  {/* Delete, compact-grid mode only: shown as a corner icon since it has no natural grid cell */}
+                  {/* Delete button (always visible in corner on all screen sizes) */}
                   <button
                     type="button"
                     onClick={() => removeItem(item.id)}
-                    className="2xl:hidden absolute top-2.5 right-2.5 text-gray-600 hover:text-red-400 transition-colors p-1 cursor-pointer z-10"
+                    className="absolute top-2.5 right-2.5 text-gray-600 hover:text-red-400 transition-colors p-1 cursor-pointer z-10"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
 
-                  <div className="flex flex-col 2xl:flex-row 2xl:items-center gap-2.5">
+                  <div className="flex flex-col gap-2.5">
                     {/* Description */}
-                    <div className="relative flex-1 2xl:min-w-[200px] pr-7 2xl:pr-0">
+                    <div className="relative flex-1 pr-7">
                       <input
                         type="text"
                         className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider py-1.5"
@@ -982,84 +971,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       </AnimatePresence>
                     </div>
 
-                    {/* 2xl+: single inline row */}
-                    <div className="hidden 2xl:flex items-center gap-2">
-                      <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 w-[76px] shrink-0">
-                        <input
-                          type="number"
-                          className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold text-right"
-                          value={item.quantity}
-                          onChange={e => updateItem(item.id, { quantity: Number(e.target.value) })}
-                        />
-                      </div>
-                      <div className="relative flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 w-[128px] shrink-0">
-                        <input
-                          type="text"
-                          className="w-full bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
-                          value={item.unit}
-                          onChange={e => updateItem(item.id, { unit: e.target.value })}
-                          onFocus={() => setUnitFocusedItemId(item.id)}
-                          onBlur={() => { setTimeout(() => setUnitFocusedItemId(null), 200); }}
-                          placeholder="Unit..."
-                        />
-                        <AnimatePresence>
-                          {unitFocusedItemId === item.id && (
-                            <motion.div
-                              initial={{ opacity: 0, y: -10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              className="absolute left-0 right-0 top-full mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
-                            >
-                              {COMMON_UNITS.filter(u =>
-                                !item.unit || u.toLowerCase().includes(item.unit.toLowerCase())
-                              ).map((u) => (
-                                <button
-                                  key={u}
-                                  type="button"
-                                  onClick={() => updateItem(item.id, { unit: u })}
-                                  className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-gray-400 hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
-                                >
-                                  {u}
-                                </button>
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                      <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1.5 w-[132px] shrink-0">
-                        <input
-                          type="text"
-                          className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold text-right"
-                          value={item.rate}
-                          onChange={e => updateItem(item.id, { rate: e.target.value })}
-                          placeholder="0.00"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => updateItem(item.id, { rate: isIncludedRate(item.rate) ? 0 : 'INCLUDED' })}
-                          className={`px-1.5 py-1 rounded text-[10px] font-black tracking-wide shrink-0 ${
-                            isIncludedRate(item.rate)
-                              ? 'bg-[#6C8295] text-white shadow-sm'
-                              : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
-                          }`}
-                        >
-                          INCL
-                        </button>
-                      </div>
-                      <div className="w-24 shrink-0 text-right text-xs font-black font-mono text-[#6C8295] px-1">
-                        {isIncludedRate(item.rate) ? 'INCL' : `£${getLineTotal(item).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeItem(item.id)}
-                        className="text-gray-600 hover:text-red-400 transition-colors p-1 cursor-pointer shrink-0"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* <2xl: labeled grid, self-explanatory without column headers */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 2xl:hidden">
+                    {/* Labeled grid for inputs on all screen sizes */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div className="flex flex-col gap-1">
                         <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">Qty</span>
                         <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2">
@@ -1093,7 +1006,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                               >
                                 {COMMON_UNITS.filter(u =>
                                   !item.unit || u.toLowerCase().includes(item.unit.toLowerCase())
-                                ).map((u) => (
+                               ).map((u) => (
                                   <button
                                     key={u}
                                     type="button"

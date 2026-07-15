@@ -11,6 +11,7 @@ import { JobLedgerPage } from './pages/JobLedger';
 import { PipelinePage } from './pages/Pipeline';
 import { AuditLogPage } from './pages/AuditLog';
 import { SubmitCredentialsPage } from './pages/SubmitCredentials';
+import { SettingsPage } from './pages/Settings';
 
 // Session gate — any /portal/* view requires a valid Supabase session.
 const ProtectedRoute: React.FC = () => {
@@ -86,6 +87,9 @@ export default function App() {
             } />
             <Route path="/portal/audit" element={
               <AuditLogGuard><AuditLogPage /></AuditLogGuard>
+            } />
+            <Route path="/portal/settings" element={
+              <RoleGuard allow={['admin', 'dispatcher', 'operative']}><SettingsPage /></RoleGuard>
             } />
             
             {/* Fallback internal routes — send operatives to their calendar. */}

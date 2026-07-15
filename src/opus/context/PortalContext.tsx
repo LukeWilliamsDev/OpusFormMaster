@@ -93,6 +93,8 @@ interface PortalContextType {
   session: Session | null;
   user: User | null;
   role: AppRole | null;
+  profile: { full_name: string; phone_number: string; avatar_url: string } | null;
+  updateProfile: (updates: { full_name?: string; phone_number?: string; avatar_url?: string }) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
@@ -105,6 +107,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [profile, setProfileState] = useState<{ full_name: string; phone_number: string; avatar_url: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -132,6 +135,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setUser(newSession?.user ?? null);
       if (!newSession) {
         setRole(null);
+        setProfileState(null);
         // Clear cached data on sign-out to avoid leaking one user's view.
         hydratedRef.current = false;
         prevWorkerIdsRef.current = new Set();
@@ -154,25 +158,32 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch role from profiles whenever the user changes
+  // Fetch role and profile details from profiles whenever the user changes
   useEffect(() => {
     if (!user) {
       setRole(null);
+      setProfileState(null);
       return;
     }
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('role')
+        .select('role, full_name, phone_number, avatar_url')
         .eq('id', user.id)
         .maybeSingle();
       if (cancelled) return;
       if (error) {
-        console.error('Failed to load role', error);
+        console.error('Failed to load profile', error);
         setRole('operative');
+        setProfileState({ full_name: '', phone_number: '', avatar_url: '' });
       } else {
         setRole((data?.role as AppRole) ?? 'operative');
+        setProfileState({
+          full_name: data?.full_name ?? '',
+          phone_number: data?.phone_number ?? '',
+          avatar_url: data?.avatar_url ?? '',
+        });
       }
     })();
     return () => { cancelled = true; };
@@ -408,6 +419,26 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { error: error?.message ?? null };
   };
 
+  const updateProfile = async (updates: { full_name?: string; phone_number?: string; avatar_url?: string }) => {
+    if (!user) return { error: 'No authenticated user' };
+    const { error } = await supabase
+      .from('profiles')
+      .update(updates)
+      .eq('id', user.id);
+    if (!error) {
+      setProfileState(prev => prev ? { ...prev, ...updates } : { full_name: '', phone_number: '', avatar_url: '', ...updates });
+      await supabase.from('audit_logs').insert({
+        user_id: user.id,
+        user_email: user.email,
+        action: 'PROFILE_UPDATE',
+        target_type: 'auth',
+        target_id: user.id,
+        details: { updates }
+      });
+    }
+    return { error: error?.message ?? null };
+  };
+
   return (
     <PortalContext.Provider value={{
       workers,
@@ -423,6 +454,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       session,
       user,
       role,
+      profile,
+      updateProfile,
       signIn,
       signOut,
       resetPassword,

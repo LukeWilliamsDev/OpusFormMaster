@@ -16,9 +16,10 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePortal } from '../context/PortalContext';
+import { getAvatarPresetClass } from '../pages/Settings';
 
 export const PortalLayout: React.FC = () => {
-  const { signOut, role, user } = usePortal();
+  const { signOut, role, user, profile } = usePortal();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -78,30 +79,35 @@ export const PortalLayout: React.FC = () => {
       <aside className="hidden lg:flex flex-col w-64 xl:w-72 bg-[#0c0c0f] border-r border-[#1e1e24] shrink-0 sticky top-0 h-screen z-40">
         {/* Sidebar Header */}
         <div className="p-6 border-b border-[#1e1e24]">
-          <Link to="/portal/dashboard" className="flex items-center space-x-3 group">
-            <div className="w-10 h-10 rounded bg-[#6C8295]/10 flex items-center justify-center border border-[#6C8295]/20 group-hover:border-[#6C8295]/50 transition-all duration-300">
-              <span className="text-[#6C8295] font-archivo font-extrabold text-lg">O</span>
-            </div>
-            <div className="flex flex-col">
-              <span className="text-lg font-bold tracking-tight text-white font-archivo">OPUS FORM</span>
-              <span className="text-[11px] font-medium text-brand-accent tracking-wider uppercase">ERP PORTAL</span>
-            </div>
+          <Link to="/portal/dashboard" className="flex items-center group">
+            <img src="/opus-form-primary.svg" alt="Opus Form" className="h-10 w-auto" />
           </Link>
         </div>
 
-        {/* Current Active User Profile Banner */}
-        <div className="px-6 py-4 border-b border-[#1e1e24] bg-[#0c0c0f] flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-full bg-[#6C8295]/20 flex items-center justify-center border border-[#6C8295]/30">
-            <UserIcon className="w-4 h-4 text-[#6C8295]" />
+        {/* Current Active User Profile Banner (Interactive) */}
+        <Link 
+          to="/portal/settings" 
+          className="px-6 py-4 border-b border-[#1e1e24] bg-[#0c0c0f] hover:bg-[#16161a] transition-all flex items-center space-x-3 group cursor-pointer"
+        >
+          <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarPresetClass(profile?.avatar_url)} flex items-center justify-center border border-[#2a2a30] shrink-0`}>
+            {profile?.full_name ? (
+              <span className="text-[11px] font-black tracking-wider text-white">
+                {profile.full_name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)}
+              </span>
+            ) : (
+              <UserIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+            )}
           </div>
           <div className="flex flex-col min-w-0 flex-1">
-            <span className="text-[12px] font-semibold text-white truncate">{user?.email || 'User'}</span>
+            <span className="text-[12px] font-semibold text-white truncate group-hover:text-[#6C8295] transition-colors">
+              {profile?.full_name || user?.email || 'User'}
+            </span>
             <div className="flex items-center space-x-1.5 mt-0.5">
               <Shield className="w-3 h-3 text-[#10b981]" />
               <span className="text-[11px] text-[#10b981] capitalize font-medium">{role || 'operative'}</span>
             </div>
           </div>
-        </div>
+        </Link>
 
         {/* Desktop Sidebar Navigation */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
@@ -139,11 +145,8 @@ export const PortalLayout: React.FC = () => {
 
       {/* Mobile Sticky Header */}
       <header className="lg:hidden flex items-center justify-between h-16 bg-[#0c0c0f] border-b border-[#1e1e24] px-4 sticky top-0 z-40">
-        <Link to="/portal/dashboard" className="flex items-center space-x-2.5">
-          <div className="w-8 h-8 rounded bg-[#6C8295]/10 flex items-center justify-center border border-[#6C8295]/20">
-            <span className="text-[#6C8295] font-archivo font-extrabold text-sm">O</span>
-          </div>
-          <span className="text-base font-bold tracking-tight text-white font-archivo">OPUS FORM</span>
+        <Link to="/portal/dashboard" className="flex items-center">
+          <img src="/opus-form-primary.svg" alt="Opus Form" className="h-6 w-auto" />
         </Link>
         <div className="flex items-center space-x-2">
           {/* Audit Admin Logout for mobile */}
@@ -185,27 +188,36 @@ export const PortalLayout: React.FC = () => {
               className="fixed top-0 left-0 bottom-0 w-4/5 max-w-xs bg-[#1a1a1e] border-r border-[#2a2a30] z-50 p-6 flex flex-col shadow-2xl lg:hidden"
             >
               <div className="flex items-center justify-between mb-6 pb-4 border-b border-[#2a2a30]">
-                <Link to="/portal/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center space-x-2.5">
-                  <div className="w-8 h-8 rounded bg-[#6C8295]/10 flex items-center justify-center border border-[#6C8295]/20">
-                    <span className="text-[#6C8295] font-archivo font-extrabold text-sm">O</span>
-                  </div>
-                  <span className="text-base font-bold tracking-tight text-white font-archivo">OPUS FORM</span>
+                <Link to="/portal/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center">
+                  <img src="/opus-form-primary.svg" alt="Opus Form" className="h-8 w-auto" />
                 </Link>
                 <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-[#9a9a9e] cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center">
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
-              {/* Mobile Drawer Profile */}
-              <div className="mb-6 p-3 rounded-lg bg-[#16161a]/60 border border-[#2a2a30] flex items-center space-x-3">
-                <div className="w-8 h-8 rounded-full bg-[#6C8295]/20 flex items-center justify-center border border-[#6C8295]/30">
-                  <UserIcon className="w-4 h-4 text-[#6C8295]" />
+              {/* Mobile Drawer Profile (Interactive) */}
+              <Link 
+                to="/portal/settings" 
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="mb-6 p-3 rounded-lg bg-[#16161a]/60 border border-[#2a2a30] flex items-center space-x-3 group hover:bg-[#16161a] transition-all cursor-pointer"
+              >
+                <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${getAvatarPresetClass(profile?.avatar_url)} flex items-center justify-center border border-[#2a2a30] shrink-0`}>
+                  {profile?.full_name ? (
+                    <span className="text-[11px] font-black tracking-wider text-white">
+                      {profile.full_name.split(' ').map(p => p[0]).join('').toUpperCase().slice(0, 2)}
+                    </span>
+                  ) : (
+                    <UserIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                  )}
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[13px] font-semibold text-white truncate">{user?.email || 'User'}</span>
+                  <span className="text-[13px] font-semibold text-white truncate group-hover:text-[#6C8295] transition-colors">
+                    {profile?.full_name || user?.email || 'User'}
+                  </span>
                   <span className="text-[11px] text-[#10b981] capitalize font-medium">{role || 'operative'}</span>
                 </div>
-              </div>
+              </Link>
 
               {/* Mobile Drawer Menu Links */}
               <nav className="space-y-1.5 flex-1 overflow-y-auto">

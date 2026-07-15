@@ -176,4 +176,5 @@
 - Resolution of password reset redirection issues under HashRouter by updating redirect URLs and listening for the `PASSWORD_RESET` auth event.
 - Correction of redirect URL to clean base path for successful Supabase auth session token parsing.
 - Removal of staggered fade-in entrance animations from the portal login and password recovery page elements for cleaner and faster rendering.
+- Addition of programmatic URL hash token parser and session initialization in PortalContext.tsx to prevent HashRouter from discarding session tokens on redirect.
 

@@ -152,6 +152,28 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Bootstrap session + subscribe to auth changes
   useEffect(() => {
+    // Programmatically intercept and initialize recovery session from hash if present
+    const hash = window.location.hash;
+    if (hash && (hash.includes('access_token=') || hash.includes('type=recovery'))) {
+      const cleanHash = hash.startsWith('#') ? hash.slice(1) : hash;
+      const searchPart = cleanHash.includes('?') ? cleanHash.split('?')[1] : cleanHash;
+      const params = new URLSearchParams(searchPart);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      const type = params.get('type');
+
+      if (accessToken && refreshToken) {
+        supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        }).then(({ error }) => {
+          if (!error && type === 'recovery') {
+            window.location.hash = '#/portal?type=recovery';
+          }
+        });
+      }
+    }
+
     // Register listener FIRST so we never miss an event.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
       setSession(newSession);

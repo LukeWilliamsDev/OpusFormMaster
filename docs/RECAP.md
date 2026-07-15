@@ -175,4 +175,5 @@
 - Renaming of Key Recovery to Password Recovery in the authentication interface.
 - Resolution of password reset redirection issues under HashRouter by updating redirect URLs and listening for the `PASSWORD_RESET` auth event.
 - Correction of redirect URL to clean base path for successful Supabase auth session token parsing.
+- Removal of staggered fade-in entrance animations from the portal login and password recovery page elements for cleaner and faster rendering.
 

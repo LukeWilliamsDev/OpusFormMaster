@@ -36,11 +36,6 @@ export const PortalAuthPage: React.FC = () => {
     }
   };
 
-  // Staggered entrance animation state
-  const [logoVisible, setLogoVisible] = useState(false);
-  const [ruleVisible, setRuleVisible] = useState(false);
-  const [formVisible, setFormVisible] = useState(false);
-
   // Check for recovery token/type in URL on mount, or listen for PASSWORD_RESET event
   useEffect(() => {
     const hash = window.location.hash;
@@ -67,17 +62,6 @@ export const PortalAuthPage: React.FC = () => {
       navigate('/portal/dashboard', { replace: true });
     }
   }, [isAuthenticated, navigate, formMode, notification]);
-
-  // Re-trigger animation whenever the login/forgot/reset view mounts
-  useEffect(() => {
-    setLogoVisible(false);
-    setRuleVisible(false);
-    setFormVisible(false);
-    const t1 = setTimeout(() => setLogoVisible(true), 100);
-    const t2 = setTimeout(() => setRuleVisible(true), 550);
-    const t3 = setTimeout(() => setFormVisible(true), 850);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-  }, [formMode]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -210,11 +194,6 @@ export const PortalAuthPage: React.FC = () => {
             onClick={() => navigate('/')}
             className="focus:outline-none cursor-pointer"
             title="Return to Landing Page"
-            style={{
-              opacity: logoVisible ? 1 : 0,
-              transform: logoVisible ? 'translateY(0)' : 'translateY(14px)',
-              transition: 'opacity 600ms ease-out, transform 600ms ease-out',
-            }}
           >
             <span
               style={{
@@ -233,30 +212,20 @@ export const PortalAuthPage: React.FC = () => {
             </span>
           </button>
 
-          {/* Rule — wipes in from centre, matches brand blue-grey */}
+          {/* Rule — matches brand blue-grey */}
           <div style={{ width: '48px', maxWidth: '100%' }}>
             <div
               style={{
                 height: '2px',
                 backgroundColor: '#6C8295',
-                transform: ruleVisible ? 'scaleX(1)' : 'scaleX(0)',
-                transformOrigin: 'center',
-                transition: 'transform 550ms ease-out',
                 borderRadius: '1px',
               }}
             />
           </div>
         </div>
 
-        {/* Form container — fades up */}
-        <div
-          className="w-full"
-          style={{
-            opacity: formVisible ? 1 : 0,
-            transform: formVisible ? 'translateY(0)' : 'translateY(10px)',
-            transition: 'opacity 500ms ease-out, transform 500ms ease-out',
-          }}
-        >
+        {/* Form container */}
+        <div className="w-full">
           <div className="w-full bg-[#16161a] border border-[#2a2a30] rounded-lg overflow-hidden shadow-lg">
             {formMode === 'login' && (
               <div className="p-6 sm:p-8">

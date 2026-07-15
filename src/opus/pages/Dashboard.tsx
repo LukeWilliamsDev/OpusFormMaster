@@ -27,7 +27,7 @@ import { usePortal } from '../context/PortalContext';
 import { supabase } from '@/integrations/supabase/client';
 
 export const DashboardPage: React.FC = () => {
-  const { workers, setWorkers, jobs, setJobs, shifts, role, user } = usePortal();
+  const { workers, setWorkers, jobs, setJobs, shifts, role, user, profile } = usePortal();
   const navigate = useNavigate();
 
   // Search & Command Bar State
@@ -211,7 +211,8 @@ export const DashboardPage: React.FC = () => {
         .insert({
           worker_id: alert.workerId,
           requested_certs: [alert.ticketType],
-          expires_at: expiresAt.toISOString()
+          expires_at: expiresAt.toISOString(),
+          tenant_id: profile?.tenant_id,
         })
         .select()
         .single();

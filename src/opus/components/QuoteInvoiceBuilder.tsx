@@ -1,6 +1,7 @@
 // @ts-nocheck
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePortal } from '../context/PortalContext';
 import { isValidUKPostcode } from '../utils/geo';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
@@ -84,6 +85,7 @@ const capitalizeWords = (str: string) => {
 };
 
 export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, quoteToLoadId, onQuoteLoaded }) => {
+  const { profile } = usePortal();
   const [clientInfo, setClientInfo] = useState({
     entity: '',
     email: '',
@@ -227,7 +229,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
       items,
       vat_rate: vatRate,
       totals,
-      is_sent: false
+      is_sent: false,
+      tenant_id: profile?.tenant_id
     };
 
     try {
@@ -537,7 +540,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
         items,
         vat_rate: vatRate,
         totals,
-        is_sent: true
+        is_sent: true,
+        tenant_id: profile?.tenant_id
       };
 
       const { error: upsertError } = await supabase

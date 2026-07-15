@@ -16,7 +16,7 @@ const INITIAL_JOBS: Job[] = [
 export type AppRole = 'admin' | 'dispatcher' | 'operative';
 
 // ---- Row <-> App mappers -----------------------------------------------
-export const workerToRow = (w: Worker) => ({
+export const workerToRow = (w: Worker, tenantId?: string) => ({
   id: w.id,
   name: w.name,
   role: w.role,
@@ -26,6 +26,7 @@ export const workerToRow = (w: Worker) => ({
   is_archived: w.isArchived ?? false,
   tickets: w.tickets ?? [],
   uploaded_certificates: w.uploadedCertificates ?? [],
+  ...(tenantId ? { tenant_id: tenantId } : {}),
 });
 const rowToWorker = (r: any): Worker => ({
   id: r.id,
@@ -39,7 +40,7 @@ const rowToWorker = (r: any): Worker => ({
   uploadedCertificates: r.uploaded_certificates ?? [],
 });
 
-const jobToRow = (j: Job) => ({
+const jobToRow = (j: Job, tenantId?: string) => ({
   id: j.id,
   job_ref: j.jobRef,
   site_name: j.siteName,
@@ -50,6 +51,7 @@ const jobToRow = (j: Job) => ({
   status: j.status,
   schedule_value: j.scheduleValue ?? 0,
   assigned_workers: j.assignedWorkers ?? [],
+  ...(tenantId ? { tenant_id: tenantId } : {}),
 });
 const rowToJob = (r: any): Job => ({
   id: r.id,
@@ -64,12 +66,13 @@ const rowToJob = (r: any): Job => ({
   assignedWorkers: r.assigned_workers ?? [],
 });
 
-const shiftToRow = (s: ScheduledShift) => ({
+const shiftToRow = (s: ScheduledShift, tenantId?: string) => ({
   id: s.id,
   worker_id: s.workerId,
   job_id: s.jobId,
   date: s.date,
   is_removed: s.isRemoved ?? false,
+  ...(tenantId ? { tenant_id: tenantId } : {}),
 });
 const rowToShift = (r: any): ScheduledShift => ({
   id: r.id,
@@ -93,8 +96,8 @@ interface PortalContextType {
   session: Session | null;
   user: User | null;
   role: AppRole | null;
-  profile: { full_name: string; phone_number: string; avatar_url: string } | null;
-  updateProfile: (updates: { full_name?: string; phone_number?: string; avatar_url?: string }) => Promise<{ error: string | null }>;
+  profile: { full_name: string; phone_number: string; avatar_url: string; tenant_id: string } | null;
+  updateProfile: (updates: { full_name?: string; phone_number?: string; avatar_url?: string; tenant_id?: string }) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
@@ -107,7 +110,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
-  const [profile, setProfileState] = useState<{ full_name: string; phone_number: string; avatar_url: string } | null>(null);
+  const [profile, setProfileState] = useState<{ full_name: string; phone_number: string; avatar_url: string; tenant_id: string } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
   const [workers, setWorkers] = useState<Worker[]>([]);
@@ -169,7 +172,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     (async () => {
       const { data, error } = await supabase
         .from('profiles')
-        .select('role, full_name, phone_number, avatar_url')
+        .select('role, full_name, phone_number, avatar_url, tenant_id')
         .eq('id', user.id)
         .maybeSingle();
       if (cancelled) return;
@@ -183,6 +186,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           full_name: data?.full_name ?? '',
           phone_number: data?.phone_number ?? '',
           avatar_url: data?.avatar_url ?? '',
+          tenant_id: data?.tenant_id ?? '',
         });
       }
     })();
@@ -211,10 +215,9 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       prevJobIdsRef.current = new Set(jList.map(j => j.id));
       prevShiftIdsRef.current = new Set(sList.map(s => s.id));
       
-      // Seed last saved refs to prevent auto-write on mount
-      lastSavedWorkersRef.current = JSON.stringify(wList.map(workerToRow));
-      lastSavedJobsRef.current = JSON.stringify(jList.map(jobToRow));
-      lastSavedShiftsRef.current = JSON.stringify(sList.map(shiftToRow));
+      lastSavedWorkersRef.current = JSON.stringify(wList.map(w => workerToRow(w, profile?.tenant_id)));
+      lastSavedJobsRef.current = JSON.stringify(jList.map(j => jobToRow(j, profile?.tenant_id)));
+      lastSavedShiftsRef.current = JSON.stringify(sList.map(s => shiftToRow(s, profile?.tenant_id)));
       
       setWorkers(wList);
       setJobs(jList);
@@ -231,7 +234,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
-    const rows = workers.map(workerToRow);
+    const rows = workers.map(w => workerToRow(w, profile?.tenant_id));
     const serialized = JSON.stringify(rows);
     if (serialized === lastSavedWorkersRef.current) return;
     lastSavedWorkersRef.current = serialized;
@@ -253,7 +256,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
-    const rows = jobs.map(jobToRow);
+    const rows = jobs.map(j => jobToRow(j, profile?.tenant_id));
     const serialized = JSON.stringify(rows);
     if (serialized === lastSavedJobsRef.current) return;
     lastSavedJobsRef.current = serialized;
@@ -275,7 +278,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
-    const rows = shifts.map(shiftToRow);
+    const rows = shifts.map(s => shiftToRow(s, profile?.tenant_id));
     const serialized = JSON.stringify(rows);
     if (serialized === lastSavedShiftsRef.current) return;
     lastSavedShiftsRef.current = serialized;
@@ -317,9 +320,9 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       return;
     }
     const [iw, ij, is_] = await Promise.all([
-      supabase.from('staff').insert(INITIAL_ROSTER.map(workerToRow)),
-      supabase.from('jobs').insert(INITIAL_JOBS.map(jobToRow)),
-      supabase.from('shifts').insert(INITIAL_SHIFTS.map(shiftToRow)),
+      supabase.from('staff').insert(INITIAL_ROSTER.map(w => workerToRow(w, profile?.tenant_id))),
+      supabase.from('jobs').insert(INITIAL_JOBS.map(j => jobToRow(j, profile?.tenant_id))),
+      supabase.from('shifts').insert(INITIAL_SHIFTS.map(s => shiftToRow(s, profile?.tenant_id))),
     ]);
     if (iw.error || ij.error || is_.error) {
       console.error('demo seed', iw.error, ij.error, is_.error);
@@ -354,9 +357,11 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } else {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
+        const { data: prof } = await supabase.from('profiles').select('tenant_id').eq('id', user.id).maybeSingle();
         await supabase.from('audit_logs').insert({
           user_id: user.id,
           user_email: email,
+          tenant_id: prof?.tenant_id,
           action: 'LOGIN_SUCCESS',
           target_type: 'auth',
           target_id: user.id,
@@ -373,6 +378,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       await supabase.from('audit_logs').insert({
         user_id: user.id,
         user_email: user.email,
+        tenant_id: profile?.tenant_id,
         action: 'LOGOUT',
         target_type: 'auth',
         target_id: user.id,
@@ -409,6 +415,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         await supabase.from('audit_logs').insert({
           user_id: user.id,
           user_email: user.email,
+          tenant_id: profile?.tenant_id,
           action: 'PASSWORD_RESET_SUCCESS',
           target_type: 'auth',
           target_id: user.id,
@@ -426,10 +433,11 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       .update(updates)
       .eq('id', user.id);
     if (!error) {
-      setProfileState(prev => prev ? { ...prev, ...updates } : { full_name: '', phone_number: '', avatar_url: '', ...updates });
+      setProfileState(prev => prev ? { ...prev, ...updates } : { full_name: '', phone_number: '', avatar_url: '', tenant_id: '', ...updates });
       await supabase.from('audit_logs').insert({
         user_id: user.id,
         user_email: user.email,
+        tenant_id: profile?.tenant_id,
         action: 'PROFILE_UPDATE',
         target_type: 'auth',
         target_id: user.id,

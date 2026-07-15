@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { computeDiff } from '../utils/auditDiff';
 import { AuditDiffTable } from '../components/AuditDiffTable';
+import { usePortal } from '../context/PortalContext';
 
 interface AuditLog {
   id: string;
@@ -29,6 +30,7 @@ interface AuditLog {
 }
 
 export const AuditLogPage: React.FC = () => {
+  const { profile } = usePortal();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -75,7 +77,7 @@ export const AuditLogPage: React.FC = () => {
         // Restoring a deletion means inserting the details payload
         const { error: err } = await supabase
           .from(table)
-          .upsert(log.details);
+          .upsert({ ...log.details, tenant_id: profile?.tenant_id });
         error = err;
       } else if (log.action === 'UPDATE') {
         // Restoring an update means applying the "old" values
@@ -84,7 +86,7 @@ export const AuditLogPage: React.FC = () => {
         }
         const { error: err } = await supabase
           .from(table)
-          .upsert(log.details.old);
+          .upsert({ ...log.details.old, tenant_id: profile?.tenant_id });
         error = err;
       }
 

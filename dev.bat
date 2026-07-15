@@ -2,8 +2,7 @@
 :: Change directory to the folder where this batch file is saved
 cd /d "%~dp0"
 
-echo [LOCAL DEV] Starting local server in opus-form-builder...
-cd opus-form-builder
+echo [LOCAL DEV] Starting local server...
 echo [LOCAL DEV] Working directory: %cd%
 
 :: Run the npm dev script using the local Node.js environment

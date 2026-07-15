@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Send, Check, Copy } from 'lucide-react';
 import { supabase } from '../../integrations/supabase/client';
+import { usePortal } from '../context/PortalContext';
 import { ON_SITE_CERTIFICATIONS } from './RosterView';
 
 interface RequestCredentialsModalProps {
@@ -14,6 +15,7 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
   onClose,
   worker
 }) => {
+  const { profile } = usePortal();
   const [selectedCerts, setSelectedCerts] = useState<string[]>([]);
   const [customCertInput, setCustomCertInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -75,7 +77,8 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
         .insert({
           worker_id: worker.id,
           requested_certs: selectedCerts,
-          expires_at: expiresAt.toISOString()
+          expires_at: expiresAt.toISOString(),
+          tenant_id: profile?.tenant_id
         })
         .select()
         .single();

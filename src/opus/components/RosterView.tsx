@@ -9,7 +9,7 @@ import { isValidUKPostcode } from '../utils/geo';
 import { TicketStatusBadge } from './TicketStatusBadge';
 import { RequestCredentialsModal } from './RequestCredentialsModal';
 import { supabase } from '../../integrations/supabase/client';
-import { workerToRow } from '../context/PortalContext';
+import { workerToRow, usePortal } from '../context/PortalContext';
 import { computeDiff } from '../utils/auditDiff';
 import { AuditDiffTable } from './AuditDiffTable';
 
@@ -79,6 +79,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   selectedWorkerDetailsId: propSelectedWorkerDetailsId,
   setSelectedWorkerDetailsId: propSetSelectedWorkerDetailsId
 }) => {
+  const { profile } = usePortal();
   const [searchQuery, setSearchQuery] = useState('');
   const [showAddWorkerForm, setShowAddWorkerForm] = useState(false);
   
@@ -430,7 +431,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
     setSubmittingWorker(true);
     try {
-      const { error: insertError } = await supabase.from('staff').insert(workerToRow(createdWorker));
+      const { error: insertError } = await supabase.from('staff').insert(workerToRow(createdWorker, profile?.tenant_id));
       if (insertError) {
         setFormError('Failed to save worker. Please try again.');
         return;
@@ -448,7 +449,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
             .insert({
               worker_id: newId,
               requested_certs: [],
-              expires_at: expiresAt.toISOString()
+              expires_at: expiresAt.toISOString(),
+              tenant_id: profile?.tenant_id
             })
             .select()
             .single();

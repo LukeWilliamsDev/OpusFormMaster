@@ -201,160 +201,99 @@ export const AuditLogPage: React.FC = () => {
   };
 
   return (
-    <div className="pt-24 pb-12 px-4 sm:px-6 max-w-7xl mx-auto space-y-8 animate-fade-in text-white flex flex-col min-h-[calc(100vh-4rem)]">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#2a2a2a] pb-6">
+    <div className="pt-24 pb-12 px-4 sm:px-6 max-w-7xl mx-auto space-y-8 animate-fade-in text-white flex flex-col min-h-[calc(100vh-4rem)] bg-[#111114]">
+      {/* Header matching 2d */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#1e1e24] pb-6">
         <div>
-          <div className="flex items-center gap-2 text-[10px] font-black tracking-widest text-brand-accent uppercase font-mono mb-1">
-            <Activity className="w-4 h-4" />
-            <span>Compliance & Security</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black font-archivo tracking-tight">System Audit Trail</h1>
-          <p className="text-[11px] text-zinc-400 font-mono mt-1">ISO 9001:2015 Clause 7.5.3 Compliance Log</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold font-archivo tracking-tight">Audit Trail</h1>
         </div>
         
-        <button 
-          onClick={fetchLogs}
-          className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-mono font-bold uppercase rounded-lg border border-white/5 transition-all"
-        >
-          Refresh Log
-        </button>
-      </div>
-
-      {/* Search & Filters Row */}
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-center">
-        {/* Search */}
-        <div className="md:col-span-3 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
-          <input
-            type="text"
-            placeholder="Search by ID, email or keyword..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 bg-[#1e1e20] border border-white/5 rounded-xl text-xs text-white focus:outline-none focus:border-brand-accent/30 transition-all font-mono"
-          />
-        </div>
-
-        {/* Action Type Filter */}
-        <div className="relative">
-          <select
-            value={actionFilter}
-            onChange={(e) => setActionFilter(e.target.value)}
-            className="w-full bg-[#1e1e20] border border-white/5 rounded-xl px-3 py-2.5 text-xs text-zinc-300 font-mono focus:outline-none focus:border-brand-accent/30 appearance-none cursor-pointer"
+        {/* Toggle Tags for filters */}
+        <div className="flex gap-2">
+          <button 
+            onClick={() => { setActionFilter('ALL'); setTypeFilter('ALL'); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              actionFilter === 'ALL' ? 'bg-[#2a2a30] text-white' : 'bg-[#1a1a1e] border border-[#2a2a30] text-[#888]'
+            }`}
           >
-            <option value="ALL">All Actions</option>
-            <option value="CREATE">CREATE</option>
-            <option value="UPDATE">UPDATE</option>
-            <option value="DELETE">DELETE</option>
-            <option value="LOGIN_SUCCESS">LOGIN SUCCESS</option>
-            <option value="LOGIN_FAILURE">LOGIN FAILURE</option>
-            <option value="LOGOUT">LOGOUT</option>
-            <option value="PASSWORD_RESET_REQUEST">RESET REQUEST</option>
-            <option value="PASSWORD_RESET_SUCCESS">RESET SUCCESS</option>
-          </select>
-        </div>
-
-        {/* Table Type Filter */}
-        <div className="relative">
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="w-full bg-[#1e1e20] border border-white/5 rounded-xl px-3 py-2.5 text-xs text-zinc-300 font-mono focus:outline-none focus:border-brand-accent/30 appearance-none cursor-pointer"
+            All Events
+          </button>
+          <button 
+            onClick={() => { setActionFilter('LOGIN_SUCCESS'); setTypeFilter('ALL'); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              actionFilter === 'LOGIN_SUCCESS' ? 'bg-[#2a2a30] text-white' : 'bg-[#1a1a1e] border border-[#2a2a30] text-[#888]'
+            }`}
           >
-            <option value="ALL">All Modules</option>
-            <option value="staff">Staff</option>
-            <option value="jobs">Jobs</option>
-            <option value="shifts">Shifts</option>
-            <option value="quotes">Quotes</option>
-            <option value="auth">Auth</option>
-          </select>
-        </div>
-
-        {/* Stats */}
-        <div className="bg-[#1e1e20] border border-white/5 rounded-xl p-2 flex flex-col justify-center text-center h-[42px]">
-          <span className="text-[8px] font-black text-zinc-500 uppercase tracking-wider">Filtered Count</span>
-          <span className="text-sm font-black font-archivo mt-0.5">{filteredLogs.length}</span>
+            Logins
+          </button>
+          <button 
+            onClick={() => { setActionFilter('APPROVE_DOCUMENT'); setTypeFilter('ALL'); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              actionFilter === 'APPROVE_DOCUMENT' ? 'bg-[#2a2a30] text-white' : 'bg-[#1a1a1e] border border-[#2a2a30] text-[#888]'
+            }`}
+          >
+            Approvals
+          </button>
         </div>
       </div>
 
-      {/* Logs Table Container */}
-      <div className="flex-grow flex flex-col justify-between bg-[#1e1e20] border border-white/5 rounded-xl overflow-hidden min-h-[480px]">
+      {/* Timeline timeline entries layout container */}
+      <div className="flex-grow flex flex-col justify-between bg-[#111114] rounded-xl overflow-hidden min-h-[480px]">
         <div>
           {loading ? (
             <div className="py-20 text-center text-xs font-mono text-zinc-500">Loading audit trail...</div>
           ) : paginatedLogs.length === 0 ? (
             <div className="py-20 text-center text-xs font-mono text-zinc-500">No logs matching filters.</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/5 text-[9px] font-black uppercase text-zinc-500 tracking-wider bg-black/10">
-                    <th className="py-3 px-4">Timestamp</th>
-                    <th className="py-3 px-4">User</th>
-                    <th className="py-3 px-4">Event Type</th>
-                    <th className="py-3 px-4">Action</th>
-                    <th className="py-3 px-4 text-right">Resource</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5 text-xs font-mono">
-                  {paginatedLogs.map((log) => {
-                    // Check the cached diff length to determine if there is a record change
-                    const isRecordChange = log.action === 'UPDATE' && (diffCache[log.id]?.length ?? 0) > 0;
-                    // Resolve friendly event names falling back to 'Record Updated' for UPDATE action
-                    const friendlyEventName = isRecordChange ? 'Record Change' : 
-                                              log.action === 'INSPECT' ? 'Record Inspection' : 
-                                              log.action === 'CREATE' ? 'Record Created' : 
-                                              log.action === 'DELETE' ? 'Record Deleted' : 
-                                              log.action === 'APPROVE_DOCUMENT' ? 'Document Approved' : 
-                                              log.action === 'REJECT_DOCUMENT' ? 'Document Rejected' : 
-                                              log.action === 'SUBMIT_DOCUMENTS' ? 'Document Uploaded' :
-                                              log.action === 'RESEND_DOCUMENT_REQUEST' ? 'Link Renewed' : 
-                                              log.action === 'UPDATE' ? 'Record Updated' : 'System Event';
+            <div className="divide-y divide-[#1e1e24] px-4">
+              {paginatedLogs.map((log) => {
+                // Colored severity bullets for timeline matching 2d
+                let bulletColor = 'bg-[#6C8295]';
+                if (log.action.includes('LOGIN_SUCCESS') || log.action.includes('APPROVE')) {
+                  bulletColor = 'bg-[#10b981]';
+                } else if (log.action.includes('CREATE') || log.action.includes('UPDATE')) {
+                  bulletColor = 'bg-[#6C8295]';
+                } else if (log.action.includes('FAILURE') || log.action.includes('DELETE') || log.action.includes('REJECT')) {
+                  bulletColor = 'bg-[#ef4444]';
+                } else {
+                  bulletColor = 'bg-[#f59e0b]';
+                }
 
-                    return (
-                      <tr 
-                        key={log.id} 
-                        onClick={() => setSelectedLog(log)}
-                        className="hover:bg-white/5 cursor-pointer transition-all"
-                      >
-                        <td className="py-3.5 px-4 text-zinc-400 whitespace-nowrap">
-                          <div className="flex items-center gap-1.5">
-                            <Clock className="w-3.5 h-3.5 text-zinc-600" />
-                            {new Date(log.created_at).toLocaleString()}
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-1.5">
-                            <User className="w-3.5 h-3.5 text-zinc-600" />
-                            <span className="text-zinc-300">{log.user_email || 'System'}</span>
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-4 text-zinc-300 font-sans font-bold text-[11px]">
-                          <span className={isRecordChange ? 'text-[#ffb86c]' : log.action === 'INSPECT' ? 'text-purple-400' : 'text-zinc-450'}>
-                            {friendlyEventName}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black border uppercase ${getActionColor(log.action)}`}>
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-4 text-zinc-300 text-right">
-                          <div className="flex flex-col items-end gap-0.5 justify-center">
-                            <div className="flex items-center gap-1.5 justify-end">
-                              <Database className="w-3.5 h-3.5 text-zinc-600" />
-                              <span className="uppercase text-[11px] font-bold text-zinc-400">{log.target_type}</span>
-                            </div>
-                            <span className="text-[10px] text-zinc-500 font-sans tracking-normal font-bold">
-                              {getTargetDisplayName(log.target_type, log.target_id, log.details)}
-                            </span>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                const isRecordChange = log.action === 'UPDATE' && (diffCache[log.id]?.length ?? 0) > 0;
+                const friendlyEventName = isRecordChange ? 'Record Change' : 
+                                          log.action === 'INSPECT' ? 'Record Inspection' : 
+                                          log.action === 'CREATE' ? 'Record Created' : 
+                                          log.action === 'DELETE' ? 'Record Deleted' : 
+                                          log.action === 'APPROVE_DOCUMENT' ? 'Document Approved' : 
+                                          log.action === 'REJECT_DOCUMENT' ? 'Document Rejected' : 
+                                          log.action === 'SUBMIT_DOCUMENTS' ? 'Document Uploaded' :
+                                          log.action === 'RESEND_DOCUMENT_REQUEST' ? 'Link Renewed' : 
+                                          log.action === 'UPDATE' ? 'Record Updated' : 'System Event';
+
+                return (
+                  <div 
+                    key={log.id} 
+                    onClick={() => setSelectedLog(log)}
+                    className="flex gap-4 py-4 cursor-pointer hover:bg-white/[0.02] transition-all px-2 rounded-lg"
+                  >
+                    <div className={`w-2.5 h-2.5 rounded-full ${bulletColor} mt-1.5 shrink-0`} />
+                    <div className="flex-1">
+                      <div className="text-[14px] font-semibold text-white">
+                        {friendlyEventName === 'Document Approved' ? (
+                          <span>Ticket approved for <b>{getTargetDisplayName(log.target_type, log.target_id, log.details)}</b></span>
+                        ) : friendlyEventName === 'Record Created' && log.target_type === 'quotes' ? (
+                          <span>Quote <span className="font-mono text-[#6C8295]">{log.details?.reference || log.target_id}</span> saved as draft</span>
+                        ) : (
+                          <span>{friendlyEventName} triggered on {log.target_type}</span>
+                        )}
+                      </div>
+                      <div className="text-[12px] text-gray-500 mt-1">
+                        {log.user_email || 'system'} · {new Date(log.created_at).toLocaleString('en-GB')}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

@@ -549,101 +549,44 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
   return (
     <div className="flex flex-col flex-1 w-full text-white pb-20">
-      <main className="flex-1 w-full mt-0">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-          
-          {/* Left: Input Controls */}
-          <div className="space-y-3">
-            {/* CARD SOLO: Reference & Save & History */}
-            <div className="bg-[#242424] border border-[#333] overflow-hidden rounded-xl mb-3">
-              <div className="p-4">
-                <div className="flex items-center gap-[10px]">
-                  <div className="flex items-center gap-2 bg-[#1e1e1e] border border-[#383838] rounded-lg p-2.5 px-3 flex-1">
-                    <span className="text-[9px] font-black tracking-widest text-[#888] uppercase whitespace-nowrap">Ref</span>
-                    <input 
-                      className="bg-transparent border-none outline-none text-[#b0b8c4] text-xs font-black tracking-widest uppercase w-full"
-                      value={quoteReference}
-                      onChange={e => setQuoteReference(e.target.value)}
-                      placeholder="JOB-0000"
-                    />
-                  </div>
-                  <button 
-                    onClick={handleSaveDraft}
-                    className="flex items-center gap-[7px] bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-2.5 px-4 text-white text-[10px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors whitespace-nowrap"
-                  >
-                    <Save className="w-3.5 h-3.5" />
-                    <span>{lastSaved ? 'SAVED' : 'SAVE'}</span>
-                  </button>
+      <main className="flex-grow flex flex-col min-w-0">
+        {/* Split layout to match 2a */}
+        <div style={{ display: 'flex', gap: '24px', flex: 1 }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
+            
+            {/* Reference, Save, Stepper */}
+            <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4">
+              <div className="flex items-center gap-[10px]">
+                <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-2.5 px-3 flex-1">
+                  <span className="text-[11px] font-black tracking-widest text-[#888] uppercase whitespace-nowrap">Ref</span>
+                  <input 
+                    className="bg-transparent border-none outline-none text-[#6C8295] text-xs font-black tracking-widest uppercase w-full font-mono"
+                    value={quoteReference}
+                    onChange={e => setQuoteReference(e.target.value)}
+                    placeholder="JOB-0000"
+                  />
                 </div>
-              </div>
-              <div className="h-[1px] bg-[#2e2e2e] mx-4"></div>
-              <div className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
-                    <History className="w-3.5 h-3.5 text-[#b0b8c4] shrink-0" />
-                    Saved History
-                  </div>
-                </div>
-                <div className="flex flex-col gap-[5px] max-h-60 overflow-y-auto pr-2 custom-scrollbar">
-                  {savedQuotes.length === 0 ? (
-                    <div className="bg-[#1e1e1e] border border-dashed border-[#2a2a2a] rounded-lg p-7 px-4 text-center">
-                       <div className="text-[9px] font-black tracking-widest text-[#777] uppercase">No saved quotes found</div>
-                    </div>
-                  ) : (
-                    savedQuotes.map((q) => (
-                        <div 
-                          key={q.id}
-                          onClick={() => loadQuote(q)}
-                          className="flex items-center justify-between bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-2.5 px-3 hover:border-brand-accent/30 cursor-pointer transition-all duration-200"
-                        >
-                          <div>
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[11px] font-black uppercase tracking-widest text-white">{q.reference}</span>
-                              <span className="text-[10px] text-[#888]">{q.date}</span>
-                              <span className={`text-[7px] font-black uppercase px-1 py-0.5 rounded-sm border ${
-                                q.isSent 
-                                  ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' 
-                                  : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                              }`}>
-                                {q.isSent ? 'SENT' : 'DRAFT'}
-                              </span>
-                            </div>
-                            <div className="text-[10px] text-[#888] mt-[2px] uppercase">
-                              {q.clientInfo?.entity || 'Unnamed Client'}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2.5">
-                            <span className="text-[11px] font-black uppercase tracking-widest text-[#888]">
-                              £{q.totals?.grossTotal?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
-                            </span>
-                            <button 
-                              onClick={(e) => deleteQuote(e, q.id)}
-                              className="bg-transparent border-none cursor-pointer text-[#3a3a3a] p-0.5 flex items-center hover:text-red-500 transition-colors"
-                              title="Delete saved quote"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                  )}
-                </div>
+                <button 
+                  onClick={handleSaveDraft}
+                  className="flex items-center gap-[7px] bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-2.5 px-4 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors whitespace-nowrap"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{lastSaved ? 'SAVED' : 'SAVE'}</span>
+                </button>
               </div>
             </div>
 
-            {/* Visual Interactive Stepper */}
-            <div className="bg-[#242424] border border-[#333] rounded-xl p-4 flex flex-col gap-3 mb-4">
+            {/* Stepper Progress Indicator */}
+            <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 flex flex-col gap-3">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-black tracking-widest text-gray-400 uppercase">Quote Builder Progress</span>
-                <span className="text-[10px] font-mono font-bold text-[#5c7285]">Step {activeStep} of 3</span>
+                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Quote Builder Progress</span>
+                <span className="text-[11px] font-mono font-bold text-[#6C8295]">Step {activeStep} of 3</span>
               </div>
               
               <div className="flex items-center justify-between relative mt-2 px-2">
-                {/* Stepper background line */}
                 <div className="absolute top-[14px] left-8 right-8 h-[2px] bg-[#2e2e2e] z-0" />
-                {/* Stepper active progress line */}
                 <div 
-                  className="absolute top-[14px] left-8 h-[2px] bg-[#5c7285] transition-all duration-300 z-0" 
+                  className="absolute top-[14px] left-8 h-[2px] bg-[#6C8295] transition-all duration-300 z-0" 
                   style={{ width: `calc(${(activeStep - 1) * 50}% - ${(activeStep - 1) * 32}px)` }}
                 />
 
@@ -664,16 +607,16 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       <div 
                         className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all border ${
                           isCompleted 
-                            ? 'bg-[#5c7285] border-[#5c7285] text-white' 
+                            ? 'bg-[#6C8295] border-[#6C8295] text-white' 
                             : isActive 
-                            ? 'bg-[#1e1e1e] border-[#5c7285] text-white shadow-lg' 
-                            : 'bg-[#1e1e1e] border-[#2e2e2e] text-gray-500 hover:border-gray-600'
+                            ? 'bg-[#111114] border-[#6C8295] text-white shadow-lg' 
+                            : 'bg-[#111114] border-[#2a2a30] text-gray-500 hover:border-gray-600'
                         }`}
                       >
                         {isCompleted ? '✓' : s.step}
                       </div>
                       <span 
-                        className={`text-[9px] font-black uppercase tracking-wider ${
+                        className={`text-[11px] font-black uppercase tracking-wider ${
                           isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'
                         }`}
                       >
@@ -682,6 +625,48 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     </button>
                   );
                 })}
+              </div>
+            </div>
+
+            {/* Saved Quotes History List */}
+            <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4">
+              <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white mb-3">
+                <History className="w-3.5 h-3.5 text-[#b0b8c4] shrink-0" />
+                Saved History
+              </div>
+              <div className="flex flex-col gap-[5px] max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+                {savedQuotes.length === 0 ? (
+                  <div className="bg-[#111114] border border-dashed border-[#2a2a30] rounded-lg p-6 text-center">
+                    <div className="text-[11px] font-black tracking-widest text-[#555] uppercase">No saved quotes found</div>
+                  </div>
+                ) : (
+                  savedQuotes.map((q) => (
+                    <div 
+                      key={q.id}
+                      onClick={() => loadQuote(q)}
+                      className="flex items-center justify-between bg-[#111114] border border-[#2a2a30] rounded-lg p-2.5 px-3 hover:border-[#6C8295]/30 cursor-pointer transition-all duration-200"
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[11px] font-black uppercase tracking-widest text-white">{q.reference}</span>
+                          <span className="text-[11px] text-[#888]">{q.date}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-[11px] font-mono font-black uppercase tracking-widest text-[#888]">
+                          £{q.totals?.grossTotal?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
+                        </span>
+                        <button 
+                          onClick={(e) => deleteQuote(e, q.id)}
+                          className="bg-transparent border-none cursor-pointer text-[#555] p-0.5 flex items-center hover:text-red-500 transition-colors"
+                          title="Delete saved quote"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
 
@@ -694,22 +679,22 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }}
                   transition={{ duration: 0.2 }}
-                  className="bg-[#242424] border border-[#333] overflow-hidden rounded-xl p-4 space-y-4"
+                  className="bg-[#242424] border border-[#2a2a30] overflow-hidden rounded-xl p-4 space-y-4"
                 >
-                <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-3 mb-1">
+                <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3 mb-1">
                   <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
                     <Building2 className="w-4 h-4 text-[#b0b8c4]" />
                     1. Client & Project Information
                   </h3>
-                  <span className="text-[9px] font-bold text-gray-500 uppercase tracking-widest">Step 1 of 3</span>
+                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Step 1 of 3</span>
                 </div>
 
                 <div className="space-y-4">
                   {/* Responsive Input Grid - Side-by-side on desktop, stacked on mobile */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-[9px] font-black tracking-widest text-gray-400 uppercase">Client Name</span>
-                      <div className="flex items-center bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                      <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Client Name</span>
+                      <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
                         <input 
                           type="text"
                           className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
@@ -721,8 +706,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-[9px] font-black tracking-widest text-gray-400 uppercase">Email</span>
-                      <div className="flex items-center gap-2 bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                      <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Email</span>
+                      <div className="flex items-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
                         <Mail className="w-4 h-4 text-gray-600 shrink-0" />
                         <input 
                           type="email"
@@ -737,8 +722,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-[9px] font-black tracking-widest text-gray-400 uppercase">Project / Site Name</span>
-                      <div className="flex items-center gap-2 bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                      <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Project / Site Name</span>
+                      <div className="flex items-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
                         <LayoutGrid className="w-4 h-4 text-gray-600 shrink-0" />
                         <input 
                           type="text"
@@ -751,8 +736,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-[9px] font-black tracking-widest text-gray-400 uppercase">Site Postcode</span>
-                      <div className="flex items-center gap-2 bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                      <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Site Postcode</span>
+                      <div className="flex items-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
                         <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
                         <input 
                           type="text"
@@ -763,7 +748,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                         />
                       </div>
                       {clientInfo.postcode.trim() && !isValidUKPostcode(clientInfo.postcode) && (
-                        <p className="text-[9.5px] font-black text-red-500 uppercase tracking-widest mt-1">Invalid UK Postcode format</p>
+                        <p className="text-[11px] font-black text-red-500 uppercase tracking-widest mt-1">Invalid UK Postcode format</p>
                       )}
                     </div>
                   </div>
@@ -778,9 +763,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }}
                   transition={{ duration: 0.2 }}
-                  className="bg-[#242424] border border-[#333] overflow-hidden rounded-xl p-4 space-y-4"
+                  className="bg-[#242424] border border-[#2a2a30] overflow-hidden rounded-xl p-4 space-y-4"
                 >
-                <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-3 mb-1">
+                <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3 mb-1">
                   <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
                     <ClipboardList className="w-4 h-4 text-[#b0b8c4]" />
                     2. Billable Line Items
@@ -788,17 +773,17 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   <button 
                     type="button"
                     onClick={addItem}
-                    className="flex items-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-1.5 px-3 text-white text-[9px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
+                    className="flex items-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-1.5 px-3 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
                   >
-                    <Plus className="w-3.5 h-3.5 text-brand-accent" />
+                    <Plus className="w-3.5 h-3.5 text-[#6C8295]" />
                     ADD LINE
                   </button>
                 </div>
 
                 <div className="space-y-4">
                   {items.map((item) => (
-                    <div key={item.id} className="p-4 bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl space-y-4 relative group">
-                      <div className="flex items-center justify-between gap-2 border-b border-[#2e2e2e]/40 pb-2 relative">
+                    <div key={item.id} className="p-4 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl space-y-4 relative group">
+                      <div className="flex items-center justify-between gap-2 border-b border-[#2a2a30]/40 pb-2 relative">
                         <div className="relative flex-1">
                           <input 
                             type="text"
@@ -820,7 +805,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute left-0 right-0 top-full mt-2 bg-[#1e1e1e] border border-[#333] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
+                                className="absolute left-0 right-0 top-full mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
                               >
                                 {SUGGESTED_ITEMS.filter(s => 
                                   !item.description || 
@@ -836,11 +821,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                                         rate: suggestion.rate
                                       });
                                     }}
-                                    className="w-full text-left px-3 py-2 text-[10px] uppercase font-bold tracking-wider text-gray-400 hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2e2e2e]/30 last:border-none"
+                                    className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-gray-400 hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
                                   >
                                     <div className="flex justify-between items-center">
                                       <span>{suggestion.description}</span>
-                                      <span className="text-brand-accent/70 font-mono text-[9px]">
+                                      <span className="text-[#6C8295]/70 font-mono text-[11px]">
                                         £{suggestion.rate}/{suggestion.unit}
                                       </span>
                                     </div>
@@ -861,8 +846,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div className="flex flex-col gap-1.5">
-                          <span className="text-[8px] font-black tracking-widest text-gray-500 uppercase">Qty</span>
-                          <div className="flex items-center bg-[#242424] border border-[#2e2e2e] rounded-lg h-10 px-3">
+                          <span className="text-[11px] font-black tracking-widest text-gray-500 uppercase">Qty</span>
+                          <div className="flex items-center bg-[#242424] border border-[#2a2a30] rounded-lg h-10 px-3">
                             <input 
                               type="number"
                               className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
@@ -873,8 +858,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                          <span className="text-[8px] font-black tracking-widest text-gray-500 uppercase">Unit</span>
-                          <div className="flex items-center bg-[#242424] border border-[#2e2e2e] rounded-lg h-10 px-2 gap-1.5">
+                          <span className="text-[11px] font-black tracking-widest text-gray-500 uppercase">Unit</span>
+                          <div className="flex items-center bg-[#242424] border border-[#2a2a30] rounded-lg h-10 px-2 gap-1.5">
                             <input 
                               type="text"
                               className="w-full bg-transparent border-none outline-none text-white text-xs font-bold uppercase"
@@ -890,10 +875,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                                     key={u}
                                     type="button"
                                     onClick={() => updateItem(item.id, { unit: isSelected ? '' : u })}
-                                    className={`px-2 py-0.5 rounded text-[8px] font-black transition-all ${
+                                    className={`px-2 py-0.5 rounded text-[11px] font-black transition-all ${
                                       isSelected 
-                                        ? 'bg-[#5c7285] text-white shadow-sm' 
-                                        : 'bg-[#1a1a1a] text-gray-400 border border-[#383838] hover:bg-[#333]'
+                                        ? 'bg-[#6C8295] text-white shadow-sm' 
+                                        : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
                                     }`}
                                   >
                                     {u}
@@ -905,8 +890,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                          <span className="text-[8px] font-black tracking-widest text-gray-500 uppercase">Rate (£)</span>
-                          <div className="flex items-center bg-[#242424] border border-[#2e2e2e] rounded-lg h-10 px-2 gap-1.5">
+                          <span className="text-[11px] font-black tracking-widest text-gray-500 uppercase">Rate (£)</span>
+                          <div className="flex items-center bg-[#242424] border border-[#2a2a30] rounded-lg h-10 px-2 gap-1.5">
                             <input 
                               type="text"
                               className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
@@ -920,10 +905,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                                 const isIncluded = typeof item.rate === 'string' && (item.rate.toUpperCase() === 'INCLUDED' || item.rate.toUpperCase() === 'INCL');
                                 updateItem(item.id, { rate: isIncluded ? 0 : 'INCLUDED' });
                               }}
-                              className={`px-2 py-1 rounded text-[8px] font-black tracking-wide shrink-0 ${
+                              className={`px-2 py-1 rounded text-[11px] font-black tracking-wide shrink-0 ${
                                 typeof item.rate === 'string' && (item.rate.toUpperCase() === 'INCLUDED' || item.rate.toUpperCase() === 'INCL')
-                                  ? 'bg-[#5c7285] text-white shadow-sm'
-                                  : 'bg-[#1a1a1a] text-gray-400 border border-[#383838] hover:bg-[#333]'
+                                  ? 'bg-[#6C8295] text-white shadow-sm'
+                                  : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
                               }`}
                             >
                               INCL
@@ -935,12 +920,12 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   ))}
                   
                   {items.length === 0 && (
-                    <div className="bg-[#1e1e1e] border border-dashed border-[#2a2a2a]/60 rounded-xl p-8 text-center">
-                      <div className="text-[9px] font-black tracking-widest text-gray-600 uppercase mb-3">No line items added yet</div>
+                    <div className="bg-[#1a1a1e] border border-dashed border-[#2a2a30]/60 rounded-xl p-8 text-center">
+                      <div className="text-[11px] font-black tracking-widest text-gray-600 uppercase mb-3">No line items added yet</div>
                       <button 
                         type="button"
                         onClick={addItem}
-                        className="text-[10px] font-black tracking-wide text-brand-accent hover:brightness-110 uppercase bg-[#2e2e2e] px-4 py-2 rounded-lg border border-[#3e3e3e]"
+                        className="text-[11px] font-black tracking-wide text-[#6C8295] hover:brightness-110 uppercase bg-[#2e2e2e] px-4 py-2 rounded-lg border border-[#3e3e3e]"
                       >
                         Initialize First Line
                       </button>
@@ -959,8 +944,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   transition={{ duration: 0.2 }}
                   className="space-y-4"
                 >
-                <div className="bg-[#242424] border border-[#333] overflow-hidden rounded-xl p-4 space-y-4">
-                  <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-3 mb-1">
+                <div className="bg-[#242424] border border-[#2a2a30] overflow-hidden rounded-xl p-4 space-y-4">
+                  <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3 mb-1">
                     <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
                       <FileText className="w-4 h-4 text-[#b0b8c4]" />
                       3. Terms & Summary Conditions
@@ -976,7 +961,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
                   <div className="space-y-2.5">
                     {terms.map((term, index) => (
-                      <div key={index} className="flex items-start justify-between gap-3 bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl p-3">
+                      <div key={index} className="flex items-start justify-between gap-3 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-3">
                         <textarea
                           value={term}
                           onChange={(e) => {
@@ -1000,10 +985,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                 </div>
 
                 {/* Authorization Card */}
-                <div className="bg-[#242424] border border-[#333] overflow-hidden rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="bg-[#242424] border border-[#2a2a30] overflow-hidden rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="space-y-1 text-center sm:text-left">
-                    <h4 className="text-[10px] font-black tracking-widest uppercase text-white">Authorization Required</h4>
-                    <p className="text-[9px] text-[#888] tracking-wide uppercase leading-normal">
+                    <h4 className="text-[11px] font-black tracking-widest uppercase text-white">Authorization Required</h4>
+                    <p className="text-[11px] text-[#888] tracking-wide uppercase leading-normal">
                       Confirm that all billable items, units, and standard terms have been verified.
                     </p>
                   </div>
@@ -1011,7 +996,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     type="button"
                     onClick={handleSend}
                     disabled={isSendingEmail}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#5C7285] hover:brightness-110 disabled:bg-[#5C7285]/50 disabled:cursor-not-allowed border-none rounded-lg py-3 px-5 text-white text-[10px] font-black uppercase tracking-widest cursor-pointer shadow-lg shadow-[#5C7285]/20 transition-all whitespace-nowrap"
+                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#6C8295] hover:brightness-110 disabled:bg-[#6C8295]/50 disabled:cursor-not-allowed border-none rounded-lg py-3 px-5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer shadow-lg shadow-[#6C8295]/20 transition-all whitespace-nowrap"
                   >
                     {isSendingEmail ? (
                       <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -1024,43 +1009,86 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
               </motion.div>
             )}
           </AnimatePresence>
-        </div>
+          </div>
 
-          {/* Right: PDF Live Mirror View */}
-          <div className="lg:sticky lg:top-24 space-y-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 px-2">
-              <div className="flex items-center space-x-2 text-white/20">
-                <div className="w-2 h-2 rounded-full bg-brand-accent animate-pulse" />
-                <span className="text-[9px] font-black uppercase tracking-[0.2em]">Live Mirror View</span>
-              </div>
-              <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end">
-                <button 
-                  onClick={handleDownloadPDF}
-                  className="flex items-center space-x-2 text-white/40 hover:text-brand-accent transition-colors cursor-pointer group"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="text-[9px] font-black uppercase tracking-[0.2em]">Save PDF</span>
-                </button>
+          {/* Right: Net Total, VAT, Gross and Options Summary matching 2a */}
+          <div style={{ width: '300px', display: 'flex', flexDirection: 'column', gap: '16px', flexShrink: 0 }}>
+            {/* Summary card */}
+            <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-5">
+              <div className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-4">Summary</div>
+              <div className="flex flex-col gap-2.5">
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-gray-500">Net Total</span>
+                  <span className="font-semibold font-mono">£{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="flex justify-between text-[13px]">
+                  <span className="text-gray-500">VAT (20%)</span>
+                  <span className="font-semibold font-mono">£{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
+                <div className="h-[1px] bg-[#2a2a30] my-1"></div>
+                <div className="flex justify-between text-[16px]">
+                  <span className="font-bold text-white">Gross Total</span>
+                  <span className="font-extrabold text-[#6C8295] font-mono">£{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                </div>
               </div>
             </div>
 
-            <div 
-              ref={containerRef}
-              className="w-full relative flex justify-center items-center overflow-hidden bg-[#131417] border border-[#2e2e2e] py-8 rounded-xl min-h-[400px] sm:min-h-[800px] font-archivo no-scrollbar"
-            >
-              <div 
-                className="bg-white shadow-2xl text-[#333] flex flex-col origin-top print-area shrink-0"
-                style={{ 
-                  width: '794px', 
-                  height: '1122px',
-                  minHeight: '1122px', 
-                  maxHeight: '1122px',
-                  transform: `scale(${scale})`,
-                  marginLeft: `${(794 * scale - 794) / 2}px`,
-                  marginRight: `${(794 * scale - 794) / 2}px`,
-                  marginBottom: `${(1122 * scale - 1122)}px`
-                }}
+            {/* Options card */}
+            <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-5">
+              <div className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-3">Options</div>
+              
+              <div className="flex items-center justify-between py-2">
+                <span className="text-[13px] text-gray-300">Apply CIS Deduction</span>
+                <div className="w-9 h-5 bg-[#2a2a30] rounded-full relative cursor-pointer">
+                  <div className="w-4 h-4 bg-gray-600 rounded-full absolute top-0.5 left-0.5" />
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between py-2">
+                <span className="text-[13px] text-gray-300">Domestic Reverse Charge</span>
+                <div className="w-9 h-5 bg-[#6C8295] rounded-full relative cursor-pointer">
+                  <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 right-0.5" />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between px-2 pt-2">
+              <button 
+                onClick={handleDownloadPDF}
+                className="flex items-center space-x-2 text-white/40 hover:text-[#6C8295] transition-colors cursor-pointer group"
               >
+                <Download className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-black uppercase tracking-[0.2em]">Save PDF</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Live Mirror view block below */}
+        <div className="mt-12 space-y-6">
+          <div className="flex items-center space-x-2 text-white/20 px-2">
+            <div className="w-2 h-2 rounded-full bg-[#6C8295] animate-pulse" />
+            <span className="text-[11px] font-black uppercase tracking-[0.2em]">PDF Live Mirror View</span>
+          </div>
+
+          <div 
+            ref={containerRef}
+            className="w-full relative flex justify-center items-center overflow-hidden bg-[#131417] border border-[#2a2a30] py-8 rounded-xl min-h-[400px] sm:min-h-[800px] font-archivo no-scrollbar"
+          >
+            <div 
+              className="bg-white shadow-2xl text-[#333] flex flex-col origin-top print-area shrink-0"
+              style={{ 
+                width: '794px', 
+                height: '1122px',
+                minHeight: '1122px', 
+                maxHeight: '1122px',
+                transform: `scale(${scale})`,
+                marginLeft: `${(794 * scale - 794) / 2}px`,
+                marginRight: `${(794 * scale - 794) / 2}px`,
+                marginBottom: `${(1122 * scale - 1122)}px`
+              }}
+            >
                 {/* HEADER */}
                 <div className="bg-[#26262B] p-8 sm:p-12 flex justify-between items-start">
                   <div className="flex flex-col">
@@ -1097,9 +1125,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
                 {/* COMPANY META */}
                 <div className="bg-[#F8F7F4] px-12 py-3.5 flex flex-wrap gap-10 border-b border-[#E4E0D8]">
-                  <span className="text-[10px] text-[#888] tracking-[0.06em] uppercase">Company No. 14902188</span>
-                  <span className="text-[10px] text-[#888] tracking-[0.06em] uppercase">VAT Reg No. GB 412 8876 21</span>
-                  <span className="text-[10px] text-[#888] tracking-[0.06em] uppercase">operations@opusform.co.uk</span>
+                  <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">Company No. 14902188</span>
+                  <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">VAT Reg No. GB 412 8876 21</span>
+                  <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">operations@opusform.co.uk</span>
                 </div>
 
                 {/* BODY */}
@@ -1107,7 +1135,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   {/* BILL TO / PROJECT */}
                   <div className="mb-7 grid grid-cols-2 gap-4">
                     <div>
-                      <div className="text-[9px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Client</div>
+                      <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Client</div>
                       <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
                         {clientInfo.entity ? (
                           <div className="space-y-1">
@@ -1120,7 +1148,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                       </div>
                     </div>
                     <div>
-                      <div className="text-[9px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Project</div>
+                      <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Project</div>
                       <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
                         {clientInfo.site ? (
                           <div className="space-y-1">
@@ -1139,11 +1167,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="bg-[#26262B]">
-                          <th className="text-[9px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[42%]">Description of Structural Elements</th>
-                          <th className="text-[9px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Volume / Qty</th>
-                          <th className="text-[9px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[10%]">Unit</th>
-                          <th className="text-[9px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Unit Rate</th>
-                          <th className="text-[9px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Net Value</th>
+                          <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[42%]">Description of Structural Elements</th>
+                          <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Volume / Qty</th>
+                          <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[10%]">Unit</th>
+                          <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Unit Rate</th>
+                          <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Net Value</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1181,7 +1209,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                         <span className="font-black text-[#333]">£{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                       </div>
                       <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]">
-                        <span className="uppercase tracking-widest text-[10px]">UK STANDARD VAT ({vatRate}%)</span>
+                        <span className="uppercase tracking-widest text-[11px]">UK STANDARD VAT ({vatRate}%)</span>
                         <span className="font-black text-[#333]">£{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                       </div>
                       <div className="flex justify-between p-3.5 px-3 bg-[#26262B] text-[#F4F4F0] font-black text-[15px]">
@@ -1195,7 +1223,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                 {/* FOOTER BODY */}
                 <div className="px-12 pt-7">
                   <div className="bg-[#F4F3F0] border-l-[3px] border-[#526E8C] p-4 mb-6">
-                    <div className="text-[9px] font-black tracking-[0.12em] uppercase text-[#526E8C] mb-2.5">Standard Terms & Pour Conditions</div>
+                    <div className="text-[11px] font-black tracking-[0.12em] uppercase text-[#526E8C] mb-2.5">Standard Terms & Pour Conditions</div>
                     <ul className="list-disc pl-3.5 space-y-1.5">
                       {terms.map((term, index) => term.trim() && (
                         <li key={index} className="text-[10.5px] text-[#555] leading-relaxed">{term}</li>
@@ -1204,26 +1232,26 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   </div>
 
                   <div className="mb-8">
-                    <div className="text-[9px] font-black tracking-[0.14em] uppercase text-[#888] mb-2">Banking Details</div>
+                    <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#888] mb-2">Banking Details</div>
                     <div className="grid grid-cols-2 gap-x-10 gap-y-2">
-                      <div className="text-[10px]">
-                        <div className="text-[9px] text-[#AAA] uppercase tracking-[0.06em]">Bank</div>
+                      <div className="text-[11px]">
+                        <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Bank</div>
                         <div className="font-black text-[#333]">Barclays Business Banking</div>
                       </div>
-                      <div className="text-[10px]">
-                        <div className="text-[9px] text-[#AAA] uppercase tracking-[0.06em]">Account Name</div>
+                      <div className="text-[11px]">
+                        <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Account Name</div>
                         <div className="font-black text-[#333]">Opus Form Ltd</div>
                       </div>
-                      <div className="text-[10px]">
-                        <div className="text-[9px] text-[#AAA] uppercase tracking-[0.06em]">Sort Code</div>
+                      <div className="text-[11px]">
+                        <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Sort Code</div>
                         <div className="font-black text-[#333]">20-00-00</div>
                       </div>
-                      <div className="text-[10px]">
-                        <div className="text-[9px] text-[#AAA] uppercase tracking-[0.06em]">Account No.</div>
+                      <div className="text-[11px]">
+                        <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Account No.</div>
                         <div className="font-black text-[#333]">13319268</div>
                       </div>
-                      <div className="text-[10px]">
-                        <div className="text-[9px] text-[#AAA] uppercase tracking-[0.06em]">IBAN</div>
+                      <div className="text-[11px]">
+                        <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">IBAN</div>
                         <div className="font-black text-[#333]">GB29 NWBK 6016 1331 9268 19</div>
                       </div>
                     </div>
@@ -1232,20 +1260,19 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
                 {/* DOC FOOTER */}
                 <div className="bg-[#26262B] px-8 sm:px-12 py-3.5 flex justify-between items-center mt-auto">
-                  <span className="text-[9px] text-[#666] tracking-[0.1em] uppercase">Opus Form Ltd</span>
-                  <span className="text-[9px] text-[#666] tracking-[0.1em] uppercase">operations@opusform.co.uk</span>
+                  <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">Opus Form Ltd</span>
+                  <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">operations@opusform.co.uk</span>
                 </div>
-              </div>
             </div>
           </div>
         </div>
       </main>
 
       {/* Sticky Bottom Action Footer */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#222428] border-t border-[#333] py-2.5 px-4 sm:px-6 flex items-center justify-between shadow-2xl h-[58px] shrink-0">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#222428] border-t border-[#2a2a30] py-2.5 px-4 sm:px-6 flex items-center justify-between shadow-2xl h-[58px] shrink-0">
         <div className="flex flex-col justify-center min-w-0">
-          <span className="text-[7px] sm:text-[8px] font-black text-gray-500 uppercase tracking-widest">Concrete Works Gross Total</span>
-          <span className="text-xs sm:text-sm font-black text-brand-accent truncate">
+          <span className="text-[7px] sm:text-[11px] font-black text-gray-500 uppercase tracking-widest">Concrete Works Gross Total</span>
+          <span className="text-xs sm:text-sm font-black text-[#6C8295] truncate">
             £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
         </div>
@@ -1255,7 +1282,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             type="button"
             onClick={() => setActiveStep(prev => Math.max(1, prev - 1))}
             disabled={activeStep === 1}
-            className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest transition-all ${
+            className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
               activeStep === 1
                 ? 'bg-transparent text-gray-700 cursor-not-allowed border border-transparent'
                 : 'bg-[#1a1b1e] text-white hover:bg-[#2e2e2e] border border-[#3e3e3e]'
@@ -1267,7 +1294,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
           <button
             type="button"
             onClick={() => handleSaveDraft()}
-            className="flex items-center gap-1.5 bg-[#1a1b1e] border border-[#3e3e3e] hover:bg-[#2e2e2e] rounded-lg px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-white transition-colors"
+            className="flex items-center gap-1.5 bg-[#1a1b1e] border border-[#3e3e3e] hover:bg-[#2e2e2e] rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-white transition-colors"
           >
             <Save className="w-3.5 h-3.5" />
             <span>{lastSaved ? 'Saved' : 'Save'}</span>
@@ -1277,7 +1304,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
             <button
               type="button"
               onClick={() => setActiveStep(prev => Math.min(3, prev + 1))}
-              className="bg-[#5c7285] hover:brightness-110 text-white rounded-lg px-4 py-1.5 text-[9px] font-black uppercase tracking-widest cursor-pointer shadow-md transition-all active:scale-95"
+              className="bg-[#6C8295] hover:brightness-110 text-white rounded-lg px-4 py-1.5 text-[11px] font-black uppercase tracking-widest cursor-pointer shadow-md transition-all active:scale-95"
             >
               Next
             </button>
@@ -1302,18 +1329,18 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                 <X className="w-4 h-4" />
               </button>
               
-              <div className="flex items-center gap-2 text-red-400 border-b border-[#2e2e2e] pb-3 mb-4">
+              <div className="flex items-center gap-2 text-red-400 border-b border-[#2a2a30] pb-3 mb-4">
                 <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em]">VALIDATION FAILURE</span>
+                <span className="text-[11px] font-black uppercase tracking-[0.2em]">VALIDATION FAILURE</span>
               </div>
               
-              <p className="text-[10px] text-gray-400 uppercase tracking-wider leading-relaxed mb-4">
+              <p className="text-[11px] text-gray-400 uppercase tracking-wider leading-relaxed mb-4">
                 The following fields are required before sending:
               </p>
               
               <ul className="space-y-2 mb-5">
                 {validationErrors.map((error, idx) => (
-                  <li key={idx} className="flex items-center gap-2 text-[10px] text-gray-300 uppercase font-black tracking-widest bg-[#1a1a1c] border border-[#2d2d30] p-2.5 rounded-lg">
+                  <li key={idx} className="flex items-center gap-2 text-[11px] text-gray-300 uppercase font-black tracking-widest bg-[#1a1a1c] border border-[#2d2d30] p-2.5 rounded-lg">
                     <span className="w-1.5 h-1.5 rounded-full bg-red-500/80" />
                     {error}
                   </li>
@@ -1323,7 +1350,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
               <button
                 type="button"
                 onClick={() => setValidationErrors([])}
-                className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#444] rounded-lg py-2 text-[9px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors"
+                className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#2a2a30] rounded-lg py-2 text-[11px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors"
               >
                 DISMISS
               </button>
@@ -1340,7 +1367,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className={`bg-[#242424] border ${notification.type === 'success' ? 'border-[#5C7285]/40' : 'border-red-500/20'} rounded-xl max-w-sm w-full p-5 shadow-2xl relative`}
+              className={`bg-[#242424] border ${notification.type === 'success' ? 'border-[#6C8295]/40' : 'border-red-500/20'} rounded-xl max-w-sm w-full p-5 shadow-2xl relative`}
             >
               <button 
                 onClick={() => setNotification(null)}
@@ -1349,19 +1376,19 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                 <X className="w-4 h-4" />
               </button>
               
-              <div className={`flex items-center gap-2 ${notification.type === 'success' ? 'text-[#859bb0]' : 'text-red-400'} border-b border-[#2e2e2e] pb-3 mb-4`}>
-                <div className={`w-2 h-2 rounded-full ${notification.type === 'success' ? 'bg-[#5C7285]' : 'bg-red-500'} animate-pulse`} />
-                <span className="text-[10px] font-black uppercase tracking-[0.2em]">{notification.title}</span>
+              <div className={`flex items-center gap-2 ${notification.type === 'success' ? 'text-[#859bb0]' : 'text-red-400'} border-b border-[#2a2a30] pb-3 mb-4`}>
+                <div className={`w-2 h-2 rounded-full ${notification.type === 'success' ? 'bg-[#6C8295]' : 'bg-red-500'} animate-pulse`} />
+                <span className="text-[11px] font-black uppercase tracking-[0.2em]">{notification.title}</span>
               </div>
               
-              <p className="text-[10px] text-gray-300 uppercase tracking-widest leading-relaxed mb-5">
+              <p className="text-[11px] text-gray-300 uppercase tracking-widest leading-relaxed mb-5">
                 {notification.message}
               </p>
               
               <button
                 type="button"
                 onClick={() => setNotification(null)}
-                className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#444] rounded-lg py-2 text-[9px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors"
+                className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#2a2a30] rounded-lg py-2 text-[11px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors"
               >
                 DISMISS
               </button>

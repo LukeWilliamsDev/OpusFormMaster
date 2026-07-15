@@ -184,9 +184,8 @@ export const PortalAuthPage: React.FC = () => {
       navigate('/portal/dashboard');
     }, 3000);
   };
-
   return (
-    <div className="min-h-screen bg-[#1A1B1E] text-[#e0e0e0] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-[#111114] text-[#E4E4E7] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans">
       {/* Subtle concrete-texture grid overlay */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -197,7 +196,6 @@ export const PortalAuthPage: React.FC = () => {
       />
 
       <div className="max-w-md w-full z-10 flex flex-col items-center">
-
         {/* Logo — transparent recreation matching brand exactly, animates in */}
         <div className="text-center mb-10 sm:mb-12 w-full flex flex-col items-center">
           <button
@@ -215,13 +213,13 @@ export const PortalAuthPage: React.FC = () => {
               style={{
                 display: 'block',
                 fontFamily: "'Inter', 'Arial Black', sans-serif",
-                fontWeight: 800,
-                fontSize: '2.25rem',
-                letterSpacing: '0.18em',
-                color: '#F4F4F0',
+                fontWeight: 900,
+                fontSize: '20px',
+                letterSpacing: '-0.3px',
+                color: '#E4E4E7',
                 textTransform: 'uppercase',
                 lineHeight: 1,
-                paddingBottom: '0.5rem',
+                paddingBottom: '0.25rem',
               }}
             >
               OPUS FORM
@@ -229,15 +227,15 @@ export const PortalAuthPage: React.FC = () => {
           </button>
 
           {/* Rule — wipes in from centre, matches brand blue-grey */}
-          <div style={{ width: '260px', maxWidth: '100%' }}>
+          <div style={{ width: '48px', maxWidth: '100%' }}>
             <div
               style={{
-                height: '3px',
-                backgroundColor: '#526E8C',
+                height: '2px',
+                backgroundColor: '#6C8295',
                 transform: ruleVisible ? 'scaleX(1)' : 'scaleX(0)',
                 transformOrigin: 'center',
                 transition: 'transform 550ms ease-out',
-                borderRadius: '2px',
+                borderRadius: '1px',
               }}
             />
           </div>
@@ -252,14 +250,9 @@ export const PortalAuthPage: React.FC = () => {
             transition: 'opacity 500ms ease-out, transform 500ms ease-out',
           }}
         >
-          <div className="w-full bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl">
+          <div className="w-full bg-[#111114] border border-[#2a2a30] rounded-xl overflow-hidden shadow-2xl">
             {formMode === 'login' && (
               <div className="p-6 sm:p-8">
-                <div className="flex items-center gap-2.5 text-[11px] font-extrabold tracking-widest uppercase text-[#e0e0e0] mb-8">
-                  <div className="w-[3px] h-4 bg-[#b0b8c4] rounded-[2px]" />
-                  Portal Access
-                </div>
-
                 {formError && (
                   <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-[10px] font-bold text-red-400 uppercase tracking-widest flex items-center gap-2.5">
                     <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
@@ -269,7 +262,7 @@ export const PortalAuthPage: React.FC = () => {
 
                 <form onSubmit={handleLogin} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-[#555] uppercase tracking-widest block ml-1 mb-2">Email Identifier</label>
+                    <label className="text-[12px] font-semibold text-[#888] uppercase tracking-wider block mb-2">Email</label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#555]">
                         <Mail className="w-4 h-4" />
@@ -278,21 +271,21 @@ export const PortalAuthPage: React.FC = () => {
                         type="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        placeholder="name@opusform.co.uk"
-                        className="w-full pl-12 pr-4 py-3.5 rounded-lg border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-[#5C7285] transition-colors placeholder:text-[#444] font-medium text-sm outline-none"
+                        placeholder="dispatcher@opusform.co.uk"
+                        className="w-full pl-12 pr-4 py-3.5 rounded-lg border border-[#2a2a30] bg-[#1a1a1e] text-[#e4e4e7] focus:border-[#6C8295] transition-colors placeholder:text-[#555] font-medium text-sm outline-none"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <div className="flex justify-between items-center ml-1 mb-2">
-                      <label className="text-[10px] font-bold text-[#555] uppercase tracking-widest">Security Key</label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-[12px] font-semibold text-[#888] uppercase tracking-wider">Password</label>
                       <button
                         type="button"
                         onClick={() => setFormMode('forgot')}
-                        className="text-[10px] font-bold text-[#555] hover:text-[#b0b8c4] transition-colors uppercase tracking-widest cursor-pointer"
+                        className="text-[12px] font-semibold text-[#666] hover:text-[#888] transition-colors cursor-pointer"
                       >
-                        Recovery
+                        Forgot password?
                       </button>
                     </div>
                     <div className="relative">
@@ -303,38 +296,25 @@ export const PortalAuthPage: React.FC = () => {
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="w-full pl-12 pr-12 py-3.5 rounded-lg border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-[#5C7285] transition-colors placeholder:text-[#444] font-medium text-sm outline-none tracking-widest"
+                        placeholder="••••••••••"
+                        className="w-full pl-12 pr-12 py-3.5 rounded-lg border border-[#2a2a30] bg-[#1a1a1e] text-[#e4e4e7] focus:border-[#6C8295] transition-colors placeholder:text-[#555] font-medium text-sm outline-none"
                       />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#555] hover:text-[#b0b8c4] transition-colors cursor-pointer"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
                     </div>
                   </div>
-
                   <button
                     type="submit"
-                    className="w-full py-3.5 px-4 bg-[#5C7285] hover:bg-[#6c8295] disabled:bg-[#5C7285]/50 disabled:cursor-not-allowed text-white rounded-lg text-[11px] font-extrabold tracking-widest uppercase transition-colors flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+                    className="w-full py-3.5 px-4 bg-[#6C8295] hover:bg-[#6c8295]/90 disabled:bg-[#6C8295]/50 disabled:cursor-not-allowed text-white rounded-lg text-[14px] font-bold transition-colors flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
                   >
                     {isSubmitting ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                      <>
-                        <span>Authorize Session</span>
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </>
+                      <span>Sign In</span>
                     )}
                   </button>
                 </form>
-
-
               </div>
             )}
-
+            
             {formMode === 'forgot' && (
               <div className="p-6 sm:p-8">
                 <button

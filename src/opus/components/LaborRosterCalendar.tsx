@@ -47,12 +47,13 @@ export const LaborRosterCalendar: React.FC<LaborRosterCalendarProps> = ({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2a2a2a] pb-3 mb-4">
-        <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
-          <div className="w-1 h-4 bg-[#b0b8c4] rounded-sm" />
-          {view === 'staff' ? 'Staff' : 'Calendar'}
+      {view !== 'staff' && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2a2a2a] pb-3 mb-4">
+          <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white">
+            Calendar
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Board Layout Panels depending on Active Tab */}
       {view === 'staff' ? (

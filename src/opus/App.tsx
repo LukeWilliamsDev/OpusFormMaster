@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { PortalProvider, usePortal } from './context/PortalContext';
 import { PortalLayout } from './layouts/PortalLayout';
 import { LandingPage } from './components/LandingPage';
@@ -62,7 +62,7 @@ const LandingPageWrapper: React.FC = () => {
 export default function App() {
   return (
     <PortalProvider>
-      <BrowserRouter>
+      <HashRouter>
         <Routes>
           {/* Public Views */}
           <Route path="/" element={<LandingPageWrapper />} />
@@ -95,7 +95,7 @@ export default function App() {
           {/* Global Fallback to landing */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </PortalProvider>
   );
 }

@@ -5,13 +5,13 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --color-brand-charcoal: #121215;
+  --color-brand-charcoal: #111114;
   --color-brand-white: #E4E4E7;
-  --color-brand-navy: #0D2C54;
   --color-brand-accent: #6C8295;
   --color-white: #E4E4E7;
 
-  --font-sans: "Outfit", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
   --font-archivo: "Archivo", sans-serif;
 }
 
@@ -43,25 +43,25 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(0.14 0.002 285);
-  --foreground: oklch(0.92 0.004 285);
-  --card: oklch(0.17 0.002 285);
-  --card-foreground: oklch(0.92 0.004 285);
-  --popover: oklch(0.17 0.002 285);
-  --popover-foreground: oklch(0.92 0.004 285);
-  --primary: oklch(0.55 0.04 240);
-  --primary-foreground: oklch(0.98 0 0);
-  --secondary: oklch(0.3 0.01 260);
-  --secondary-foreground: oklch(0.92 0.004 285);
-  --muted: oklch(0.24 0.002 285);
-  --muted-foreground: oklch(0.7 0.01 260);
-  --accent: oklch(0.3 0.01 260);
-  --accent-foreground: oklch(0.92 0.004 285);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.22 0.002 285);
-  --input: oklch(0.22 0.002 285);
-  --ring: oklch(0.55 0.04 240);
+  --background: #111114;
+  --foreground: #E4E4E7;
+  --card: #1a1a1e;
+  --card-foreground: #E4E4E7;
+  --popover: #1a1a1e;
+  --popover-foreground: #E4E4E7;
+  --primary: #6C8295;
+  --primary-foreground: #FFFFFF;
+  --secondary: #2a2a30;
+  --secondary-foreground: #E4E4E7;
+  --muted: #16161a;
+  --muted-foreground: #9a9a9e;
+  --accent: #6C8295;
+  --accent-foreground: #FFFFFF;
+  --destructive: #ef4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #2a2a30;
+  --input: #2a2a30;
+  --ring: #6C8295;
 }
 
 @layer base {
@@ -71,7 +71,7 @@
   body {
     background-color: var(--color-brand-charcoal);
     color: var(--color-brand-white);
-    font-family: "Outfit", ui-sans-serif, system-ui, sans-serif;
+    font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
   }
 }

@@ -1,7 +1,6 @@
 // @ts-nocheck
 import React, { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { AnimatePresence } from 'motion/react';
 import { usePortal } from '../context/PortalContext';
 import { ActiveJobLedger } from '../components/ActiveJobLedger';
 import { JobDetails } from '../components/JobDetails';
@@ -50,9 +49,22 @@ export const JobLedgerPage: React.FC = () => {
     }
   };
 
+  // If a jobId is selected, render the Job Details in full-page mode instead of the ledger grid list.
+  if (selectedJobId && jobs.find(j => j.id === selectedJobId)) {
+    return (
+      <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
+        <JobDetails 
+          job={jobs.find(j => j.id === selectedJobId)!}
+          workers={workers}
+          onBack={() => handleSelectJob(null)}
+          onUpdateJob={handleUpdateJob}
+        />
+      </div>
+    );
+  }
+
   return (
-    <div className="pt-24 pb-12 px-4 sm:px-6 max-w-7xl mx-auto space-y-8 animate-fade-in">
-      {/* Active Job Ledger */}
+    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl mx-auto space-y-8 animate-fade-in">
       <ActiveJobLedger 
         filteredJobs={filteredJobs}
         filterStatus={filterStatus}
@@ -60,18 +72,6 @@ export const JobLedgerPage: React.FC = () => {
         onSelectJob={handleSelectJob}
         getJobActionRequired={getJobActionRequired}
       />
-
-      {/* Job Details Drawer Overlay */}
-      <AnimatePresence>
-        {selectedJobId && jobs.find(j => j.id === selectedJobId) && (
-          <JobDetails 
-            job={jobs.find(j => j.id === selectedJobId)!}
-            workers={workers}
-            onBack={() => handleSelectJob(null)}
-            onUpdateJob={handleUpdateJob}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };

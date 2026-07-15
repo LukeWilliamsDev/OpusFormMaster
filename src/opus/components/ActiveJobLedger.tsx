@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { CloudSun, AlertCircle, ChevronRight } from 'lucide-react';
+import { CloudSun, AlertCircle, ChevronRight, HardHat, DollarSign } from 'lucide-react';
 import { Job } from '../types/erp';
 
 interface ActiveJobLedgerProps {
@@ -24,22 +24,26 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
   getJobActionRequired
 }) => {
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3 border-b border-[#2a2a2a] pb-3">
-        <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white font-archivo">
-          <div className="w-1 h-4 bg-[#b0b8c4] rounded-sm" />
-          Job Ledger
+    <div className="space-y-5">
+      
+      {/* Header controls & filter */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#2a2a30] pb-4">
+        <div className="flex items-center space-x-2.5">
+          <HardHat className="w-5 h-5 text-[#6C8295]" />
+          <h2 className="text-base font-bold text-white font-archivo uppercase tracking-wide">
+            Job Ledger
+          </h2>
         </div>
         <div className="w-full sm:w-auto">
-          <div className="flex flex-wrap items-center bg-[#1e1e1e] border border-[#2e2e2e] rounded-lg p-1 gap-1 shadow-inner">
+          <div className="flex flex-wrap items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg p-1 gap-1">
             {(['all', 'in-progress', 'pending', 'completed'] as const).map((status) => (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}
-                className={`rounded-md px-3 py-1.5 text-[9px] font-black tracking-widest uppercase whitespace-nowrap transition-all duration-200 ${
+                className={`rounded px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-200 min-h-[36px] flex items-center justify-center cursor-pointer ${
                   filterStatus === status 
-                    ? 'bg-[#333] text-white shadow-md border border-[#444]' 
-                    : 'text-gray-400 hover:text-white hover:bg-[#252525]'
+                    ? 'bg-[#6C8295] text-white shadow-md' 
+                    : 'text-[#9a9a9e] hover:text-white hover:bg-[#16161a]'
                 }`}
               >
                 {status.replace('-', ' ')}
@@ -49,24 +53,29 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
         </div>
       </div>
 
-      <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl overflow-hidden shadow-2xl">
-        {/* Table Header - hidden on mobile, shown on tablet/desktop */}
-        <div className="hidden md:grid md:grid-cols-[120px_2.5fr_1.5fr_140px] gap-4 px-4 py-3 border-b border-[#2e2e2e] bg-[#222]">
-          <span className="text-[8.5px] font-black tracking-widest uppercase text-gray-400">Job Ref</span>
-          <span className="text-[8.5px] font-black tracking-widest uppercase text-gray-400">Site / Contractor</span>
-          <span className="text-[8.5px] font-black tracking-widest uppercase text-gray-400">Site Warnings</span>
-          <span className="text-[8.5px] font-black tracking-widest uppercase text-gray-400 text-right">Job Status</span>
+      {/* Ledger list container */}
+      <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl overflow-hidden shadow-2xl">
+        {/* Table Header (hidden on mobile) */}
+        <div className="hidden md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_110px_100px] gap-4 px-5 py-3.5 border-b border-[#2a2a30] bg-[#16161a]">
+          <span className="text-[11px] font-bold tracking-wider uppercase text-[#9a9a9e]">Job Ref</span>
+          <span className="text-[11px] font-bold tracking-wider uppercase text-[#9a9a9e]">Site / Contractor</span>
+          <span className="text-[11px] font-bold tracking-wider uppercase text-[#9a9a9e]">Site Warnings</span>
+          <span className="text-[11px] font-bold tracking-wider uppercase text-[#9a9a9e]">Pour Progress</span>
+          <span className="text-[11px] font-bold tracking-wider uppercase text-[#9a9a9e] text-right">Value</span>
+          <span className="text-[11px] font-bold tracking-wider uppercase text-[#9a9a9e] text-right">Status</span>
         </div>
 
-        <div className="divide-y divide-[#2e2e2e]">
+        <div className="divide-y divide-[#2a2a30]">
           <AnimatePresence mode="popLayout">
             {filteredJobs.length === 0 ? (
-              <div className="px-4 py-12 text-center text-xs font-bold uppercase tracking-wider text-gray-500">
-                No active jobs found
+              <div className="px-5 py-16 text-center text-[13px] font-bold uppercase tracking-wider text-[#9a9a9e]">
+                No jobs matching filter
               </div>
             ) : (
               filteredJobs.map((job) => {
                 const action = getJobActionRequired(job);
+                const progressPercent = Math.min(100, ((job.currentPours || 0) / (job.contractMaxPours || 1)) * 100);
+
                 return (
                   <motion.div 
                     key={job.id}
@@ -75,86 +84,107 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                     exit={{ opacity: 0 }}
                     layout
                     onClick={() => onSelectJob(job.id)}
-                    className="group flex flex-col md:grid md:grid-cols-[120px_2.5fr_1.5fr_140px] gap-4 px-4 py-4 md:py-0 md:min-h-[64px] items-center hover:bg-[#242424] transition-colors duration-150 cursor-pointer"
+                    className="group flex flex-col md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_110px_100px] gap-4 px-5 py-4 md:py-0 md:min-h-[64px] items-center hover:bg-[#16161a] transition-all duration-150 cursor-pointer border-b border-[#2a2a30] bg-[#1a1a1e] relative overflow-hidden"
                   >
-                    {/* Job Ref */}
+                    {/* Job Ref Column */}
                     <div className="flex justify-between items-center w-full md:w-auto md:contents">
-                      <div className="text-xs font-mono font-semibold text-[#8a9bb0] group-hover:text-white transition-colors text-left">
+                      <div className="text-[13px] font-mono font-semibold text-[#6C8295] group-hover:text-white transition-colors">
                         {job.jobRef}
                       </div>
+                      
                       {/* Mobile-only status badge */}
                       <div className="md:hidden">
-                        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-[8px] font-black tracking-widest uppercase border ${
-                          job.status === 'in-progress' ? 'bg-[#1e2a3a]/80 border-[#2a4060] text-[#6090c0]' :
-                          job.status === 'pending' ? 'bg-[#2a2a1e]/80 border-[#44440a] text-[#888844]' :
-                          'bg-[#1a2e1a]/80 border-[#2a5a2a] text-[#4a9a4a]'
+                        <span className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-bold tracking-wide uppercase border ${
+                          job.status === 'in-progress' ? 'bg-[#6C8295]/10 border-[#6C8295]/20 text-[#6C8295]' :
+                          job.status === 'pending' ? 'bg-[#f59e0b]/10 border-[#f59e0b]/20 text-[#f59e0b]' :
+                          'bg-[#10b981]/10 border-[#10b981]/20 text-[#10b981]'
                         }`}>
                           {job.status === 'in-progress' ? 'In Progress' : job.status}
                         </span>
                       </div>
                     </div>
 
-                    {/* Site / Contractor */}
-                    <div className="w-full md:w-auto space-y-1 py-1.5">
-                      <div className="space-y-0.5">
-                        <div className="text-sm font-semibold text-white group-hover:text-white transition-colors">
-                          {job.siteName}
-                        </div>
-                        <div className="text-xs font-medium text-gray-400">
-                          {job.mainContractor}
-                        </div>
+                    {/* Site / Contractor Column */}
+                    <div className="w-full md:w-auto space-y-0.5 py-1">
+                      <div className="text-[14px] font-semibold text-white group-hover:text-white transition-colors">
+                        {job.siteName}
                       </div>
-                      {/* Mobile Action Required Badges */}
-                      <div className="md:hidden flex flex-wrap items-center gap-1.5 mt-2">
-                        {(action.weather || action.followup) && (
-                          <>
-                            {action.weather && (
-                              <span className="inline-flex items-center gap-1 rounded bg-[#3a2024]/40 px-1.5 py-0.5 border border-[#ff8591]/20 text-[8.5px] font-black tracking-widest uppercase text-[#ff8591]">
-                                <CloudSun className="w-2.5 h-2.5" />
-                                {action.weather.condition} ({action.weather.temperature}°C)
-                              </span>
-                            )}
-                            {action.followup && (
-                              <span className="inline-flex items-center gap-1 rounded bg-[#3a2e20]/40 px-1.5 py-0.5 border border-[#f59e0b]/20 text-[8.5px] font-black tracking-widest uppercase text-[#f59e0b]">
-                                <AlertCircle className="w-2.5 h-2.5" />
-                                {action.followup.reason}
-                              </span>
-                            )}
-                          </>
-                        )}
+                      <div className="text-[12px] text-[#9a9a9e] font-medium">
+                        {job.mainContractor}
                       </div>
-                    </div>
-
-                    {/* Desktop Action Required Badges Column */}
-                    <div className="hidden md:flex flex-col items-start justify-center gap-1.5 py-1 w-full text-left">
-                      {(action.weather || action.followup) && (
-                        <>
+                      
+                      {/* Mobile-only warning badges & Value / Progress */}
+                      <div className="md:hidden space-y-2 mt-3 pt-2.5 border-t border-[#2a2a30]">
+                        <div className="flex flex-wrap items-center gap-1.5">
                           {action.weather && (
-                            <span className="inline-flex items-center gap-1 rounded bg-[#3a2024]/40 px-1.5 py-0.5 border border-[#ff8591]/20 text-[8.5px] font-black tracking-widest uppercase text-[#ff8591] shrink-0">
-                              <CloudSun className="w-2.5 h-2.5" />
+                            <span className="inline-flex items-center gap-1 rounded bg-[#ef4444]/10 px-1.5 py-0.5 border border-[#ef4444]/20 text-[11px] font-bold text-[#ef4444]">
+                              <CloudSun className="w-3.5 h-3.5" />
                               <span>{action.weather.condition} ({action.weather.temperature}°C)</span>
                             </span>
                           )}
                           {action.followup && (
-                            <span className="inline-flex items-center gap-1 rounded bg-[#3a2e20]/40 px-1.5 py-0.5 border border-[#f59e0b]/20 text-[8.5px] font-black tracking-widest uppercase text-[#f59e0b] shrink-0">
-                              <AlertCircle className="w-2.5 h-2.5" />
+                            <span className="inline-flex items-center gap-1 rounded bg-[#f59e0b]/10 px-1.5 py-0.5 border border-[#f59e0b]/20 text-[11px] font-bold text-[#f59e0b]">
+                              <AlertCircle className="w-3.5 h-3.5" />
+                              <span>{action.followup.reason}</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-[12px] text-[#E4E4E7]">
+                          <span className="font-semibold">Value: <span className="font-mono text-white">£{Number(job.scheduleValue || 0).toLocaleString('en-GB')}</span></span>
+                          <span className="font-semibold">Pours: <span className="font-mono text-white">{job.currentPours} / {job.contractMaxPours}</span></span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Desktop Warnings Column */}
+                    <div className="hidden md:flex flex-col items-start justify-center gap-1.5 w-full text-left">
+                      {(action.weather || action.followup) ? (
+                        <>
+                          {action.weather && (
+                            <span className="inline-flex items-center gap-1 rounded bg-[#ef4444]/10 px-2 py-0.5 border border-[#ef4444]/20 text-[11px] font-bold text-[#ef4444] shrink-0">
+                              <CloudSun className="w-3.5 h-3.5" />
+                              <span>{action.weather.condition} ({action.weather.temperature}°C)</span>
+                            </span>
+                          )}
+                          {action.followup && (
+                            <span className="inline-flex items-center gap-1 rounded bg-[#f59e0b]/10 px-2 py-0.5 border border-[#f59e0b]/20 text-[11px] font-bold text-[#f59e0b] shrink-0">
+                              <AlertCircle className="w-3.5 h-3.5" />
                               <span>{action.followup.reason}</span>
                             </span>
                           )}
                         </>
+                      ) : (
+                        <span className="text-[12px] text-[#9a9a9e] font-medium">—</span>
                       )}
                     </div>
 
-                    {/* Job Status (Desktop/Tablet-only) */}
+                    {/* Pour Progress Column */}
+                    <div className="hidden md:flex flex-col w-full space-y-1 py-1 text-left">
+                      <div className="flex justify-between text-[11px] font-bold text-[#9a9a9e]">
+                        <span>{job.currentPours} / {job.contractMaxPours} pours</span>
+                        <span className="font-mono text-white">{progressPercent.toFixed(0)}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-[#2a2a30] rounded-full overflow-hidden">
+                        <div className="h-full bg-[#6C8295] rounded-full transition-all duration-300" style={{ width: `${progressPercent}%` }} />
+                      </div>
+                    </div>
+
+                    {/* Desktop Value Column */}
+                    <div className="hidden md:block text-right text-[13px] font-mono font-bold text-white pr-2">
+                      £{Number(job.scheduleValue || 0).toLocaleString('en-GB')}
+                    </div>
+
+                    {/* Status Column (Desktop-only) */}
                     <div className="hidden md:block text-right">
-                      <span className={`inline-flex items-center rounded-md px-2.5 py-1 text-[8.5px] font-black tracking-widest uppercase border ${
-                        job.status === 'in-progress' ? 'bg-[#1e2a3a]/80 border-[#3a5a8a] text-[#8ab4f8] shadow-[0_0_10px_rgba(138,180,248,0.1)]' :
-                        job.status === 'pending' ? 'bg-[#2a2a1e]/80 border-[#66661a] text-[#c0c040] shadow-[0_0_10px_rgba(192,192,64,0.1)]' :
-                        'bg-[#1a2e1a]/80 border-[#3a7a3a] text-[#81c995] shadow-[0_0_10px_rgba(129,201,149,0.1)]'
+                      <span className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-bold uppercase border tracking-wider ${
+                        job.status === 'in-progress' ? 'bg-[#6C8295]/10 border-[#6C8295]/20 text-[#6C8295]' :
+                        job.status === 'pending' ? 'bg-[#f59e0b]/10 border-[#f59e0b]/20 text-[#f59e0b]' :
+                        'bg-[#10b981]/10 border-[#10b981]/20 text-[#10b981]'
                       }`}>
                         {job.status === 'in-progress' ? 'In Progress' : job.status}
                       </span>
                     </div>
+
                   </motion.div>
                 );
               })

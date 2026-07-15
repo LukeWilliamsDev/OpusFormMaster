@@ -52,18 +52,18 @@ const WeatherIndicator = ({ weather }: { weather: ReturnType<typeof getWeatherFo
   if (!weather) return null;
 
   return (
-    <div className={`p-1.5 px-2 rounded border flex items-center justify-between ${weather.isImpactful ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-[#1a1a1a] border-[#2e2e2e] text-[#a0a0a0]'}`}>
+    <div className={`p-1.5 px-2 rounded border flex items-center justify-between ${weather.isImpactful ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-[#16161a] border-[#2a2a30] text-[#a0a0a0]'}`}>
       <div className="flex items-center gap-2">
         {weather.condition === 'Rain' ? <CloudRain className="w-3.5 h-3.5" /> :
          weather.condition === 'Frost' ? <Snowflake className="w-3.5 h-3.5" /> :
          weather.condition === 'Wind' ? <Wind className="w-3.5 h-3.5" /> :
          weather.condition === 'Clear' ? <Sun className="w-3.5 h-3.5 text-amber-500" /> :
          <CloudSun className="w-3.5 h-3.5" />}
-        <span className="text-[8.5px] font-black uppercase tracking-widest">{weather.condition}</span>
+        <span className="text-[11px] font-black uppercase tracking-widest">{weather.condition}</span>
       </div>
       <div className="flex items-center gap-3">
-        <span className="text-[8.5px] font-black uppercase tracking-widest">{weather.riskLevel} Risk</span>
-        <span className="text-[8.5px] font-black tracking-widest flex items-center gap-1 opacity-80">
+        <span className="text-[11px] font-black uppercase tracking-widest">{weather.riskLevel} Risk</span>
+        <span className="text-[11px] font-black tracking-widest flex items-center gap-1 opacity-80">
           <Thermometer className="w-3 h-3" /> {weather.temperature}°C
         </span>
       </div>
@@ -80,7 +80,7 @@ const CompactWeatherWarning = ({ weather }: { weather: ReturnType<typeof getWeat
     : 'bg-[#252011] border-[#9E8530] text-[#E0C043]';
 
   return (
-    <div className={`inline-flex items-center justify-between w-full px-2 py-1.5 rounded-lg border text-[8px] font-black uppercase tracking-[0.08em] ${colorClass}`}>
+    <div className={`inline-flex items-center justify-between w-full px-2 py-1.5 rounded-lg border text-[11px] font-black uppercase tracking-[0.08em] ${colorClass}`}>
       <div className="flex items-center gap-1.5">
         {weather.condition === 'Rain' ? <CloudRain className="w-3 h-3 shrink-0" /> :
          weather.condition === 'Frost' ? <Snowflake className="w-3 h-3 shrink-0" /> :
@@ -351,16 +351,16 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
   return (
     <div className="space-y-6">
       {/* Calendar View Control Center */}
-      <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Navigation / Mode Selection */}
         <div className="flex items-center gap-3 w-full md:w-auto">
           <button
             type="button"
             onClick={() => setCalendarMode('grid')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${
               calendarMode === 'grid' 
-                ? 'bg-[#5C7285] border-[#5C7285] text-white shadow-lg shadow-[#5C7285]/10' 
-                : 'bg-[#121212]/50 border-[#2e2e2e] text-gray-400 hover:text-white'
+                ? 'bg-[#6C8295] border-[#6C8295] text-white shadow-lg shadow-[#6C8295]/10' 
+                : 'bg-[#16161a]/50 border-[#2a2a30] text-gray-400 hover:text-white'
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
@@ -370,10 +370,10 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
           <button
             type="button"
             onClick={() => setCalendarMode('timeline')}
-            className={`flex items-center gap-2 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-lg border transition-all cursor-pointer ${
               calendarMode === 'timeline' 
-                ? 'bg-[#5C7285] border-[#5C7285] text-white shadow-lg shadow-[#5C7285]/10' 
-                : 'bg-[#121212]/50 border-[#2e2e2e] text-gray-400 hover:text-white'
+                ? 'bg-[#6C8295] border-[#6C8295] text-white shadow-lg shadow-[#6C8295]/10' 
+                : 'bg-[#16161a]/50 border-[#2a2a30] text-gray-400 hover:text-white'
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -384,11 +384,11 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
         {/* Dynamic Controls depending on mode */}
         <div className="flex flex-wrap items-center gap-4 justify-between md:justify-end w-full md:w-auto">
           {calendarMode === 'grid' && (
-            <div className="flex items-center gap-2 bg-[#121212] border border-[#2e2e2e] rounded-lg p-1">
+            <div className="flex items-center gap-2 bg-[#16161a] border border-[#2a2a30] rounded-lg p-1">
               <button
                 type="button"
                 onClick={() => setIsCompact(true)}
-                className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-[11px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
                   isCompact ? 'bg-[#2a2a2a] text-white border border-[#3e3e3e]' : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
@@ -397,7 +397,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCompact(false)}
-                className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
+                className={`px-3 py-1.5 text-[11px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
                   !isCompact ? 'bg-[#2a2a2a] text-white border border-[#3e3e3e]' : 'text-gray-500 hover:text-gray-300'
                 }`}
               >
@@ -407,7 +407,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
           )}
 
           {/* Week Date Picker Navigation */}
-          <div className="flex items-center gap-1.5 bg-[#121212] p-1 rounded-lg border border-[#2e2e2e]">
+          <div className="flex items-center gap-1.5 bg-[#16161a] p-1 rounded-lg border border-[#2a2a30]">
             <button 
               type="button"
               onClick={() => setWeekOffset(prev => prev - 1)}
@@ -415,7 +415,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-[9px] font-black text-[#888] uppercase tracking-widest min-w-[130px] text-center whitespace-nowrap px-1">
+            <span className="text-[11px] font-black text-[#888] uppercase tracking-widest min-w-[130px] text-center whitespace-nowrap px-1">
               {(() => {
                 if (!WEEK_DAYS || !WEEK_DAYS.length) return '';
                 const format = (dateStr: string) => {
@@ -448,7 +448,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
             className="space-y-4"
           >
             {/* High-Density Grid Filters */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#1e1e1e] p-3 border border-[#2e2e2e] rounded-xl">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#1a1a1e] p-3 border border-[#2a2a30] rounded-xl">
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
@@ -456,7 +456,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                   placeholder="Filter staff by name or role..."
                   value={gridSearchQuery}
                   onChange={(e) => setGridSearchQuery(e.target.value)}
-                  className="w-full bg-[#121212] border border-[#2e2e2e] text-xs text-white rounded-lg pl-9 pr-4 py-2.5 focus:outline-none focus:border-[#5C7285] transition-colors placeholder:text-gray-600 font-medium"
+                  className="w-full bg-[#16161a] border border-[#2a2a30] text-xs text-white rounded-lg pl-9 pr-4 py-2.5 focus:outline-none focus:border-[#6C8295] transition-colors placeholder:text-gray-600 font-medium"
                 />
               </div>
 
@@ -466,7 +466,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                     key={role}
                     type="button"
                     onClick={() => setGridRoleFilter(role as any)}
-                    className={`px-2.5 py-1 text-[8px] font-black uppercase tracking-wider border rounded-md transition-all cursor-pointer ${
+                    className={`px-2.5 py-1 text-[11px] font-black uppercase tracking-wider border rounded-md transition-all cursor-pointer ${
                       gridRoleFilter === role 
                         ? 'bg-white/10 text-white border-white/20' 
                         : 'bg-transparent text-gray-500 border-transparent hover:text-gray-300'
@@ -483,12 +483,12 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
               <div className="w-full scrollbar-thin">
                 <table className="w-full border-collapse text-left table-fixed">
                   <thead>
-                    <tr className="border-b border-gray-800 bg-[#161616]">
+                    <tr className="border-b border-gray-800 bg-[#16161a]">
                       {/* Sticky Upper Left Corner Header */}
-                      <th className="sticky top-0 left-0 z-40 bg-[#161616] border-b border-r border-gray-800 p-3 lg:p-4 w-[20%] shadow-[4px_0_12px_-3px_rgba(0,0,0,0.6)]">
+                      <th className="sticky top-0 left-0 z-40 bg-[#16161a] border-b border-r border-gray-800 p-3 lg:p-4 w-[20%] shadow-[4px_0_12px_-3px_rgba(0,0,0,0.6)]">
                         <div className="flex flex-col justify-center h-8">
-                          <span className="text-[9px] lg:text-[10px] font-black text-white uppercase tracking-[0.2em] truncate">Operative Staff</span>
-                          <span className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">Deployment Grid ({filteredGridWorkers.length})</span>
+                          <span className="text-[11px] lg:text-[11px] font-black text-white uppercase tracking-[0.2em] truncate">Operative Staff</span>
+                          <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest mt-0.5">Deployment Grid ({filteredGridWorkers.length})</span>
                         </div>
                       </th>
                       
@@ -496,11 +496,11 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                       {WEEK_DAYS.map(day => (
                         <th 
                           key={day.date}
-                          className="sticky top-0 z-20 bg-[#161616] border-b border-gray-800 p-3 lg:p-4 text-center w-[16%]"
+                          className="sticky top-0 z-20 bg-[#16161a] border-b border-gray-800 p-3 lg:p-4 text-center w-[16%]"
                         >
                           <div className="flex flex-col items-center justify-center">
-                            <span className="text-[9px] lg:text-[10px] font-black text-white uppercase tracking-[0.15em]">{day.dayName}</span>
-                            <span className="text-[8px] lg:text-[9px] font-bold text-gray-500 font-mono tracking-wider mt-0.5">
+                            <span className="text-[11px] lg:text-[11px] font-black text-white uppercase tracking-[0.15em]">{day.dayName}</span>
+                            <span className="text-[11px] lg:text-[11px] font-bold text-gray-500 font-mono tracking-wider mt-0.5">
                               {day.date.split('-')[2]}/{day.date.split('-')[1]}
                             </span>
                           </div>
@@ -516,14 +516,14 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                         className="group/row hover:bg-gray-900/20 transition-colors"
                       >
                         {/* Sticky Y-Axis First Column (Operative Details) */}
-                        <td className="sticky left-0 z-30 bg-[#1a1a1a] border-r border-gray-800 p-3 lg:p-4 shadow-[5px_0_15px_-4px_rgba(0,0,0,0.7)] group-hover/row:bg-gray-900 transition-colors">
+                        <td className="sticky left-0 z-30 bg-[#16161a] border-r border-gray-800 p-3 lg:p-4 shadow-[5px_0_15px_-4px_rgba(0,0,0,0.7)] group-hover/row:bg-gray-900 transition-colors">
                           <div className="flex items-center space-x-2.5">
-                            <div className="w-7 h-7 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400 font-bold uppercase text-[9px] shrink-0">
+                            <div className="w-7 h-7 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400 font-bold uppercase text-[11px] shrink-0">
                               {worker.name.charAt(0)}
                             </div>
                             <div className="min-w-0">
                               <h4 className="text-[11px] lg:text-xs font-bold text-white tracking-wide truncate">{worker.name}</h4>
-                              <p className="text-[8px] lg:text-[9px] font-semibold text-gray-400 uppercase tracking-widest mt-0.5 truncate">{worker.role}</p>
+                              <p className="text-[11px] lg:text-[11px] font-semibold text-gray-400 uppercase tracking-widest mt-0.5 truncate">{worker.role}</p>
                             </div>
                           </div>
                         </td>
@@ -569,21 +569,21 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                                   {isCompact ? (
                                     /* COMPACT VIEW */
                                     <div 
-                                      className={`h-8 w-full border-l-4 rounded flex items-center justify-center font-bold text-[8.5px] lg:text-[9px] uppercase tracking-widest cursor-pointer transition-all ${colors?.bg} ${colors?.border}`}
+                                      className={`h-8 w-full border-l-4 rounded flex items-center justify-center font-bold text-[11px] lg:text-[11px] uppercase tracking-widest cursor-pointer transition-all ${colors?.bg} ${colors?.border}`}
                                     >
                                       <span className="truncate px-1">{job.siteName.slice(0, 3)}</span>
                                     </div>
                                   ) : (
                                     /* DETAILED VIEW */
                                     <div 
-                                      className={`p-2 rounded-lg border text-left text-[9.5px] lg:text-[10.5px] font-medium leading-normal cursor-pointer transition-all ${colors?.bg} ${colors?.border} relative`}
+                                      className={`p-2 rounded-lg border text-left text-[11px] lg:text-[10.5px] font-medium leading-normal cursor-pointer transition-all ${colors?.bg} ${colors?.border} relative`}
                                     >
                                       <div className="flex items-start justify-between gap-1">
                                         <span className="font-bold text-white truncate block w-full">
                                           {job.siteName}
                                         </span>
                                       </div>
-                                      <span className="text-[8.5px] lg:text-[9px] font-black text-gray-400 uppercase tracking-widest block mt-1 truncate">
+                                      <span className="text-[11px] lg:text-[11px] font-black text-gray-400 uppercase tracking-widest block mt-1 truncate">
                                         Ref: {job.jobRef}
                                       </span>
                                     </div>
@@ -606,7 +606,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
 
                                   {/* INTERACTIVE POPOVER TOOLTIP */}
                                   <div 
-                                    className={`absolute ${isTooltipBelow ? 'top-full mt-2' : 'bottom-full mb-2'} ${horizontalClass} w-64 p-4 bg-[#1A1B1E] border border-[#333] rounded-xl shadow-2xl transition-all duration-150 z-50 text-left backdrop-blur-md ${
+                                    className={`absolute ${isTooltipBelow ? 'top-full mt-2' : 'bottom-full mb-2'} ${horizontalClass} w-64 p-4 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl shadow-2xl transition-all duration-150 z-50 text-left backdrop-blur-md ${
                                       isTooltipActive 
                                         ? 'opacity-100 scale-100 pointer-events-auto' 
                                         : 'opacity-0 scale-95 pointer-events-none'
@@ -615,39 +615,39 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                                   >
                                     <div className={`absolute ${isTooltipBelow ? 'bottom-full -mb-1 border-b-[#1A1B1E]' : 'top-full -mt-1 border-t-[#1A1B1E]'} ${arrowClass} border-4 border-transparent`}></div>
                                     
-                                    <div className="text-[8px] font-black text-gray-500 uppercase tracking-[0.15em] mb-1">
+                                    <div className="text-[11px] font-black text-gray-500 uppercase tracking-[0.15em] mb-1">
                                       SHIFT ALLOCATION DETAILS
                                     </div>
                                     
                                     <h5 className="text-xs font-bold text-white mb-1 flex items-center gap-1.5">
-                                      <Briefcase className="w-3.5 h-3.5 text-[#5C7285]" />
+                                      <Briefcase className="w-3.5 h-3.5 text-[#6C8295]" />
                                       {job.siteName}
                                     </h5>
-                                    <p className="text-[9px] font-medium text-gray-400 mb-3">
+                                    <p className="text-[11px] font-medium text-gray-400 mb-3">
                                       Ref: {job.jobRef} &bull; Client: {job.mainContractor}
                                     </p>
 
                                     <div className="pt-2.5 border-t border-gray-800 space-y-2">
-                                      <div className="flex items-center justify-between text-[10px]">
-                                        <span className="text-gray-500 uppercase tracking-widest font-black text-[8px]">Operative:</span>
+                                      <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-gray-500 uppercase tracking-widest font-black text-[11px]">Operative:</span>
                                         <span className="text-gray-300 font-bold">{worker.name}</span>
                                       </div>
-                                      <div className="flex items-center justify-between text-[10px]">
-                                        <span className="text-gray-500 uppercase tracking-widest font-black text-[8px]">Deployed Role:</span>
-                                        <span className="text-brand-accent font-bold">{worker.role}</span>
+                                      <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-gray-500 uppercase tracking-widest font-black text-[11px]">Deployed Role:</span>
+                                        <span className="text-[#6C8295] font-bold">{worker.role}</span>
                                       </div>
-                                      <div className="flex items-center justify-between text-[10px]">
-                                        <span className="text-gray-500 uppercase tracking-widest font-black text-[8px]">Postcode:</span>
+                                      <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-gray-500 uppercase tracking-widest font-black text-[11px]">Postcode:</span>
                                         <span className="text-gray-300 font-semibold">{job.postcode}</span>
                                       </div>
-                                      <div className="flex items-center justify-between text-[10px]">
-                                        <span className="text-gray-500 uppercase tracking-widest font-black text-[8px]">Date:</span>
+                                      <div className="flex items-center justify-between text-[11px]">
+                                        <span className="text-gray-500 uppercase tracking-widest font-black text-[11px]">Date:</span>
                                         <span className="text-gray-300 font-bold font-mono">{day.dayName}, {day.date}</span>
                                       </div>
                                     </div>
 
                                     {hasTickets && (
-                                      <div className="mt-3 pt-2.5 border-t border-gray-800 text-[8.5px] font-black uppercase tracking-wider text-emerald-400/90 flex items-center gap-1.5">
+                                      <div className="mt-3 pt-2.5 border-t border-gray-800 text-[11px] font-black uppercase tracking-wider text-emerald-400/90 flex items-center gap-1.5">
                                         <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                                         Compliance Authenticated
                                       </div>
@@ -664,19 +664,19 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                                         e.target.value = '';
                                       }
                                     }}
-                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 bg-[#161616] text-white"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10 bg-[#16161a] text-white"
                                     value=""
                                     title={`Deploy ${worker.name} to project`}
                                   >
-                                    <option value="" disabled className="bg-[#161616] text-white">Deploy Project...</option>
+                                    <option value="" disabled className="bg-[#16161a] text-white">Deploy Project...</option>
                                     {jobs.filter(j => j.status !== 'completed').map(j => (
-                                      <option key={j.id} value={j.id} className="bg-[#161616] text-white">
+                                      <option key={j.id} value={j.id} className="bg-[#16161a] text-white">
                                         {j.siteName} [{j.jobRef}]
                                       </option>
                                     ))}
                                   </select>
                                   
-                                  <div className="text-[9px] font-bold text-gray-600 uppercase tracking-widest opacity-0 group-hover/add:opacity-100 transition-opacity pointer-events-none flex items-center gap-1">
+                                  <div className="text-[11px] font-bold text-gray-600 uppercase tracking-widest opacity-0 group-hover/add:opacity-100 transition-opacity pointer-events-none flex items-center gap-1">
                                     <span>+ Allocate</span>
                                   </div>
                                 </div>
@@ -704,11 +704,11 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                       onClick={() => setMobileActiveDayDate(day.date)}
                       className={`py-2 text-center rounded-lg border transition-all cursor-pointer ${
                         isActive 
-                          ? 'bg-[#5C7285] border-[#5C7285] text-white shadow-md' 
-                          : 'bg-[#1e1e1e] border-[#2e2e2e] text-gray-400 hover:text-white'
+                          ? 'bg-[#6C8295] border-[#6C8295] text-white shadow-md' 
+                          : 'bg-[#1a1a1e] border-[#2a2a30] text-gray-400 hover:text-white'
                       }`}
                     >
-                      <div className="text-[9px] font-black uppercase tracking-wider leading-none">{day.shortName}</div>
+                      <div className="text-[11px] font-black uppercase tracking-wider leading-none">{day.shortName}</div>
                       <div className="text-[11px] font-bold font-mono mt-1">{day.date.split('-')[2]}</div>
                     </button>
                   );
@@ -716,13 +716,13 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
               </div>
 
               {/* Stacked Cards list for selected day */}
-              <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl p-4 space-y-4">
-                <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-2.5">
+              <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
+                <div className="flex items-center justify-between border-b border-[#2a2a30] pb-2.5">
                   <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-[#5C7285]" />
+                    <Calendar className="w-4 h-4 text-[#6C8295]" />
                     {WEEK_DAYS.find(d => d.date === mobileActiveDayDate)?.dayName || 'Selected Day'}
                   </h3>
-                  <span className="text-[10px] font-bold text-gray-500 font-mono">{mobileActiveDayDate}</span>
+                  <span className="text-[11px] font-bold text-gray-500 font-mono">{mobileActiveDayDate}</span>
                 </div>
 
                 <div className="space-y-2.5">
@@ -736,8 +736,8 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                     return (
                       <div 
                         key={worker.id}
-                        className={`border rounded-lg overflow-hidden bg-[#161616] transition-all ${
-                          job ? colors?.border : 'border-[#2e2e2e]'
+                        className={`border rounded-lg overflow-hidden bg-[#16161a] transition-all ${
+                          job ? colors?.border : 'border-[#2a2a30]'
                         }`}
                       >
                         {/* Summary Header Card - stacked layout to avoid truncation */}
@@ -751,14 +751,14 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                         >
                           <div className="flex items-start justify-between gap-2.5">
                             <div className="flex items-start gap-3 min-w-0">
-                              <div className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400 font-black text-[10px] shrink-0 mt-0.5">
+                              <div className="w-8 h-8 rounded-full bg-gray-800 border border-gray-700 flex items-center justify-center text-gray-400 font-black text-[11px] shrink-0 mt-0.5">
                                 {worker.name.charAt(0)}
                               </div>
                               <div className="min-w-0">
                                 <h4 className="text-sm font-bold text-white break-words leading-tight">
                                   {worker.name}
                                 </h4>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1.5">
+                                <p className="text-[11px] text-gray-500 font-bold uppercase tracking-widest mt-1.5">
                                   {worker.role}
                                 </p>
                               </div>
@@ -772,11 +772,11 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 pt-2.5 border-t border-white/[0.03] w-full">
-                            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest shrink-0">
+                            <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest shrink-0">
                               Status / Project:
                             </span>
                             {job ? (
-                              <div className={`px-2.5 py-1 text-[8.5px] font-black uppercase tracking-widest rounded border break-words ${colors?.bg} ${colors?.border}`}>
+                              <div className={`px-2.5 py-1 text-[11px] font-black uppercase tracking-widest rounded border break-words ${colors?.bg} ${colors?.border}`}>
                                 {job.siteName}
                               </div>
                             ) : (
@@ -789,12 +789,12 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                                       e.target.value = '';
                                     }
                                   }}
-                                  className="w-full sm:w-auto bg-[#121212] border border-dashed border-[#2e2e2e] hover:border-gray-600 rounded px-3 py-1.5 text-[8.5px] font-bold text-gray-400 uppercase tracking-widest cursor-pointer outline-none text-left bg-[#121212] text-white"
+                                  className="w-full sm:w-auto bg-[#16161a] border border-dashed border-[#2a2a30] hover:border-gray-600 rounded px-3 py-1.5 text-[11px] font-bold text-gray-400 uppercase tracking-widest cursor-pointer outline-none text-left bg-[#16161a] text-white"
                                   value=""
                                 >
-                                  <option value="" disabled className="bg-[#121212] text-white">+ Deploy / Allocate</option>
+                                  <option value="" disabled className="bg-[#16161a] text-white">+ Deploy / Allocate</option>
                                   {jobs.filter(j => j.status !== 'completed').map(j => (
-                                    <option key={j.id} value={j.id} className="bg-[#121212] text-white">{j.siteName} [{j.jobRef}]</option>
+                                    <option key={j.id} value={j.id} className="bg-[#16161a] text-white">{j.siteName} [{j.jobRef}]</option>
                                   ))}
                                 </select>
                               </div>
@@ -804,28 +804,28 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
 
                         {/* Collapsible Detail Section (Tap to Expand accordion on Mobile) */}
                         {job && isExpanded && (
-                          <div className="border-t border-gray-800/80 bg-[#121212] p-3 text-left space-y-3">
-                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                          <div className="border-t border-gray-800/80 bg-[#16161a] p-3 text-left space-y-3">
+                            <div className="grid grid-cols-2 gap-2 text-[11px]">
                               <div>
-                                <span className="text-gray-500 uppercase font-black text-[8.5px] tracking-wider block">Project Name:</span>
+                                <span className="text-gray-500 uppercase font-black text-[11px] tracking-wider block">Project Name:</span>
                                 <span className="text-white font-bold">{job.siteName}</span>
                               </div>
                               <div>
-                                <span className="text-gray-500 uppercase font-black text-[8.5px] tracking-wider block">Contractor / Client:</span>
+                                <span className="text-gray-500 uppercase font-black text-[11px] tracking-wider block">Contractor / Client:</span>
                                 <span className="text-white font-semibold">{job.mainContractor}</span>
                               </div>
                               <div className="mt-1">
-                                <span className="text-gray-500 uppercase font-black text-[8.5px] tracking-wider block">Project Reference:</span>
-                                <span className="text-gray-300 font-mono text-[9px]">{job.jobRef}</span>
+                                <span className="text-gray-500 uppercase font-black text-[11px] tracking-wider block">Project Reference:</span>
+                                <span className="text-gray-300 font-mono text-[11px]">{job.jobRef}</span>
                               </div>
                               <div className="mt-1">
-                                <span className="text-gray-500 uppercase font-black text-[8.5px] tracking-wider block">Postcode:</span>
+                                <span className="text-gray-500 uppercase font-black text-[11px] tracking-wider block">Postcode:</span>
                                 <span className="text-gray-300 font-semibold">{job.postcode}</span>
                               </div>
                             </div>
 
                             {hasTickets && (
-                              <div className="p-2 bg-emerald-950/20 border border-emerald-900/30 rounded text-[9px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                              <div className="p-2 bg-emerald-950/20 border border-emerald-900/30 rounded text-[11px] font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
                                 <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
                                 Compliance Verified (Tickets OK)
                               </div>
@@ -835,7 +835,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                               <button
                                 type="button"
                                 onClick={() => handleRemoveShift(shift!)}
-                                className="px-3 py-1.5 bg-red-950/20 hover:bg-red-950/50 border border-red-900/30 rounded text-[9px] font-black uppercase tracking-widest text-red-400 flex items-center gap-1 cursor-pointer transition-colors"
+                                className="px-3 py-1.5 bg-red-950/20 hover:bg-red-950/50 border border-red-900/30 rounded text-[11px] font-black uppercase tracking-widest text-red-400 flex items-center gap-1 cursor-pointer transition-colors"
                               >
                                 <Trash2 className="w-3 h-3" /> Deallocate Shift
                               </button>
@@ -860,7 +860,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
             className="space-y-4"
           >
             {/* High-Density Project Grid Filters */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#1e1e1e] p-3 border border-[#2e2e2e] rounded-xl">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-[#1a1a1e] p-3 border border-[#2a2a30] rounded-xl">
               <div className="relative w-full sm:w-72">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input
@@ -868,7 +868,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                   placeholder="Filter projects by site name or reference..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-[#121212] border border-[#2e2e2e] text-xs text-white rounded-lg pl-9 pr-4 py-2.5 focus:outline-none focus:border-[#5C7285] transition-colors placeholder:text-gray-600 font-medium"
+                  className="w-full bg-[#16161a] border border-[#2a2a30] text-xs text-white rounded-lg pl-9 pr-4 py-2.5 focus:outline-none focus:border-[#6C8295] transition-colors placeholder:text-gray-600 font-medium"
                 />
               </div>
 
@@ -878,7 +878,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                     key={status}
                     type="button"
                     onClick={() => setProjectStatusFilter(status as any)}
-                    className={`px-2.5 py-1 text-[8px] font-black uppercase tracking-wider border rounded-md transition-all cursor-pointer ${
+                    className={`px-2.5 py-1 text-[11px] font-black uppercase tracking-wider border rounded-md transition-all cursor-pointer ${
                       projectStatusFilter === status 
                         ? 'bg-white/10 text-white border-white/20' 
                         : 'bg-transparent text-gray-500 border-transparent hover:text-gray-300'
@@ -895,20 +895,20 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
               <div className="w-full scrollbar-thin">
                 <table className="w-full border-collapse text-left table-fixed">
                   <thead>
-                    <tr className="border-b border-gray-800 bg-[#161616]">
+                    <tr className="border-b border-gray-800 bg-[#16161a]">
                       {/* Sticky Upper Left Corner Header */}
-                      <th className="sticky top-0 left-0 z-40 bg-[#161616] border-b border-r border-gray-800 p-3 lg:p-4 w-[20%] shadow-[4px_0_12px_-3px_rgba(0,0,0,0.6)]">
-                        <div className="text-[9px] font-black tracking-widest text-gray-500 uppercase">
+                      <th className="sticky top-0 left-0 z-40 bg-[#16161a] border-b border-r border-gray-800 p-3 lg:p-4 w-[20%] shadow-[4px_0_12px_-3px_rgba(0,0,0,0.6)]">
+                        <div className="text-[11px] font-black tracking-widest text-gray-500 uppercase">
                           ACTIVE PROJECTS
                         </div>
                       </th>
                       {WEEK_DAYS.map(day => (
                         <th 
                           key={day.date} 
-                          className="p-3 lg:p-4 text-center min-w-[120px] lg:min-w-[140px] border-r border-gray-800/60 bg-[#161616]"
+                          className="p-3 lg:p-4 text-center min-w-[120px] lg:min-w-[140px] border-r border-gray-800/60 bg-[#16161a]"
                         >
-                          <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.15em]">{day.dayName}</div>
-                          <div className="text-[10px] font-bold font-mono text-gray-600 mt-1">{day.date}</div>
+                          <div className="text-[11px] font-black text-gray-400 uppercase tracking-[0.15em]">{day.dayName}</div>
+                          <div className="text-[11px] font-bold font-mono text-gray-600 mt-1">{day.date}</div>
                         </th>
                       ))}
                     </tr>
@@ -921,17 +921,17 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                         className="group/row hover:bg-gray-900/20 transition-colors"
                       >
                         {/* Sticky Left Column: Project Details */}
-                        <td className="sticky left-0 z-30 bg-[#121212] group-hover/row:bg-gray-900/40 border-r border-gray-800 p-3 lg:p-4 shadow-[4px_0_12px_-3px_rgba(0,0,0,0.6)]">
+                        <td className="sticky left-0 z-30 bg-[#16161a] group-hover/row:bg-gray-900/40 border-r border-gray-800 p-3 lg:p-4 shadow-[4px_0_12px_-3px_rgba(0,0,0,0.6)]">
                           <div className="flex flex-col gap-2">
                             <div className="flex flex-col gap-1">
-                              <span className="text-[9px] font-mono font-bold text-[#8a9bb0] tracking-wider uppercase">
+                              <span className="text-[11px] font-mono font-bold text-[#8a9bb0] tracking-wider uppercase">
                                 {job.jobRef}
                               </span>
                               <div className="text-xs font-bold text-white truncate w-full">
                                 {job.siteName}
                               </div>
-                              <div className="text-[9px] font-medium text-gray-500 truncate w-full flex items-center gap-1">
-                                <MapPin className="w-2.5 h-2.5 shrink-0 text-[#5C7285]" />
+                              <div className="text-[11px] font-medium text-gray-500 truncate w-full flex items-center gap-1">
+                                <MapPin className="w-2.5 h-2.5 shrink-0 text-[#6C8295]" />
                                 <span>{job.postcode}</span>
                               </div>
                             </div>
@@ -988,11 +988,11 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                                     ) : (
                                       /* DETAILED VIEW */
                                       <>
-                                        <div className="text-[10px] font-bold text-white flex items-center gap-1.5 truncate w-full">
-                                          <Users className="w-3 h-3 text-[#5C7285] shrink-0" />
+                                        <div className="text-[11px] font-bold text-white flex items-center gap-1.5 truncate w-full">
+                                          <Users className="w-3 h-3 text-[#6C8295] shrink-0" />
                                           <span>{dayShifts.length} Deployed</span>
                                         </div>
-                                        <div className="text-[8.5px] font-semibold text-gray-300 truncate w-full mt-1.5 max-h-[24px] overflow-hidden leading-tight">
+                                        <div className="text-[11px] font-semibold text-gray-300 truncate w-full mt-1.5 max-h-[24px] overflow-hidden leading-tight">
                                           {dayShifts.slice(0, 2).map((s, i) => {
                                             const w = workers.find(work => work.id === s.workerId);
                                             return w ? (i > 0 ? `, ${w.name.split(' ')[0]}` : w.name.split(' ')[0]) : '';
@@ -1007,7 +1007,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                                   <div 
                                     className="h-full min-h-[58px] rounded-lg border border-dashed border-gray-800/40 hover:border-gray-700 hover:bg-gray-900/10 transition-all flex items-center justify-center group/add cursor-pointer"
                                   >
-                                    <div className="text-[9px] font-bold text-gray-600 uppercase tracking-widest opacity-0 group-hover/add:opacity-100 transition-opacity pointer-events-none flex items-center gap-1">
+                                    <div className="text-[11px] font-bold text-gray-600 uppercase tracking-widest opacity-0 group-hover/add:opacity-100 transition-opacity pointer-events-none flex items-center gap-1">
                                       <span>+ Allocate</span>
                                     </div>
                                   </div>
@@ -1015,7 +1015,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
 
                                 {/* INTERACTIVE POPOVER TOOLTIP */}
                                 <div 
-                                  className={`absolute ${isTooltipBelow ? 'top-full mt-2' : 'bottom-full mb-2'} ${horizontalClass} w-64 p-4 bg-[#1A1B1E] border border-[#333] rounded-xl shadow-2xl transition-all duration-150 z-50 text-left backdrop-blur-md ${
+                                  className={`absolute ${isTooltipBelow ? 'top-full mt-2' : 'bottom-full mb-2'} ${horizontalClass} w-64 p-4 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl shadow-2xl transition-all duration-150 z-50 text-left backdrop-blur-md ${
                                     isTooltipActive 
                                       ? 'opacity-100 scale-100 pointer-events-auto' 
                                       : 'opacity-0 scale-95 pointer-events-none'
@@ -1024,21 +1024,21 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                                 >
                                   <div className={`absolute ${isTooltipBelow ? 'bottom-full -mb-1 border-b-[#1A1B1E]' : 'top-full -mt-1 border-t-[#1A1B1E]'} ${arrowClass} border-4 border-transparent`}></div>
                                   
-                                  <div className="text-[8px] font-black text-gray-500 uppercase tracking-[0.15em] mb-1">
+                                  <div className="text-[11px] font-black text-gray-500 uppercase tracking-[0.15em] mb-1">
                                     PROJECT ALLOCATION DETAILS
                                   </div>
                                   
                                   <h5 className="text-xs font-bold text-white mb-1 flex items-center gap-1.5">
-                                    <Briefcase className="w-3.5 h-3.5 text-[#5C7285]" />
+                                    <Briefcase className="w-3.5 h-3.5 text-[#6C8295]" />
                                     {job.siteName}
                                   </h5>
-                                  <p className="text-[9px] font-medium text-gray-400 mb-3">
+                                  <p className="text-[11px] font-medium text-gray-400 mb-3">
                                     Ref: {job.jobRef} &bull; Client: {job.mainContractor}
                                   </p>
 
-                                  <div className="space-y-2 text-[10px] text-gray-300">
+                                  <div className="space-y-2 text-[11px] text-gray-300">
                                     <div className="flex items-center justify-between">
-                                      <span className="text-gray-500 uppercase tracking-widest font-black text-[8px]">Date:</span>
+                                      <span className="text-gray-500 uppercase tracking-widest font-black text-[11px]">Date:</span>
                                       <span className="text-gray-300 font-bold font-mono">{day.dayName}, {day.date}</span>
                                     </div>
                                   </div>
@@ -1048,22 +1048,22 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                                     <WeatherIndicator weather={getWeatherForJob(job)} />
                                   </div>
 
-                                  <div className="text-[8px] font-black text-gray-500 uppercase tracking-[0.15em] mb-1.5 mt-3">
+                                  <div className="text-[11px] font-black text-gray-500 uppercase tracking-[0.15em] mb-1.5 mt-3">
                                     DEPLOYED CREW ({dayShifts.length})
                                   </div>
 
                                   <div className="space-y-1.5 max-h-40 overflow-y-auto scrollbar-thin pr-1 mb-3">
                                     {dayShifts.length === 0 ? (
-                                      <div className="text-[9px] text-gray-500 italic py-1">No staff members deployed.</div>
+                                      <div className="text-[11px] text-gray-500 italic py-1">No staff members deployed.</div>
                                     ) : (
                                       dayShifts.map(shift => {
                                         const assignedWorker = workers.find(w => w.id === shift.workerId);
                                         if (!assignedWorker) return null;
                                         return (
-                                          <div key={shift.id} className="flex items-center justify-between bg-[#121212] p-2 rounded-lg border border-[#2e2e2e]">
+                                          <div key={shift.id} className="flex items-center justify-between bg-[#16161a] p-2 rounded-lg border border-[#2a2a30]">
                                             <div className="flex flex-col min-w-0">
-                                              <span className="text-[10px] font-bold text-white truncate">{assignedWorker.name}</span>
-                                              <span className="text-[8px] font-medium text-gray-400 mt-0.5">{assignedWorker.role}</span>
+                                              <span className="text-[11px] font-bold text-white truncate">{assignedWorker.name}</span>
+                                              <span className="text-[11px] font-medium text-gray-400 mt-0.5">{assignedWorker.role}</span>
                                             </div>
                                             <button
                                               type="button"
@@ -1071,7 +1071,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                                                 e.stopPropagation();
                                                 handleRemoveShift(shift);
                                               }}
-                                              className="p-1 hover:bg-red-950/40 rounded transition-colors text-gray-500 hover:text-red-400 border border-[#2e2e2e] hover:border-red-900/40 cursor-pointer flex items-center justify-center"
+                                              className="p-1 hover:bg-red-950/40 rounded transition-colors text-gray-500 hover:text-red-400 border border-[#2a2a30] hover:border-red-900/40 cursor-pointer flex items-center justify-center"
                                               title="Remove from shift"
                                             >
                                               <X className="w-3 h-3" />
@@ -1091,14 +1091,14 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                                           e.target.value = '';
                                         }
                                       }}
-                                      className="w-full bg-[#121212] hover:bg-[#1a1a1a] text-gray-300 hover:text-white text-[10px] font-semibold border border-[#333] rounded-lg p-2 pr-8 focus:outline-none appearance-none cursor-pointer transition-colors"
+                                      className="w-full bg-[#16161a] hover:bg-[#16161a] text-gray-300 hover:text-white text-[11px] font-semibold border border-[#2a2a30] rounded-lg p-2 pr-8 focus:outline-none appearance-none cursor-pointer transition-colors"
                                       value=""
                                     >
-                                      <option value="" disabled hidden className="bg-[#121212] text-white">+ Add Staff Member</option>
+                                      <option value="" disabled hidden className="bg-[#16161a] text-white">+ Add Staff Member</option>
                                       {workers
                                         .filter(w => !w.isArchived && !dayShifts.some(s => s.workerId === w.id))
                                         .map(w => (
-                                          <option key={w.id} value={w.id} className="bg-[#121212] text-white">{w.name} - {w.role}</option>
+                                          <option key={w.id} value={w.id} className="bg-[#16161a] text-white">{w.name} - {w.role}</option>
                                         ))
                                       }
                                     </select>
@@ -1129,11 +1129,11 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                       onClick={() => setMobileActiveDayDate(day.date)}
                       className={`py-2 text-center rounded-lg border transition-all cursor-pointer ${
                         isActive 
-                          ? 'bg-[#5C7285] border-[#5C7285] text-white shadow-md' 
-                          : 'bg-[#1e1e1e] border-[#2e2e2e] text-gray-400 hover:text-white'
+                          ? 'bg-[#6C8295] border-[#6C8295] text-white shadow-md' 
+                          : 'bg-[#1a1a1e] border-[#2a2a30] text-gray-400 hover:text-white'
                       }`}
                     >
-                      <div className="text-[9px] font-black uppercase tracking-wider leading-none">{day.shortName}</div>
+                      <div className="text-[11px] font-black uppercase tracking-wider leading-none">{day.shortName}</div>
                       <div className="text-[11px] font-bold font-mono mt-1">{day.date.split('-')[2]}</div>
                     </button>
                   );
@@ -1141,13 +1141,13 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
               </div>
 
               {/* Stacked Cards for Projects */}
-              <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl p-4 space-y-4">
-                <div className="flex items-center justify-between border-b border-[#2e2e2e] pb-2.5">
+              <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
+                <div className="flex items-center justify-between border-b border-[#2a2a30] pb-2.5">
                   <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-[#5C7285]" />
+                    <Briefcase className="w-4 h-4 text-[#6C8295]" />
                     Projects Schedule
                   </h3>
-                  <span className="text-[10px] font-bold text-gray-500 font-mono font-mono">
+                  <span className="text-[11px] font-bold text-gray-500 font-mono font-mono">
                     {WEEK_DAYS.find(d => d.date === mobileActiveDayDate)?.dayName || 'Selected Day'}
                   </span>
                 </div>
@@ -1162,7 +1162,7 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                     return (
                       <div 
                         key={job.id}
-                        className={`border rounded-lg overflow-hidden bg-[#161616] transition-all ${colors?.border}`}
+                        className={`border rounded-lg overflow-hidden bg-[#16161a] transition-all ${colors?.border}`}
                       >
                         {/* Summary Header Card */}
                         <div 
@@ -1173,13 +1173,13 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                         >
                           <div className="flex items-start justify-between gap-2.5">
                             <div>
-                              <span className="text-[9px] font-mono font-bold text-[#8a9bb0] tracking-wider uppercase">
+                              <span className="text-[11px] font-mono font-bold text-[#8a9bb0] tracking-wider uppercase">
                                 {job.jobRef}
                               </span>
                               <h4 className="text-sm font-bold text-white break-words leading-tight mt-0.5">
                                 {job.siteName}
                               </h4>
-                              <p className="text-[10px] text-gray-500 font-medium mt-1">
+                              <p className="text-[11px] text-gray-500 font-medium mt-1">
                                 Client: {job.mainContractor}
                               </p>
                             </div>
@@ -1190,22 +1190,22 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
 
                           <CompactWeatherWarning weather={weather} />
 
-                          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/[0.03] w-full text-[10px]">
-                            <span className="text-gray-500 font-black uppercase tracking-widest text-[8.5px]">Deployed Crew:</span>
+                          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/[0.03] w-full text-[11px]">
+                            <span className="text-gray-500 font-black uppercase tracking-widest text-[11px]">Deployed Crew:</span>
                             <span className="text-white font-bold font-mono">{dayShifts.length} Staff Members</span>
                           </div>
                         </div>
 
                         {/* Collapsible details (Accordion) */}
                         {isExpanded && (
-                          <div className="border-t border-gray-800/80 bg-[#121212] p-4 text-left space-y-4">
-                            <div className="grid grid-cols-2 gap-2 text-[10px]">
+                          <div className="border-t border-gray-800/80 bg-[#16161a] p-4 text-left space-y-4">
+                            <div className="grid grid-cols-2 gap-2 text-[11px]">
                               <div>
-                                <span className="text-gray-500 uppercase font-black text-[8.5px] tracking-wider block">Postcode:</span>
+                                <span className="text-gray-500 uppercase font-black text-[11px] tracking-wider block">Postcode:</span>
                                 <span className="text-white font-bold">{job.postcode}</span>
                               </div>
                               <div>
-                                <span className="text-gray-500 uppercase font-black text-[8.5px] tracking-wider block">Status:</span>
+                                <span className="text-gray-500 uppercase font-black text-[11px] tracking-wider block">Status:</span>
                                 <span className="text-white font-semibold uppercase">{job.status}</span>
                               </div>
                             </div>
@@ -1215,25 +1215,25 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
 
                             {/* Crew management list */}
                             <div className="space-y-2 pt-2 border-t border-gray-800/60">
-                              <span className="text-[8.5px] font-black text-gray-500 uppercase tracking-widest block">Allocated Staff:</span>
+                              <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest block">Allocated Staff:</span>
                               
                               <div className="space-y-2">
                                 {dayShifts.length === 0 ? (
-                                  <div className="text-[9px] text-gray-500 italic">No workers allocated for this day.</div>
+                                  <div className="text-[11px] text-gray-500 italic">No workers allocated for this day.</div>
                                 ) : (
                                   dayShifts.map(shift => {
                                     const w = workers.find(work => work.id === shift.workerId);
                                     if (!w) return null;
                                     return (
-                                      <div key={shift.id} className="flex items-center justify-between bg-[#161616] p-2.5 rounded-lg border border-gray-800">
+                                      <div key={shift.id} className="flex items-center justify-between bg-[#16161a] p-2.5 rounded-lg border border-gray-800">
                                         <div className="flex flex-col">
                                           <span className="text-xs font-bold text-white">{w.name}</span>
-                                          <span className="text-[9px] font-medium text-gray-400 mt-0.5">{w.role}</span>
+                                          <span className="text-[11px] font-medium text-gray-400 mt-0.5">{w.role}</span>
                                         </div>
                                         <button
                                           type="button"
                                           onClick={() => handleRemoveShift(shift)}
-                                          className="p-1 bg-[#222] hover:bg-red-950/40 rounded transition-colors text-gray-500 hover:text-red-400 border border-gray-800 cursor-pointer"
+                                          className="p-1 bg-[#16161a] hover:bg-red-950/40 rounded transition-colors text-gray-500 hover:text-red-400 border border-gray-800 cursor-pointer"
                                         >
                                           <X className="w-3.5 h-3.5" />
                                         </button>
@@ -1252,14 +1252,14 @@ export const CalendarMatrix: React.FC<CalendarMatrixProps> = ({
                                       e.target.value = '';
                                     }
                                   }}
-                                  className="w-full bg-[#161616] text-gray-300 text-xs font-semibold border border-gray-800 rounded-lg p-2.5 focus:outline-none appearance-none cursor-pointer"
+                                  className="w-full bg-[#16161a] text-gray-300 text-xs font-semibold border border-gray-800 rounded-lg p-2.5 focus:outline-none appearance-none cursor-pointer"
                                   value=""
                                 >
-                                  <option value="" disabled hidden className="bg-[#161616] text-white">+ Deploy Staff Member</option>
+                                  <option value="" disabled hidden className="bg-[#16161a] text-white">+ Deploy Staff Member</option>
                                   {workers
                                     .filter(w => !w.isArchived && !dayShifts.some(s => s.workerId === w.id))
                                     .map(w => (
-                                      <option key={w.id} value={w.id} className="bg-[#161616] text-white">{w.name} - {w.role}</option>
+                                      <option key={w.id} value={w.id} className="bg-[#16161a] text-white">{w.name} - {w.role}</option>
                                     ))
                                   }
                                 </select>

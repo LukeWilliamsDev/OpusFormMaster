@@ -24,13 +24,14 @@ export const PipelinePage: React.FC = () => {
   };
 
   return (
-    <div className="pt-24 pb-12 px-4 sm:px-6 max-w-7xl mx-auto space-y-4 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2a2a2a] pb-3">
-        <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white font-archivo">
-          <div className="w-1 h-4 bg-[#b0b8c4] rounded-sm" />
-          {currentView === 'quote-builder' ? 'Quote' : 'Quote Management'}
+    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl mx-auto space-y-6 animate-fade-in">
+      {currentView === 'quote-builder' && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#2a2a30] pb-3 mb-2">
+          <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white font-archivo">
+            Quote
+          </div>
         </div>
-      </div>
+      )}
 
       {currentView === 'quote-builder' ? (
         <QuoteInvoiceBuilder 
@@ -42,6 +43,7 @@ export const PipelinePage: React.FC = () => {
       ) : (
         <PipelineRegistry 
           onEditQuote={handleEditQuote}
+          onNewQuote={() => setSearchParams({ view: 'quote-builder' })}
           onBack={() => navigate('/portal/dashboard')}
         />
       )}

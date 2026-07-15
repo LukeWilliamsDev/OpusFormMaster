@@ -910,19 +910,19 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 });
 
                 return (
-                  <div key={ticket.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border gap-4 ${cardBg} transition-all duration-150`}>
-                    <div className="flex items-center space-x-4">
-                      <div className={`w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ${iconBox}`}>
-                        <LeftIcon className="w-5 h-5" />
+                  <div key={ticket.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-lg border gap-3 ${cardBg} transition-all duration-150`}>
+                    <div className="flex items-center space-x-3">
+                      <div className={`w-9 h-9 rounded-lg border flex items-center justify-center shrink-0 ${iconBox}`}>
+                        <LeftIcon className="w-4 h-4" />
                       </div>
                       <div>
-                        <div className="flex flex-wrap items-center gap-2.5">
-                          <h4 className="text-sm font-bold text-white uppercase tracking-wider">{ticket.type}</h4>
-                          <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase tracking-wider border ${badgeClass}`}>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="text-xs font-bold text-white uppercase tracking-wider">{ticket.type}</h4>
+                          <span className={`px-1.5 py-0.5 text-[8px] font-black rounded uppercase tracking-wider border ${badgeClass}`}>
                             {statusText}
                           </span>
                         </div>
-                        <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest mt-1.5">
+                        <p className="text-[9px] font-bold text-neutral-500 uppercase tracking-widest mt-1">
                           Ref: {ticket.ticketNumber || 'N/A'} &bull; {isExpired ? 'Expired' : 'Expires'}: {formattedDate}
                         </p>
                       </div>
@@ -933,7 +933,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         <button
                           type="button"
                           onClick={() => setShowReminderConfirm(true)}
-                          className="w-full sm:w-auto px-4 py-2 bg-red-950/20 border border-red-900/30 hover:bg-red-950/40 text-red-400 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                          className="w-full sm:w-auto px-3 py-1.5 bg-red-950/20 border border-red-900/30 hover:bg-red-950/40 text-red-400 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
                         >
                           Request Update
                         </button>
@@ -942,7 +942,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           <button
                             type="button"
                             onClick={() => ticket.documentUrl ? handleViewDocument(ticket.documentUrl) : alert('No document attached')}
-                            className="w-full sm:w-auto px-4 py-2 border border-zinc-800 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                            className="w-full sm:w-auto px-3 py-1.5 border border-zinc-800 hover:bg-zinc-800 text-white rounded-md text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
                           >
                             View File
                           </button>
@@ -951,14 +951,14 @@ export const RosterView: React.FC<RosterViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => verifyTicket(selectedWorkerDetails.id, ticket.id, true)}
-                                className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                                className="w-full sm:w-auto px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                               >
                                 Approve
                               </button>
                               <button
                                 type="button"
                                 onClick={() => verifyTicket(selectedWorkerDetails.id, ticket.id, false)}
-                                className="w-full sm:w-auto px-4 py-2 bg-[#4a1a1a] hover:bg-[#6b2121] text-[#ef4444] border border-[#6b2121] rounded text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                                className="w-full sm:w-auto px-3 py-1.5 bg-[#4a1a1a] hover:bg-[#6b2121] text-[#ef4444] border border-[#6b2121] rounded text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                               >
                                 Reject
                               </button>
@@ -975,39 +975,36 @@ export const RosterView: React.FC<RosterViewProps> = ({
         )}
         {/* Tab 2: Site Assignments */}
         {activeDossierTab === 'assignments' && (
-          <div className="space-y-6 animate-in fade-in duration-200">
-            {/* Section Header */}
-            <div className="flex items-center gap-3 mb-2">
-              <MapPin className="h-5 w-5 text-gray-400" />
-              <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-white">Site Assignments & Deployments</h2>
-            </div>
-
+          <div className="space-y-5 animate-in fade-in duration-200">
             {/* Active Deployments */}
-            <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl p-5 overflow-hidden space-y-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-[#facc15]/10 p-2 rounded-lg">
-                  <Calendar className="h-5 w-5 text-[#facc15]" />
-                </div>
-                <h3 className="text-sm font-extrabold uppercase tracking-widest text-white">Active Site Deployments</h3>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+                <Calendar className="h-4 w-4 text-[#facc15]" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-white">Active Site Deployments</h3>
               </div>
               {Object.keys(groupedShifts).length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="space-y-2">
                   {Object.entries(groupedShifts).map(([jobId, shiftDates]) => {
                     const job = (jobs || []).find(j => j.id === jobId);
                     if (!job) return null;
                     return (
-                      <div key={jobId} className="p-4 rounded-xl border border-[#2a2a2a] bg-[#121212] hover:border-[#facc15]/30 transition-colors space-y-3">
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="space-y-1">
-                            <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                              <MapPin className="w-3.5 h-3.5 text-[#facc15]" />
-                              {job.siteName}
-                            </h4>
-                            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-0.5">
-                              Contractor: {job.mainContractor} &bull; Ref: {job.jobRef}
-                            </p>
-                          </div>
-                          <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
+                      <div key={jobId} className="p-3 rounded-lg border border-[#2a2a2a] bg-[#151518]/60 hover:bg-[#1a1a1e] hover:border-zinc-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="space-y-1">
+                          <h4 className="text-xs font-black text-white uppercase tracking-wider flex items-center gap-1.5">
+                            <MapPin className="w-3 h-3 text-[#facc15]" />
+                            {job.siteName}
+                          </h4>
+                          <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest leading-none mt-0.5">
+                            Contractor: {job.mainContractor} &bull; Ref: {job.jobRef} &bull; Postcode: {job.postcode || 'N/A'}
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {(shiftDates as string[]).map(dateStr => (
+                            <span key={dateStr} className="px-2 py-0.5 rounded bg-[#202024] border border-[#2d2d33] text-[9px] font-bold text-zinc-300 tracking-wide">
+                              {getDayName(dateStr)}
+                            </span>
+                          ))}
+                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border ${
                             job.status === 'active' || job.status === 'in-progress'
                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                               : 'bg-[#252525] border-[#333] text-white/50'
@@ -1015,51 +1012,24 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             {job.status}
                           </span>
                         </div>
-                        
-                        <div className="pt-2 border-t border-[#2a2a2a] space-y-2">
-                          <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Deployed Days</span>
-                          <div className="flex flex-wrap gap-1.5">
-                            {(shiftDates as string[]).map(dateStr => (
-                              <span key={dateStr} className="px-3 py-1.5 rounded-md bg-[#1c1c1c] border border-[#2a2a2a] text-[11px] font-bold text-white tracking-wide font-sans shadow-sm transition-colors hover:bg-[#262626]">
-                                {getDayName(dateStr)}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        {job.postcode && (
-                          <div className="text-[9px] font-black text-[#facc15] uppercase tracking-widest flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {job.postcode}
-                          </div>
-                        )}
                       </div>
                     );
                   })}
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-[#2a2a2a] rounded-xl py-12 px-6 flex flex-col items-center justify-center text-center">
-                  <div className="mb-4 opacity-20 text-white">
-                    <MapPin className="h-16 w-16" />
-                  </div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 max-w-[200px] leading-relaxed">
-                    No active site assignments found for this staff member
-                  </p>
-                </div>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest py-2">No active site assignments found</p>
               )}
             </div>
 
             {/* Deployment History */}
-            <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl p-5 overflow-hidden space-y-4">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white/5 p-2 rounded-lg">
-                  <Clock className="h-5 w-5 text-gray-400" />
-                </div>
-                <h3 className="text-sm font-extrabold uppercase tracking-widest text-white">Deployment History</h3>
+            <div className="space-y-3 pt-2">
+              <div className="flex items-center gap-2 border-b border-zinc-800 pb-2">
+                <Clock className="h-4 w-4 text-zinc-400" />
+                <h3 className="text-xs font-black uppercase tracking-wider text-white">Deployment History</h3>
               </div>
               {Object.keys(groupedHistoryShifts).length > 0 ? (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[420px] overflow-y-auto pr-1">
+                <div className="space-y-2">
+                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                     {(showAllHistory 
                       ? Object.entries(groupedHistoryShifts)
                       : Object.entries(groupedHistoryShifts).slice(0, 5)
@@ -1067,30 +1037,25 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       const job = (jobs || []).find(j => j.id === jobId);
                       if (!job) return null;
                       return (
-                        <div key={jobId} className="p-4 rounded-xl border border-[#2a2a2a] bg-[#121212] hover:border-white/10 transition-colors space-y-3">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="space-y-1">
-                              <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-1.5">
-                                <MapPin className="w-3.5 h-3.5 text-gray-400" />
-                                {job.siteName}
-                              </h4>
-                              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest leading-none mt-0.5">
-                                Contractor: {job.mainContractor} &bull; Ref: {job.jobRef}
-                              </p>
-                            </div>
-                            <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border bg-[#1c1c1c] border-[#2a2a2a] text-white/50">
+                        <div key={jobId} className="p-3 rounded-lg border border-[#222] bg-[#121214]/40 hover:bg-[#151518]/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="space-y-1">
+                            <h4 className="text-xs font-black text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                              <MapPin className="w-3 h-3 text-zinc-650" />
+                              {job.siteName}
+                            </h4>
+                            <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest leading-none mt-0.5">
+                              Contractor: {job.mainContractor} &bull; Ref: {job.jobRef}
+                            </p>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {(shiftDates as string[]).map(dateStr => (
+                              <span key={dateStr} className="px-2 py-0.5 rounded bg-[#1a1a1c] border border-zinc-900 text-[9px] font-bold text-zinc-500 tracking-wide">
+                                {getDayName(dateStr)}
+                              </span>
+                            ))}
+                            <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border border-zinc-900 text-zinc-600">
                               Completed
                             </span>
-                          </div>
-                          <div className="pt-2 border-t border-[#2a2a2a] space-y-2">
-                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-wider block">Deployed Days</span>
-                            <div className="flex flex-wrap gap-1.5">
-                              {(shiftDates as string[]).map(dateStr => (
-                                <span key={dateStr} className="px-3 py-1.5 rounded-md bg-[#1c1c1c] border border-[#2a2a2a] text-[11px] font-bold text-white tracking-wide font-sans shadow-sm transition-colors hover:bg-[#262626]">
-                                  {getDayName(dateStr)}
-                                </span>
-                              ))}
-                            </div>
                           </div>
                         </div>
                       );
@@ -1101,7 +1066,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       <button
                         type="button"
                         onClick={() => setShowAllHistory(!showAllHistory)}
-                        className="text-[10px] font-black text-[#facc15] hover:text-[#eab308] uppercase tracking-widest px-4 py-2 rounded-lg bg-[#121212] border border-[#2a2a2a] transition-all hover:bg-[#1c1c1c] active:scale-95"
+                        className="text-[9px] font-black text-[#facc15] hover:text-[#eab308] uppercase tracking-widest px-3 py-1.5 rounded bg-[#151518] border border-[#232326] transition-all hover:bg-[#1c1c1c] active:scale-95"
                       >
                         {showAllHistory ? 'Show Less History' : `View All History (${Object.keys(groupedHistoryShifts).length} total)`}
                       </button>
@@ -1109,26 +1074,19 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   )}
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-[#2a2a2a] rounded-xl py-12 px-6 flex flex-col items-center justify-center text-center">
-                  <div className="mb-4 opacity-20 text-white">
-                    <Clock className="h-16 w-16" />
-                  </div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-neutral-500 max-w-[200px] leading-relaxed">
-                    No completed or archived shifts found for this staff member
-                  </p>
-                </div>
+                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest py-2">No completed or archived shifts found</p>
               )}
             </div>
 
             {/* Action Buttons */}
-            <div className="grid grid-cols-2 gap-4 mt-4">
+            <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => handleCopyLink(selectedWorkerDetails.dossierUrl || '', 'dossier-link')}
-                className="bg-[#1c1c1c] border border-[#2a2a2a] py-3 rounded-lg flex items-center justify-center gap-2 group hover:bg-[#262626] transition-colors cursor-pointer"
+                className="bg-[#151518] border border-[#232326] py-2.5 rounded-lg flex items-center justify-center gap-2 group hover:bg-[#1a1a1e] transition-colors cursor-pointer"
               >
-                <Copy className="h-4 w-4 text-gray-400 group-hover:text-white" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white">Copy Dossier Link</span>
+                <Copy className="h-3.5 w-3.5 text-zinc-400 group-hover:text-white" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-300">Copy Dossier Link</span>
               </button>
               <button
                 type="button"
@@ -1136,10 +1094,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   setLoadingDossierLogs(true);
                   setTimeout(() => setLoadingDossierLogs(false), 800);
                 }}
-                className="bg-[#1c1c1c] border border-[#2a2a2a] py-3 rounded-lg flex items-center justify-center gap-2 group hover:bg-[#262626] transition-colors cursor-pointer"
+                className="bg-[#151518] border border-[#232326] py-2.5 rounded-lg flex items-center justify-center gap-2 group hover:bg-[#1a1a1e] transition-colors cursor-pointer"
               >
-                <RefreshCw className="h-4 w-4 text-gray-400 group-hover:text-white" />
-                <span className="text-[10px] font-bold uppercase tracking-widest text-white">Refresh Data</span>
+                <RefreshCw className="h-3.5 w-3.5 text-zinc-400 group-hover:text-white" />
+                <span className="text-[9px] font-black uppercase tracking-widest text-zinc-300">Refresh Data</span>
               </button>
             </div>
           </div>
@@ -1183,18 +1141,18 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     const isPending = event.details?.status === 'pending';
 
                     return (
-                      <article key={event.id} className="bg-[#1e1e1e] rounded-2xl p-5 border border-white/5 shadow-lg space-y-4">
-                        <div className="flex justify-between items-start mb-1">
-                          <div className="flex gap-3">
-                            <div className="mt-1">
-                              <Send className="h-5 w-5 text-[#facc15]" />
+                      <article key={event.id} className="bg-[#151518]/40 rounded-lg p-3 border border-[#222] space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex gap-2">
+                            <div className="mt-0.5">
+                              <Send className="h-4 w-4 text-[#facc15]" />
                             </div>
                             <div>
-                              <h3 className="text-sm font-bold uppercase tracking-wide text-white">Document Request Dispatched</h3>
-                              <p className="text-[10px] font-semibold text-gray-500 mt-0.5">{date} &bull; BY: {event.actor}</p>
+                              <h3 className="text-xs font-bold uppercase tracking-wide text-white">Document Request Dispatched</h3>
+                              <p className="text-[9px] font-semibold text-zinc-500 mt-0.5">{date} &bull; BY: {event.actor}</p>
                             </div>
                           </div>
-                          <span className={`px-2 py-0.5 text-[10px] font-bold uppercase rounded border tracking-wide ${
+                          <span className={`px-1.5 py-0.5 text-[8px] font-black uppercase rounded border tracking-wide ${
                             isCompleted
                               ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
                               : isExpired
@@ -1205,21 +1163,21 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           </span>
                         </div>
 
-                        <div className="mt-5">
-                          <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Requested Certifications</h4>
-                          <div className="flex flex-wrap gap-2">
+                        <div className="pt-1">
+                          <h4 className="text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Requested Certifications</h4>
+                          <div className="flex flex-wrap gap-1.5">
                             {certs.map((c: string) => (
-                              <span key={c} className="px-3 py-1.5 bg-[#2a2a2a] text-[11px] font-semibold text-gray-200 rounded-md border border-white/10">
+                              <span key={c} className="px-2.5 py-1 bg-[#202024] text-[10px] font-semibold text-zinc-300 rounded border border-[#2d2d33]">
                                 {c}
                               </span>
                             ))}
                           </div>
                         </div>
 
-                        <div className="mt-6 pt-4 border-t border-white/5 flex flex-col gap-4">
-                          <div className="flex items-center gap-2 text-[#facc15]">
-                            <Clock className="h-4 w-4" />
-                            <p className="text-xs font-bold">
+                        <div className="pt-2 border-t border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-1.5 text-[#facc15]">
+                            <Clock className="h-3.5 w-3.5" />
+                            <p className="text-[10px] font-bold">
                               {isPending ? (
                                 `Expires: ${new Date(event.details?.expires_at).toLocaleString('en-GB')}`
                               ) : isCompleted ? (
@@ -1231,21 +1189,21 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           </div>
                           
                           {isPending && (
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="flex gap-2">
                               <button
                                 type="button"
                                 onClick={() => handleCopyLink(event.details?.uploadUrl, event.id)}
-                                className="flex items-center justify-center gap-2 py-2.5 bg-[#2a2a2a] hover:bg-[#333] rounded-lg text-[10px] font-bold uppercase border border-white/10 active:scale-95 transition-transform cursor-pointer"
+                                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#202024] hover:bg-[#28282f] rounded text-[9px] font-bold uppercase border border-[#2d2d33] cursor-pointer text-white"
                               >
                                 {copiedRequestId === event.id ? (
                                   <>
-                                    <Check className="h-4 w-4 text-emerald-400" />
-                                    <span className="text-white">Copied</span>
+                                    <Check className="h-3 h-3 text-emerald-400" />
+                                    <span>Copied</span>
                                   </>
                                 ) : (
                                   <>
-                                    <Copy className="h-4 w-4 text-gray-450" />
-                                    <span className="text-white">Copy Link</span>
+                                    <Copy className="h-3 h-3 text-zinc-500" />
+                                    <span>Copy Link</span>
                                   </>
                                 )}
                               </button>
@@ -1253,12 +1211,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                 type="button"
                                 onClick={() => handleResendRequest(req)}
                                 disabled={resendingRequestMap[req.id]}
-                                className="flex items-center justify-center gap-2 py-2.5 bg-[#2a2a2a] hover:bg-[#333] rounded-lg text-[10px] font-bold uppercase border border-white/10 active:scale-95 transition-transform disabled:opacity-50 cursor-pointer text-white"
+                                className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-[#202024] hover:bg-[#28282f] rounded text-[9px] font-bold uppercase border border-[#2d2d33] disabled:opacity-50 cursor-pointer text-white"
                               >
                                 {resendingRequestMap[req.id] ? (
-                                  <RefreshCw className="h-4 w-4 animate-spin" />
+                                  <RefreshCw className="h-3 h-3 animate-spin" />
                                 ) : (
-                                  <RefreshCw className="h-4 w-4 text-gray-450" />
+                                  <RefreshCw className="h-3 h-3 text-zinc-500" />
                                 )}
                                 <span>Resend Email</span>
                               </button>
@@ -1268,17 +1226,17 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       </article>
                     );
                   } else {
-                    let logIcon = <FileText className="w-3.5 h-3.5 text-zinc-400" />;
+                    let logIcon = <FileText className="w-3 h-3 text-zinc-500" />;
                     let logTitle = "System Action Logged";
-                    let badgeColor = "bg-zinc-900/40 border-zinc-800 text-zinc-400";
+                    let badgeColor = "bg-zinc-900/40 border-zinc-800 text-zinc-455 text-zinc-500";
                     
                     const action = event.action;
                     if (action === 'APPROVE_DOCUMENT') {
-                      logIcon = <UserCheck className="w-3.5 h-3.5 text-emerald-400" />;
+                      logIcon = <UserCheck className="w-3 h-3 text-emerald-400" />;
                       logTitle = "Compliance Document Approved";
                       badgeColor = "bg-emerald-950/20 border-emerald-900/30 text-emerald-400";
                     } else if (action === 'REJECT_DOCUMENT') {
-                      logIcon = <X className="w-3.5 h-3.5 text-red-400" />;
+                      logIcon = <X className="w-3 h-3 text-red-400" />;
                       logTitle = "Compliance Document Rejected/Purged";
                       badgeColor = "bg-red-950/20 border-red-900/30 text-red-400";
                     } else if (action === 'SUBMIT_DOCUMENTS') {
@@ -1286,15 +1244,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       logTitle = "Operative Documents Uploaded";
                       badgeColor = "bg-emerald-950/20 border-emerald-900/30 text-emerald-400";
                     } else if (action === 'RESEND_DOCUMENT_REQUEST') {
-                      logIcon = <RefreshCw className="w-3.5 h-3.5 text-brand-accent" />;
+                      logIcon = <RefreshCw className="w-3 h-3 text-brand-accent" />;
                       logTitle = "Document Request Link Renewed & Resent";
                       badgeColor = "bg-brand-accent/5 border-brand-accent/20 text-brand-accent";
                     } else if (action === 'CREATE' || action === 'UPDATE') {
-                      logIcon = <Edit className="w-3.5 h-3.5 text-zinc-400" />;
+                      logIcon = <Edit className="w-3 h-3 text-zinc-550 text-zinc-500" />;
                       logTitle = "Staff Profile Mutation Recorded";
-                      badgeColor = "bg-zinc-900/40 border-zinc-800 text-zinc-300";
+                      badgeColor = "bg-zinc-900/40 border-zinc-800 text-zinc-400";
                     } else if (action === 'INSPECT') {
-                      logIcon = <User className="w-3.5 h-3.5 text-blue-400" />;
+                      logIcon = <User className="w-3 h-3 text-blue-400" />;
                       logTitle = "Staff Dossier Inspected";
                       badgeColor = "bg-blue-950/20 border-blue-900/30 text-blue-400";
                     }
@@ -1321,9 +1279,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       : [];
 
                     return (
-                      <div key={event.id} className="py-3 space-y-1.5 hover:bg-zinc-900/10 transition-colors px-1 rounded-lg">
+                      <div key={event.id} className="py-2 space-y-1 hover:bg-zinc-900/10 transition-colors px-1 rounded-lg">
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-2.5">
+                          <div className="flex items-start gap-2">
                             <div className="text-zinc-550 mt-0.5 shrink-0">
                               {logIcon}
                             </div>
@@ -1331,23 +1289,23 @@ export const RosterView: React.FC<RosterViewProps> = ({
                               <p className="text-[10px] font-black text-white uppercase tracking-widest">
                                 {logTitle}
                               </p>
-                              <p className="text-[8.5px] font-bold text-zinc-500 uppercase tracking-wider">
+                              <p className="text-[8px] font-bold text-zinc-500 uppercase tracking-wider">
                                 {date} &bull; By: {event.actor}
                               </p>
                             </div>
                           </div>
                           
-                          <span className={`px-1.5 py-0.5 rounded text-[7.5px] font-black uppercase tracking-widest border ${badgeColor}`}>
+                          <span className={`px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-widest border ${badgeColor}`}>
                             {action}
                           </span>
                         </div>
 
-                        <div className="pl-6">
+                        <div className="pl-5">
                           {/* Only render AuditDiffTable if there are non-empty changes in the diff */}
                           {diff.length > 0 ? (
                             <AuditDiffTable diff={diff} />
                           ) : summaryText ? (
-                            <p className="text-[11px] font-bold text-zinc-400 font-sans leading-relaxed">
+                            <p className="text-[10px] font-bold text-zinc-400 font-sans leading-relaxed">
                               {summaryText}
                             </p>
                           ) : null}
@@ -1359,7 +1317,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
                 {/* Pagination Controls */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4 border-t border-zinc-900">
+                  <div className="flex items-center justify-between pt-3 border-t border-zinc-900">
                     <button
                       type="button"
                       onClick={() => setAuditLogPage(prev => Math.max(1, prev - 1))}
@@ -1583,7 +1541,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowReminderConfirm(true)}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-[#5c7285] hover:bg-[#6c8295] text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-[#5c7285]/15"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-[#5c7285] hover:bg-[#6c8295] text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border border-[#5c7285]"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Request Docs</span>
@@ -1625,9 +1583,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
           ) : (
             <div className="space-y-6">
               {/* Profile Card */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-4">
-                <div className="flex items-center space-x-4 min-w-0">
-                  <div className="w-16 h-16 rounded-full border-2 border-[#1B4D3E] bg-[#0E2E25] flex items-center justify-center font-black text-xl text-[#2ECC71] shrink-0 uppercase tracking-widest font-archivo">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 border-b border-zinc-900 pb-5">
+                <div className="flex items-center space-x-3.5 min-w-0">
+                  <div className="w-12 h-12 rounded-full border border-[#1B4D3E] bg-[#0E2E25] flex items-center justify-center font-black text-sm text-[#2ECC71] shrink-0 uppercase tracking-widest font-archivo">
                     {(() => {
                       const nameParts = selectedWorkerDetails.name.split(' ');
                       return nameParts.length > 1 
@@ -1636,31 +1594,31 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     })().toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <h2 className="text-2xl font-black text-white uppercase tracking-wider leading-snug">
+                    <h2 className="text-lg font-black text-white uppercase tracking-wider leading-tight">
                       {selectedWorkerDetails.name}
                     </h2>
-                    <p className="text-xs font-bold text-zinc-400 mt-1 uppercase tracking-wide">
+                    <p className="text-[10px] font-bold text-zinc-500 mt-0.5 uppercase tracking-wide">
                       {selectedWorkerDetails.role} {selectedWorkerDetails.postcode ? `• ${selectedWorkerDetails.postcode}` : ''}
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-6 md:gap-8 shrink-0">
+                <div className="flex flex-wrap items-center gap-4 md:gap-6 shrink-0">
                   {selectedWorkerDetails.phone && (
                     <div className="flex flex-col md:items-end">
-                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Phone</span>
-                      <a href={`tel:${selectedWorkerDetails.phone}`} className="text-sm font-bold text-[#6C8295] hover:underline mt-0.5 tracking-wider font-mono">
+                      <span className="text-[8px] font-black text-zinc-650 uppercase tracking-widest">Phone</span>
+                      <a href={`tel:${selectedWorkerDetails.phone}`} className="text-xs font-bold text-[#6C8295] hover:underline mt-0.5 tracking-wider font-mono">
                         {selectedWorkerDetails.phone}
                       </a>
                     </div>
                   )}
                   {selectedWorkerDetails.phone && selectedWorkerDetails.email && (
-                    <div className="hidden md:block w-px h-8 bg-zinc-800" />
+                    <div className="hidden md:block w-px h-6 bg-zinc-805 bg-zinc-800" />
                   )}
                   {selectedWorkerDetails.email && (
                     <div className="flex flex-col md:items-end">
-                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Email</span>
-                      <a href={`mailto:${selectedWorkerDetails.email}`} className="text-sm font-bold text-[#6C8295] hover:underline mt-0.5">
+                      <span className="text-[8px] font-black text-zinc-650 uppercase tracking-widest">Email</span>
+                      <a href={`mailto:${selectedWorkerDetails.email}`} className="text-xs font-bold text-[#6C8295] hover:underline mt-0.5">
                         {selectedWorkerDetails.email}
                       </a>
                     </div>

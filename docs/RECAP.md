@@ -144,4 +144,13 @@
 - Extracted `computeDaySchedule` from `useDaySchedule` and added `useWeekSchedule` to derive all 5 weekdays' schedules at once.
 - Added a `size="dense"` variant to `StaffCard` for narrow week-grid columns.
 - Extended `AssignTarget`/`AssignSheet` to carry a per-click date so assigning staff from any week-grid column opens the sheet for the correct day.
-- Updated `.agents/AGENTS.md` ui-ux-engineer and qa-automation persona descriptions to reflect the shipped week-grid design and clarify drag-and-drop is not yet implemented.
+- Updated `.agents/AGENTS.md` ui-ux-engineer and qa-automation persona descriptions to reflect the shipped week-grid design and clarify drag-and-drop is not yet implemented.
+
+## 2026-07-16 (Session Upgrade)
+- Created public.job_attachments, public.job_diary, and public.job_document_requests database tables on Supabase.
+- Provisioned job-attachments storage bucket with RLS policies allowing authenticated uploads and anonymous uploads via link.
+- Integrated live weather fetching via OpenWeatherMap using API key 39b85af056be30c05f01ac45aa9249e1.
+- Integrated OpenStreetMap geocoding and Leaflet map displaying nearby suppliers sorted by distance.
+- Implemented daily Site Diary notes and Health & Safety checklist form, enforcing complete safety sign-off before pours can be logged.
+- Added before/after site media upload galleries and document upload sections.
+- Created public upload page at route /job-upload/:token for secure external document requests.

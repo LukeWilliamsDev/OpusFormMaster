@@ -872,28 +872,28 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 const isExpired = status === 'EXPIRED';
                 const isExpiringSoon = status === 'EXPIRING_SOON';
                 
-                let cardBg = "bg-emerald-500/[0.02] border-emerald-500/10";
-                let iconBox = "border-emerald-500/20 bg-emerald-500/5 text-emerald-400";
-                let badgeClass = "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400";
+                let cardBg = "bg-[#0e1612] border-[#1b2b22] hover:bg-[#121c17]";
+                let iconBox = "border-[#1b2b22] bg-[#121c17] text-[#2ecc71]";
+                let badgeClass = "bg-[#1b2b22] border-[#223d2e] text-[#2ecc71]";
                 let statusText = "ACTIVE";
                 let LeftIcon = CheckCircle2;
 
                 if (isExpired) {
-                  cardBg = "bg-red-500/[0.02] border-red-500/10";
-                  iconBox = "border-red-500/20 bg-red-500/5 text-red-400";
-                  badgeClass = "bg-red-500/10 border border-red-500/20 text-red-400";
+                  cardBg = "bg-[#1a0e0e] border-[#381c1c] hover:bg-[#201212]";
+                  iconBox = "border-[#381c1c] bg-[#201212] text-[#e74c3c]";
+                  badgeClass = "bg-[#381c1c] border-[#552727] text-[#e74c3c]";
                   statusText = "EXPIRED";
                   LeftIcon = ShieldAlert;
                 } else if (isPending) {
-                  cardBg = "bg-amber-500/[0.02] border-amber-500/10";
-                  iconBox = "border-amber-500/20 bg-amber-500/5 text-amber-400";
-                  badgeClass = "bg-amber-500/10 border border-amber-500/20 text-amber-400";
+                  cardBg = "bg-[#18140e] border-[#2d2215] hover:bg-[#1e1912]";
+                  iconBox = "border-[#2d2215] bg-[#1e1912] text-[#f1c40f]";
+                  badgeClass = "bg-[#2d2215] border-[#3e301d] text-[#f1c40f]";
                   statusText = "PENDING APPROVAL";
                   LeftIcon = Clock;
                 } else if (isExpiringSoon) {
-                  cardBg = "bg-emerald-500/[0.02] border-emerald-500/10";
-                  iconBox = "border-amber-500/20 bg-amber-500/5 text-amber-400";
-                  badgeClass = "bg-amber-500/10 border border-amber-500/20 text-amber-400";
+                  cardBg = "bg-[#1c160e] border-[#382a17] hover:bg-[#221c12]";
+                  iconBox = "border-[#382a17] bg-[#221c12] text-[#e67e22]";
+                  badgeClass = "bg-[#382a17] border-[#503d22] text-[#e67e22]";
                   LeftIcon = Clock;
                   
                   const anchorDate = new Date();
@@ -910,13 +910,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 });
 
                 return (
-                  <div key={ticket.id} className={`flex items-center justify-between p-4 rounded-xl border ${cardBg} transition-all duration-150`}>
+                  <div key={ticket.id} className={`flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border gap-4 ${cardBg} transition-all duration-150`}>
                     <div className="flex items-center space-x-4">
                       <div className={`w-12 h-12 rounded-xl border flex items-center justify-center shrink-0 ${iconBox}`}>
                         <LeftIcon className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="flex items-center gap-2.5">
+                        <div className="flex flex-wrap items-center gap-2.5">
                           <h4 className="text-sm font-bold text-white uppercase tracking-wider">{ticket.type}</h4>
                           <span className={`px-2 py-0.5 text-[9px] font-black rounded uppercase tracking-wider border ${badgeClass}`}>
                             {statusText}
@@ -928,39 +928,37 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       </div>
                     </div>
 
-                    <div>
+                    <div className="flex sm:justify-end">
                       {isExpired ? (
                         <button
                           type="button"
                           onClick={() => setShowReminderConfirm(true)}
-                          className="px-4 py-2 bg-red-950/20 border border-red-900/30 hover:bg-red-950/40 text-red-400 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                          className="w-full sm:w-auto px-4 py-2 bg-red-950/20 border border-red-900/30 hover:bg-red-950/40 text-red-400 rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
                         >
                           Request Update
                         </button>
                       ) : (
-                        <div className="flex gap-2">
-                          {ticket.documentUrl && (
-                            <button
-                              type="button"
-                              onClick={() => handleViewDocument(ticket.documentUrl)}
-                              className="px-4 py-2 border border-zinc-800 hover:bg-zinc-900 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
-                            >
-                              View File
-                            </button>
-                          )}
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          <button
+                            type="button"
+                            onClick={() => ticket.documentUrl ? handleViewDocument(ticket.documentUrl) : alert('No document attached')}
+                            className="w-full sm:w-auto px-4 py-2 border border-zinc-800 hover:bg-zinc-800 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                          >
+                            View File
+                          </button>
                           {isPending && (
                             <>
                               <button
                                 type="button"
                                 onClick={() => verifyTicket(selectedWorkerDetails.id, ticket.id, true)}
-                                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                                className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
                               >
                                 Approve
                               </button>
                               <button
                                 type="button"
                                 onClick={() => verifyTicket(selectedWorkerDetails.id, ticket.id, false)}
-                                className="px-4 py-2 bg-[#4a1a1a] hover:bg-[#6b2121] text-[#ef4444] border border-[#6b2121] rounded text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
+                                className="w-full sm:w-auto px-4 py-2 bg-[#4a1a1a] hover:bg-[#6b2121] text-[#ef4444] border border-[#6b2121] rounded text-xs font-bold uppercase tracking-wider transition-all cursor-pointer"
                               >
                                 Reject
                               </button>
@@ -1549,7 +1547,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       {selectedWorkerDetails ? (
         <div className="space-y-6 animate-in fade-in duration-200">
           {/* Top Navigation Row */}
-          <div className="flex items-center justify-between border-b border-zinc-800 pb-4 mb-2">
+          <div className="flex items-center justify-between pb-4 mb-2">
             <button
               type="button"
               onClick={() => {
@@ -1558,7 +1556,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
               }}
               className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer"
             >
-              <ChevronLeft className="w-4.5 h-4.5" />
+              <ChevronLeft className="w-4 h-4 text-zinc-400" />
               <span>Back to Staff</span>
             </button>
 
@@ -1577,7 +1575,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       setEditTickets([...selectedWorkerDetails.tickets]);
                       setEditError(null);
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 border border-zinc-800 hover:bg-zinc-900 rounded-lg text-xs font-bold text-white uppercase tracking-wider transition-all cursor-pointer"
+                    className="flex items-center gap-1.5 px-4 py-2 border border-zinc-800 hover:bg-zinc-800 rounded-lg text-xs font-bold text-zinc-300 uppercase tracking-wider transition-all cursor-pointer"
                   >
                     <Edit className="w-3.5 h-3.5 text-zinc-400" />
                     <span>Edit</span>
@@ -1585,7 +1583,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowReminderConfirm(true)}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-[#6C8295] hover:bg-[#6c8295]/80 text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-[#6C8295]/15"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-[#5c7285] hover:bg-[#6c8295] text-white rounded-lg text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-lg shadow-[#5c7285]/15"
                   >
                     <Send className="w-3.5 h-3.5" />
                     <span>Request Docs</span>
@@ -1627,21 +1625,21 @@ export const RosterView: React.FC<RosterViewProps> = ({
           ) : (
             <div className="space-y-6">
               {/* Profile Card */}
-              <div className="bg-[#1c1c1c] border border-[#2a2a2a] rounded-xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 shadow-xl">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 py-4">
                 <div className="flex items-center space-x-4 min-w-0">
-                  <div className="w-16 h-16 rounded-full border-2 border-emerald-500/20 bg-emerald-500/5 flex items-center justify-center font-bold text-lg text-emerald-450 shrink-0 uppercase tracking-widest font-archivo">
+                  <div className="w-16 h-16 rounded-full border-2 border-[#1B4D3E] bg-[#0E2E25] flex items-center justify-center font-black text-xl text-[#2ECC71] shrink-0 uppercase tracking-widest font-archivo">
                     {(() => {
                       const nameParts = selectedWorkerDetails.name.split(' ');
                       return nameParts.length > 1 
-                        ? `\${nameParts[0][0]}\${nameParts[1][0]}` 
+                        ? `${nameParts[0][0]}${nameParts[1][0]}` 
                         : `${nameParts[0][0] || ''}`;
                     })().toUpperCase()}
                   </div>
                   <div className="min-w-0">
-                    <h2 className="text-xl font-bold text-white uppercase tracking-wider leading-snug">
+                    <h2 className="text-2xl font-black text-white uppercase tracking-wider leading-snug">
                       {selectedWorkerDetails.name}
                     </h2>
-                    <p className="text-xs font-bold text-neutral-400 mt-1 uppercase tracking-wide">
+                    <p className="text-xs font-bold text-zinc-400 mt-1 uppercase tracking-wide">
                       {selectedWorkerDetails.role} {selectedWorkerDetails.postcode ? `• ${selectedWorkerDetails.postcode}` : ''}
                     </p>
                   </div>
@@ -1650,7 +1648,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 <div className="flex flex-wrap items-center gap-6 md:gap-8 shrink-0">
                   {selectedWorkerDetails.phone && (
                     <div className="flex flex-col md:items-end">
-                      <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Phone</span>
+                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Phone</span>
                       <a href={`tel:${selectedWorkerDetails.phone}`} className="text-sm font-bold text-[#6C8295] hover:underline mt-0.5 tracking-wider font-mono">
                         {selectedWorkerDetails.phone}
                       </a>
@@ -1661,7 +1659,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   )}
                   {selectedWorkerDetails.email && (
                     <div className="flex flex-col md:items-end">
-                      <span className="text-[9px] font-black text-neutral-500 uppercase tracking-widest">Email</span>
+                      <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Email</span>
                       <a href={`mailto:${selectedWorkerDetails.email}`} className="text-sm font-bold text-[#6C8295] hover:underline mt-0.5">
                         {selectedWorkerDetails.email}
                       </a>

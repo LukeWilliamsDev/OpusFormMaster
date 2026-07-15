@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { isValidUKPostcode } from '../utils/geo';
@@ -88,7 +88,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     postcode: ''
   });
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [activeStep, setActiveStep] = useState<number>(1);
+  const [showHistory, setShowHistory] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; title: string; message: string; } | null>(null);
@@ -169,6 +169,30 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
 
     return () => resizeObserver.disconnect();
   }, []);
+
+  // Full-screen PDF preview modal (tablet/mobile only)
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const modalContainerRef = useRef<HTMLDivElement>(null);
+  const [modalScale, setModalScale] = useState(1);
+
+  useEffect(() => {
+    if (!previewOpen) return;
+    const updateModalScale = () => {
+      if (modalContainerRef.current) {
+        const containerWidth = modalContainerRef.current.clientWidth;
+        const baseWidth = 794;
+        setModalScale(containerWidth / baseWidth);
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(updateModalScale);
+    if (modalContainerRef.current) {
+      resizeObserver.observe(modalContainerRef.current);
+    }
+    updateModalScale();
+
+    return () => resizeObserver.disconnect();
+  }, [previewOpen]);
 
   const totals = useMemo(() => {
     const netTotal = items.reduce((acc, item) => {
@@ -547,101 +571,557 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
     setItems(items.map(item => item.id === id ? { ...item, ...updates } : item));
   };
 
+  const isIncludedRate = (rate: number | string) =>
+    typeof rate === 'string' && (rate.toUpperCase() === 'INCLUDED' || rate.toUpperCase() === 'INCL');
+
+  const getLineTotal = (item: MeasuredItem) =>
+    isIncludedRate(item.rate) ? 0 : item.quantity * Number(item.rate || 0);
+
+  const pdfDocument = (scaleValue: number, isPrintTarget = false) => (
+    <div
+      className={`bg-white shadow-2xl text-[#333] flex flex-col origin-top shrink-0 ${isPrintTarget ? 'print-area' : ''}`}
+      style={{
+        width: '794px',
+        height: '1122px',
+        minHeight: '1122px',
+        maxHeight: '1122px',
+        transform: `scale(${scaleValue})`,
+        marginLeft: `${(794 * scaleValue - 794) / 2}px`,
+        marginRight: `${(794 * scaleValue - 794) / 2}px`,
+        marginBottom: `${(1122 * scaleValue - 1122)}px`
+      }}
+    >
+      {/* PDF CONTENT â€” header */}
+      <div className="bg-[#26262B] p-8 sm:p-12 flex justify-between items-start">
+        <div className="flex flex-col">
+          <div className="font-archivo text-[32px] sm:text-[40px] font-black text-white tracking-tight leading-none">OPUS FORM</div>
+          <div className="h-1 bg-[#426E91] mt-2 w-full" />
+        </div>
+        <div className="text-right">
+          <div className="text-[28px] sm:text-[32px] font-black text-[#F4F4F0] tracking-[0.04em] leading-none mb-3">QUOTE</div>
+          <table className="ml-auto border-collapse">
+            <tbody className="text-[11px] tracking-[0.05em]">
+              <tr><td className="text-[#A8A8A0] py-0.5 px-4">REFERENCE</td><td className="text-[#F4F4F0] font-black text-right">#{quoteReference}</td></tr>
+              <tr><td className="text-[#A8A8A0] py-0.5 px-4">DATE</td><td className="text-[#F4F4F0] font-black text-right">{new Date().toLocaleDateString('en-GB')}</td></tr>
+              <tr><td className="text-[#A8A8A0] py-0.5 px-4">VALID UNTIL</td><td className="text-[#F4F4F0] font-black text-right">{new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB')}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div className="h-1 bg-[#526E8C]" />
+      <div className="bg-[#F8F7F4] px-12 py-3.5 flex flex-wrap gap-10 border-b border-[#E4E0D8]">
+        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">Company No. 14902188</span>
+        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">VAT Reg No. GB 412 8876 21</span>
+        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">operations@opusform.co.uk</span>
+      </div>
+      <div className="px-12 py-8 flex-1 flex flex-col">
+        <div className="mb-7 grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Client</div>
+            <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
+              {clientInfo.entity ? (
+                <div className="space-y-1">
+                  <p className="font-black text-gray-900 text-sm">{clientInfo.entity}</p>
+                  <p className="text-gray-600 tracking-wide">{clientInfo.email ? clientInfo.email.toLowerCase() : '...'}</p>
+                </div>
+              ) : <span className="text-[#AAA]">No client data entered</span>}
+            </div>
+          </div>
+          <div>
+            <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Project</div>
+            <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
+              {clientInfo.site ? (
+                <div className="space-y-1">
+                  <p className="font-black text-gray-900 text-sm">{clientInfo.site}</p>
+                  <p className="text-gray-600 tracking-wide">{clientInfo.postcode || '...'}</p>
+                </div>
+              ) : <span className="text-[#AAA]">No project data entered</span>}
+            </div>
+          </div>
+        </div>
+        <div className="flex-1">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-[#26262B]">
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[42%]">Description of Structural Elements</th>
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Volume / Qty</th>
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[10%]">Unit</th>
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Unit Rate</th>
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Net Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length > 0 ? items.map((item, idx) => (
+                <tr key={item.id} className={`border-b border-[#EDEAE4] ${idx % 2 === 1 ? 'bg-[#FAFAF8]' : ''}`}>
+                  <td className="p-3 text-xs leading-relaxed text-[#333]">{item.description || '...'}</td>
+                  <td className="p-3 text-xs text-right text-[#333] font-medium">{item.quantity}</td>
+                  <td className="p-3 text-[11px] text-[#BBB] italic uppercase tracking-wide">{item.unit}</td>
+                  <td className="p-3 text-xs text-right text-[#333]">
+                    {isIncludedRate(item.rate) ? 'INCLUDED' : `£${Number(item.rate || 0).toFixed(2)}`}
+                  </td>
+                  <td className="p-3 text-xs text-right text-[#333] font-black">
+                    {isIncludedRate(item.rate) ? 'INCLUDED' : `£${getLineTotal(item).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                  </td>
+                </tr>
+              )) : (
+                <tr className="border-b border-[#EDEAE4]">
+                  <td colSpan={5} className="p-10 text-center text-[#BBB] italic text-[11px] uppercase tracking-widest">No billable items added</td>
+                </tr>
+              )}
+              <tr className="h-4 bg-[#FAFAF8]"><td colSpan={5} /></tr>
+            </tbody>
+          </table>
+        </div>
+        <div className="flex justify-end border-t-2 border-[#26262B]">
+          <div className="w-[280px]">
+            <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]"><span className="uppercase tracking-widest">NET SUBTOTAL</span><span className="font-black text-[#333]">£{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+            <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]"><span className="uppercase tracking-widest text-[11px]">UK STANDARD VAT ({vatRate}%)</span><span className="font-black text-[#333]">£{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+            <div className="flex justify-between p-3.5 px-3 bg-[#26262B] text-[#F4F4F0] font-black text-[15px]"><span className="uppercase tracking-widest">Concrete Works Total</span><span>£{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span></div>
+          </div>
+        </div>
+      </div>
+      <div className="px-12 pt-7">
+        <div className="bg-[#F4F3F0] border-l-[3px] border-[#526E8C] p-4 mb-6">
+          <div className="text-[11px] font-black tracking-[0.12em] uppercase text-[#526E8C] mb-2.5">Standard Terms & Pour Conditions</div>
+          <ul className="list-disc pl-3.5 space-y-1.5">
+            {terms.map((term, index) => term.trim() && (
+              <li key={index} className="text-[10.5px] text-[#555] leading-relaxed">{term}</li>
+            ))}
+          </ul>
+        </div>
+        <div className="mb-8">
+          <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#888] mb-2">Banking Details</div>
+          <div className="grid grid-cols-2 gap-x-10 gap-y-2">
+            <div><div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Bank</div><div className="font-black text-[#333] text-[11px]">Barclays Business Banking</div></div>
+            <div><div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Account Name</div><div className="font-black text-[#333] text-[11px]">Opus Form Ltd</div></div>
+            <div><div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Sort Code</div><div className="font-black text-[#333] text-[11px]">20-00-00</div></div>
+            <div><div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Account No.</div><div className="font-black text-[#333] text-[11px]">13319268</div></div>
+            <div><div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">IBAN</div><div className="font-black text-[#333] text-[11px]">GB29 NWBK 6016 1331 9268 19</div></div>
+          </div>
+        </div>
+      </div>
+      <div className="bg-[#26262B] px-8 sm:px-12 py-3.5 flex justify-between items-center mt-auto">
+        <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">Opus Form Ltd</span>
+        <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">operations@opusform.co.uk</span>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col flex-1 w-full text-white pb-20">
-      <main className="flex-grow flex flex-col min-w-0">
-        {/* Split layout to match 2a */}
-        <div style={{ display: 'flex', gap: '24px', flex: 1 }}>
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '16px', minWidth: 0 }}>
-            
-            {/* Reference, Save, Stepper */}
-            <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4">
-              <div className="flex items-center gap-[10px]">
-                <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-2.5 px-3 flex-1">
-                  <span className="text-[11px] font-black tracking-widest text-[#888] uppercase whitespace-nowrap">Ref</span>
-                  <input 
-                    className="bg-transparent border-none outline-none text-[#6C8295] text-xs font-black tracking-widest uppercase w-full font-mono"
-                    value={quoteReference}
-                    onChange={e => setQuoteReference(e.target.value)}
-                    placeholder="JOB-0000"
+    <div className="flex flex-col flex-1 w-full text-white">
+
+      {/* â”€â”€â”€ STICKY ACTION BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <div className="sticky top-0 z-40 bg-[#111114]/90 backdrop-blur border-b border-[#2a2a30] px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 mb-4">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex items-center gap-1.5 text-gray-500 hover:text-white transition-colors text-[11px] font-black uppercase tracking-widest shrink-0"
+          >
+            ← Back
+          </button>
+          <div className="w-px h-4 bg-[#2a2a30] hidden sm:block" />
+          <div className="flex items-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg px-3 py-1.5 flex-1 sm:flex-initial min-w-0">
+            <span className="text-[11px] font-black tracking-widest text-[#888] uppercase whitespace-nowrap">Ref</span>
+            <input
+              className="bg-transparent border-none outline-none text-[#6C8295] text-xs font-black tracking-widest uppercase font-mono w-full sm:w-24 min-w-0"
+              value={quoteReference}
+              onChange={e => setQuoteReference(e.target.value)}
+              placeholder="JOB-0000"
+            />
+          </div>
+        </div>
+        <div className="flex items-center gap-2 sm:shrink-0">
+          <button
+            onClick={handleSaveDraft}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">{lastSaved ? 'SAVED' : 'SAVE'}</span>
+          </button>
+          <button
+            onClick={handleDownloadPDF}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">PDF</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={isSendingEmail}
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#6C8295] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-4 py-1.5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
+          >
+            {isSendingEmail ? (
+              <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <Send className="w-3.5 h-3.5" />
+            )}
+            <span className="hidden sm:inline">{isSendingEmail ? 'SENDING...' : 'SEND'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* â”€â”€â”€ MAIN TWO-PANEL BODY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <div className="flex flex-col lg:flex-row gap-5 px-4 sm:px-6 pb-24 lg:pb-10">
+
+        {/* â”€â”€ LEFT PANEL: Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div className="flex flex-col gap-5 flex-1 min-w-0">
+
+          {/* CLIENT DETAILS */}
+          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
+              <Building2 className="w-4 h-4 text-[#b0b8c4]" />
+              <h3 className="text-xs font-black uppercase tracking-widest text-white">Client & Project</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Client Name</span>
+                <div className="flex items-center bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                  <input
+                    type="text"
+                    className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
+                    value={clientInfo.entity}
+                    onChange={e => setClientInfo({ ...clientInfo, entity: e.target.value })}
+                    placeholder="e.g. ABC CONSTRUCTIONS LTD"
                   />
                 </div>
-                <button 
-                  onClick={handleSaveDraft}
-                  className="flex items-center gap-[7px] bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-2.5 px-4 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors whitespace-nowrap"
-                >
-                  <Save className="w-3.5 h-3.5" />
-                  <span>{lastSaved ? 'SAVED' : 'SAVE'}</span>
-                </button>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Email</span>
+                <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                  <Mail className="w-4 h-4 text-gray-600 shrink-0" />
+                  <input
+                    type="email"
+                    className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold"
+                    value={clientInfo.email}
+                    onChange={e => setClientInfo({ ...clientInfo, email: e.target.value })}
+                    placeholder="accounts@client.com"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Project / Site Name</span>
+                <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                  <LayoutGrid className="w-4 h-4 text-gray-600 shrink-0" />
+                  <input
+                    type="text"
+                    className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
+                    value={clientInfo.site}
+                    onChange={e => setClientInfo({ ...clientInfo, site: e.target.value })}
+                    placeholder="e.g. Project Titan"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Site Postcode</span>
+                <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                  <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
+                  <input
+                    type="text"
+                    className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-widest"
+                    value={clientInfo.postcode}
+                    onChange={e => setClientInfo({ ...clientInfo, postcode: e.target.value })}
+                    placeholder="e.g. SW1A 1AA"
+                  />
+                </div>
+                {clientInfo.postcode.trim() && !isValidUKPostcode(clientInfo.postcode) && (
+                  <p className="text-[11px] font-black text-red-500 uppercase tracking-widest">Invalid UK Postcode format</p>
+                )}
               </div>
             </div>
+          </div>
 
-            {/* Stepper Progress Indicator */}
-            <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Quote Builder Progress</span>
-                <span className="text-[11px] font-mono font-bold text-[#6C8295]">Step {activeStep} of 3</span>
+          {/* LINE ITEMS */}
+          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3">
+              <div className="flex items-center gap-2">
+                <ClipboardList className="w-4 h-4 text-[#b0b8c4]" />
+                <h3 className="text-xs font-black uppercase tracking-widest text-white">Line Items</h3>
               </div>
-              
-              <div className="flex items-center justify-between relative mt-2 px-2">
-                <div className="absolute top-[14px] left-8 right-8 h-[2px] bg-[#2e2e2e] z-0" />
-                <div 
-                  className="absolute top-[14px] left-8 h-[2px] bg-[#6C8295] transition-all duration-300 z-0" 
-                  style={{ width: `calc(${(activeStep - 1) * 50}% - ${(activeStep - 1) * 32}px)` }}
-                />
+              <button
+                type="button"
+                onClick={addItem}
+                className="flex items-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-1.5 px-3 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5 text-[#6C8295]" />
+                ADD LINE
+              </button>
+            </div>
 
-                {[
-                  { step: 1, label: 'Client Details' },
-                  { step: 2, label: 'Line Items' },
-                  { step: 3, label: 'Terms & Summary' }
-                ].map((s) => {
-                  const isCompleted = activeStep > s.step;
-                  const isActive = activeStep === s.step;
-                  return (
-                    <button
-                      key={s.step}
-                      type="button"
-                      onClick={() => setActiveStep(s.step)}
-                      className="flex flex-col items-center gap-1.5 z-10 relative focus:outline-none cursor-pointer group"
-                    >
-                      <div 
-                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all border ${
-                          isCompleted 
-                            ? 'bg-[#6C8295] border-[#6C8295] text-white' 
-                            : isActive 
-                            ? 'bg-[#111114] border-[#6C8295] text-white shadow-lg' 
-                            : 'bg-[#111114] border-[#2a2a30] text-gray-500 hover:border-gray-600'
-                        }`}
-                      >
-                        {isCompleted ? '✓' : s.step}
+            <div className="flex flex-col gap-2">
+              {/* Column headers, desktop/tablet only */}
+              {items.length > 0 && (
+                <div className="hidden sm:flex items-center gap-3 px-3 text-[10px] font-black tracking-widest text-gray-600 uppercase">
+                  <span className="flex-1">Description</span>
+                  <span className="w-16 text-right">Qty</span>
+                  <span className="w-20">Unit</span>
+                  <span className="w-28 text-right">Rate (£)</span>
+                  <span className="w-24 text-right">Total</span>
+                  <span className="w-6" />
+                </div>
+              )}
+              {items.map((item) => (
+                <div key={item.id} className="p-3 bg-[#111114] border border-[#2a2a30] rounded-xl relative group">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+                    {/* Description */}
+                    <div className="relative flex-1 min-w-0">
+                      <input
+                        type="text"
+                        className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
+                        value={item.description}
+                        onChange={e => updateItem(item.id, { description: e.target.value })}
+                        onFocus={() => setFocusedItemId(item.id)}
+                        onBlur={() => { setTimeout(() => setFocusedItemId(null), 200); }}
+                        placeholder="Description of item..."
+                      />
+                      <AnimatePresence>
+                        {focusedItemId === item.id && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute left-0 right-0 top-full mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
+                          >
+                            {SUGGESTED_ITEMS.filter(s =>
+                              !item.description ||
+                              s.description.toLowerCase().includes(item.description.toLowerCase())
+                            ).map((suggestion) => (
+                              <button
+                                key={suggestion.description}
+                                type="button"
+                                onClick={() => {
+                                  updateItem(item.id, {
+                                    description: suggestion.description,
+                                    unit: suggestion.unit,
+                                    rate: suggestion.rate
+                                  });
+                                }}
+                                className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-gray-400 hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
+                              >
+                                <div className="flex justify-between items-center">
+                                  <span>{suggestion.description}</span>
+                                  <span className="text-[#6C8295]/70 font-mono text-[11px]">£{suggestion.rate}/{suggestion.unit}</span>
+                                </div>
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Qty / Unit / Rate / Total / Delete */}
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                      <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 w-[76px] shrink-0">
+                        <input
+                          type="number"
+                          className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold text-right"
+                          value={item.quantity}
+                          onChange={e => updateItem(item.id, { quantity: Number(e.target.value) })}
+                        />
                       </div>
-                      <span 
-                        className={`text-[11px] font-black uppercase tracking-wider ${
-                          isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'
-                        }`}
+                      <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1 w-[92px] shrink-0">
+                        <input
+                          type="text"
+                          className="w-9 bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
+                          value={item.unit}
+                          onChange={e => updateItem(item.id, { unit: e.target.value })}
+                          placeholder="m²"
+                        />
+                        <div className="flex gap-1 shrink-0">
+                          {['m²', 'Sum'].map(u => {
+                            const isSelected = item.unit.toUpperCase() === u.toUpperCase() || (u === 'm²' && item.unit === 'm2');
+                            return (
+                              <button
+                                key={u}
+                                type="button"
+                                onClick={() => updateItem(item.id, { unit: isSelected ? '' : u })}
+                                title={u}
+                                className={`w-2 h-2 rounded-full shrink-0 transition-all ${
+                                  isSelected ? 'bg-[#6C8295]' : 'bg-[#383838] hover:bg-[#555]'
+                                }`}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1.5 w-[132px] shrink-0">
+                        <input
+                          type="text"
+                          className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold text-right"
+                          value={item.rate}
+                          onChange={e => updateItem(item.id, { rate: e.target.value })}
+                          placeholder="0.00"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => updateItem(item.id, { rate: isIncludedRate(item.rate) ? 0 : 'INCLUDED' })}
+                          className={`px-1.5 py-1 rounded text-[10px] font-black tracking-wide shrink-0 ${
+                            isIncludedRate(item.rate)
+                              ? 'bg-[#6C8295] text-white shadow-sm'
+                              : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
+                          }`}
+                        >
+                          INCL
+                        </button>
+                      </div>
+                      <div className="w-24 shrink-0 text-right text-xs font-black font-mono text-[#6C8295] px-1">
+                        {isIncludedRate(item.rate) ? 'INCL' : `£${getLineTotal(item).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeItem(item.id)}
+                        className="text-gray-600 hover:text-red-400 transition-colors p-1 cursor-pointer shrink-0"
                       >
-                        {s.label}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {items.length === 0 && (
+                <div className="bg-[#111114] border border-dashed border-[#2a2a30]/60 rounded-xl p-8 text-center">
+                  <div className="text-[11px] font-black tracking-widest text-gray-600 uppercase mb-3">No line items added yet</div>
+                  <button
+                    type="button"
+                    onClick={addItem}
+                    className="text-[11px] font-black tracking-wide text-[#6C8295] hover:brightness-110 uppercase bg-[#2e2e2e] px-4 py-2 rounded-lg border border-[#3e3e3e]"
+                  >
+                    Initialize First Line
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* TERMS */}
+          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#b0b8c4]" />
+                <h3 className="text-xs font-black uppercase tracking-widest text-white">Terms & Conditions</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTerms([...terms, ''])}
+                className="bg-[#2e2e2e] border border-[#3e3e3e] hover:border-gray-400 rounded-md w-[26px] h-[26px] flex items-center justify-center cursor-pointer text-[#888] hover:text-white transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="space-y-2.5">
+              {terms.map((term, index) => (
+                <div key={index} className="flex items-start justify-between gap-3 bg-[#111114] border border-[#2a2a30] rounded-xl p-3">
+                  <textarea
+                    value={term}
+                    onChange={(e) => {
+                      const newTerms = [...terms];
+                      newTerms[index] = e.target.value;
+                      setTerms(newTerms);
+                    }}
+                    className="w-full bg-transparent border-none outline-none text-[11px] text-gray-300 leading-relaxed resize-none h-14 font-medium"
+                    placeholder="Enter condition..."
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setTerms(terms.filter((_, i) => i !== index))}
+                    className="text-gray-600 hover:text-red-400 transition-colors p-1"
+                  >
+                    âœ•
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* VAT + TOTALS + SEND */}
+          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
+            <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
+              <CheckCircle2 className="w-4 h-4 text-[#b0b8c4]" />
+              <h3 className="text-xs font-black uppercase tracking-widest text-white">Summary & Authorization</h3>
+            </div>
+
+            {/* VAT row */}
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">VAT Rate</span>
+              <div className="flex gap-2">
+                {[0, 5, 20].map(v => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setVatRate(v)}
+                    className={`px-3 py-1 rounded text-[11px] font-black tracking-widest transition-all ${
+                      vatRate === v ? 'bg-[#6C8295] text-white' : 'bg-[#2e2e2e] text-gray-400 border border-[#383838] hover:bg-[#333]'
+                    }`}
+                  >
+                    {v}%
+                  </button>
+                ))}
               </div>
             </div>
 
-            {/* Saved Quotes History List */}
-            <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4">
-              <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white mb-3">
-                <History className="w-3.5 h-3.5 text-[#b0b8c4] shrink-0" />
-                Saved History
+            {/* Totals grid */}
+            <div className="flex flex-col gap-2">
+              <div className="flex justify-between text-[13px] border-b border-[#2a2a30] pb-2">
+                <span className="text-gray-500">Net Total</span>
+                <span className="font-semibold font-mono">£{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
               </div>
-              <div className="flex flex-col gap-[5px] max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+              <div className="flex justify-between text-[13px] border-b border-[#2a2a30] pb-2">
+                <span className="text-gray-500">VAT ({vatRate}%)</span>
+                <span className="font-semibold font-mono">£{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="flex justify-between text-[16px] pt-1">
+                <span className="font-bold text-white">Gross Total</span>
+                <span className="font-extrabold text-[#6C8295] font-mono">£{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+
+            {/* Authorize & Send */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2 border-t border-[#2a2a30]">
+              <div className="space-y-1 text-center sm:text-left">
+                <h4 className="text-[11px] font-black tracking-widest uppercase text-white">Authorization Required</h4>
+                <p className="text-[11px] text-[#888] tracking-wide uppercase leading-normal">
+                  Confirm all billable items, units, and terms have been verified.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={isSendingEmail}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#6C8295] hover:brightness-110 disabled:bg-[#6C8295]/50 disabled:cursor-not-allowed border-none rounded-lg py-3 px-5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer shadow-lg shadow-[#6C8295]/20 transition-all whitespace-nowrap"
+              >
+                {isSendingEmail ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+                <span>{isSendingEmail ? 'SENDING...' : 'Authorize & Send'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* SAVED HISTORY (collapsed accordion) */}
+          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowHistory(h => !h)}
+              className="w-full flex items-center justify-between p-4 text-[11px] font-black tracking-widest uppercase text-gray-400 hover:text-white transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <History className="w-3.5 h-3.5" />
+                Saved History ({savedQuotes.length})
+              </div>
+              {showHistory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </button>
+            {showHistory && (
+              <div className="px-4 pb-4 flex flex-col gap-[5px] max-h-52 overflow-y-auto custom-scrollbar">
                 {savedQuotes.length === 0 ? (
                   <div className="bg-[#111114] border border-dashed border-[#2a2a30] rounded-lg p-6 text-center">
                     <div className="text-[11px] font-black tracking-widest text-[#555] uppercase">No saved quotes found</div>
                   </div>
                 ) : (
                   savedQuotes.map((q) => (
-                    <div 
+                    <div
                       key={q.id}
                       onClick={() => loadQuote(q)}
                       className="flex items-center justify-between bg-[#111114] border border-[#2a2a30] rounded-lg p-2.5 px-3 hover:border-[#6C8295]/30 cursor-pointer transition-all duration-200"
@@ -656,7 +1136,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                         <span className="text-[11px] font-mono font-black uppercase tracking-widest text-[#888]">
                           £{q.totals?.grossTotal?.toLocaleString(undefined, { maximumFractionDigits: 0 }) || '0'}
                         </span>
-                        <button 
+                        <button
                           onClick={(e) => deleteQuote(e, q.id)}
                           className="bg-transparent border-none cursor-pointer text-[#555] p-0.5 flex items-center hover:text-red-500 transition-colors"
                           title="Delete saved quote"
@@ -668,676 +1148,109 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   ))
                 )}
               </div>
-            </div>
-
-            {/* Step Content */}
-            <AnimatePresence mode="wait">
-              {activeStep === 1 && (
-                <motion.div
-                  key="step-1"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-[#242424] border border-[#2a2a30] overflow-hidden rounded-xl p-4 space-y-4"
-                >
-                <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3 mb-1">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-[#b0b8c4]" />
-                    1. Client & Project Information
-                  </h3>
-                  <span className="text-[11px] font-bold text-gray-500 uppercase tracking-widest">Step 1 of 3</span>
-                </div>
-
-                <div className="space-y-4">
-                  {/* Responsive Input Grid - Side-by-side on desktop, stacked on mobile */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Client Name</span>
-                      <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
-                        <input 
-                          type="text"
-                          className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
-                          value={clientInfo.entity}
-                          onChange={e => setClientInfo({ ...clientInfo, entity: e.target.value })}
-                          placeholder="e.g. ABC CONSTRUCTIONS LTD"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Email</span>
-                      <div className="flex items-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
-                        <Mail className="w-4 h-4 text-gray-600 shrink-0" />
-                        <input 
-                          type="email"
-                          className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold"
-                          value={clientInfo.email}
-                          onChange={e => setClientInfo({ ...clientInfo, email: e.target.value })}
-                          placeholder="accounts@client.com"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Project / Site Name</span>
-                      <div className="flex items-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
-                        <LayoutGrid className="w-4 h-4 text-gray-600 shrink-0" />
-                        <input 
-                          type="text"
-                          className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
-                          value={clientInfo.site}
-                          onChange={e => setClientInfo({ ...clientInfo, site: e.target.value })}
-                          placeholder="e.g. Project Titan"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">Site Postcode</span>
-                      <div className="flex items-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
-                        <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
-                        <input 
-                          type="text"
-                          className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-widest"
-                          value={clientInfo.postcode}
-                          onChange={e => setClientInfo({ ...clientInfo, postcode: e.target.value })}
-                          placeholder="e.g. SW1A 1AA"
-                        />
-                      </div>
-                      {clientInfo.postcode.trim() && !isValidUKPostcode(clientInfo.postcode) && (
-                        <p className="text-[11px] font-black text-red-500 uppercase tracking-widest mt-1">Invalid UK Postcode format</p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                </motion.div>
-              )}
-              
-              {activeStep === 2 && (
-                <motion.div
-                  key="step-2"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  transition={{ duration: 0.2 }}
-                  className="bg-[#242424] border border-[#2a2a30] overflow-hidden rounded-xl p-4 space-y-4"
-                >
-                <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3 mb-1">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
-                    <ClipboardList className="w-4 h-4 text-[#b0b8c4]" />
-                    2. Billable Line Items
-                  </h3>
-                  <button 
-                    type="button"
-                    onClick={addItem}
-                    className="flex items-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-1.5 px-3 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-[#6C8295]" />
-                    ADD LINE
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {items.map((item) => (
-                    <div key={item.id} className="p-4 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl space-y-4 relative group">
-                      <div className="flex items-center justify-between gap-2 border-b border-[#2a2a30]/40 pb-2 relative">
-                        <div className="relative flex-1">
-                          <input 
-                            type="text"
-                            className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
-                            value={item.description}
-                            onChange={e => updateItem(item.id, { description: e.target.value })}
-                            onFocus={() => setFocusedItemId(item.id)}
-                            onBlur={() => {
-                              // Small timeout to allow clicking a suggestion before blur closes it
-                              setTimeout(() => setFocusedItemId(null), 200);
-                            }}
-                            placeholder="Description of item..."
-                          />
-                          
-                          {/* Autocomplete Dropdown */}
-                          <AnimatePresence>
-                            {focusedItemId === item.id && (
-                              <motion.div 
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="absolute left-0 right-0 top-full mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
-                              >
-                                {SUGGESTED_ITEMS.filter(s => 
-                                  !item.description || 
-                                  s.description.toLowerCase().includes(item.description.toLowerCase())
-                                ).map((suggestion) => (
-                                  <button
-                                    key={suggestion.description}
-                                    type="button"
-                                    onClick={() => {
-                                      updateItem(item.id, {
-                                        description: suggestion.description,
-                                        unit: suggestion.unit,
-                                        rate: suggestion.rate
-                                      });
-                                    }}
-                                    className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-gray-400 hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
-                                  >
-                                    <div className="flex justify-between items-center">
-                                      <span>{suggestion.description}</span>
-                                      <span className="text-[#6C8295]/70 font-mono text-[11px]">
-                                        £{suggestion.rate}/{suggestion.unit}
-                                      </span>
-                                    </div>
-                                  </button>
-                                ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-                        <button 
-                          type="button"
-                          onClick={() => removeItem(item.id)}
-                          className="text-gray-600 hover:text-red-400 transition-colors p-1 cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[11px] font-black tracking-widest text-gray-500 uppercase">Qty</span>
-                          <div className="flex items-center bg-[#242424] border border-[#2a2a30] rounded-lg h-10 px-3">
-                            <input 
-                              type="number"
-                              className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
-                              value={item.quantity}
-                              onChange={e => updateItem(item.id, { quantity: Number(e.target.value) })}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[11px] font-black tracking-widest text-gray-500 uppercase">Unit</span>
-                          <div className="flex items-center bg-[#242424] border border-[#2a2a30] rounded-lg h-10 px-2 gap-1.5">
-                            <input 
-                              type="text"
-                              className="w-full bg-transparent border-none outline-none text-white text-xs font-bold uppercase"
-                              value={item.unit}
-                              onChange={e => updateItem(item.id, { unit: e.target.value })}
-                              placeholder="e.g. m²"
-                            />
-                            <div className="flex gap-1 shrink-0">
-                              {['m²', 'Sum'].map(u => {
-                                const isSelected = item.unit.toUpperCase() === u.toUpperCase() || (u === 'm²' && item.unit === 'm2');
-                                return (
-                                  <button
-                                    key={u}
-                                    type="button"
-                                    onClick={() => updateItem(item.id, { unit: isSelected ? '' : u })}
-                                    className={`px-2 py-0.5 rounded text-[11px] font-black transition-all ${
-                                      isSelected 
-                                        ? 'bg-[#6C8295] text-white shadow-sm' 
-                                        : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
-                                    }`}
-                                  >
-                                    {u}
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-1.5">
-                          <span className="text-[11px] font-black tracking-widest text-gray-500 uppercase">Rate (£)</span>
-                          <div className="flex items-center bg-[#242424] border border-[#2a2a30] rounded-lg h-10 px-2 gap-1.5">
-                            <input 
-                              type="text"
-                              className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
-                              value={item.rate}
-                              onChange={e => updateItem(item.id, { rate: e.target.value })}
-                              placeholder="0.00"
-                            />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const isIncluded = typeof item.rate === 'string' && (item.rate.toUpperCase() === 'INCLUDED' || item.rate.toUpperCase() === 'INCL');
-                                updateItem(item.id, { rate: isIncluded ? 0 : 'INCLUDED' });
-                              }}
-                              className={`px-2 py-1 rounded text-[11px] font-black tracking-wide shrink-0 ${
-                                typeof item.rate === 'string' && (item.rate.toUpperCase() === 'INCLUDED' || item.rate.toUpperCase() === 'INCL')
-                                  ? 'bg-[#6C8295] text-white shadow-sm'
-                                  : 'bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]'
-                              }`}
-                            >
-                              INCL
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {items.length === 0 && (
-                    <div className="bg-[#1a1a1e] border border-dashed border-[#2a2a30]/60 rounded-xl p-8 text-center">
-                      <div className="text-[11px] font-black tracking-widest text-gray-600 uppercase mb-3">No line items added yet</div>
-                      <button 
-                        type="button"
-                        onClick={addItem}
-                        className="text-[11px] font-black tracking-wide text-[#6C8295] hover:brightness-110 uppercase bg-[#2e2e2e] px-4 py-2 rounded-lg border border-[#3e3e3e]"
-                      >
-                        Initialize First Line
-                      </button>
-                    </div>
-                  )}
-                </div>
-                </motion.div>
-              )}
-              
-              {activeStep === 3 && (
-                <motion.div
-                  key="step-3"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 10 }}
-                  transition={{ duration: 0.2 }}
-                  className="space-y-4"
-                >
-                <div className="bg-[#242424] border border-[#2a2a30] overflow-hidden rounded-xl p-4 space-y-4">
-                  <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3 mb-1">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-white flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-[#b0b8c4]" />
-                      3. Terms & Summary Conditions
-                    </h3>
-                    <button 
-                      type="button"
-                      onClick={() => setTerms([...terms, ''])}
-                      className="bg-[#2e2e2e] border border-[#3e3e3e] hover:border-gray-400 rounded-md w-[26px] h-[26px] flex items-center justify-center cursor-pointer text-[#888] hover:text-white transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-
-                  <div className="space-y-2.5">
-                    {terms.map((term, index) => (
-                      <div key={index} className="flex items-start justify-between gap-3 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-3">
-                        <textarea
-                          value={term}
-                          onChange={(e) => {
-                            const newTerms = [...terms];
-                            newTerms[index] = e.target.value;
-                            setTerms(newTerms);
-                          }}
-                          className="w-full bg-transparent border-none outline-none text-[11px] text-gray-300 leading-relaxed resize-none h-14 font-medium"
-                          placeholder="Enter condition..."
-                        />
-                        <button 
-                          type="button"
-                          onClick={() => setTerms(terms.filter((_, i) => i !== index))}
-                          className="text-gray-600 hover:text-red-400 transition-colors p-1"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Authorization Card */}
-                <div className="bg-[#242424] border border-[#2a2a30] overflow-hidden rounded-xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="space-y-1 text-center sm:text-left">
-                    <h4 className="text-[11px] font-black tracking-widest uppercase text-white">Authorization Required</h4>
-                    <p className="text-[11px] text-[#888] tracking-wide uppercase leading-normal">
-                      Confirm that all billable items, units, and standard terms have been verified.
-                    </p>
-                  </div>
-                  <button 
-                    type="button"
-                    onClick={handleSend}
-                    disabled={isSendingEmail}
-                    className="w-full sm:w-auto flex items-center justify-center gap-2 bg-[#6C8295] hover:brightness-110 disabled:bg-[#6C8295]/50 disabled:cursor-not-allowed border-none rounded-lg py-3 px-5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer shadow-lg shadow-[#6C8295]/20 transition-all whitespace-nowrap"
-                  >
-                    {isSendingEmail ? (
-                      <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <Send className="w-3.5 h-3.5" />
-                    )}
-                    <span>{isSendingEmail ? 'SENDING...' : 'Authorize & Send'}</span>
-                  </button>
-                </div>
-              </motion.div>
             )}
-          </AnimatePresence>
           </div>
 
-          {/* Right: Net Total, VAT, Gross and Options Summary matching 2a */}
-          <div style={{ width: '300px', display: 'flex', flexDirection: 'column', gap: '16px', flexShrink: 0 }}>
-            {/* Summary card */}
-            <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-5">
-              <div className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-4">Summary</div>
-              <div className="flex flex-col gap-2.5">
-                <div className="flex justify-between text-[13px]">
-                  <span className="text-gray-500">Net Total</span>
-                  <span className="font-semibold font-mono">£{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="flex justify-between text-[13px]">
-                  <span className="text-gray-500">VAT (20%)</span>
-                  <span className="font-semibold font-mono">£{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                </div>
-                <div className="h-[1px] bg-[#2a2a30] my-1"></div>
-                <div className="flex justify-between text-[16px]">
-                  <span className="font-bold text-white">Gross Total</span>
-                  <span className="font-extrabold text-[#6C8295] font-mono">£{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                </div>
-              </div>
-            </div>
+        </div>{/* end left panel */}
 
-            {/* Options card */}
-            <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-5">
-              <div className="text-[13px] font-bold text-gray-400 uppercase tracking-wider mb-3">Options</div>
-              
-              <div className="flex items-center justify-between py-2">
-                <span className="text-[13px] text-gray-300">Apply CIS Deduction</span>
-                <div className="w-9 h-5 bg-[#2a2a30] rounded-full relative cursor-pointer">
-                  <div className="w-4 h-4 bg-gray-600 rounded-full absolute top-0.5 left-0.5" />
-                </div>
-              </div>
-              
-              <div className="flex items-center justify-between py-2">
-                <span className="text-[13px] text-gray-300">Domestic Reverse Charge</span>
-                <div className="w-9 h-5 bg-[#6C8295] rounded-full relative cursor-pointer">
-                  <div className="w-4 h-4 bg-white rounded-full absolute top-0.5 right-0.5" />
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between px-2 pt-2">
-              <button 
-                onClick={handleDownloadPDF}
-                className="flex items-center space-x-2 text-white/40 hover:text-[#6C8295] transition-colors cursor-pointer group"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span className="text-[11px] font-black uppercase tracking-[0.2em]">Save PDF</span>
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Live Mirror view block below */}
-        <div className="mt-12 space-y-6">
-          <div className="flex items-center space-x-2 text-white/20 px-2">
-            <div className="w-2 h-2 rounded-full bg-[#6C8295] animate-pulse" />
-            <span className="text-[11px] font-black uppercase tracking-[0.2em]">PDF Live Mirror View</span>
-          </div>
-
-          <div 
-            ref={containerRef}
-            className="w-full relative flex justify-center items-center overflow-hidden bg-[#131417] border border-[#2a2a30] py-8 rounded-xl min-h-[400px] sm:min-h-[800px] font-archivo no-scrollbar"
+        {/* â”€â”€ RIGHT PANEL: Live PDF Mirror â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        <div className="w-full lg:w-[420px] xl:w-[480px] shrink-0">
+          {/* Tablet/Mobile: opens the live document full-screen instead of a cramped inline mirror */}
+          <button
+            type="button"
+            onClick={() => setPreviewOpen(true)}
+            className="lg:hidden w-full flex items-center justify-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl px-4 py-3 mb-4 text-[11px] font-black tracking-widest uppercase text-gray-300 hover:text-white hover:border-[#6C8295]/40 transition-colors"
           >
-            <div 
-              className="bg-white shadow-2xl text-[#333] flex flex-col origin-top print-area shrink-0"
-              style={{ 
-                width: '794px', 
-                height: '1122px',
-                minHeight: '1122px', 
-                maxHeight: '1122px',
-                transform: `scale(${scale})`,
-                marginLeft: `${(794 * scale - 794) / 2}px`,
-                marginRight: `${(794 * scale - 794) / 2}px`,
-                marginBottom: `${(1122 * scale - 1122)}px`
-              }}
+            <div className="w-2 h-2 rounded-full bg-[#6C8295] animate-pulse" />
+            Preview PDF
+          </button>
+
+          {/* Desktop: sticky PDF mirror. Always mounted (hidden via CSS, not unmounted) so it
+              remains the single canonical .print-area target at every breakpoint. */}
+          <div className="hidden lg:block sticky top-[58px]">
+            <div className="flex items-center gap-2 text-white/20 px-1 mb-3">
+              <div className="w-2 h-2 rounded-full bg-[#6C8295] animate-pulse" />
+              <span className="text-[11px] font-black uppercase tracking-[0.2em]">PDF Live Mirror</span>
+            </div>
+            <div
+              ref={containerRef}
+              className="w-full relative flex justify-center items-start overflow-hidden bg-[#131417] border border-[#2a2a30] py-6 rounded-xl font-archivo no-scrollbar"
             >
-                {/* HEADER */}
-                <div className="bg-[#26262B] p-8 sm:p-12 flex justify-between items-start">
-                  <div className="flex flex-col">
-                    <div className="font-archivo text-[32px] sm:text-[40px] font-black text-white tracking-tight leading-none">
-                      OPUS FORM
-                    </div>
-                    <div className="h-1 bg-[#426E91] mt-2 w-full"></div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-[28px] sm:text-[32px] font-black text-[#F4F4F0] tracking-[0.04em] leading-none mb-3">QUOTE</div>
-                    <table className="ml-auto border-collapse">
-                      <tbody className="text-[11px] tracking-[0.05em]">
-                        <tr>
-                          <td className="text-[#A8A8A0] py-0.5 px-4">REFERENCE</td>
-                          <td className="text-[#F4F4F0] font-black text-right">#{quoteReference}</td>
-                        </tr>
-                        <tr>
-                          <td className="text-[#A8A8A0] py-0.5 px-4">DATE</td>
-                          <td className="text-[#F4F4F0] font-black text-right">{new Date().toLocaleDateString('en-GB')}</td>
-                        </tr>
-                        <tr>
-                          <td className="text-[#A8A8A0] py-0.5 px-4">VALID UNTIL</td>
-                          <td className="text-[#F4F4F0] font-black text-right">
-                            {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB')}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-
-                {/* ACCENT LINE */}
-                <div className="h-1 bg-[#526E8C]"></div>
-
-                {/* COMPANY META */}
-                <div className="bg-[#F8F7F4] px-12 py-3.5 flex flex-wrap gap-10 border-b border-[#E4E0D8]">
-                  <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">Company No. 14902188</span>
-                  <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">VAT Reg No. GB 412 8876 21</span>
-                  <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">operations@opusform.co.uk</span>
-                </div>
-
-                {/* BODY */}
-            <div className="px-12 py-8 flex-1 flex flex-col">
-                  {/* BILL TO / PROJECT */}
-                  <div className="mb-7 grid grid-cols-2 gap-4">
-                    <div>
-                      <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Client</div>
-                      <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
-                        {clientInfo.entity ? (
-                          <div className="space-y-1">
-                            <p className="font-black text-gray-900 text-sm">{clientInfo.entity}</p>
-                            <p className="text-gray-600 tracking-wide">{clientInfo.email ? clientInfo.email.toLowerCase() : '...'}</p>
-                          </div>
-                        ) : (
-                          <span className="text-[#AAA]">No client data entered</span>
-                        )}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#526E8C] mb-1.5">Project</div>
-                      <div className="border border-[#E4E0D8] p-4 min-h-[72px] text-xs">
-                        {clientInfo.site ? (
-                          <div className="space-y-1">
-                            <p className="font-black text-gray-900 text-sm">{clientInfo.site}</p>
-                            <p className="text-gray-600 tracking-wide">{clientInfo.postcode || '...'}</p>
-                          </div>
-                        ) : (
-                          <span className="text-[#AAA]">No project data entered</span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* TABLE */}
-                  <div className="flex-1">
-                    <table className="w-full border-collapse">
-                      <thead>
-                        <tr className="bg-[#26262B]">
-                          <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[42%]">Description of Structural Elements</th>
-                          <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Volume / Qty</th>
-                          <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[10%]">Unit</th>
-                          <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Unit Rate</th>
-                          <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">Net Value</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {items.length > 0 ? items.map((item, idx) => (
-                          <tr key={item.id} className={`border-b border-[#EDEAE4] ${idx % 2 === 1 ? 'bg-[#FAFAF8]' : ''}`}>
-                            <td className="p-3 text-xs leading-relaxed text-[#333]">{item.description || '...'}</td>
-                            <td className="p-3 text-xs text-right text-[#333] font-medium">{item.quantity}</td>
-                            <td className="p-3 text-[11px] text-[#BBB] italic uppercase tracking-wide">{item.unit}</td>
-                            <td className="p-3 text-xs text-right text-[#333]">
-                              {typeof item.rate === 'string' && (item.rate.toUpperCase() === 'INCLUDED' || item.rate.toUpperCase() === 'INCL') 
-                                ? 'INCLUDED' 
-                                : `£${Number(item.rate || 0).toFixed(2)}`}
-                            </td>
-                            <td className="p-3 text-xs text-right text-[#333] font-black">
-                              {typeof item.rate === 'string' && (item.rate.toUpperCase() === 'INCLUDED' || item.rate.toUpperCase() === 'INCL') 
-                                ? 'INCLUDED' 
-                                : `£${(item.quantity * Number(item.rate || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
-                            </td>
-                          </tr>
-                        )) : (
-                          <tr className="border-b border-[#EDEAE4]">
-                            <td colSpan={5} className="p-10 text-center text-[#BBB] italic text-[11px] uppercase tracking-widest">No billable items added</td>
-                          </tr>
-                        )}
-                        <tr className="h-4 bg-[#FAFAF8]"><td colSpan={5}></td></tr>
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* TOTALS */}
-                  <div className="flex justify-end border-t-2 border-[#26262B]">
-                    <div className="w-[280px]">
-                      <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]">
-                        <span className="uppercase tracking-widest">NET SUBTOTAL</span>
-                        <span className="font-black text-[#333]">£{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                      </div>
-                      <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]">
-                        <span className="uppercase tracking-widest text-[11px]">UK STANDARD VAT ({vatRate}%)</span>
-                        <span className="font-black text-[#333]">£{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                      </div>
-                      <div className="flex justify-between p-3.5 px-3 bg-[#26262B] text-[#F4F4F0] font-black text-[15px]">
-                        <span className="uppercase tracking-widest">Concrete Works Total</span>
-                        <span>£{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* FOOTER BODY */}
-                <div className="px-12 pt-7">
-                  <div className="bg-[#F4F3F0] border-l-[3px] border-[#526E8C] p-4 mb-6">
-                    <div className="text-[11px] font-black tracking-[0.12em] uppercase text-[#526E8C] mb-2.5">Standard Terms & Pour Conditions</div>
-                    <ul className="list-disc pl-3.5 space-y-1.5">
-                      {terms.map((term, index) => term.trim() && (
-                        <li key={index} className="text-[10.5px] text-[#555] leading-relaxed">{term}</li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  <div className="mb-8">
-                    <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#888] mb-2">Banking Details</div>
-                    <div className="grid grid-cols-2 gap-x-10 gap-y-2">
-                      <div className="text-[11px]">
-                        <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Bank</div>
-                        <div className="font-black text-[#333]">Barclays Business Banking</div>
-                      </div>
-                      <div className="text-[11px]">
-                        <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Account Name</div>
-                        <div className="font-black text-[#333]">Opus Form Ltd</div>
-                      </div>
-                      <div className="text-[11px]">
-                        <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Sort Code</div>
-                        <div className="font-black text-[#333]">20-00-00</div>
-                      </div>
-                      <div className="text-[11px]">
-                        <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Account No.</div>
-                        <div className="font-black text-[#333]">13319268</div>
-                      </div>
-                      <div className="text-[11px]">
-                        <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">IBAN</div>
-                        <div className="font-black text-[#333]">GB29 NWBK 6016 1331 9268 19</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* DOC FOOTER */}
-                <div className="bg-[#26262B] px-8 sm:px-12 py-3.5 flex justify-between items-center mt-auto">
-                  <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">Opus Form Ltd</span>
-                  <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">operations@opusform.co.uk</span>
-                </div>
+              {pdfDocument(scale, true)}
             </div>
           </div>
-        </div>
-      </main>
+        </div>{/* end right panel */}
 
-      {/* Sticky Bottom Action Footer */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 bg-[#222428] border-t border-[#2a2a30] py-2.5 px-4 sm:px-6 flex items-center justify-between shadow-2xl h-[58px] shrink-0">
-        <div className="flex flex-col justify-center min-w-0">
-          <span className="text-[7px] sm:text-[11px] font-black text-gray-500 uppercase tracking-widest">Concrete Works Gross Total</span>
-          <span className="text-xs sm:text-sm font-black text-[#6C8295] truncate">
+      </div>{/* end two-panel body */}
+
+      {/* â”€â”€â”€ TABLET/MOBILE: STICKY TOTALS BAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 bg-[#111114]/95 backdrop-blur border-t border-[#2a2a30] px-4 py-3 flex items-center justify-between gap-3">
+        <div className="flex flex-col leading-tight min-w-0">
+          <span className="text-[10px] font-black tracking-widest text-gray-500 uppercase">Gross Total</span>
+          <span className="text-sm font-extrabold text-[#6C8295] font-mono truncate">
             £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </span>
         </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveStep(prev => Math.max(1, prev - 1))}
-            disabled={activeStep === 1}
-            className={`px-3 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all ${
-              activeStep === 1
-                ? 'bg-transparent text-gray-700 cursor-not-allowed border border-transparent'
-                : 'bg-[#1a1b1e] text-white hover:bg-[#2e2e2e] border border-[#3e3e3e]'
-            }`}
-          >
-            Prev
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSaveDraft()}
-            className="flex items-center gap-1.5 bg-[#1a1b1e] border border-[#3e3e3e] hover:bg-[#2e2e2e] rounded-lg px-3 py-1.5 text-[11px] font-black uppercase tracking-widest text-white transition-colors"
-          >
-            <Save className="w-3.5 h-3.5" />
-            <span>{lastSaved ? 'Saved' : 'Save'}</span>
-          </button>
-
-          {activeStep < 3 && (
-            <button
-              type="button"
-              onClick={() => setActiveStep(prev => Math.min(3, prev + 1))}
-              className="bg-[#6C8295] hover:brightness-110 text-white rounded-lg px-4 py-1.5 text-[11px] font-black uppercase tracking-widest cursor-pointer shadow-md transition-all active:scale-95"
-            >
-              Next
-            </button>
-          )}
-        </div>
+        <button
+          type="button"
+          onClick={() => setPreviewOpen(true)}
+          className="flex items-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg px-4 py-2 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors shrink-0"
+        >
+          <div className="w-2 h-2 rounded-full bg-[#6C8295] animate-pulse" />
+          Preview PDF
+        </button>
       </div>
 
-      {/* Validation Error Modal */}
+      {/* â”€â”€â”€ TABLET/MOBILE: FULL-SCREEN PDF PREVIEW MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+      <AnimatePresence>
+        {previewOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="lg:hidden fixed inset-0 z-[95] bg-black/85 backdrop-blur-sm flex flex-col"
+          >
+            <div className="flex items-center justify-between px-4 py-3 bg-[#1a1a1e] border-b border-[#2a2a30] shrink-0">
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#6C8295] animate-pulse" />
+                PDF Live Preview
+              </span>
+              <button
+                type="button"
+                onClick={() => setPreviewOpen(false)}
+                className="text-gray-400 hover:text-white transition-colors p-1"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div
+              ref={modalContainerRef}
+              className="flex-1 overflow-y-auto flex justify-center items-start bg-[#131417] py-6 px-3 font-archivo no-scrollbar"
+            >
+              {pdfDocument(modalScale)}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* â”€â”€â”€ VALIDATION ERROR MODAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <AnimatePresence>
         {validationErrors.length > 0 && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-[#242424] border border-red-500/20 rounded-xl max-w-sm w-full p-5 shadow-2xl relative"
             >
-              <button 
-                onClick={() => setValidationErrors([])}
-                className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer"
-              >
+              <button onClick={() => setValidationErrors([])} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
-              
               <div className="flex items-center gap-2 text-red-400 border-b border-[#2a2a30] pb-3 mb-4">
                 <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
                 <span className="text-[11px] font-black uppercase tracking-[0.2em]">VALIDATION FAILURE</span>
               </div>
-              
-              <p className="text-[11px] text-gray-400 uppercase tracking-wider leading-relaxed mb-4">
-                The following fields are required before sending:
-              </p>
-              
+              <p className="text-[11px] text-gray-400 uppercase tracking-wider leading-relaxed mb-4">The following fields are required before sending:</p>
               <ul className="space-y-2 mb-5">
                 {validationErrors.map((error, idx) => (
                   <li key={idx} className="flex items-center gap-2 text-[11px] text-gray-300 uppercase font-black tracking-widest bg-[#1a1a1c] border border-[#2d2d30] p-2.5 rounded-lg">
@@ -1346,56 +1259,36 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({ onBack, q
                   </li>
                 ))}
               </ul>
-              
-              <button
-                type="button"
-                onClick={() => setValidationErrors([])}
-                className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#2a2a30] rounded-lg py-2 text-[11px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors"
-              >
-                DISMISS
-              </button>
+              <button type="button" onClick={() => setValidationErrors([])} className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#2a2a30] rounded-lg py-2 text-[11px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors">DISMISS</button>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* Custom Notification Toast/Modal */}
+      {/* â”€â”€â”€ NOTIFICATION TOAST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <AnimatePresence>
         {notification && (
           <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               className={`bg-[#242424] border ${notification.type === 'success' ? 'border-[#6C8295]/40' : 'border-red-500/20'} rounded-xl max-w-sm w-full p-5 shadow-2xl relative`}
             >
-              <button 
-                onClick={() => setNotification(null)}
-                className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer"
-              >
+              <button onClick={() => setNotification(null)} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
-              
               <div className={`flex items-center gap-2 ${notification.type === 'success' ? 'text-[#859bb0]' : 'text-red-400'} border-b border-[#2a2a30] pb-3 mb-4`}>
                 <div className={`w-2 h-2 rounded-full ${notification.type === 'success' ? 'bg-[#6C8295]' : 'bg-red-500'} animate-pulse`} />
                 <span className="text-[11px] font-black uppercase tracking-[0.2em]">{notification.title}</span>
               </div>
-              
-              <p className="text-[11px] text-gray-300 uppercase tracking-widest leading-relaxed mb-5">
-                {notification.message}
-              </p>
-              
-              <button
-                type="button"
-                onClick={() => setNotification(null)}
-                className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#2a2a30] rounded-lg py-2 text-[11px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors"
-              >
-                DISMISS
-              </button>
+              <p className="text-[11px] text-gray-300 uppercase tracking-widest leading-relaxed mb-5">{notification.message}</p>
+              <button type="button" onClick={() => setNotification(null)} className="w-full bg-[#333] hover:bg-[#3e3e3e] border border-[#2a2a30] rounded-lg py-2 text-[11px] font-black uppercase tracking-widest text-white cursor-pointer transition-colors">DISMISS</button>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
     </div>
   );
 };

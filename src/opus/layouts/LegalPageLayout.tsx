@@ -1,4 +1,5 @@
 // @ts-nocheck
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Shield } from "lucide-react";
 import { usePortal } from "../context/PortalContext";
@@ -23,6 +24,19 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
   const navigate = useNavigate();
   const { isAuthenticated } = usePortal();
 
+  const [visible, setVisible] = useState(false);
+  const [footerVisible, setFooterVisible] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated) return;
+    const t1 = setTimeout(() => setVisible(true), 150);
+    const t2 = setTimeout(() => setFooterVisible(true), 700);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [isAuthenticated]);
+
   const getFooterLinks = () => {
     if (isAuthenticated) {
       return [
@@ -35,8 +49,6 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
     }
     return [
       { label: "Staff Privacy Notice", path: "/privacy" },
-      { label: "Usage Policy", path: "/portal/terms" },
-      { label: "Acceptable Use", path: "/portal/acceptable-use" },
       { label: "Cookie Statement", path: "/cookies" },
       { label: "Modern Slavery", path: "/modern-slavery" },
     ];
@@ -99,20 +111,28 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
 
   return (
     <div
-      className="min-h-screen font-sans"
-      style={{ backgroundColor: "#111114", color: "#d4d4d8" }}
+      className="min-h-screen font-sans relative overflow-hidden bg-background text-foreground"
     >
+      {/* Subtle concrete-texture grid overlay — matches landing page */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 0 L 60 0 L 60 60' fill='none' stroke='%23ffffff' stroke-width='0.4'/%3E%3C/svg%3E")`,
+          opacity: 0.025,
+        }}
+      />
+
       {/* Header bar */}
       <header
         className="sticky top-0 z-30 border-b backdrop-blur-md"
-        style={{ borderColor: "#2a2a30", backgroundColor: "rgba(17,17,20,0.92)" }}
+        style={{ borderColor: "var(--border)", backgroundColor: "color-mix(in srgb, var(--background) 92%, transparent)" }}
       >
         <div className="max-w-3xl mx-auto flex items-center justify-between px-6 py-4">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200"
             style={{ color: "var(--primary)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#F4F4F0")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--foreground)")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "var(--primary)")}
             aria-label="Go back"
           >
@@ -126,10 +146,16 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
       </header>
 
       {/* Content */}
-      <main className="max-w-3xl mx-auto px-6 py-10 pb-20">
+      <main className="max-w-3xl mx-auto px-6 py-10 pb-20 relative z-10">
         {/* Title block */}
-        <div className="mb-8">
-          <div className="flex items-center gap-2.5 mb-3">
+        <div
+          className="mb-10 sm:mb-12 transition-all duration-700 ease-out"
+          style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? "translateY(0)" : "translateY(16px)",
+          }}
+        >
+          <div className="flex items-center gap-2.5 mb-5">
             <Shield className="w-4 h-4" style={{ color: "var(--primary)" }} />
             <span
               className="text-[10px] font-mono font-bold uppercase tracking-[0.22em]"
@@ -140,43 +166,78 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
           </div>
           <h1
             className="text-[22px] sm:text-[26px] font-bold tracking-tight leading-tight"
-            style={{ color: "#F4F4F0" }}
+            style={{ color: "var(--foreground)" }}
           >
             {title}
           </h1>
           <p
-            className="text-[11px] font-mono uppercase tracking-[0.15em] mt-2"
-            style={{ color: "#5a5a62" }}
+            className="text-[11px] font-mono uppercase tracking-[0.15em] mt-3"
+            style={{ color: "var(--muted-foreground)" }}
           >
             Last updated: {lastUpdated}
           </p>
         </div>
 
         {/* Divider */}
-        <div className="h-px mb-8" style={{ backgroundColor: "#2a2a30" }} />
+        <div className="h-px mb-8" style={{ backgroundColor: "var(--border)" }} />
 
         {/* Legal content */}
-        <div className="legal-content space-y-8">{children}</div>
+        <div
+          className="legal-content space-y-8 transition-all duration-700 ease-out"
+          style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? "translateY(0)" : "translateY(16px)",
+          }}
+        >
+          {children}
+        </div>
       </main>
 
-      {/* Footer nav links */}
+      {/* Footer */}
       <footer
-        className="border-t py-6"
-        style={{ borderColor: "#2a2a30", backgroundColor: "#0d0d10" }}
+        className="w-full z-20 px-8 pb-7 pt-5 relative"
+        style={{
+          borderTop: "1px solid var(--border)",
+          opacity: footerVisible ? 1 : 0,
+          transition: "opacity 500ms ease-out",
+        }}
       >
-        <div className="max-w-3xl mx-auto px-6 flex flex-wrap gap-x-6 gap-y-2 justify-center">
+        {/* Legal links row */}
+        <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-x-5 gap-y-2 mb-4">
           {getFooterLinks().map((link) => (
             <Link
               key={link.path}
               to={link.path}
-              className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200"
-              style={{ color: "#3d3d44" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--primary)")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#3d3d44")}
+              className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-primary transition-colors duration-200"
             >
               {link.label}
             </Link>
           ))}
+        </div>
+
+        {/* Company details + contact */}
+        <div
+          className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono uppercase text-muted-foreground/80 text-center max-w-xl lg:max-w-none mx-auto"
+          style={{ letterSpacing: "0.15em" }}
+        >
+          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+            <span>Opus Form Ltd</span>
+            <span>·</span>
+            <span>Company No. 17228356</span>
+            <span>·</span>
+            <span className="text-center">128 City Road, London, EC1V 2NX</span>
+          </div>
+          <span className="hidden lg:inline">·</span>
+          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+            <a
+              href="mailto:admin@opusform.co.uk"
+              className="hover:text-primary transition-colors duration-200"
+            >
+              admin@opusform.co.uk
+            </a>
+            <span>·</span>
+            <span>© {new Date().getFullYear()} All Rights Reserved</span>
+          </div>
         </div>
       </footer>
     </div>
@@ -196,22 +257,22 @@ export const Section: React.FC<{ title: string; children: React.ReactNode }> = (
     >
       {title}
     </h2>
-    <div className="space-y-3 text-[13px] leading-relaxed" style={{ color: "#a1a1aa" }}>
+    <div className="space-y-3 text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
       {children}
     </div>
   </section>
 );
 
 export const DataTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ headers, rows }) => (
-  <div className="overflow-x-auto rounded-lg border" style={{ borderColor: "#2a2a30" }}>
+  <div className="overflow-x-auto rounded-lg border" style={{ borderColor: "var(--border)" }}>
     <table className="w-full text-[12px]">
       <thead>
-        <tr style={{ backgroundColor: "#1a1a1e" }}>
+        <tr style={{ backgroundColor: "var(--card)" }}>
           {headers.map((h, i) => (
             <th
               key={i}
               className="text-left px-4 py-2.5 font-mono font-bold uppercase tracking-wider border-b"
-              style={{ color: "var(--primary)", borderColor: "#2a2a30", fontSize: "10px" }}
+              style={{ color: "var(--primary)", borderColor: "var(--border)", fontSize: "10px" }}
             >
               {h}
             </th>
@@ -222,11 +283,11 @@ export const DataTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ h
         {rows.map((row, ri) => (
           <tr
             key={ri}
-            style={{ borderColor: "#2a2a30" }}
+            style={{ borderColor: "var(--border)" }}
             className={ri < rows.length - 1 ? "border-b" : ""}
           >
             {row.map((cell, ci) => (
-              <td key={ci} className="px-4 py-2.5" style={{ color: "#a1a1aa" }}>
+              <td key={ci} className="px-4 py-2.5" style={{ color: "var(--muted-foreground)" }}>
                 {cell}
               </td>
             ))}

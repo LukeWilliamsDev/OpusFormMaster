@@ -119,19 +119,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
 
         {/* Company details + contact */}
         <div
-          className="flex flex-col sm:flex-row justify-center items-center gap-2 text-[9px] font-mono uppercase text-muted-foreground/80"
+          className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono uppercase text-muted-foreground/80 text-center max-w-xl mx-auto"
           style={{ letterSpacing: "0.15em" }}
         >
-          <span>Opus Form Ltd · Company No. 17228356 · 128 City Road, London, EC1V 2NX</span>
-          <span className="hidden sm:inline">·</span>
-          <a
-            href="mailto:admin@opusform.co.uk"
-            className="hover:text-primary transition-colors duration-200"
-          >
-            admin@opusform.co.uk
-          </a>
-          <span className="hidden sm:inline">·</span>
-          <span>© {new Date().getFullYear()} All Rights Reserved</span>
+          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+            <span>Opus Form Ltd</span>
+            <span>·</span>
+            <span>Company No. 17228356</span>
+            <span>·</span>
+            <span className="text-center">128 City Road, London, EC1V 2NX</span>
+          </div>
+          <span className="hidden lg:inline">·</span>
+          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+            <a
+              href="mailto:admin@opusform.co.uk"
+              className="hover:text-primary transition-colors duration-200"
+            >
+              admin@opusform.co.uk
+            </a>
+            <span>·</span>
+            <span>© {new Date().getFullYear()} All Rights Reserved</span>
+          </div>
         </div>
       </footer>
     </div>

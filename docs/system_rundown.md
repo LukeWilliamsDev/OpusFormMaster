@@ -39,13 +39,14 @@ graph TD
 2. **Portal Authentication Page (`/portal`)**: Manages secure email/password logins, password reset trigger requests, and passwordless session updates. Incorporates staggered animation effects.
 3. **Dashboard Page (`/portal/dashboard`)**: Displays project counts, crew size metrics, and features the **Expiry Radar** widget highlighting workers with upcoming or expired compliance certificates.
 4. **Labor Roster & Dossier (`/portal/roster`)**:
-   * **Roster View**: Toggleable between a card grid/list matrix with active sorting (A-Z) and search capability.
+   * **Roster View**: A clean list-only layout with active sorting (A-Z) and search capability (grid/matrix toggles have been removed).
    * **Dossier Drawer**: Slide-out drawer (`max-w-2xl`) with detailed employee profiles, postcodes, active certifications (CSCS, etc.), compliance history, and proximity scheduling maps.
 5. **Job Ledger (`/portal/ledger`)**: Formats active sites, contractor info, and tracks concrete pour statuses (Current vs. Max contract pours).
 6. **Pipeline & Quote Builder (`/portal/pipeline`)**: Tracks work stages (Quotes, Contracts, Jobs, Complete) and features a stepper-based invoice/quote editor generating standardized tax PDFs.
 7. **System Audit Trail (`/portal/audit`)**: Restored strictly to the primary auditor. Displays timestamped events, category-filtered grids, and structured JSON diff tables comparing database changes.
 8. **Compliance Policies Page (`/portal/policies`)**: Restored strictly to the primary auditor. Displays cards and links to view official company policies.
 9. **Submit Credentials Page (`/submit-credentials`)**: A public, passwordless portal where operatives can drag-and-drop compliance documents. Validated against tokens in `document_requests`.
+10. **Job Document Upload Page (`/job-upload/:token`)**: A public, passwordless portal where external third-parties can upload files requested for specific jobs.
 
 ---
 
@@ -55,19 +56,23 @@ The Supabase project (`fgpthpxmiroyebrzjdzo`) operates on the following tables:
 
 | Schema & Table | Key Fields | Purpose |
 | :--- | :--- | :--- |
-| `public.profiles` | `id (uuid)`, `email`, `role (app_role)` | Links auth users to application access level. |
-| `public.staff` | `id (text)`, `name`, `role`, `email`, `postcode`, `tickets (jsonb)`, `is_archived (bool)` | Core operative details and certifications database. |
-| `public.jobs` | `id (text)`, `job_ref`, `site_name`, `current_pours`, `contract_max_pours`, `schedule_value` | Project definitions, pour tallies, and financial allocations. |
-| `public.shifts` | `id (text)`, `worker_id`, `job_id`, `date (date)`, `is_removed (bool)` | Shift scheduler tracking associations. |
-| `public.quotes` | `id (uuid)`, `client_name`, `amount`, `pdf_url`, `created_at` | Stores generated invoice and quote records. |
-| `public.document_requests` | `id (uuid)`, `worker_id`, `requested_certs (text[])`, `expires_at`, `completed_at` | Session tokens for 48-hour secure document uploads. |
+| `public.profiles` | `id (uuid)`, `email`, `role (app_role)`, `full_name`, `tenant_id` | Links auth users to application access level and tenant. |
+| `public.staff` | `id (text)`, `name`, `role`, `email`, `postcode`, `tickets (jsonb)`, `is_archived (bool)`, `uploaded_certificates (jsonb)` | Core operative details, certifications, and compliance tickets database. |
+| `public.jobs` | `id (text)`, `job_ref`, `site_name`, `postcode`, `current_pours`, `contract_max_pours`, `schedule_value`, `status` | Project definitions, pour tallies, site details, and financial allocations. |
+| `public.shifts` | `id (text)`, `worker_id`, `job_id`, `date (date)` | Shift scheduler tracking associations. |
+| `public.quotes` | `id (uuid)`, `reference`, `client_info (jsonb)`, `items (jsonb)`, `totals (jsonb)`, `vat_rate (numeric)` | Stores generated invoice and quote data (totals, clients, items). |
+| `public.document_requests` | `id (uuid)`, `worker_id`, `requested_certs (text[])`, `expires_at`, `completed_at` | Session tokens for 48-hour secure operative document uploads. |
 | `public.audit_logs` | `id (uuid)`, `user_email`, `action`, `target_type`, `target_id`, `details (jsonb)` | Central audit trail tracking logins, updates, and accesses. |
+| `public.job_attachments` | `id (uuid)`, `job_id`, `file_name`, `file_url`, `type`, `uploaded_by` | Uploaded site drawings, before/after media, or other files linked to a job. |
+| `public.job_diary` | `id (uuid)`, `job_id`, `date`, `hs_checklist (jsonb)`, `notes` | Daily Site Diary records including daily mandatory H&S checklists and pour notes. |
+| `public.job_document_requests` | `id (uuid)`, `job_id`, `token`, `expires_at`, `completed_at` | Secure tokens used to request job-related files from external third parties. |
 
 ### Supabase Storage Buckets
 * **`compliance-documents`**: A private bucket configured with strict RLS policies.
   * Operatives are allowed to perform `INSERT` only inside the `requests/<token>/` path via their temporary link.
   * Only authenticated administrators can fetch or view objects inside this bucket.
 * **`policies`**: A public bucket used to store official company compliance PDFs (Anti-Bribery, Health & Safety, etc.). Reads bypass API listing constraints by hardcoding file keys for enhanced security.
+* **`job-attachments`**: A private bucket with RLS policies allowing authenticated uploads and anonymous uploads via secure link to hold site diaries, media, or other attachments.
 
 ---
 

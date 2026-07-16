@@ -105,7 +105,7 @@ export const PortalLayout: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-[#6C8295]/30 selection:text-white flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 selection:text-white flex flex-col lg:flex-row">
       {/* Desktop Sidebar */}
       <aside
         className={`hidden lg:flex flex-col ${isSidebarCollapsed ? "w-16" : "w-52 xl:w-56"} bg-muted/30 border-r border-border shrink-0 sticky top-0 h-screen z-40 transition-[width] duration-200`}
@@ -157,7 +157,7 @@ export const PortalLayout: React.FC = () => {
           </div>
           {!isSidebarCollapsed && (
             <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-[12px] font-semibold text-foreground truncate group-hover:text-[#6C8295] transition-colors">
+              <span className="text-[12px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                 {profile?.full_name || user?.email || "User"}
               </span>
               <div className="flex items-center space-x-1.5 mt-0.5">
@@ -184,7 +184,7 @@ export const PortalLayout: React.FC = () => {
                 title={isSidebarCollapsed ? item.name : undefined}
                 className={`flex items-center ${isSidebarCollapsed ? "justify-center px-0" : "space-x-3 px-3"} py-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 ${
                   isActive
-                    ? "bg-[#6C8295] text-white shadow-md"
+                    ? "bg-primary text-white shadow-md"
                     : "text-[#888888] hover:text-foreground hover:bg-muted"
                 }`}
               >
@@ -204,7 +204,7 @@ export const PortalLayout: React.FC = () => {
           <NavLink
             to="/portal/privacy"
             title={isSidebarCollapsed ? "Legal & Privacy" : undefined}
-            className={`flex items-center w-full py-2 text-[11px] font-medium text-[#555558] hover:text-[#6C8295] rounded-lg transition-all ${isSidebarCollapsed ? "justify-center px-0" : "px-3 space-x-3"}`}
+            className={`flex items-center w-full py-2 text-[11px] font-medium text-[#555558] hover:text-primary rounded-lg transition-all ${isSidebarCollapsed ? "justify-center px-0" : "px-3 space-x-3"}`}
           >
             <Shield className="w-3.5 h-3.5 shrink-0" />
             {!isSidebarCollapsed && <span className="tracking-wide">Legal & Privacy</span>}
@@ -303,7 +303,7 @@ export const PortalLayout: React.FC = () => {
                   )}
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[13px] font-semibold text-foreground truncate group-hover:text-[#6C8295] transition-colors">
+                  <span className="text-[13px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                     {profile?.full_name || user?.email || "User"}
                   </span>
                   <span className="text-[11px] text-[#10b981] capitalize font-medium">
@@ -324,7 +324,7 @@ export const PortalLayout: React.FC = () => {
                       onClick={() => setIsMobileMenuOpen(false)}
                       className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-[13px] font-semibold tracking-wide transition-colors min-h-[44px] ${
                         isActive
-                          ? "bg-[#6C8295]/10 text-foreground border-l-4 border-[#6C8295]"
+                          ? "bg-primary/10 text-foreground border-l-4 border-primary"
                           : "text-[#9a9a9e] hover:text-foreground hover:bg-muted"
                       }`}
                     >

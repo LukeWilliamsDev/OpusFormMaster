@@ -117,7 +117,7 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
               <button
                 type="button"
                 onClick={() => onAddStaff(job)}
-                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg border border-dashed border-[#3a3a42] text-gray-500 hover:text-white hover:border-[#6C8295] text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg border border-dashed border-[#3a3a42] text-gray-500 hover:text-white hover:border-primary text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Staff Member

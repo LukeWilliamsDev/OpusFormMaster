@@ -240,7 +240,7 @@ export const PortalAuthPage: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="dispatcher@opusform.co.uk"
-                        className="w-full pl-12 pr-4 py-3 rounded-md border border-[#2a2a30] bg-[#1a1a1e] text-[#e4e4e7] focus:border-[#6C8295] transition-colors placeholder:text-[#555] font-medium text-sm outline-none"
+                        className="w-full pl-12 pr-4 py-3 rounded-md border border-[#2a2a30] bg-[#1a1a1e] text-[#e4e4e7] focus:border-primary transition-colors placeholder:text-[#555] font-medium text-sm outline-none"
                       />
                     </div>
                   </div>
@@ -267,13 +267,13 @@ export const PortalAuthPage: React.FC = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••"
-                        className="w-full pl-12 pr-12 py-3 rounded-md border border-[#2a2a30] bg-[#1a1a1e] text-[#e4e4e7] focus:border-[#6C8295] transition-colors placeholder:text-[#555] font-medium text-sm outline-none"
+                        className="w-full pl-12 pr-12 py-3 rounded-md border border-[#2a2a30] bg-[#1a1a1e] text-[#e4e4e7] focus:border-primary transition-colors placeholder:text-[#555] font-medium text-sm outline-none"
                       />
                     </div>
                   </div>
                   <button
                     type="submit"
-                    className="w-full py-3 px-4 bg-[#6C8295] hover:bg-[#6c8295]/90 disabled:bg-[#6C8295]/50 disabled:cursor-not-allowed text-white rounded-md text-[14px] font-bold transition-colors flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+                    className="w-full py-3 px-4 bg-primary hover:bg-primary/90 disabled:bg-primary/50 disabled:cursor-not-allowed text-white rounded-md text-[14px] font-bold transition-colors flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
                   >
                     {isSubmitting ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -315,7 +315,7 @@ export const PortalAuthPage: React.FC = () => {
                         type="email"
                         required
                         placeholder="name@opusform.co.uk"
-                        className="w-full pl-12 pr-4 py-3 rounded-md border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-[#5C7285] transition-colors placeholder:text-[#444] font-medium text-sm outline-none"
+                        className="w-full pl-12 pr-4 py-3 rounded-md border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-primary transition-colors placeholder:text-[#444] font-medium text-sm outline-none"
                       />
                     </div>
                   </div>
@@ -323,7 +323,7 @@ export const PortalAuthPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-3 px-4 bg-[#5C7285] hover:bg-[#6c8295] disabled:bg-[#5C7285]/50 disabled:cursor-not-allowed text-white rounded-md text-[11px] font-extrabold tracking-widest uppercase transition-colors flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+                    className="w-full py-3 px-4 bg-primary hover:bg-primary disabled:bg-primary/50 disabled:cursor-not-allowed text-white rounded-md text-[11px] font-extrabold tracking-widest uppercase transition-colors flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
                   >
                     {isSubmitting ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -363,7 +363,7 @@ export const PortalAuthPage: React.FC = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-12 pr-12 py-3 rounded-md border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-[#5C7285] transition-colors placeholder:text-[#444] font-medium text-sm outline-none tracking-widest"
+                        className="w-full pl-12 pr-12 py-3 rounded-md border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-primary transition-colors placeholder:text-[#444] font-medium text-sm outline-none tracking-widest"
                       />
                       <button
                         type="button"
@@ -395,7 +395,7 @@ export const PortalAuthPage: React.FC = () => {
                             className="flex items-center gap-2 text-[9px] uppercase tracking-wider font-bold"
                           >
                             <div
-                              className={`w-1.5 h-1.5 rounded-full ${rule.met ? "bg-[#5C7285] animate-pulse" : "bg-[#333]"}`}
+                              className={`w-1.5 h-1.5 rounded-full ${rule.met ? "bg-primary animate-pulse" : "bg-[#333]"}`}
                             />
                             <span className={rule.met ? "text-[#859bb0]" : "text-[#444]"}>
                               {rule.label}
@@ -419,7 +419,7 @@ export const PortalAuthPage: React.FC = () => {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-12 pr-12 py-3 rounded-md border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-[#5C7285] transition-colors placeholder:text-[#444] font-medium text-sm outline-none tracking-widest"
+                        className="w-full pl-12 pr-12 py-3 rounded-md border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-primary transition-colors placeholder:text-[#444] font-medium text-sm outline-none tracking-widest"
                       />
                       <button
                         type="button"
@@ -438,7 +438,7 @@ export const PortalAuthPage: React.FC = () => {
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="w-full py-3 px-4 bg-[#5C7285] hover:bg-[#6c8295] disabled:bg-[#5C7285]/50 disabled:cursor-not-allowed text-white rounded-md text-[11px] font-extrabold tracking-widest uppercase transition-colors flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
+                    className="w-full py-3 px-4 bg-primary hover:bg-primary disabled:bg-primary/50 disabled:cursor-not-allowed text-white rounded-md text-[11px] font-extrabold tracking-widest uppercase transition-colors flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
                   >
                     {isSubmitting ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

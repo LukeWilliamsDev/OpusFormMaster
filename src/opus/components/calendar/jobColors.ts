@@ -15,11 +15,11 @@ const PALETTES: JobColorClasses[] = [
     lightBg: "bg-emerald-500/10",
   },
   {
-    bg: "bg-blue-950/40 border-blue-800/40 text-blue-400 hover:bg-blue-950/60 hover:border-blue-700/50",
-    text: "text-blue-400",
-    border: "border-blue-800/40",
-    bullet: "bg-blue-500",
-    lightBg: "bg-blue-500/10",
+    bg: "bg-rose-950/40 border-rose-800/40 text-rose-400 hover:bg-rose-950/60 hover:border-rose-700/50",
+    text: "text-rose-400",
+    border: "border-rose-800/40",
+    bullet: "bg-rose-500",
+    lightBg: "bg-rose-500/10",
   },
   {
     bg: "bg-purple-950/40 border-purple-800/40 text-purple-400 hover:bg-purple-950/60 hover:border-purple-700/50",
@@ -29,11 +29,11 @@ const PALETTES: JobColorClasses[] = [
     lightBg: "bg-purple-500/10",
   },
   {
-    bg: "bg-sky-950/40 border-sky-800/40 text-sky-400 hover:bg-sky-950/60 hover:border-sky-700/50",
-    text: "text-sky-400",
-    border: "border-sky-800/40",
-    bullet: "bg-sky-500",
-    lightBg: "bg-sky-500/10",
+    bg: "bg-teal-950/40 border-teal-800/40 text-teal-400 hover:bg-teal-950/60 hover:border-teal-700/50",
+    text: "text-teal-400",
+    border: "border-teal-800/40",
+    bullet: "bg-teal-500",
+    lightBg: "bg-teal-500/10",
   },
   {
     bg: "bg-amber-950/40 border-amber-800/40 text-amber-400 hover:bg-amber-950/60 hover:border-amber-700/50",

@@ -115,7 +115,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                       type="button"
                       onClick={() => onAddStaff(job, day.date)}
                       aria-label={`Add staff to ${job.siteName}`}
-                      className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-gray-500 hover:text-foreground hover:border-[#6C8295] text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                      className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-gray-500 hover:text-foreground hover:border-primary text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
                     >
                       <Plus className="w-3 h-3" />
                       <span className="hidden xl:inline">Add Staff</span>

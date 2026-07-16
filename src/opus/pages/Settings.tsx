@@ -31,7 +31,7 @@ export const getAvatarPresetClass = (presetId: string) => {
   const preset = AVATAR_PRESETS.find((p) => p.id === presetId);
   return preset
     ? `${preset.colors} ${preset.text}`
-    : "from-[#6C8295]/20 to-[#6C8295]/30 text-[#6C8295]";
+    : "from-primary/20 to-primary/30 text-primary";
 };
 
 export const SettingsPage: React.FC = () => {
@@ -190,7 +190,7 @@ export const SettingsPage: React.FC = () => {
           {/* Account Details Card */}
           <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-6 space-y-5">
             <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
-              <User className="w-4 h-4 text-[#6C8295]" />
+              <User className="w-4 h-4 text-primary" />
               <h3 className="text-xs font-black uppercase tracking-widest text-white">
                 Account Details
               </h3>
@@ -280,7 +280,7 @@ export const SettingsPage: React.FC = () => {
           {/* Change Password Card */}
           <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-6 space-y-5">
             <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
-              <Key className="w-4 h-4 text-[#6C8295]" />
+              <Key className="w-4 h-4 text-primary" />
               <h3 className="text-xs font-black uppercase tracking-widest text-white">
                 Security / Update Password
               </h3>

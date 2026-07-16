@@ -50,9 +50,9 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200 mb-6"
-            style={{ color: "#6C8295" }}
+            style={{ color: "var(--primary)" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#F4F4F0")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#6C8295")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--primary)")}
             aria-label="Go back"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -62,8 +62,8 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
           {/* Title block */}
           <div className="mb-6">
             <div className="flex items-center gap-2.5 mb-2.5">
-              <Shield className="w-4 h-4 text-[#6C8295]" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-[0.22em] text-[#6C8295]">
+              <Shield className="w-4 h-4 text-primary" />
+              <span className="text-[10px] font-mono font-bold uppercase tracking-[0.22em] text-primary">
                 Internal Legal & Compliance
               </span>
             </div>
@@ -86,7 +86,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
               <Link
                 key={link.path}
                 to={link.path}
-                className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-[#888888] hover:text-[#6C8295] transition-colors duration-200"
+                className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-[#888888] hover:text-primary transition-colors duration-200"
               >
                 {link.label}
               </Link>
@@ -111,9 +111,9 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200"
-            style={{ color: "#6C8295" }}
+            style={{ color: "var(--primary)" }}
             onMouseEnter={(e) => (e.currentTarget.style.color = "#F4F4F0")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#6C8295")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "var(--primary)")}
             aria-label="Go back"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
@@ -130,10 +130,10 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
         {/* Title block */}
         <div className="mb-8">
           <div className="flex items-center gap-2.5 mb-3">
-            <Shield className="w-4 h-4" style={{ color: "#6C8295" }} />
+            <Shield className="w-4 h-4" style={{ color: "var(--primary)" }} />
             <span
               className="text-[10px] font-mono font-bold uppercase tracking-[0.22em]"
-              style={{ color: "#6C8295" }}
+              style={{ color: "var(--primary)" }}
             >
               Legal & Compliance
             </span>
@@ -171,7 +171,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
               to={link.path}
               className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200"
               style={{ color: "#3d3d44" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#6C8295")}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "var(--primary)")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#3d3d44")}
             >
               {link.label}
@@ -192,7 +192,7 @@ export const Section: React.FC<{ title: string; children: React.ReactNode }> = (
   <section>
     <h2
       className="text-[11px] font-mono font-bold uppercase tracking-[0.2em] mb-4"
-      style={{ color: "#6C8295" }}
+      style={{ color: "var(--primary)" }}
     >
       {title}
     </h2>
@@ -211,7 +211,7 @@ export const DataTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ h
             <th
               key={i}
               className="text-left px-4 py-2.5 font-mono font-bold uppercase tracking-wider border-b"
-              style={{ color: "#6C8295", borderColor: "#2a2a30", fontSize: "10px" }}
+              style={{ color: "var(--primary)", borderColor: "#2a2a30", fontSize: "10px" }}
             >
               {h}
             </th>

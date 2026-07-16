@@ -471,12 +471,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
       <div className="flex items-center justify-between pb-4 border-b border-[#27272A]">
         <button
           onClick={onBack}
-          className="flex items-center gap-1 text-[#94A3B8] hover:text-white font-medium text-sm transition-colors cursor-pointer"
+          className="flex items-center gap-1 text-muted-foreground hover:text-white font-medium text-sm transition-colors cursor-pointer"
         >
           <ChevronLeft className="w-5 h-5 text-[#475569]" />
           <span>Job Ledger</span>
         </button>
-        <div className="text-xs font-semibold bg-[#1E293B] border border-[#334155] text-[#94A3B8] px-3 py-1 rounded-md font-mono">
+        <div className="text-xs font-semibold bg-secondary border border-border text-muted-foreground px-3 py-1 rounded-md font-mono">
           {job.jobRef.replace("-X", "")}
         </div>
       </div>
@@ -484,7 +484,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
       {/* Title & Contractor info */}
       <div className="space-y-1 pb-2">
         <h1 className="text-3xl font-extrabold text-white tracking-tight">{job.siteName}</h1>
-        <p className="text-sm text-[#94A3B8]">
+        <p className="text-sm text-muted-foreground">
           {job.mainContractor} · <span className="font-mono">{job.postcode}</span>
         </p>
       </div>
@@ -507,7 +507,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                   key={s}
                   onClick={() => handleStatusChange(s)}
                   className={`flex-1 text-center py-2.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    isActive ? "bg-[#3D4E5D] text-white" : "text-[#525866] hover:text-[#94A3B8]"
+                    isActive ? "bg-[#3D4E5D] text-white" : "text-[#525866] hover:text-muted-foreground"
                   }`}
                 >
                   {s === "in-progress" ? "In Progress" : s}
@@ -543,7 +543,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
           </div>
           {loadingWeather ? (
             <div className="flex items-center gap-2 text-xs text-[#71717A] py-2">
-              <Loader className="w-4 h-4 animate-spin text-[#6C8295]" />
+              <Loader className="w-4 h-4 animate-spin text-primary" />
               <span>Fetching Weather...</span>
             </div>
           ) : weatherData ? (
@@ -561,7 +561,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     {weatherData.riskLevel} Risk
                   </span>
                 </div>
-                <p className="text-xs text-[#94A3B8] capitalize">{weatherData.desc}</p>
+                <p className="text-xs text-muted-foreground capitalize">{weatherData.desc}</p>
               </div>
               {weatherData.icon && (
                 <img
@@ -616,7 +616,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
             </div>
             {loadingSuppliers ? (
               <div className="flex items-center gap-2 text-xs text-[#71717A] py-4">
-                <Loader className="w-4 h-4 animate-spin text-[#6C8295]" />
+                <Loader className="w-4 h-4 animate-spin text-primary" />
                 <span>Searching local building merchants...</span>
               </div>
             ) : suppliers.length > 0 ? (
@@ -627,7 +627,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     onClick={() => setSelectedSupplierId(s.id)}
                     className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer flex justify-between items-start ${
                       selectedSupplierId === s.id
-                        ? "bg-[#1E293B] border-[#6C8295]"
+                        ? "bg-secondary border-primary"
                         : "bg-[#0F1012] border-[#27272A] hover:border-[#3F3F46]"
                     }`}
                   >
@@ -637,7 +637,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                       <div className="text-[10px] text-[#FF9F0A] font-mono">{s.phone}</div>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] font-bold bg-[#1A1B1E] border border-[#27272A] px-2 py-0.5 rounded text-[#94A3B8]">
+                      <span className="text-[10px] font-bold bg-[#1A1B1E] border border-[#27272A] px-2 py-0.5 rounded text-muted-foreground">
                         {s.distance}
                       </span>
                     </div>
@@ -658,7 +658,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
         {/* Site Diary & Checklist */}
         <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 space-y-4">
           <div className="flex items-center gap-2">
-            <ClipboardList className="w-4 h-4 text-[#6C8295]" />
+            <ClipboardList className="w-4 h-4 text-primary" />
             <h2 className="text-sm font-bold uppercase tracking-wider text-white">
               Daily Site Diary & H&S Clearance
             </h2>
@@ -678,7 +678,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     setHsChecklist((prev) => ({ ...prev, ppe: e.target.checked }));
                     setDiarySaved(false);
                   }}
-                  className="rounded border-[#27272A] text-[#6C8295] focus:ring-0 bg-[#161619] w-4 h-4"
+                  className="rounded border-[#27272A] text-primary focus:ring-0 bg-[#161619] w-4 h-4"
                 />
                 <span>Operatives wearing full PPE (Hard Hat, Boots, Hi-Vis)</span>
               </label>
@@ -691,7 +691,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     setHsChecklist((prev) => ({ ...prev, briefing: e.target.checked }));
                     setDiarySaved(false);
                   }}
-                  className="rounded border-[#27272A] text-[#6C8295] focus:ring-0 bg-[#161619] w-4 h-4"
+                  className="rounded border-[#27272A] text-primary focus:ring-0 bg-[#161619] w-4 h-4"
                 />
                 <span>Daily site safety briefing completed</span>
               </label>
@@ -704,7 +704,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     setHsChecklist((prev) => ({ ...prev, delivery: e.target.checked }));
                     setDiarySaved(false);
                   }}
-                  className="rounded border-[#27272A] text-[#6C8295] focus:ring-0 bg-[#161619] w-4 h-4"
+                  className="rounded border-[#27272A] text-primary focus:ring-0 bg-[#161619] w-4 h-4"
                 />
                 <span>Concrete delivery access & wash-out zone ready</span>
               </label>
@@ -717,7 +717,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     setHsChecklist((prev) => ({ ...prev, weather: e.target.checked }));
                     setDiarySaved(false);
                   }}
-                  className="rounded border-[#27272A] text-[#6C8295] focus:ring-0 bg-[#161619] w-4 h-4"
+                  className="rounded border-[#27272A] text-primary focus:ring-0 bg-[#161619] w-4 h-4"
                 />
                 <span>Weather risk assessed & cleared for execution</span>
               </label>
@@ -736,7 +736,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                 setDiarySaved(false);
               }}
               placeholder="Record any delays, materials delivered, visitors, or site concerns..."
-              className="w-full bg-[#0F1012] border border-[#27272A] text-xs text-white rounded-lg p-3 outline-none focus:border-[#6C8295]"
+              className="w-full bg-[#0F1012] border border-[#27272A] text-xs text-white rounded-lg p-3 outline-none focus:border-primary"
             />
           </div>
 
@@ -747,7 +747,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
             <button
               onClick={saveSiteDiary}
               disabled={savingDiary}
-              className="px-4 py-2 bg-[#6C8295] hover:bg-[#5C7285] text-white font-bold rounded-lg text-xs cursor-pointer flex items-center gap-1.5 transition-all"
+              className="px-4 py-2 bg-primary hover:bg-primary text-white font-bold rounded-lg text-xs cursor-pointer flex items-center gap-1.5 transition-all"
             >
               {savingDiary && <Loader className="w-3 h-3 animate-spin" />}
               Save Site Journal
@@ -759,26 +759,26 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
         <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-[#6C8295]" />
+              <UserCheck className="w-4 h-4 text-primary" />
               <h2 className="text-sm font-bold uppercase tracking-wider text-white">
                 Staff Scheduled On Site
               </h2>
             </div>
-            <span className="text-[10px] bg-[#1E293B] border border-[#334155] text-[#94A3B8] px-2 py-0.5 rounded font-mono">
+            <span className="text-[10px] bg-secondary border border-border text-muted-foreground px-2 py-0.5 rounded font-mono">
               Read Only
             </span>
           </div>
 
           {loadingStaff ? (
             <div className="flex items-center gap-2 text-xs text-[#71717A] py-8">
-              <Loader className="w-4 h-4 animate-spin text-[#6C8295]" />
+              <Loader className="w-4 h-4 animate-spin text-primary" />
               <span>Loading staff matrix...</span>
             </div>
           ) : Object.keys(groupedStaff).length > 0 ? (
             <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
               {Object.keys(groupedStaff).map((roleName) => (
                 <div key={roleName} className="space-y-1.5">
-                  <div className="text-[10px] text-[#6C8295] font-bold uppercase tracking-wider border-b border-[#27272A] pb-1">
+                  <div className="text-[10px] text-primary font-bold uppercase tracking-wider border-b border-[#27272A] pb-1">
                     {roleName} ({groupedStaff[roleName].length})
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -811,7 +811,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
         <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 space-y-4">
           <div className="flex justify-between items-center border-b border-[#27272A] pb-3">
             <div className="flex items-center gap-2">
-              <Camera className="w-4 h-4 text-[#6C8295]" />
+              <Camera className="w-4 h-4 text-primary" />
               <h2 className="text-sm font-bold uppercase tracking-wider text-white">
                 Before & After Site Media
               </h2>
@@ -823,7 +823,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
             <div className="space-y-2">
               <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider flex justify-between items-center">
                 <span>Before Pours</span>
-                <label className="text-[10px] text-[#6C8295] hover:underline cursor-pointer flex items-center gap-1 font-bold">
+                <label className="text-[10px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
                   {uploadingPhotoBefore ? (
                     <Loader className="w-3 h-3 animate-spin" />
                   ) : (
@@ -851,7 +851,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                         className="relative group rounded-lg overflow-hidden border border-[#27272A]"
                       >
                         <img src={p.file_url} alt="before" className="w-full h-24 object-cover" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-[#94A3B8]">
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-muted-foreground">
                           <span className="text-white font-bold truncate">{p.uploaded_by}</span>
                           <span>{new Date(p.uploaded_at).toLocaleDateString()}</span>
                         </div>
@@ -870,7 +870,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
             <div className="space-y-2">
               <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider flex justify-between items-center">
                 <span>After Pours</span>
-                <label className="text-[10px] text-[#6C8295] hover:underline cursor-pointer flex items-center gap-1 font-bold">
+                <label className="text-[10px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
                   {uploadingPhotoAfter ? (
                     <Loader className="w-3 h-3 animate-spin" />
                   ) : (
@@ -898,7 +898,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                         className="relative group rounded-lg overflow-hidden border border-[#27272A]"
                       >
                         <img src={p.file_url} alt="after" className="w-full h-24 object-cover" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-[#94A3B8]">
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-muted-foreground">
                           <span className="text-white font-bold truncate">{p.uploaded_by}</span>
                           <span>{new Date(p.uploaded_at).toLocaleDateString()}</span>
                         </div>
@@ -919,7 +919,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
         <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 space-y-4">
           <div className="flex justify-between items-center border-b border-[#27272A] pb-3">
             <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-[#6C8295]" />
+              <FileText className="w-4 h-4 text-primary" />
               <h2 className="text-sm font-bold uppercase tracking-wider text-white">
                 Project Documents
               </h2>
@@ -927,7 +927,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
             <button
               onClick={generateUploadLink}
               disabled={generatingLink}
-              className="text-[10px] text-[#6C8295] hover:text-[#5C7285] font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+              className="text-[10px] text-primary hover:text-primary font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
             >
               {generatingLink ? (
                 <Loader className="w-3 h-3 animate-spin" />
@@ -941,12 +941,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
 
           {/* Generated request link alert */}
           {generatedLink && (
-            <div className="bg-[#1E293B] border border-[#334155] rounded-xl p-3.5 flex items-center justify-between gap-3 animate-fade-in">
+            <div className="bg-secondary border border-border rounded-xl p-3.5 flex items-center justify-between gap-3 animate-fade-in">
               <div className="space-y-0.5 max-w-[75%]">
                 <div className="text-[10px] font-bold text-white uppercase tracking-wider">
                   Secure Upload Link Generated
                 </div>
-                <div className="text-[11px] text-[#94A3B8] truncate font-mono">{generatedLink}</div>
+                <div className="text-[11px] text-muted-foreground truncate font-mono">{generatedLink}</div>
               </div>
               <button
                 onClick={copyToClipboard}
@@ -994,7 +994,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     href={d.file_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-white hover:text-[#6C8295] truncate font-mono"
+                    className="text-xs text-white hover:text-primary truncate font-mono"
                   >
                     {d.file_name}
                   </a>

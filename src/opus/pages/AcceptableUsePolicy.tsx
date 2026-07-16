@@ -51,7 +51,7 @@ export const AcceptableUsePolicyPage: React.FC = () => (
     <Section title="6. Contact">
       <p>
         If you experience technical issues or suspect unauthorised access to your account, please immediately inform the office at{" "}
-        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "#6C8295" }}>
+        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
           admin@opusform.co.uk
         </a>
         .

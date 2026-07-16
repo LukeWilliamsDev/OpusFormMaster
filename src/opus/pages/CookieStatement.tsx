@@ -51,7 +51,7 @@ export const CookieStatementPage: React.FC = () => (
     <Section title="5. Contact">
       <p>
         If you have any questions about this statement or how we manage security on the portal, please contact{" "}
-        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "#6C8295" }}>
+        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
           admin@opusform.co.uk
         </a>
         .

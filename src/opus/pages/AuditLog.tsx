@@ -196,7 +196,7 @@ export const AuditLogPage: React.FC = () => {
       case "PASSWORD_RESET_SUCCESS":
         return "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
       case "UPDATE":
-        return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+        return "bg-amber-500/10 text-amber-400 border-amber-500/20";
       case "INSPECT":
         return "bg-purple-500/10 text-purple-400 border-purple-500/20";
       case "DELETE":
@@ -279,11 +279,11 @@ export const AuditLogPage: React.FC = () => {
             <div className="divide-y divide-[#1e1e24] px-4">
               {paginatedLogs.map((log) => {
                 // Colored severity bullets for timeline matching 2d
-                let bulletColor = "bg-[#6C8295]";
+                let bulletColor = "bg-primary";
                 if (log.action.includes("LOGIN_SUCCESS") || log.action.includes("APPROVE")) {
                   bulletColor = "bg-[#10b981]";
                 } else if (log.action.includes("CREATE") || log.action.includes("UPDATE")) {
-                  bulletColor = "bg-[#6C8295]";
+                  bulletColor = "bg-primary";
                 } else if (
                   log.action.includes("FAILURE") ||
                   log.action.includes("DELETE") ||
@@ -336,7 +336,7 @@ export const AuditLogPage: React.FC = () => {
                           log.target_type === "quotes" ? (
                           <span>
                             Quote{" "}
-                            <span className="font-mono text-[#6C8295]">
+                            <span className="font-mono text-primary">
                               {log.details?.reference || log.target_id}
                             </span>{" "}
                             saved as draft

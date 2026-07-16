@@ -89,7 +89,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             onClick={() => onChangeGroup("staff")}
             className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
               group === "staff"
-                ? "bg-[#5C7285] border-[#5C7285] text-white shadow-lg shadow-[#5C7285]/10"
+                ? "bg-primary border-primary text-white shadow-lg shadow-primary/10"
                 : "bg-[#16161a]/50 border-[#2a2a30] text-gray-400 hover:text-white"
             }`}
           >
@@ -101,7 +101,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             onClick={() => onChangeGroup("project")}
             className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
               group === "project"
-                ? "bg-[#5C7285] border-[#5C7285] text-white shadow-lg shadow-[#5C7285]/10"
+                ? "bg-primary border-primary text-white shadow-lg shadow-primary/10"
                 : "bg-[#16161a]/50 border-[#2a2a30] text-gray-400 hover:text-white"
             }`}
           >
@@ -116,7 +116,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              className="bg-[#16161a] border border-[#2a2a30] rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-[#5C7285] transition-colors"
+              className="bg-[#16161a] border border-[#2a2a30] rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-primary transition-colors"
             >
               <option value="all">All Roles</option>
               {uniqueRoles.map((role) => (
@@ -134,7 +134,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search staff or projects…"
-              className="w-full bg-[#16161a] border border-[#2a2a30] rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-[#5C7285] transition-colors"
+              className="w-full bg-[#16161a] border border-[#2a2a30] rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-primary transition-colors"
             />
           </div>
         </div>

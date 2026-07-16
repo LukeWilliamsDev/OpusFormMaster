@@ -28,7 +28,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
       {/* Header controls & filter */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
         <div className="flex items-center space-x-2.5">
-          <HardHat className="w-5 h-5 text-[#6C8295]" />
+          <HardHat className="w-5 h-5 text-primary" />
           <h2 className="text-base font-bold text-foreground font-archivo uppercase tracking-wide">
             Job Ledger
           </h2>
@@ -41,7 +41,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                 onClick={() => setFilterStatus(status)}
                 className={`rounded px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-200 min-h-[36px] flex items-center justify-center cursor-pointer ${
                   filterStatus === status
-                    ? "bg-[#6C8295] text-white shadow-md"
+                    ? "bg-primary text-white shadow-md"
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
               >
@@ -102,7 +102,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                   >
                     {/* Job Ref Column */}
                     <div className="flex justify-between items-center w-full md:w-auto md:contents">
-                      <div className="text-[13px] font-mono font-semibold text-[#6C8295] group-hover:text-foreground transition-colors">
+                      <div className="text-[13px] font-mono font-semibold text-primary group-hover:text-foreground transition-colors">
                         {job.jobRef}
                       </div>
 
@@ -111,7 +111,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                         <span
                           className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-bold tracking-wide uppercase border ${
                             job.status === "in-progress"
-                              ? "bg-[#6C8295]/10 border-[#6C8295]/20 text-[#6C8295]"
+                              ? "bg-primary/10 border-primary/20 text-primary"
                               : job.status === "pending"
                                 ? "bg-[#f59e0b]/10 border-[#f59e0b]/20 text-[#f59e0b]"
                                 : "bg-[#10b981]/10 border-[#10b981]/20 text-[#10b981]"
@@ -124,7 +124,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
 
                     {/* Site / Contractor Column */}
                     <div className="w-full md:w-auto space-y-0.5 py-1">
-                      <div className="text-[14px] font-semibold text-foreground group-hover:text-[#6C8295] transition-colors">
+                      <div className="text-[14px] font-semibold text-foreground group-hover:text-primary transition-colors">
                         {job.siteName}
                       </div>
                       <div className="text-[12px] text-muted-foreground font-medium">
@@ -202,7 +202,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                       </div>
                       <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-[#6C8295] rounded-full transition-all duration-300"
+                          className="h-full bg-primary rounded-full transition-all duration-300"
                           style={{ width: `${progressPercent}%` }}
                         />
                       </div>
@@ -218,7 +218,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                       <span
                         className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-bold uppercase border tracking-wider ${
                           job.status === "in-progress"
-                            ? "bg-[#6C8295]/10 border-[#6C8295]/20 text-[#6C8295]"
+                            ? "bg-primary/10 border-primary/20 text-primary"
                             : job.status === "pending"
                               ? "bg-[#f59e0b]/10 border-[#f59e0b]/20 text-[#f59e0b]"
                               : "bg-[#10b981]/10 border-[#10b981]/20 text-[#10b981]"

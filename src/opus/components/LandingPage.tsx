@@ -10,18 +10,15 @@ interface LandingPageProps {
 export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) => {
   const [visible, setVisible] = useState(false);
   const [lineVisible, setLineVisible] = useState(false);
-  const [subtitleVisible, setSubtitleVisible] = useState(false);
   const [footerVisible, setFooterVisible] = useState(false);
 
   useEffect(() => {
     const t1 = setTimeout(() => setVisible(true), 150);
     const t2 = setTimeout(() => setLineVisible(true), 700);
-    const t3 = setTimeout(() => setSubtitleVisible(true), 1050);
     const t4 = setTimeout(() => setFooterVisible(true), 1400);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
-      clearTimeout(t3);
       clearTimeout(t4);
     };
   }, []);
@@ -30,7 +27,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
     <div
       id="opus-landing-root"
       className="min-h-screen flex flex-col justify-between relative overflow-hidden font-sans"
-      style={{ backgroundColor: "#111114" }}
+      style={{ backgroundColor: "#16171A" }}
     >
       {/* Subtle concrete-texture grid overlay */}
       <div
@@ -46,9 +43,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
         <button
           onClick={onNavigateToPortal}
           className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] transition-all duration-300"
-          style={{ color: "#526E8C" }}
+          style={{ color: "var(--primary)" }}
           onMouseEnter={(e) => (e.currentTarget.style.color = "#F4F4F0")}
-          onMouseLeave={(e) => (e.currentTarget.style.color = "#526E8C")}
+          onMouseLeave={(e) => (e.currentTarget.style.color = "var(--primary)")}
           aria-label="Portal Access"
         >
           Portal Access
@@ -75,20 +72,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
             referrerPolicy="no-referrer"
           />
         </div>
-
-        {/* Subtitle — fades up */}
-        <p
-          className="mt-4 text-center font-mono font-bold uppercase text-[11px]"
-          style={{
-            color: "#526E8C",
-            letterSpacing: "0.3em",
-            opacity: subtitleVisible ? 1 : 0,
-            transform: subtitleVisible ? "translateY(0)" : "translateY(8px)",
-            transition: "opacity 500ms ease-out, transform 500ms ease-out",
-          }}
-        >
-          Coming Soon
-        </p>
       </main>
 
       {/* Footer */}
@@ -119,7 +102,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
 
         {/* Company details + contact */}
         <div
-          className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono uppercase text-muted-foreground/80 text-center max-w-xl mx-auto"
+          className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono uppercase text-muted-foreground/80 text-center max-w-xl lg:max-w-none mx-auto"
           style={{ letterSpacing: "0.15em" }}
         >
           <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">

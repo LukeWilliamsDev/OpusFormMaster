@@ -44,7 +44,7 @@ export const TermsOfServicePage: React.FC = () => (
         <li>Logging out when using shared or site-based devices</li>
         <li>
           Reporting any suspected unauthorised access immediately to{" "}
-          <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "#6C8295" }}>
+          <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
             admin@opusform.co.uk
           </a>
         </li>
@@ -54,7 +54,7 @@ export const TermsOfServicePage: React.FC = () => (
     <Section title="4. Acceptable Use">
       <p>
         Your use of the portal must comply with our{" "}
-        <a href="#/portal/acceptable-use" className="underline" style={{ color: "#6C8295" }}>
+        <a href="#/portal/acceptable-use" className="underline" style={{ color: "var(--primary)" }}>
           Acceptable Use Policy
         </a>
         . Misuse of the portal may result in disciplinary action up to and including termination of
@@ -81,7 +81,7 @@ export const TermsOfServicePage: React.FC = () => (
     <Section title="6. Data Protection">
       <p>
         How we handle your personal data is governed by our{" "}
-        <a href="#/privacy" className="underline" style={{ color: "#6C8295" }}>
+        <a href="#/privacy" className="underline" style={{ color: "var(--primary)" }}>
           Staff Privacy Notice
         </a>
         , which forms part of this policy. By using the portal, you acknowledge that you have read
@@ -110,7 +110,7 @@ export const TermsOfServicePage: React.FC = () => (
         Your access to the portal will be revoked when your engagement with Opus Form Ltd ends, or
         if you breach this policy. Upon termination of access, your data will be retained in
         accordance with the retention periods set out in the{" "}
-        <a href="#/privacy" className="underline" style={{ color: "#6C8295" }}>
+        <a href="#/privacy" className="underline" style={{ color: "var(--primary)" }}>
           Staff Privacy Notice
         </a>
         .
@@ -127,7 +127,7 @@ export const TermsOfServicePage: React.FC = () => (
     <Section title="11. Contact">
       <p>
         For questions about this policy, contact{" "}
-        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "#6C8295" }}>
+        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
           admin@opusform.co.uk
         </a>
         .

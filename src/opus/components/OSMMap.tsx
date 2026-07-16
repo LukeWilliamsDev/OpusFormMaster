@@ -113,7 +113,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
     // Suppliers Markers
     suppliers.forEach((s) => {
       if (!isValidCoord(s.coords)) return;
-      const supplierIcon = createCustomMarkerIcon("#5C7285", "pulsing-marker-accent");
+      const supplierIcon = createCustomMarkerIcon("var(--primary)", "pulsing-marker-accent");
       const supplierMarker = L.marker([s.coords.lat, s.coords.lng], { icon: supplierIcon }).addTo(
         map,
       );
@@ -121,7 +121,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
       const supplierPopupContent = `
         <div style="padding: 4px; font-family: inherit; max-width: 180px;">
           <h4 style="margin: 0 0 4px 0; font-size: 11px; font-weight: 800; text-transform: uppercase; color: #ffffff;">${s.name}</h4>
-          <p style="margin: 0 0 2px 0; font-size: 9.5px; color: #5C7285; font-weight: 800;">${s.distance} from site</p>
+          <p style="margin: 0 0 2px 0; font-size: 9.5px; color: var(--primary); font-weight: 800;">${s.distance} from site</p>
           <p style="margin: 0 0 6px 0; font-size: 8.5px; color: #aaaaaa; line-height: 1.3;">${s.address}</p>
           <p style="margin: 0; font-size: 8.5px; color: #E11D48; font-weight: 800;">📞 ${s.phone}</p>
         </div>

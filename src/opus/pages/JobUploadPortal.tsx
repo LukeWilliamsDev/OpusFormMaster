@@ -138,7 +138,7 @@ export const JobUploadPortalPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-[#111114] flex items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <Loader className="w-8 h-8 text-[#6C8295] animate-spin" />
+          <Loader className="w-8 h-8 text-primary animate-spin" />
           <span className="text-xs text-[#71717A] font-bold uppercase tracking-widest">
             Verifying Token...
           </span>
@@ -155,7 +155,7 @@ export const JobUploadPortalPage: React.FC = () => {
             <AlertCircle className="w-6 h-6" />
           </div>
           <h2 className="text-lg font-bold text-white uppercase tracking-wider">Access Denied</h2>
-          <p className="text-sm text-[#94A3B8]">{errorMsg}</p>
+          <p className="text-sm text-muted-foreground">{errorMsg}</p>
         </div>
       </div>
     );
@@ -166,11 +166,11 @@ export const JobUploadPortalPage: React.FC = () => {
       <div className="w-full max-w-lg bg-[#161619] border border-[#27272A] rounded-2xl p-6 md:p-8 space-y-6">
         {/* Title and Job info */}
         <div className="text-center space-y-2">
-          <div className="inline-flex px-3 py-1 bg-[#1E293B] border border-[#334155] rounded-full text-[10px] font-bold uppercase tracking-wider text-[#94A3B8] font-mono">
+          <div className="inline-flex px-3 py-1 bg-secondary border border-border rounded-full text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-mono">
             {jobData.jobRef.replace("-X", "")}
           </div>
           <h1 className="text-2xl font-extrabold text-white tracking-tight">Job Document Portal</h1>
-          <p className="text-sm text-[#94A3B8]">
+          <p className="text-sm text-muted-foreground">
             Uploading documents for <strong className="text-white">{jobData.siteName}</strong>
           </p>
         </div>
@@ -182,7 +182,7 @@ export const JobUploadPortalPage: React.FC = () => {
             </div>
             <div className="space-y-1">
               <h2 className="text-lg font-bold text-white">Upload Complete</h2>
-              <p className="text-sm text-[#94A3B8]">
+              <p className="text-sm text-muted-foreground">
                 Your documents have been submitted to the site supervisor.
               </p>
             </div>
@@ -197,7 +197,7 @@ export const JobUploadPortalPage: React.FC = () => {
               onDrop={handleDrop}
               className={`border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center transition-all cursor-pointer relative ${
                 dragActive
-                  ? "border-[#6C8295] bg-[#1a1a24]/30"
+                  ? "border-primary bg-[#1a1a24]/30"
                   : "border-[#27272A] hover:border-[#3F3F46] bg-[#0F1012]"
               }`}
             >
@@ -216,7 +216,7 @@ export const JobUploadPortalPage: React.FC = () => {
                 <div className="space-y-1">
                   <p className="text-sm font-bold text-white">
                     Drag and drop files here, or{" "}
-                    <span className="text-[#6C8295] hover:underline">browse</span>
+                    <span className="text-primary hover:underline">browse</span>
                   </p>
                   <p className="text-xs text-[#71717A]">Supports PDF, DOCX, JPEG, PNG, Excel</p>
                 </div>
@@ -255,7 +255,7 @@ export const JobUploadPortalPage: React.FC = () => {
               className={`w-full py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex justify-center items-center gap-2 ${
                 files.length === 0 || uploading
                   ? "bg-[#27272A] text-[#71717A] cursor-not-allowed"
-                  : "bg-[#6C8295] hover:bg-[#5C7285] text-white cursor-pointer"
+                  : "bg-primary hover:bg-primary text-white cursor-pointer"
               }`}
             >
               {uploading ? (

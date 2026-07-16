@@ -51,7 +51,7 @@ export const ModernSlaveryStatementPage: React.FC = () => (
         We encourage all our employees, contractors, and partners to report any concerns regarding modern slavery or illegal working within our business or supply chain. Concerns should be raised directly to management via:
       </p>
       <p>
-        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "#6C8295" }}>
+        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
           admin@opusform.co.uk
         </a>
       </p>

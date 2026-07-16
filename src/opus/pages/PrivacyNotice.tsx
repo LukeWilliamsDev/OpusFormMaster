@@ -19,7 +19,7 @@ export const PrivacyNoticePage: React.FC = () => (
         <strong style={{ color: "#d4d4d8" }}>Company Number:</strong> 17228356
         <br />
         <strong style={{ color: "#d4d4d8" }}>Contact:</strong>{" "}
-        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "#6C8295" }}>
+        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
           admin@opusform.co.uk
         </a>
       </p>
@@ -75,7 +75,7 @@ export const PrivacyNoticePage: React.FC = () => (
       </ul>
       <p>
         To exercise these rights, please contact{" "}
-        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "#6C8295" }}>
+        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
           admin@opusform.co.uk
         </a>
         .

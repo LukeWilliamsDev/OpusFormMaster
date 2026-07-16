@@ -18,7 +18,7 @@ export const DayTabs: React.FC<DayTabsProps> = ({ weekDays, selectedDate, onSele
           onClick={() => onSelect(day.date)}
           className={`py-2 text-center rounded-lg border transition-all cursor-pointer ${
             isActive
-              ? "bg-[#6C8295] border-[#6C8295] text-white shadow-md"
+              ? "bg-primary border-primary text-white shadow-md"
               : "bg-[#1a1a1e] border-[#2a2a30] text-gray-400 hover:text-white"
           }`}
         >

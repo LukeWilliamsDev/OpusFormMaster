@@ -105,14 +105,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
           {[
             { label: "Privacy Notice", path: "#/privacy" },
             { label: "Cookies", path: "#/cookies" },
+            { label: "Modern Slavery", path: "#/modern-slavery" },
           ].map((link) => (
             <a
               key={link.path}
               href={link.path}
-              className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200"
-              style={{ color: "#3d3d44" }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#526E8C")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#3d3d44")}
+              className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-primary transition-colors duration-200"
             >
               {link.label}
             </a>
@@ -121,16 +119,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
 
         {/* Company details + contact */}
         <div
-          className="flex flex-col sm:flex-row justify-center items-center gap-2 text-[8px] font-mono uppercase"
-          style={{ color: "#2e2e33", letterSpacing: "0.15em" }}
+          className="flex flex-col sm:flex-row justify-center items-center gap-2 text-[9px] font-mono uppercase text-muted-foreground/80"
+          style={{ letterSpacing: "0.15em" }}
         >
           <span>Opus Form Ltd · Company No. 17228356 · 128 City Road, London, EC1V 2NX</span>
           <span className="hidden sm:inline">·</span>
           <a
             href="mailto:admin@opusform.co.uk"
-            style={{ color: "#2e2e33", transition: "color 200ms" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#526E8C")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#2e2e33")}
+            className="hover:text-primary transition-colors duration-200"
           >
             admin@opusform.co.uk
           </a>

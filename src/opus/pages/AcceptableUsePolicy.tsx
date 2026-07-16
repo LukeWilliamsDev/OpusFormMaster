@@ -1,121 +1,60 @@
-// @ts-nocheck
 import React from "react";
 import { LegalPageLayout, Section } from "../layouts/LegalPageLayout";
 
 /**
- * Acceptable Use Policy for Opus Form.
- * Defines prohibited activities and user responsibilities.
+ * Internal Acceptable Use Policy for Opus Form Ltd (Concrete Flooring Contractors).
  */
 export const AcceptableUsePolicyPage: React.FC = () => (
   <LegalPageLayout title="Acceptable Use Policy" lastUpdated="July 2026">
     <Section title="1. Purpose">
       <p>
-        This Acceptable Use Policy ("<strong style={{ color: "#d4d4d8" }}>AUP</strong>") sets out
-        the rules governing your use of the Opus Form Ltd internal workforce management portal. It
-        supplements our{" "}
-        <a href="#/portal/terms" className="underline" style={{ color: "#6C8295" }}>
-          Portal Usage Policy
-        </a>{" "}
-        and applies to all employees, contractors, and operatives with portal access.
+        This Acceptable Use Policy outlines the rules and guidelines for using the Opus Form internal workforce portal. Opus Form Ltd is a concrete flooring contractor, and this portal is provided strictly for managing our site operatives, subcontractors, and construction projects.
+      </p>
+      <p>
+        By accessing the portal, you agree to comply with this policy. Failure to do so may result in the suspension of your access and disciplinary action.
       </p>
     </Section>
 
-    <Section title="2. Prohibited Activities">
-      <p>You must not:</p>
+    <Section title="2. Permitted Use">
+      <p>The portal is provided exclusively for the following purposes:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
-        <li>
-          Attempt to gain unauthorised access to any part of the Service, other users' accounts, or
-          connected systems
-        </li>
-        <li>
-          Use the Service to store, distribute, or transmit malicious software (malware, viruses,
-          trojans)
-        </li>
-        <li>
-          Scrape, harvest, or extract data from the Service by automated means without prior written
-          consent
-        </li>
-        <li>Upload fraudulent, forged, or misleading compliance documents</li>
-        <li>Share your login credentials with any other person</li>
-        <li>
-          Attempt to circumvent security controls, Row-Level Security policies, or role-based access
-          restrictions
-        </li>
-        <li>
-          Use the Service for any purpose that is unlawful under the laws of England and Wales
-        </li>
-        <li>Overload, disrupt, or interfere with the performance or availability of the Service</li>
-        <li>Reverse-engineer, decompile, or disassemble any part of the Service's software</li>
+        <li>Viewing your assigned shifts, site locations, and project briefs.</li>
+        <li>Submitting and verifying compliance documents (e.g., CSCS cards, training certificates).</li>
+        <li>Logging site diaries, health and safety reports, and near-misses.</li>
+        <li>Accessing company policies, risk assessments, and method statements (RAMS).</li>
       </ul>
     </Section>
 
-    <Section title="3. Account Responsibilities">
-      <p>You are responsible for:</p>
+    <Section title="3. Prohibited Activities">
+      <p>When using the portal, you must strictly avoid the following:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
-        <li>All activity conducted through your authenticated session</li>
-        <li>Logging out of shared or public devices after use</li>
-        <li>
-          Reporting any suspected security incident or unauthorised access to{" "}
-          <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "#6C8295" }}>
-            admin@opusform.co.uk
-          </a>{" "}
-          immediately
-        </li>
-        <li>
-          Ensuring compliance documents you upload are genuine, current, and accurately represent
-          your qualifications
-        </li>
+        <li>Sharing your login credentials with anyone, including colleagues or site managers.</li>
+        <li>Attempting to access data, shift patterns, or compliance records belonging to other operatives.</li>
+        <li>Uploading false, expired, or modified compliance documents.</li>
+        <li>Using the portal to store or transmit malicious software.</li>
+        <li>Accessing the portal on shared or public devices without properly logging out immediately after use.</li>
       </ul>
     </Section>
 
-    <Section title="4. Data Handling">
-      <p>When using the Service, you must:</p>
-      <ul className="list-disc list-inside space-y-1.5 ml-1">
-        <li>
-          Only access data that your role permits — do not attempt to access other users' records
-        </li>
-        <li>
-          Not export, copy, or share personal data from the Service except as authorised by an
-          administrator
-        </li>
-        <li>
-          Handle any personal data you access in accordance with the UK General Data Protection
-          Regulation (UK GDPR)
-        </li>
-        <li>Report any data breach or suspected data breach immediately</li>
-      </ul>
-    </Section>
-
-    <Section title="5. Reporting Violations">
+    <Section title="4. Data Accuracy on Site">
       <p>
-        If you become aware of any violation of this AUP, or suspect that the Service is being
-        misused, report it to{" "}
+        As a concrete flooring operative or subcontractor, the information you provide in this portal directly impacts health and safety on site. You must ensure that all right-to-work, training, and site diary information is strictly accurate. Falsifying compliance data is a serious breach of health and safety regulations.
+      </p>
+    </Section>
+
+    <Section title="5. System Monitoring">
+      <p>
+        To ensure the security of our internal operations, Opus Form Ltd maintains detailed audit logs of all portal activity. This includes logging IP addresses, login times, and document uploads. Misuse detected during routine audits will be investigated by management.
+      </p>
+    </Section>
+
+    <Section title="6. Contact">
+      <p>
+        If you experience technical issues or suspect unauthorised access to your account, please immediately inform the office at{" "}
         <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "#6C8295" }}>
           admin@opusform.co.uk
         </a>
-        . All reports are taken seriously and will be investigated.
-      </p>
-    </Section>
-
-    <Section title="6. Consequences of Breach">
-      <p>Violations of this AUP may result in:</p>
-      <ul className="list-disc list-inside space-y-1.5 ml-1">
-        <li>Temporary or permanent suspension of your account</li>
-        <li>Removal of content or data you have uploaded</li>
-        <li>Notification to relevant authorities if criminal activity is suspected</li>
-        <li>Legal action to recover damages or enforce compliance</li>
-      </ul>
-      <p>
-        We reserve the right to investigate suspected violations and to take any action we deem
-        appropriate, including cooperation with law enforcement agencies.
-      </p>
-    </Section>
-
-    <Section title="7. Changes to This Policy">
-      <p>
-        We may update this AUP from time to time. Changes will be communicated via the portal.
-        Continued use of the Service after changes take effect constitutes acceptance of the revised
-        policy.
+        .
       </p>
     </Section>
   </LegalPageLayout>

@@ -1,103 +1,56 @@
-// @ts-nocheck
 import React from "react";
 import { LegalPageLayout, Section, DataTable } from "../layouts/LegalPageLayout";
 
 /**
- * Cookie Statement for Opus Form.
- * Explains why no cookie consent banner is needed under UK PECR —
- * only essential auth tokens are used.
+ * Internal Cookie Statement for Opus Form Ltd (Concrete Flooring Contractors).
  */
 export const CookieStatementPage: React.FC = () => (
   <LegalPageLayout title="Cookie Statement" lastUpdated="July 2026">
-    <Section title="1. What Are Cookies?">
+    <Section title="1. Introduction">
       <p>
-        Cookies are small text files stored on your device by websites you visit. Similar
-        technologies include localStorage and sessionStorage, which serve comparable purposes but
-        are managed differently by your browser.
+        This Cookie Statement explains how Opus Form Ltd uses cookies and similar technologies on our internal workforce management portal.
+      </p>
+      <p>
+        Because this portal is a proprietary internal tool used strictly for managing our concrete flooring operations and operatives, we do <strong>not</strong> use any marketing, advertising, or cross-site tracking cookies.
       </p>
     </Section>
 
-    <Section title="2. What We Use">
+    <Section title="2. What are Cookies?">
       <p>
-        Opus Form Ltd uses{" "}
-        <strong style={{ color: "#d4d4d8" }}>essential authentication tokens only</strong>. We do
-        not use cookies for analytics, advertising, or tracking purposes.
+        Cookies are small text files placed on your device when you access the portal. They are widely used to make web applications work, or work more efficiently, as well as to provide security.
+      </p>
+    </Section>
+
+    <Section title="3. How We Use Cookies">
+      <p>
+        We only use <strong>Strictly Necessary Cookies</strong>. These are essential for the portal to function properly and cannot be switched off in our systems. They are usually only set in response to actions made by you, such as logging in or filling in forms (e.g., submitting site diaries or compliance certificates).
       </p>
       <DataTable
-        headers={["Technology", "Purpose", "Type", "Duration"]}
+        headers={["Cookie Name", "Purpose", "Duration"]}
         rows={[
           [
-            "Supabase Auth (localStorage)",
-            "Session authentication — keeps you logged in",
-            "Strictly necessary",
-            "Until logout or session expiry",
+            "sb-*-auth-token",
+            "Authentication token provided by Supabase to verify your identity and keep you securely logged into the portal.",
+            "Session / Persistent",
           ],
           [
-            "Sidebar preference (localStorage)",
-            "Remembers whether you collapsed the sidebar",
-            "Strictly necessary / functional",
-            "Persistent until cleared",
+            "opus-portal-theme",
+            "Remembers your UI preferences (e.g., dark mode settings) for the internal portal.",
+            "1 Year",
           ],
         ]}
       />
     </Section>
 
-    <Section title="3. Why We Don't Show a Cookie Banner">
+    <Section title="4. Managing Cookies">
       <p>
-        Under the UK Privacy and Electronic Communications Regulations 2003 (PECR), consent is
-        <strong style={{ color: "#d4d4d8" }}> not required</strong> for cookies or storage that are{" "}
-        <strong style={{ color: "#d4d4d8" }}>strictly necessary</strong> for the operation of a
-        service that the user has explicitly requested.
-      </p>
-      <p>
-        Since we only use essential authentication tokens — without which the Service cannot
-        function — a cookie consent banner is not legally required. The ICO has confirmed this
-        interpretation in its guidance on PECR compliance.
+        Because the cookies we use are strictly necessary for the secure operation of the portal, there is no option to opt-out. If you set your browser to block or alert you about these cookies, parts of the portal (such as viewing your shift roster or uploading your CSCS card) will not work.
       </p>
     </Section>
 
-    <Section title="4. Third-Party Cookies">
-      <p>We do not embed any third-party scripts that set cookies. Specifically:</p>
-      <ul className="list-disc list-inside space-y-1.5 ml-1">
-        <li>No Google Analytics, Plausible, or other analytics platforms</li>
-        <li>No advertising networks or retargeting pixels</li>
-        <li>No social media widgets or embedded content that tracks users</li>
-        <li>No Hotjar, FullStory, or session recording tools</li>
-      </ul>
+    <Section title="5. Contact">
       <p>
-        If we introduce any non-essential cookies in the future, we will update this statement and
-        implement an appropriate consent mechanism before doing so.
-      </p>
-    </Section>
-
-    <Section title="5. How to Manage Storage">
-      <p>
-        You can clear your browser's localStorage at any time through your browser settings. Note
-        that clearing authentication tokens will log you out of the Service.
-      </p>
-      <ul className="list-disc list-inside space-y-1.5 ml-1">
-        <li>
-          <strong style={{ color: "#d4d4d8" }}>Chrome:</strong> Settings → Privacy and Security →
-          Clear browsing data → Cookies and other site data
-        </li>
-        <li>
-          <strong style={{ color: "#d4d4d8" }}>Firefox:</strong> Settings → Privacy & Security →
-          Cookies and Site Data → Clear Data
-        </li>
-        <li>
-          <strong style={{ color: "#d4d4d8" }}>Edge:</strong> Settings → Privacy, search, and
-          services → Clear browsing data
-        </li>
-        <li>
-          <strong style={{ color: "#d4d4d8" }}>Safari:</strong> Preferences → Privacy → Manage
-          Website Data
-        </li>
-      </ul>
-    </Section>
-
-    <Section title="6. Contact">
-      <p>
-        If you have questions about our use of cookies or storage technologies, contact us at{" "}
+        If you have any questions about this statement or how we manage security on the portal, please contact{" "}
         <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "#6C8295" }}>
           admin@opusform.co.uk
         </a>

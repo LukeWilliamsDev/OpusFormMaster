@@ -30,6 +30,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
         { label: "Usage Policy", path: "/portal/terms" },
         { label: "Acceptable Use", path: "/portal/acceptable-use" },
         { label: "Cookie Statement", path: "/portal/cookies" },
+        { label: "Modern Slavery", path: "/portal/modern-slavery" },
       ];
     }
     return [
@@ -37,6 +38,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
       { label: "Usage Policy", path: "/portal/terms" },
       { label: "Acceptable Use", path: "/portal/acceptable-use" },
       { label: "Cookie Statement", path: "/cookies" },
+      { label: "Modern Slavery", path: "/modern-slavery" },
     ];
   };
 

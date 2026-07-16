@@ -13,8 +13,7 @@ export const TermsOfServicePage: React.FC = () => (
       <p>
         This Portal Usage Policy governs the use of the Opus Form workforce management portal by
         employees, contractors, and operatives of{" "}
-        <strong style={{ color: "#d4d4d8" }}>Opus Form Ltd</strong> (Company No. 17228356). It is an
-        internal company policy, not a commercial service agreement.
+        <strong style={{ color: "#d4d4d8" }}>Opus Form Ltd</strong> (Company No. 17228356). Opus Form Ltd is a concrete flooring contractor, and this portal is a proprietary internal company tool built to manage our own construction operations. It is not a commercial SaaS agreement.
       </p>
       <p>
         By accessing the portal, you confirm that you have read and understood this policy and agree

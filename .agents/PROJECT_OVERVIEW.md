@@ -5,7 +5,7 @@ This document provides a complete technical, architectural, and design overview 
 ---
 
 ## 1. Project Identity & Architecture
-**Opus Form** is an industrial construction management application designed for high-pressure building sites. It handles job logging, labor scheduling, quote building, and safety/compliance audits.
+**Opus Form** is an internal workforce management application designed specifically for Opus Form Ltd, a **Concrete Flooring Contractor**. It handles job logging, logistics for concrete pours, labor scheduling for operatives, quote building, and health/safety compliance audits on construction sites. This is a proprietary internal tool, not a commercial SaaS application.
 
 * **Frontend**: React, TypeScript, Tailwind CSS, Vite.
 * **Backend**: Supabase (PostgreSQL) with Row-Level Security (RLS) policies, triggers, and Deno-based Edge Functions.

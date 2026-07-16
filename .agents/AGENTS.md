@@ -3,6 +3,9 @@
 ## Source of Truth
 This file and `.agents/skills/` are the single source of truth for agent behavior in this project. Consult them at the start of every session, regardless of model or tool.
 
+## Business Context
+Opus Form Ltd is a **Concrete Flooring Contractor**. The Opus Form application is a proprietary, internal workforce management portal used to manage our own operatives, jobs, and quotes. It is NOT a commercial SaaS product or public software service. Keep this domain firmly in mind when writing any content or UI.
+
 ## Planning & Approval
 - Create an `implementation_plan.md` artifact (with `request_feedback = true`, `user_facing = true`) and wait for approval **only** for multi-file changes or anything touching the database schema. Small, single-file changes proceed directly.
 - Before starting any large task or system change, ask clarifying questions upfront — specific design answers avoid token-consuming churn and repeated file reads.

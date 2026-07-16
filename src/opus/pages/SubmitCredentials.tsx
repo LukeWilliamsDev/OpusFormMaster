@@ -681,7 +681,7 @@ export const SubmitCredentialsPage: React.FC = () => {
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
         {/* ─── Header / Branding ─────────────────────────────────── */}
         <div className="text-center space-y-3">
-          <p className="text-[11px] font-black uppercase tracking-[0.35em] font-archivo text-white/80">
+          <p className="text-[11px] font-black uppercase tracking-[0.35em] font-archivo text-white">
             OPUS FORM
           </p>
           <div className="h-0.5 w-10 bg-brand-accent mx-auto rounded-full" />

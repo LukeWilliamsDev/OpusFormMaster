@@ -68,9 +68,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
           }}
         >
           <img
-            src="/opus-form-primary.svg"
+            src="/opus-form-primary-dark.svg"
             alt="Opus Form"
-            style={{ width: "100%", height: "auto", display: "block" }}
+            style={{ width: "100%", height: "auto" }}
             draggable={false}
             referrerPolicy="no-referrer"
           />

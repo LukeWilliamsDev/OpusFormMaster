@@ -120,7 +120,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             Back
           </button>
           <Link to="/" className="flex items-center gap-2" aria-label="Home">
-            <img src="/opus-form-primary.svg" alt="Opus Form" className="h-6 w-auto" />
+            <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-6 w-auto" />
           </Link>
         </div>
       </header>

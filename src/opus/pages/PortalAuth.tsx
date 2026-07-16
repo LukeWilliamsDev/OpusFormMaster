@@ -206,33 +206,12 @@ export const PortalAuthPage: React.FC = () => {
             className="focus:outline-none cursor-pointer"
             title="Return to Landing Page"
           >
-            <span
-              style={{
-                display: "block",
-                fontFamily: "'Inter', 'Arial Black', sans-serif",
-                fontWeight: 900,
-                fontSize: "20px",
-                letterSpacing: "-0.3px",
-                color: "#E4E4E7",
-                textTransform: "uppercase",
-                lineHeight: 1,
-                paddingBottom: "0.25rem",
-              }}
-            >
-              OPUS FORM
-            </span>
-          </button>
-
-          {/* Rule — matches brand blue-grey */}
-          <div style={{ width: "48px", maxWidth: "100%" }}>
-            <div
-              style={{
-                height: "2px",
-                backgroundColor: "#6C8295",
-                borderRadius: "1px",
-              }}
+            <img
+              src="/opus-form-primary-dark.svg"
+              alt="Opus Form"
+              style={{ height: "40px", width: "auto" }}
             />
-          </div>
+          </button>
         </div>
 
         {/* Form container */}

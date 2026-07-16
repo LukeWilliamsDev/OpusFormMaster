@@ -116,7 +116,7 @@ export const PortalLayout: React.FC = () => {
         >
           {!isSidebarCollapsed && (
             <Link to="/portal/dashboard" className="flex items-center group min-w-0">
-              <img src="/opus-form-primary.svg" alt="Opus Form" className="h-8 w-auto" />
+              <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-8 w-auto" />
             </Link>
           )}
           <button
@@ -223,7 +223,7 @@ export const PortalLayout: React.FC = () => {
       {/* Mobile Sticky Header */}
       <header className="lg:hidden flex items-center justify-between h-16 bg-muted/30 border-b border-border px-4 sticky top-0 z-40">
         <Link to="/portal/dashboard" className="flex items-center">
-          <img src="/opus-form-primary.svg" alt="Opus Form" className="h-6 w-auto" />
+          <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-6 w-auto" />
         </Link>
         <div className="flex items-center space-x-2">
           {/* Audit Admin Logout for mobile */}
@@ -270,7 +270,7 @@ export const PortalLayout: React.FC = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center"
                 >
-                  <img src="/opus-form-primary.svg" alt="Opus Form" className="h-8 w-auto" />
+                  <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-8 w-auto" />
                 </Link>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}

@@ -494,7 +494,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           pdfBase64: base64,
           logoUrl:
             typeof window !== "undefined"
-              ? `${window.location.origin}/opus-form-primary.svg`
+              ? `${window.location.origin}/opus-form-primary-light.svg`
               : undefined,
           netTotal: totals.netTotal,
           vatAmount: totals.vatAmount,

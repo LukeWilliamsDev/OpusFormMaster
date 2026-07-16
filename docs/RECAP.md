@@ -1,5 +1,11 @@
 # docs/RECAP.md
 
+## 2026-07-16
+- Fixed `/submit-credentials` routing token links with `/#/` to support HashRouter.
+- Redesigned `/submit-credentials` to be a premium, branded multi-step wizard.
+- Deferred file uploading to final submission step to prevent RLS conflicts.
+- Created `get_document_request_details` security definer function to securely fetch staff names.
+
 ## 2026-07-12
 - Documented competitor accreditations.
 - Relocated codebase to `opus-form-builder/`.

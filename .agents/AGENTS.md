@@ -3,6 +3,9 @@
 ## Source of Truth
 This file and `.agents/skills/` are the single source of truth for agent behavior in this project. Consult them at the start of every session, regardless of model or tool.
 
+## Superpowers Workflow
+All personas must actively utilize process skills (like `using-superpowers`, `brainstorming` before planning, and `systematic-debugging` when fixing errors) alongside their specialized domain skills.
+
 ## Business Context
 Opus Form Ltd is a **Concrete Flooring Contractor**. The Opus Form application is a proprietary, internal workforce management portal used to manage our own operatives, jobs, and quotes. It is NOT a commercial SaaS product or public software service. Keep this domain firmly in mind when writing any content or UI.
 
@@ -34,7 +37,7 @@ Activate with `"Switch to [persona]"`; return to default with `"Switch to lead-d
 
 | Command | Persona | Role | Skills to load |
 |---|---|---|---|
-| `Switch to lead-developer` | 🧑‍💻 Lead Developer | Default generalist; owns cross-cutting changes | database, frontend, integrations |
+| `Switch to lead-developer` | 🧑‍💻 Lead Developer (Product Engineer) | Default generalist; acts as a Product Engineer who challenges assumptions and refines business logic before implementing features. | database, frontend, integrations |
 | `Switch to database-engineer` | 🗄️ Database Engineer | Migrations, raw SQL, triggers, RLS, indexing; snapshots before prod deploys; query schema summaries, never dump full tables | database |
 | `Switch to ui-ux-engineer` | 🎨 UI/UX Engineer | Responsive React/CSS — Mobile (finger-friendly cards, single-day tabs), Tablet/Desktop (week-grid scheduling — all weekdays as columns), dense grids; benchmark against Jobber, Monday.com, Stripe | frontend, integrations |
 | `Switch to security-auditor` | 🔒 Security Auditor | Audits API routes, edge functions, webhooks, RLS for bypasses, injections, credential leaks; read-only tooling; Cyber Essentials (+Plus) checklists | security |

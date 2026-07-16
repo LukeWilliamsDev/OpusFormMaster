@@ -103,12 +103,11 @@ A database trigger on `public.profiles` (`prevent_role_self_escalation_trg`) enf
 
 ## 5. Local Development Setup
 
-To run the application locally on your machine via Claude Code, follow these steps:
+To run the application locally on your machine, follow these steps:
 
 ### 1. Install Dependencies
-Navigate into the `opus-form-builder` folder and run the install command:
+Ensure you are in the project root (`opusformwebsite`) and run the install command:
 ```bash
-cd opus-form-builder
 npm install
 ```
 
@@ -125,9 +124,9 @@ Run Vite's local dev utility:
 ```bash
 npm run dev
 ```
-Alternatively, execute the bootstrap batch scripts from your command terminal:
-* Root: `dev.bat`
-* Folder-level: `localDev.bat`
+Alternatively, execute the bootstrap batch scripts from the `scripts/` folder:
+* Development: `scripts/dev.bat`
+* Local Development: `scripts/localDev.bat`
 
 ### 4. Enable Local SSL/TLS (Loopback Encryption)
 If you require secure connection testing locally (highly recommended for authentication callback features and cookie handling), refer to [secure_hosting_guide.md](file:///c:/Users/Luke/Documents/OpusForm/opus-form-builder/secure_hosting_guide.md).

@@ -12,9 +12,10 @@ import {
   Menu,
   X,
   User as UserIcon,
-  Shield,
   PanelLeftClose,
   PanelLeftOpen,
+  Shield,
+  ShieldCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { usePortal } from "../context/PortalContext";
@@ -68,6 +69,7 @@ export const PortalLayout: React.FC = () => {
       roles: ["admin", "dispatcher"],
     },
     { name: "Audit Trail", path: "/portal/audit", icon: History, roles: ["admin"] },
+    { name: "Policies", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
   ];
 
   // Filter main nav items based on user's role and email constraints
@@ -75,9 +77,9 @@ export const PortalLayout: React.FC = () => {
     if (!role) return false;
     if (!item.roles.includes(role)) return false;
     if (user?.email === "admin@opusform.co.uk") {
-      return item.path === "/portal/audit";
+      return item.path === "/portal/audit" || item.path === "/portal/policies";
     }
-    if (item.path === "/portal/audit" && user?.email !== "admin@opusform.co.uk") return false;
+    if ((item.path === "/portal/audit" || item.path === "/portal/policies") && user?.email !== "admin@opusform.co.uk") return false;
     return true;
   });
 

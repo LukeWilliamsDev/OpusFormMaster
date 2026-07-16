@@ -177,4 +177,13 @@
 - Correction of redirect URL to clean base path for successful Supabase auth session token parsing.
 - Removal of staggered fade-in entrance animations from the portal login and password recovery page elements for cleaner and faster rendering.
 - Addition of programmatic URL hash token parser and session initialization in PortalContext.tsx to prevent HashRouter from discarding session tokens on redirect.
+- Clarified Opus Form Ltd identity as a concrete flooring contractor across internal documentation (.agents/AGENTS.md, .agents/PROJECT_OVERVIEW.md) to prevent SaaS misalignment.
+- Rewrote web policies (PrivacyNotice, TermsOfService, AcceptableUsePolicy, CookieStatement) removing software/client jargon and detailing concrete operative use cases.
+- Extracted and drafted standalone PDF-ready markdown policies for Health & Safety, Sustainability, Responsible Sourcing, Quality Management, Anti-Bribery, and Modern Slavery.
+- Injected specific UK construction compliance into policies (CDM 2015, COSHH for silica/cement, Waste Regulations 2011, Modern Slavery Act 2015, and ISO 9001 alignment).
+- Created a Claude Code prompt script generation guide for automating policy PDF conversion with print-friendly CSS.
+- Created public `policies` Supabase storage bucket and uploaded 6 company PDF policies via script.
+- Built `/portal/policies` dashboard strictly restricted to `admin@opusform.co.uk` using `AuditLogGuard`.
+- Integrated Policies page into `PortalLayout` sidebar navigation alongside Audit Trail.
+- Hardcoded static policy names in `AdminPolicies.tsx` to securely bypass RLS `list()` restrictions and eliminate backend API overhead.
 

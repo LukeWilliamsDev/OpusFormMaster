@@ -57,7 +57,9 @@
     "input-otp": "^1.4.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.575.0",
+    "marked": "^18.0.6",
     "motion": "^12.42.2",
+    "puppeteer": "^25.3.0",
     "react": "^19.2.0",
     "react-day-picker": "^9.14.0",
     "react-dom": "^19.2.0",
@@ -93,5 +95,8 @@
     "typescript-eslint": "^8.56.1",
     "vite": "^8.0.16",
     "vitest": "^4.1.10"
+  },
+  "allowScripts": {
+    "puppeteer@25.3.0": true
   }
 }

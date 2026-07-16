@@ -10,6 +10,7 @@ import { LaborRosterPage } from "./pages/LaborRoster";
 import { JobLedgerPage } from "./pages/JobLedger";
 import { PipelinePage } from "./pages/Pipeline";
 import { AuditLogPage } from "./pages/AuditLog";
+import { AdminPolicies } from "./pages/AdminPolicies";
 import { SubmitCredentialsPage } from "./pages/SubmitCredentials";
 import { SettingsPage } from "./pages/Settings";
 import { JobUploadPortalPage } from "./pages/JobUploadPortal";
@@ -51,8 +52,9 @@ const RoleGuard: React.FC<{
   if (authLoading || role === null) {
     return <div className="min-h-screen bg-[#1A1B1E]" />;
   }
-  // admin@opusform.co.uk can ONLY see the audit trail
+  // admin@opusform.co.uk can ONLY see the audit trail and policies
   if (user?.email === "admin@opusform.co.uk") {
+    // If they try to go somewhere else, send them to audit log by default
     return <Navigate to="/portal/audit" replace />;
   }
   if (!allow.includes(role)) {
@@ -135,6 +137,14 @@ export default function App() {
               element={
                 <AuditLogGuard>
                   <AuditLogPage />
+                </AuditLogGuard>
+              }
+            />
+            <Route
+              path="/portal/policies"
+              element={
+                <AuditLogGuard>
+                  <AdminPolicies />
                 </AuditLogGuard>
               }
             />

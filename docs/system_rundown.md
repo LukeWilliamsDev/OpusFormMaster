@@ -27,6 +27,7 @@ graph TD
     B -->|Operative Auth| D[Labor Roster Calendar View]
     B -->|Dispatcher/Admin Auth| E[Dashboard /portal/dashboard]
     B -->|admin@opusform.co.uk Auth| F[Audit Log Page /portal/audit]
+    B -->|admin@opusform.co.uk Auth| J[Policies Page /portal/policies]
     
     E --> G[Job Ledger /portal/ledger]
     E --> H[Labor Roster & Dossier /portal/roster]
@@ -43,7 +44,8 @@ graph TD
 5. **Job Ledger (`/portal/ledger`)**: Formats active sites, contractor info, and tracks concrete pour statuses (Current vs. Max contract pours).
 6. **Pipeline & Quote Builder (`/portal/pipeline`)**: Tracks work stages (Quotes, Contracts, Jobs, Complete) and features a stepper-based invoice/quote editor generating standardized tax PDFs.
 7. **System Audit Trail (`/portal/audit`)**: Restored strictly to the primary auditor. Displays timestamped events, category-filtered grids, and structured JSON diff tables comparing database changes.
-8. **Submit Credentials Page (`/submit-credentials`)**: A public, passwordless portal where operatives can drag-and-drop compliance documents. Validated against tokens in `document_requests`.
+8. **Compliance Policies Page (`/portal/policies`)**: Restored strictly to the primary auditor. Displays cards and links to view official company policies.
+9. **Submit Credentials Page (`/submit-credentials`)**: A public, passwordless portal where operatives can drag-and-drop compliance documents. Validated against tokens in `document_requests`.
 
 ---
 
@@ -65,6 +67,7 @@ The Supabase project (`fgpthpxmiroyebrzjdzo`) operates on the following tables:
 * **`compliance-documents`**: A private bucket configured with strict RLS policies.
   * Operatives are allowed to perform `INSERT` only inside the `requests/<token>/` path via their temporary link.
   * Only authenticated administrators can fetch or view objects inside this bucket.
+* **`policies`**: A public bucket used to store official company compliance PDFs (Anti-Bribery, Health & Safety, etc.). Reads bypass API listing constraints by hardcoding file keys for enhanced security.
 
 ---
 
@@ -85,7 +88,7 @@ The security model is implemented on both the frontend and database levels:
 * **Admins (`role = 'admin'`)**:
   * **Standard Admin**: Inherits full dispatcher dashboard capabilities.
   * **Primary Security Admin (`admin@opusform.co.uk`)**:
-    * **Frontend**: Redirected strictly to the `/portal/audit` System Audit Trail. Locked out of dispatcher tools.
+    * **Frontend**: Redirected strictly to the `/portal/audit` System Audit Trail and has access to the `/portal/policies` page. Locked out of dispatcher tools.
     * **Database RLS**: The *only* account permitted to query the `public.audit_logs` table (verified via `auth.jwt() ->> 'email'`).
 
 ### B. Prevention of Privilege Escalation

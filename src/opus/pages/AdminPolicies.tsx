@@ -32,7 +32,7 @@ export const AdminPolicies: React.FC = () => {
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 w-full">
       <div>
-        <h2 className="text-3xl font-bold tracking-tight text-white">Compliance Policies</h2>
+        <h2 className="text-3xl font-bold tracking-tight text-white font-archivo uppercase">Compliance Policies</h2>
         <p className="text-muted-foreground mt-2">
           Manage and view the official company compliance documents.
         </p>
@@ -47,7 +47,7 @@ export const AdminPolicies: React.FC = () => {
           {policies.map((policy) => (
             <Card key={policy.name} className="bg-card hover:border-primary/50 transition-colors">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-lg font-medium leading-tight text-white">
+                <CardTitle className="text-xs font-black uppercase tracking-wider leading-tight text-white">
                   {policy.name}
                 </CardTitle>
                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -58,7 +58,7 @@ export const AdminPolicies: React.FC = () => {
                     href={policy.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center text-sm font-medium text-primary hover:underline"
+                    className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
                   >
                     View Document
                     <ExternalLink className="ml-1 h-3 w-3" />

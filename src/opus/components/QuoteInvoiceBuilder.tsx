@@ -6,6 +6,7 @@ import { isValidUKPostcode } from "../utils/geo";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { NoticeModal } from "@/components/ui/notice-modal";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Plus,
   Trash2,
@@ -89,6 +90,91 @@ const capitalizeWords = (str: string) => {
     .join(" ");
 };
 
+// html2canvas cannot parse modern CSS color functions and crashes the PDF render;
+// strip them all to a safe hex fallback before the clone is rasterized.
+const stripUnsupportedColorFunctions = (cssText: string) =>
+  cssText.replace(/\b(oklch|oklab|lch|lab)\([^)]*\)/g, "#333333");
+
+// Shared by handleDownloadPDF and handleSend: clones the live print area into an
+// off-screen container sized to exact A4 px dimensions, and builds the matching
+// html2pdf options (including the onclone CSS sanitizer) so both call sites stay in sync.
+const preparePdfClone = (quoteReference: string) => {
+  const originalElement = document.querySelector(".print-area");
+  if (!originalElement) {
+    throw new Error("Print area not found.");
+  }
+
+  const element = originalElement.cloneNode(true) as HTMLElement;
+  element.style.transform = "none";
+  element.style.margin = "0";
+  element.style.padding = "0";
+  element.style.width = "794px";
+  element.style.height = "1122px";
+  element.style.minHeight = "1122px";
+  element.style.maxHeight = "1122px";
+  element.style.position = "relative";
+  element.style.left = "0";
+  element.style.top = "0";
+
+  const tempContainer = document.createElement("div");
+  tempContainer.style.position = "absolute";
+  tempContainer.style.left = "-9999px";
+  tempContainer.style.top = "-9999px";
+  tempContainer.style.width = "794px";
+  tempContainer.style.height = "1122px";
+  tempContainer.style.overflow = "hidden";
+  tempContainer.appendChild(element);
+  document.body.appendChild(tempContainer);
+
+  const opt = {
+    margin: 0,
+    filename: `Quote_${quoteReference}.pdf`,
+    image: { type: "jpeg", quality: 0.98 },
+    html2canvas: {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      scrollX: 0,
+      scrollY: 0,
+      onclone: (_document: Document, clonedElement: HTMLElement) => {
+        const cloneDoc = clonedElement.ownerDocument;
+        if (cloneDoc && cloneDoc.body) {
+          cloneDoc.body.style.margin = "0";
+          cloneDoc.body.style.padding = "0";
+          cloneDoc.body.style.background = "transparent";
+        }
+        let cssText = "";
+        for (let i = 0; i < document.styleSheets.length; i++) {
+          const sheet = document.styleSheets[i];
+          try {
+            const rules = sheet.cssRules || sheet.rules;
+            for (let j = 0; j < rules.length; j++) {
+              cssText += rules[j].cssText + "\n";
+            }
+          } catch (e) {
+            console.warn("Could not read stylesheet rules: ", e);
+          }
+        }
+        const safeCss = stripUnsupportedColorFunctions(cssText);
+        const originalStyles = cloneDoc.querySelectorAll('link[rel="stylesheet"], style');
+        originalStyles.forEach((el) => el.remove());
+        const styleEl = cloneDoc.createElement("style");
+        styleEl.textContent = safeCss;
+        cloneDoc.head.appendChild(styleEl);
+      },
+    },
+    jsPDF: {
+      unit: "px" as const,
+      format: [794, 1122] as [number, number],
+      orientation: "portrait" as const,
+      hotfixes: ["px_scaling"],
+    },
+    pagebreak: { mode: "avoid" },
+  };
+
+  return { element, tempContainer, opt };
+};
+
 export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   onBack,
   quoteToLoadId,
@@ -129,6 +215,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const [vatRate, setVatRate] = useState(20);
   const [showSavedQuotes, setShowSavedQuotes] = useState(false);
   const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
+  const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [quoteReference, setQuoteReference] = useState(
     `JOB-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -317,8 +404,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     }
   }, [quoteToLoadId]);
 
-  const deleteQuote = async (e: React.MouseEvent, id: string) => {
+  const confirmDeleteQuote = (e: React.MouseEvent, quote: Quote) => {
     e.stopPropagation();
+    setQuoteToDelete(quote);
+  };
+
+  const deleteQuote = async () => {
+    if (!quoteToDelete) return;
+    const id = quoteToDelete.id;
     try {
       const { error } = await supabase.from("quotes").delete().eq("id", id);
       if (error) throw error;
@@ -327,91 +420,27 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     } catch (e) {
       console.error("Failed to delete quote", e);
       toast.error("DELETE FAILED", { description: "Failed to delete quote draft from database." });
+    } finally {
+      setQuoteToDelete(null);
     }
   };
 
   const handleDownloadPDF = async () => {
+    let tempContainer: HTMLElement | undefined;
     try {
-      const originalElement = document.querySelector(".print-area");
-      if (!originalElement) {
-        throw new Error("Print area not found.");
-      }
-
-      const element = originalElement.cloneNode(true) as HTMLElement;
-      element.style.transform = "none";
-      element.style.margin = "0";
-      element.style.padding = "0";
-      element.style.width = "794px";
-      element.style.height = "1122px";
-      element.style.minHeight = "1122px";
-      element.style.maxHeight = "1122px";
-      element.style.position = "relative";
-      element.style.left = "0";
-      element.style.top = "0";
-
-      const tempContainer = document.createElement("div");
-      tempContainer.style.position = "absolute";
-      tempContainer.style.left = "-9999px";
-      tempContainer.style.top = "-9999px";
-      tempContainer.style.width = "794px";
-      tempContainer.style.height = "1122px";
-      tempContainer.style.overflow = "hidden";
-      tempContainer.appendChild(element);
-      document.body.appendChild(tempContainer);
-
-      const opt = {
-        margin: 0,
-        filename: `Quote_${quoteReference}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          scrollX: 0,
-          scrollY: 0,
-          onclone: (_document: Document, clonedElement: HTMLElement) => {
-            const cloneDoc = clonedElement.ownerDocument;
-            if (cloneDoc && cloneDoc.body) {
-              cloneDoc.body.style.margin = "0";
-              cloneDoc.body.style.padding = "0";
-              cloneDoc.body.style.background = "transparent";
-            }
-            let cssText = "";
-            for (let i = 0; i < document.styleSheets.length; i++) {
-              const sheet = document.styleSheets[i];
-              try {
-                const rules = sheet.cssRules || sheet.rules;
-                for (let j = 0; j < rules.length; j++) {
-                  cssText += rules[j].cssText + "\n";
-                }
-              } catch (e) {
-                console.warn("Could not read stylesheet rules: ", e);
-              }
-            }
-            const safeCss = cssText.replace(/oklch\([^)]+\)/g, "#333333");
-            const originalStyles = cloneDoc.querySelectorAll('link[rel="stylesheet"], style');
-            originalStyles.forEach((el) => el.remove());
-            const styleEl = cloneDoc.createElement("style");
-            styleEl.textContent = safeCss;
-            cloneDoc.head.appendChild(styleEl);
-          },
-        },
-        jsPDF: {
-          unit: "px",
-          format: [794, 1122],
-          orientation: "portrait",
-          hotfixes: ["px_scaling"],
-        },
-        pagebreak: { mode: "avoid" },
-      };
+      const prepared = preparePdfClone(quoteReference);
+      tempContainer = prepared.tempContainer;
 
       const { default: html2pdf } = await import("html2pdf.js");
-      await html2pdf().from(element).set(opt).save();
-      document.body.removeChild(tempContainer);
+      await html2pdf().from(prepared.element).set(prepared.opt).save();
     } catch (err) {
       toast.error("PDF GENERATION FAILURE", {
         description: "Error generating PDF download: " + err.message,
       });
+    } finally {
+      if (tempContainer && tempContainer.parentNode) {
+        document.body.removeChild(tempContainer);
+      }
     }
   };
 
@@ -437,100 +466,22 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
     setIsSendingEmail(true);
 
+    let tempContainer: HTMLElement | undefined;
     try {
-      const originalElement = document.querySelector(".print-area");
-      if (!originalElement) {
-        throw new Error("Live Mirror print area not found.");
-      }
-
-      // 1. Clone the element to render it at its true size without parent scaling/zoom transforms
-      const element = originalElement.cloneNode(true) as HTMLElement;
-      element.style.transform = "none";
-      element.style.margin = "0";
-      element.style.padding = "0";
-      element.style.width = "794px";
-      element.style.height = "1122px";
-      element.style.minHeight = "1122px";
-      element.style.maxHeight = "1122px";
-      element.style.position = "relative";
-      element.style.left = "0";
-      element.style.top = "0";
-
-      // 2. Append the clone to a hidden container on the main document
-      const tempContainer = document.createElement("div");
-      tempContainer.style.position = "absolute";
-      tempContainer.style.left = "-9999px";
-      tempContainer.style.top = "-9999px";
-      tempContainer.style.width = "794px";
-      tempContainer.style.height = "1122px";
-      tempContainer.style.overflow = "hidden";
-      tempContainer.appendChild(element);
-      document.body.appendChild(tempContainer);
-
-      // Configure html2pdf option settings for perfect single-page A4 output
-      const opt = {
-        margin: 0,
-        filename: `Quote_${quoteReference}.pdf`,
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          scrollX: 0,
-          scrollY: 0,
-          onclone: (_document: Document, clonedElement: HTMLElement) => {
-            const cloneDoc = clonedElement.ownerDocument;
-            if (cloneDoc && cloneDoc.body) {
-              cloneDoc.body.style.margin = "0";
-              cloneDoc.body.style.padding = "0";
-              cloneDoc.body.style.background = "transparent";
-            }
-
-            // Gather all CSS rules from the main document synchronously
-            let cssText = "";
-            for (let i = 0; i < document.styleSheets.length; i++) {
-              const sheet = document.styleSheets[i];
-              try {
-                const rules = sheet.cssRules || sheet.rules;
-                for (let j = 0; j < rules.length; j++) {
-                  cssText += rules[j].cssText + "\n";
-                }
-              } catch (e) {
-                console.warn("Could not read stylesheet rules: ", e);
-              }
-            }
-
-            // Replace all oklch() color functions with a standard hex fallback to prevent parser crash
-            const safeCss = cssText.replace(/oklch\([^)]+\)/g, "#333333");
-
-            // Remove all original stylesheet links/styles from the clone
-            const originalStyles = cloneDoc.querySelectorAll('link[rel="stylesheet"], style');
-            originalStyles.forEach((el) => el.remove());
-
-            // Inject the safe parsed CSS rules
-            const styleEl = cloneDoc.createElement("style");
-            styleEl.textContent = safeCss;
-            cloneDoc.head.appendChild(styleEl);
-          },
-        },
-        jsPDF: {
-          unit: "px",
-          format: [794, 1122],
-          orientation: "portrait",
-          hotfixes: ["px_scaling"],
-        },
-        pagebreak: { mode: "avoid" },
-      };
+      // 1 & 2. Clone the live print area (stripped of scaling transforms) into a hidden,
+      // exact-A4-sized container — same helper used by handleDownloadPDF.
+      const prepared = preparePdfClone(quoteReference);
+      tempContainer = prepared.tempContainer;
 
       // Dynamically import html2pdf.js to avoid packaging issues on non-browser environments
       const { default: html2pdf } = await import("html2pdf.js");
 
       // Generate PDF data uri
-      const pdfDataUri = await html2pdf().from(element).set(opt).outputPdf("datauristring");
+      const pdfDataUri = await html2pdf()
+        .from(prepared.element)
+        .set(prepared.opt)
+        .outputPdf("datauristring");
       const base64 = pdfDataUri.split(",")[1];
-
-      // Clean up the temporary container
-      document.body.removeChild(tempContainer);
 
       // Invoke Supabase Edge Function send-quote-pdf
       const { data, error } = await supabase.functions.invoke("send-quote-pdf", {
@@ -590,6 +541,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         description: "Email failed. Please get in contact with admin@opusform.co.uk",
       });
     } finally {
+      if (tempContainer && tempContainer.parentNode) {
+        document.body.removeChild(tempContainer);
+      }
       setIsSendingEmail(false);
     }
   };
@@ -681,7 +635,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       <div className="h-1 bg-[#526E8C]" />
       <div className="bg-[#F8F7F4] px-12 py-3.5 flex flex-wrap gap-10 border-b border-[#E4E0D8]">
         <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">
-          Company No. 14902188
+          Company No. 17228356
         </span>
         <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">
           VAT Reg No. GB 412 8876 21
@@ -986,7 +940,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                           }) || "0"}
                         </span>
                         <button
-                          onClick={(e) => deleteQuote(e, q.id)}
+                          onClick={(e) => confirmDeleteQuote(e, q)}
                           className="bg-transparent border-none cursor-pointer text-[#555] p-0.5 flex items-center hover:text-red-500 transition-colors"
                           title="Delete saved quote"
                         >
@@ -1468,6 +1422,28 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           </>
         }
         actionLabel="DISMISS"
+      />
+
+      {/* --- DELETE QUOTE CONFIRMATION --- */}
+      <ConfirmDialog
+        open={!!quoteToDelete}
+        onOpenChange={(open) => {
+          if (!open) setQuoteToDelete(null);
+        }}
+        tone="destructive"
+        tag="This Cannot Be Undone"
+        title="Delete Quote"
+        message={
+          <>
+            Are you sure you want to delete the quote{" "}
+            <span className="font-bold text-white">{quoteToDelete?.reference}</span>?
+            <div className="mt-3 p-4 bg-white/5 border border-white/5 rounded-lg text-xs font-medium text-red-400 leading-relaxed">
+              This action is irreversible and will permanently delete this quote draft from the database.
+            </div>
+          </>
+        }
+        confirmLabel="Delete Quote"
+        onConfirm={deleteQuote}
       />
     </div>
   );

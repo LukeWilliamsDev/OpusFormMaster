@@ -258,7 +258,7 @@ export const DashboardPage: React.FC = () => {
       if (insertError) throw insertError;
 
       // 2. Build secure upload URL
-      const uploadUrl = `${window.location.origin}/submit-credentials?token=${data.id}`;
+      const uploadUrl = `${window.location.origin}/#/submit-credentials?token=${data.id}`;
 
       // 3. Invoke send-compliance-email edge function
       const { error: emailError } = await supabase.functions.invoke("send-compliance-email", {
@@ -412,7 +412,7 @@ export const DashboardPage: React.FC = () => {
             <span className="text-[#10b981] font-semibold capitalize">{role}</span>
           </p>
         </div>
-        <div className="flex items-center space-x-3 text-[#9a9a9e] text-[13px] bg-[#1a1a1e] border border-[#2a2a30] py-2 px-3 rounded-lg self-start">
+        <div className="flex items-center space-x-3 text-[#9a9a9e] text-[12px] bg-[#1a1a1e] border border-[#2a2a30] py-2 px-3 rounded-lg self-start">
           <Clock className="w-4 h-4 text-[#6C8295]" />
           <span className="font-semibold">
             {new Date().toLocaleDateString("en-GB", {
@@ -484,7 +484,7 @@ export const DashboardPage: React.FC = () => {
                           >
                             <div className="flex items-center space-x-2.5">
                               <Briefcase className="w-4 h-4 text-[#6C8295]" />
-                              <span className="text-[13px] font-semibold text-white">
+                              <span className="text-[12px] font-semibold text-white">
                                 {job.siteName}
                               </span>
                               <span className="text-[11px] font-mono text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">
@@ -517,7 +517,7 @@ export const DashboardPage: React.FC = () => {
                           >
                             <div className="flex items-center space-x-2.5">
                               <UserCheck className="w-4 h-4 text-[#6C8295]" />
-                              <span className="text-[13px] font-semibold text-white">
+                              <span className="text-[12px] font-semibold text-white">
                                 {worker.name}
                               </span>
                               <span className="text-[11px] text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">
@@ -546,7 +546,7 @@ export const DashboardPage: React.FC = () => {
                           >
                             <div className="flex items-center space-x-2.5">
                               <FileText className="w-4 h-4 text-[#6C8295]" />
-                              <span className="text-[13px] font-semibold text-white">
+                              <span className="text-[12px] font-semibold text-white">
                                 {quote.clientName}
                               </span>
                               <span className="text-[11px] font-mono text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">
@@ -563,7 +563,7 @@ export const DashboardPage: React.FC = () => {
                   )}
 
                   {!searchResults.hasAny && (
-                    <div className="p-4 text-center text-[13px] text-[#9a9a9e]">
+                    <div className="p-4 text-center text-[12px] text-[#9a9a9e]">
                       No matched jobs, staff, or quotes found for "{commandInput}"
                     </div>
                   )}
@@ -850,7 +850,7 @@ export const DashboardPage: React.FC = () => {
               <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
                 <CheckCircle className="w-12 h-12 text-[#10b981]/80" />
                 <div>
-                  <h4 className="text-[13px] font-bold text-white">Roster Fully Compliant</h4>
+                  <h4 className="text-[12px] font-bold text-white">Roster Fully Compliant</h4>
                   <p className="text-[12px] text-[#9a9a9e] mt-1">
                     All active operatives have up-to-date qualifications.
                   </p>
@@ -917,7 +917,7 @@ export const DashboardPage: React.FC = () => {
                   <Plus className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[13px] font-bold text-white">Create New Job</h3>
+                  <h3 className="text-[12px] font-bold text-white">Create New Job</h3>
                   <p className="text-[11px] text-[#9a9a9e] mt-0.5">
                     Initialize a site reference and set pour limits
                   </p>
@@ -936,7 +936,7 @@ export const DashboardPage: React.FC = () => {
                   <UserPlus className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[13px] font-bold text-white">Add New Staff</h3>
+                  <h3 className="text-[12px] font-bold text-white">Add New Staff</h3>
                   <p className="text-[11px] text-[#9a9a9e] mt-0.5">
                     Register a worker and upload safety certifications
                   </p>
@@ -955,7 +955,7 @@ export const DashboardPage: React.FC = () => {
                   <Calculator className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[13px] font-bold text-white">Create Quote</h3>
+                  <h3 className="text-[12px] font-bold text-white">Create Quote</h3>
                   <p className="text-[11px] text-[#9a9a9e] mt-0.5">
                     Build a client invoice with custom VAT/CIS settings
                   </p>
@@ -974,7 +974,7 @@ export const DashboardPage: React.FC = () => {
                   <History className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[13px] font-bold text-white">View Audit Trail</h3>
+                  <h3 className="text-[12px] font-bold text-white">View Audit Trail</h3>
                   <p className="text-[11px] text-[#9a9a9e] mt-0.5">
                     Inspect system change history and operator events
                   </p>
@@ -1015,7 +1015,7 @@ export const DashboardPage: React.FC = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleAddJobSubmit} className="p-6 space-y-4 text-[13px]">
+              <form onSubmit={handleAddJobSubmit} className="p-6 space-y-4 text-[12px]">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
                     Site Name *
@@ -1143,7 +1143,7 @@ export const DashboardPage: React.FC = () => {
 
               <form
                 onSubmit={handleAddWorkerSubmit}
-                className="p-6 space-y-4 text-[13px] max-h-[500px] overflow-y-auto"
+                className="p-6 space-y-4 text-[12px] max-h-[500px] overflow-y-auto"
               >
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">

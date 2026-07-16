@@ -23,10 +23,11 @@ CREATE POLICY "Allow read to admin roles" ON public.audit_logs
         )
     );
 
--- Allow insert by authenticated users (needed so triggers/API can insert)
-CREATE POLICY "Allow insert by authenticated users" ON public.audit_logs
-    FOR INSERT
-    WITH CHECK (auth.uid() IS NOT NULL);
+-- No INSERT policy for authenticated/client roles: audit_logs must only ever be
+-- written by the SECURITY DEFINER trigger function below (owned by the table
+-- owner, which bypasses RLS). This prevents any authenticated user — including
+-- non-admins across tenants — from inserting fabricated rows directly via the
+-- client, keeping the audit trail tamper-evident.
 
 -- Trigger function to automatically log changes
 CREATE OR REPLACE FUNCTION public.process_audit_log()

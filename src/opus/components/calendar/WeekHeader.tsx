@@ -13,7 +13,7 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) 
       type="button"
       onClick={() => onNavigate(-1)}
       aria-label="Previous week"
-      className="p-2 hover:bg-[#2a2a2a] text-[#888] hover:text-white rounded-lg transition-colors cursor-pointer"
+      className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#2a2a2a] text-[#888] hover:text-white rounded-lg transition-colors cursor-pointer"
     >
       <ChevronLeft className="w-4 h-4" />
     </button>
@@ -24,7 +24,7 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) 
       type="button"
       onClick={() => onNavigate(1)}
       aria-label="Next week"
-      className="p-2 hover:bg-[#2a2a2a] text-[#888] hover:text-white rounded-lg transition-colors cursor-pointer"
+      className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#2a2a2a] text-[#888] hover:text-white rounded-lg transition-colors cursor-pointer"
     >
       <ChevronRight className="w-4 h-4" />
     </button>

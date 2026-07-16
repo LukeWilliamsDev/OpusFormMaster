@@ -182,7 +182,7 @@ export const PortalLayout: React.FC = () => {
                 key={item.name}
                 to={item.path}
                 title={isSidebarCollapsed ? item.name : undefined}
-                className={`flex items-center ${isSidebarCollapsed ? "justify-center px-0" : "space-x-3 px-3"} py-2.5 rounded-lg text-[13px] font-semibold tracking-wide transition-all duration-200 ${
+                className={`flex items-center ${isSidebarCollapsed ? "justify-center px-0" : "space-x-3 px-3"} py-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 ${
                   isActive
                     ? "bg-[#6C8295] text-white shadow-md"
                     : "text-[#888888] hover:text-foreground hover:bg-muted"
@@ -230,7 +230,7 @@ export const PortalLayout: React.FC = () => {
           {user?.email === "admin@opusform.co.uk" && (
             <button
               onClick={handleLogoutClick}
-              className="p-2 text-[#888888] hover:text-foreground cursor-pointer"
+              className="p-2 text-[#888888] hover:text-foreground cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
               title="Logout"
             >
               <LogOut className="w-5 h-5" />
@@ -299,7 +299,7 @@ export const PortalLayout: React.FC = () => {
                         .slice(0, 2)}
                     </span>
                   ) : (
-                    <UserIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                    <UserIcon className="w-4 h-4 text-[#888888] group-hover:text-white transition-colors" />
                   )}
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">

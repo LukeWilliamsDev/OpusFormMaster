@@ -102,7 +102,7 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
         .is("completed_at", null);
 
       // Construct the secure upload link
-      const uploadUrl = `${window.location.origin}/submit-credentials?token=${data.id}`;
+      const uploadUrl = `${window.location.origin}/#/submit-credentials?token=${data.id}`;
 
       // Call edge function send-compliance-email
       let emailSentResult = false;

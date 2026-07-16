@@ -8,6 +8,15 @@ const corsHeaders = {
 
 const ADMIN_EMAIL = "admin@opusform.co.uk";
 
+function escapeHtml(value: string): string {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -39,6 +48,24 @@ serve(async (req) => {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile || !["admin", "dispatcher"].includes(profile.role)) {
+      return new Response(
+        JSON.stringify({
+          error: "Forbidden: Only admins and dispatchers can trigger admin alerts.",
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
     }
 
     const { subject, body } = await req.json();
@@ -85,12 +112,12 @@ serve(async (req) => {
         <div style="max-width:600px;margin:0 auto;background-color:#242428;border:1px solid #2e2e33;border-radius:12px;overflow:hidden;">
           <div style="background-color:#26262B;padding:24px 40px;border-bottom:3px solid #ef4444;">
             <p style="margin:0;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:#ef4444;">System Alert</p>
-            <p style="margin:6px 0 0;font-size:16px;font-weight:700;color:#f4f4f0;">${subject}</p>
+            <p style="margin:6px 0 0;font-size:16px;font-weight:700;color:#f4f4f0;">${escapeHtml(subject)}</p>
           </div>
           <div style="padding:32px 40px;">
             <p style="margin:0 0 16px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:#526E8C;">Details</p>
             <div style="background-color:#1a1b1f;border:1px solid #2e2e33;border-left:3px solid #ef4444;border-radius:6px;padding:16px;margin-bottom:24px;">
-              <pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-family:monospace;font-size:12px;color:#e5e7eb;">${body}</pre>
+              <pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-family:monospace;font-size:12px;color:#e5e7eb;">${escapeHtml(body)}</pre>
             </div>
             <p style="margin:0;font-size:11px;color:#9ca3af;">Timestamp: <strong style="color:#d1d5db;">${timestamp} (UK time)</strong></p>
             <div style="border-top:1px solid #2e2e33;padding-top:20px;margin-top:24px;">

@@ -36,6 +36,22 @@ export const OSMMap: React.FC<OSMMapProps> = ({
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
 
+  // Guard against NaN, missing, or out-of-range lat/lng values before handing them to Leaflet
+  const isValidCoord = (coords?: { lat: number; lng: number } | null): boolean => {
+    if (!coords) return false;
+    const { lat, lng } = coords;
+    return (
+      typeof lat === "number" &&
+      typeof lng === "number" &&
+      Number.isFinite(lat) &&
+      Number.isFinite(lng) &&
+      lat >= -90 &&
+      lat <= 90 &&
+      lng >= -180 &&
+      lng <= 180
+    );
+  };
+
   // Helper to create glowing ping icons
   const createCustomMarkerIcon = (color: string, pulsingClass: string) => {
     return L.divIcon({
@@ -54,6 +70,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
   // Initialize Map
   useEffect(() => {
     if (!mapContainerRef.current) return;
+    if (!isValidCoord(center) || !isValidCoord(siteCoords)) return;
 
     // Destroy existing map instance
     if (mapRef.current) {
@@ -95,6 +112,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
 
     // Suppliers Markers
     suppliers.forEach((s) => {
+      if (!isValidCoord(s.coords)) return;
       const supplierIcon = createCustomMarkerIcon("#5C7285", "pulsing-marker-accent");
       const supplierMarker = L.marker([s.coords.lat, s.coords.lng], { icon: supplierIcon }).addTo(
         map,
@@ -138,7 +156,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
         mapRef.current.setView(marker.getLatLng(), 14, { animate: true });
         marker.openPopup();
       }
-    } else {
+    } else if (isValidCoord(center)) {
       mapRef.current.setView([center.lat, center.lng], 13, { animate: true });
     }
   }, [selectedSupplierId, center.lat, center.lng]);

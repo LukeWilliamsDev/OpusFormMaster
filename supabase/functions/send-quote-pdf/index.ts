@@ -10,6 +10,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function escapeHtml(value: string): string {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 interface RequestPayload {
   toEmail: string;
   clientName?: string;
@@ -46,6 +55,54 @@ serve(async (req) => {
   }
 
   try {
+    // Verify caller identity before performing any send/relay action (POST is otherwise
+    // unauthenticated since this function must run with verify_jwt: false for the GET logo route)
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Missing Authorization header." }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
+    // Connect to Supabase using the built-in service role key
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const token = authHeader.replace("Bearer ", "");
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized: Invalid token." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile || !["admin", "dispatcher"].includes(profile.role)) {
+      return new Response(
+        JSON.stringify({
+          error: "Forbidden: Only admins and dispatchers can send quote PDFs.",
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        },
+      );
+    }
+
     const payload: RequestPayload = await req.json();
     const {
       toEmail,
@@ -68,11 +125,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Connect to Supabase using the built-in service role key
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Retrieve settings config from the secure smtp_config table
     const { data: configRows, error: configError } = await supabase
@@ -119,6 +171,28 @@ serve(async (req) => {
     if (pdfBase64) {
       attachmentContent = pdfBase64;
     } else if (pdfUrl) {
+      // Only allow fetching PDFs from this project's own Supabase Storage to prevent SSRF
+      // (e.g. probing internal/metadata endpoints via an arbitrary attacker-supplied URL).
+      let parsedPdfUrl: URL;
+      try {
+        parsedPdfUrl = new URL(pdfUrl);
+      } catch {
+        return new Response(JSON.stringify({ error: "Invalid pdfUrl." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const allowedHost = new URL(supabaseUrl).host;
+      if (parsedPdfUrl.protocol !== "https:" || parsedPdfUrl.host !== allowedHost) {
+        return new Response(
+          JSON.stringify({ error: "pdfUrl must point to this project's Supabase Storage." }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          },
+        );
+      }
+
       // Fetch PDF binary from the public URL and convert to Base64
       const response = await fetch(pdfUrl);
       if (!response.ok) {
@@ -145,7 +219,7 @@ serve(async (req) => {
     }
 
     // Serve the logo directly from this function's public GET endpoint to bypass private repository blockages
-    const resolvedLogoUrl = "https://fgpthpxmiroyebrzjdzo.supabase.co/functions/v1/send-quote-pdf";
+    const resolvedLogoUrl = supabaseUrl + "/functions/v1/send-quote-pdf";
 
     // Compose HTML message body using standard string concatenation to completely avoid Deno/JSON escaping bugs
     let emailHtml = "";
@@ -203,14 +277,14 @@ serve(async (req) => {
     emailHtml += "      ";
     emailHtml +=
       '      <p class="text-title" style="margin: 0 0 16px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px; font-weight: 700;" data-ogsc="color: #e5e7eb;">Dear ' +
-      (clientName || "Valued Client") +
+      escapeHtml(clientName || "Valued Client") +
       ",</p>";
     emailHtml +=
       '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">Please find attached our formal quotation <strong class="text-title" style="color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">#' +
-      quoteRef +
+      escapeHtml(quoteRef) +
       "</strong> for the concrete works at " +
-      (siteName || "Site") +
-      (postcode ? ", " + postcode : "") +
+      escapeHtml(siteName || "Site") +
+      (postcode ? ", " + escapeHtml(postcode) : "") +
       ".</p>";
     emailHtml += "      ";
     emailHtml += "      <!-- Summary Table -->";
@@ -264,8 +338,11 @@ serve(async (req) => {
     emailHtml += "</div>";
 
     // Determine the sender address (sandbox domain onboarding@resend.dev if custom domain is not verified yet)
-    // Resolves key RESEND_FROM_EMAIL first, defaults to onboarding@resend.dev
-    const sender = fromEmail || config["RESEND_FROM_EMAIL"] || "onboarding@resend.dev";
+    // Resolves key RESEND_FROM_EMAIL first, defaults to onboarding@resend.dev.
+    // Never trust a client-supplied fromEmail (sender-spoofing risk) — only allow it when it
+    // matches the configured/default sender.
+    const defaultSender = config["RESEND_FROM_EMAIL"] || "onboarding@resend.dev";
+    const sender = fromEmail && fromEmail === defaultSender ? fromEmail : defaultSender;
 
     // Send via Resend HTTP API
     const resendResponse = await fetch("https://api.resend.com/emails", {

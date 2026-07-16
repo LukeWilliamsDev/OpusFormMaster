@@ -21,7 +21,7 @@ export const AuditDiffTable: React.FC<AuditDiffTableProps> = ({ diff }) => {
 
   const renderValue = (val: any) => {
     if (val === undefined || val === null) {
-      return <span className="text-zinc-650 font-mono italic text-[10px]">&lt;empty&gt;</span>;
+      return <span className="text-zinc-500 font-mono italic text-[10px]">&lt;empty&gt;</span>;
     }
     if (typeof val === "object") {
       return (
@@ -51,7 +51,7 @@ export const AuditDiffTable: React.FC<AuditDiffTableProps> = ({ diff }) => {
               <td className="py-2 px-3 font-mono text-zinc-400 uppercase text-[9px] tracking-wide align-top">
                 {getFriendlyFieldName(item.field)}
               </td>
-              <td className="py-2 px-3 bg-red-950/10 text-red-350 line-through align-top">
+              <td className="py-2 px-3 bg-red-950/10 text-red-400 line-through align-top">
                 {renderValue(item.before)}
               </td>
               <td className="py-2 px-3 bg-emerald-950/10 text-emerald-300 align-top">

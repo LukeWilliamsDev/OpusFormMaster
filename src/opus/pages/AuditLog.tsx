@@ -476,7 +476,7 @@ export const AuditLogPage: React.FC = () => {
                   {/* Use optional chaining to safely check target_id prefix if it is null */}
                   {selectedLog.target_type === "staff" &&
                     selectedLog.target_id?.startsWith("worker-") && (
-                      <span className="text-[9px] text-zinc-650 font-mono tracking-normal block mt-0.5">
+                      <span className="text-[9px] text-zinc-600 font-mono tracking-normal block mt-0.5">
                         ID: {selectedLog.target_id}
                       </span>
                     )}

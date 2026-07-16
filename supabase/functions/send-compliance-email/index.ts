@@ -14,6 +14,15 @@ interface RequestPayload {
   expiresAt: string;
 }
 
+function escapeHtml(value: string): string {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 serve(async (req) => {
   // Handle CORS pre-flight
   if (req.method === "OPTIONS") {
@@ -170,7 +179,7 @@ serve(async (req) => {
     emailHtml += "      ";
     emailHtml +=
       '      <p class="text-title" style="margin: 0 0 16px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px; font-weight: 700;" data-ogsc="color: #e5e7eb;">Hello ' +
-      (workerName || "Worker") +
+      escapeHtml(workerName || "Worker") +
       ",</p>";
     emailHtml +=
       '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">An administrator has requested that you submit compliance documentation. Please upload the required credentials before the link expires.</p>';
@@ -184,7 +193,7 @@ serve(async (req) => {
       for (const cert of requestedCerts) {
         emailHtml +=
           '          <li style="margin-bottom: 6px; font-weight: bold; font-size: 13px;">' +
-          cert +
+          escapeHtml(cert) +
           "</li>";
       }
       emailHtml += "        </ul>";

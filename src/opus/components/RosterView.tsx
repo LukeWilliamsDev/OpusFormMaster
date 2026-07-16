@@ -262,7 +262,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
         .neq("id", request.id)
         .is("completed_at", null);
 
-      const uploadUrl = `${window.location.origin}/submit-credentials?token=${request.id}`;
+      const uploadUrl = `${window.location.origin}/#/submit-credentials?token=${request.id}`;
 
       const { error: emailError } = await supabase.functions.invoke("send-compliance-email", {
         body: {
@@ -507,7 +507,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             .single();
 
           if (!requestError && requestRow) {
-            const uploadUrl = `${window.location.origin}/submit-credentials?token=${requestRow.id}`;
+            const uploadUrl = `${window.location.origin}/#/submit-credentials?token=${requestRow.id}`;
 
             const { error: emailError } = await supabase.functions.invoke("send-compliance-email", {
               body: {
@@ -636,7 +636,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           >
             {statusText}
           </span>
-          <span className="text-[10px] text-zinc-550 font-medium tracking-wide">
+          <span className="text-[10px] text-zinc-500 font-medium tracking-wide">
             {ticketCount} {ticketCount === 1 ? "ticket" : "tickets"}
           </span>
         </div>
@@ -979,7 +979,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           expires_at: r.expires_at,
           completed_at: r.completed_at,
           status,
-          uploadUrl: `${window.location.origin}/submit-credentials?token=${r.id}`,
+          uploadUrl: `${window.location.origin}/#/submit-credentials?token=${r.id}`,
         },
         rawRecord: r,
       };
@@ -1274,7 +1274,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         >
                           <div className="space-y-1">
                             <h4 className="text-xs font-bold text-zinc-400 tracking-wide flex items-center gap-1.5">
-                              <MapPin className="w-3 h-3 text-zinc-650" />
+                              <MapPin className="w-3 h-3 text-zinc-600" />
                               {job.siteName}
                             </h4>
                             <p className="text-[10px] font-medium text-zinc-600 leading-none mt-0.5">
@@ -1441,7 +1441,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           <h4 className="text-[13px] font-semibold text-white uppercase tracking-wider leading-tight">
                             {logTitle}
                           </h4>
-                          <p className="text-[11px] text-zinc-550 mt-1.5 uppercase tracking-wide">
+                          <p className="text-[11px] text-zinc-500 mt-1.5 uppercase tracking-wide">
                             {event.actor} · {date}
                           </p>
                         </div>
@@ -1574,7 +1574,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                 {event.action === "RESEND_DOCUMENT_REQUEST" &&
                                 event.details?.requested_certs ? (
                                   <div className="space-y-2">
-                                    <p className="text-[10.5px] font-bold text-zinc-350 font-sans leading-relaxed">
+                                    <p className="text-[10.5px] font-bold text-zinc-400 font-sans leading-relaxed">
                                       {summaryText}
                                     </p>
                                     <div className="flex flex-wrap gap-1.5">
@@ -1593,7 +1593,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                     <AuditDiffTable diff={diff} />
                                   </div>
                                 ) : summaryText ? (
-                                  <p className="text-[10.5px] font-bold text-zinc-350 font-sans leading-relaxed">
+                                  <p className="text-[10.5px] font-bold text-zinc-400 font-sans leading-relaxed">
                                     {summaryText}
                                   </p>
                                 ) : null}
@@ -1673,15 +1673,25 @@ export const RosterView: React.FC<RosterViewProps> = ({
             )
           }
           confirmLabel="Archive Profile"
-          onConfirm={() => {
+          onConfirm={async () => {
             if (!selectedWorkerToDelete) return;
-            setWorkers((prev) =>
-              prev.map((w) =>
-                w.id === selectedWorkerToDelete.id ? { ...w, isArchived: true } : w,
-              ),
-            );
-            setSelectedWorkerDetailsId(null);
-            setSelectedWorkerToDelete(null);
+            const targetId = selectedWorkerToDelete.id;
+            try {
+              const { error } = await supabase
+                .from("staff")
+                .update({ is_archived: true })
+                .eq("id", targetId);
+              if (error) throw error;
+
+              setWorkers((prev) =>
+                prev.map((w) => (w.id === targetId ? { ...w, isArchived: true } : w)),
+              );
+              setSelectedWorkerDetailsId(null);
+              setSelectedWorkerToDelete(null);
+            } catch (err: any) {
+              console.error("Failed to archive staff profile:", err);
+              toast.error("Failed to archive profile", { description: err.message });
+            }
           }}
         />
 
@@ -1784,11 +1794,20 @@ export const RosterView: React.FC<RosterViewProps> = ({
             )
           }
           confirmLabel="Purge Record"
-          onConfirm={() => {
+          onConfirm={async () => {
             if (!selectedWorkerToPermanentDelete) return;
-            setWorkers((prev) => prev.filter((w) => w.id !== selectedWorkerToPermanentDelete.id));
-            setSelectedWorkerDetailsId(null);
-            setSelectedWorkerToPermanentDelete(null);
+            const targetId = selectedWorkerToPermanentDelete.id;
+            try {
+              const { error } = await supabase.from("staff").delete().eq("id", targetId);
+              if (error) throw error;
+
+              setWorkers((prev) => prev.filter((w) => w.id !== targetId));
+              setSelectedWorkerDetailsId(null);
+              setSelectedWorkerToPermanentDelete(null);
+            } catch (err: any) {
+              console.error("Failed to permanently delete staff member:", err);
+              toast.error("Failed to delete staff member", { description: err.message });
+            }
           }}
         />
 
@@ -1877,7 +1896,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedWorkerToRestore(selectedWorkerDetails)}
-                      className="px-3.5 py-2 bg-emerald-950/30 hover:bg-emerald-950/60 border border-emerald-900/30 text-emerald-450 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                      className="px-3.5 py-2 bg-emerald-950/30 hover:bg-emerald-950/60 border border-emerald-900/30 text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer whitespace-nowrap"
                     >
                       Restore
                     </button>

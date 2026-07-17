@@ -113,7 +113,7 @@ const ProgressRing: React.FC<{ progress: number; size?: number }> = ({
         strokeLinecap="round"
         strokeDasharray={circumference}
         strokeDashoffset={offset}
-        className="text-brand-accent transition-all duration-300"
+        className="text-primary transition-all duration-300"
       />
     </svg>
   );
@@ -130,7 +130,7 @@ const AnimatedCheckmark: React.FC = () => (
         cy="40"
         r="36"
         fill="none"
-        stroke="rgba(52,211,153,0.2)"
+        stroke="color-mix(in srgb, var(--success) 20%, transparent)"
         strokeWidth="3"
         className="animate-[scaleIn_0.4s_ease-out_forwards]"
         style={{ transformOrigin: "center" }}
@@ -140,7 +140,7 @@ const AnimatedCheckmark: React.FC = () => (
         cx="40"
         cy="40"
         r="28"
-        fill="rgba(52,211,153,0.06)"
+        fill="color-mix(in srgb, var(--success) 6%, transparent)"
         className="animate-[scaleIn_0.5s_ease-out_0.1s_forwards]"
         style={{ transformOrigin: "center", opacity: 0 }}
       />
@@ -148,7 +148,7 @@ const AnimatedCheckmark: React.FC = () => (
       <path
         d="M24 42 L34 52 L56 30"
         fill="none"
-        stroke="#34d399"
+        stroke="var(--success)"
         strokeWidth="3.5"
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -176,16 +176,16 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep }) => (
           {idx > 0 && (
             <div
               className={`hidden sm:block h-px w-4 transition-colors duration-300 ${
-                isCompleted ? "bg-brand-accent" : "bg-border"
+                isCompleted ? "bg-primary" : "bg-border"
               }`}
             />
           )}
           <div
             className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full text-[8px] font-black uppercase tracking-widest transition-all duration-300 whitespace-nowrap ${
               isActive
-                ? "bg-brand-accent/15 text-brand-accent border border-brand-accent/30 shadow-[0_0_12px_rgba(0,191,165,0.15)]"
+                ? "bg-primary/15 text-primary border border-primary/30 shadow-[0_0_12px_rgba(181,101,29,0.15)]"
                 : isCompleted
-                  ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                  ? "bg-success/10 text-success border border-success/20"
                   : "bg-secondary text-muted-foreground border border-border"
             }`}
           >
@@ -234,9 +234,9 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
   // Uploading state — show progress ring
   if (slot.uploading) {
     return (
-      <div className="flex flex-col items-center justify-center py-10 rounded-2xl border-2 border-dashed border-brand-accent/30 bg-brand-accent/5">
+      <div className="flex flex-col items-center justify-center py-10 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5">
         <ProgressRing progress={slot.progress} />
-        <span className="text-[9px] font-black uppercase tracking-widest text-brand-accent mt-3">
+        <span className="text-[9px] font-black uppercase tracking-widest text-primary mt-3">
           Uploading… {slot.progress}%
         </span>
       </div>
@@ -246,7 +246,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
   // Selected state — show preview
   if (slot.file) {
     return (
-      <div className="rounded-2xl border border-brand-accent/20 bg-brand-accent/5 p-4 space-y-3">
+      <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
         <div className="flex items-start gap-3">
           {/* Thumbnail or file icon */}
           {slot.thumbnailUrl ? (
@@ -262,10 +262,10 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
           )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-1">
-              <div className="w-5 h-5 rounded-full bg-brand-accent/10 flex items-center justify-center border border-brand-accent/20">
-                <Check className="w-3 h-3 text-brand-accent" />
+              <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20">
+                <Check className="w-3 h-3 text-primary" />
               </div>
-              <span className="text-[9px] font-black uppercase tracking-widest text-brand-accent">
+              <span className="text-[9px] font-black uppercase tracking-widest text-primary">
                 Selected
               </span>
             </div>
@@ -298,8 +298,8 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
       onClick={() => inputRef.current?.click()}
       className={`relative flex flex-col items-center justify-center py-10 rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-300 ${
         dragActive
-          ? "border-brand-accent bg-brand-accent/5 shadow-[0_0_24px_rgba(0,191,165,0.1)]"
-          : "border-border hover:border-brand-accent/40 bg-secondary/40"
+          ? "border-primary bg-primary/5 shadow-[0_0_24px_rgba(181,101,29,0.1)]"
+          : "border-border hover:border-primary/40 bg-secondary/40"
       }`}
     >
       <input
@@ -314,13 +314,13 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
       <div
         className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-all duration-300 ${
           dragActive
-            ? "bg-brand-accent/15 border border-brand-accent/30"
+            ? "bg-primary/15 border border-primary/30"
             : "bg-secondary border border-border"
         }`}
       >
         <FileUp
           className={`w-5 h-5 transition-colors duration-300 ${
-            dragActive ? "text-brand-accent" : "text-muted-foreground"
+            dragActive ? "text-primary" : "text-muted-foreground"
           }`}
         />
       </div>
@@ -608,7 +608,7 @@ export const SubmitCredentialsPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8">
         <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
-        <div className="w-8 h-8 rounded-full border-2 border-brand-accent/20 border-t-brand-accent animate-spin" />
+        <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
       </div>
     );
   }
@@ -618,7 +618,7 @@ export const SubmitCredentialsPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4">
         <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
-        <div className="bg-card border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl shadow-red-500/5">
+        <div className="bg-card border border-red-500/20 rounded-xl p-8 max-w-md w-full text-center space-y-4">
           <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
             <ShieldAlert className="w-6 h-6 text-red-400" />
           </div>
@@ -638,7 +638,7 @@ export const SubmitCredentialsPage: React.FC = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4">
         <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
-        <div className="bg-card border border-emerald-500/20 rounded-2xl p-10 max-w-md w-full text-center space-y-6 shadow-2xl">
+        <div className="bg-card border border-success/20 rounded-xl p-10 max-w-md w-full text-center space-y-6">
           <AnimatedCheckmark />
           <div className="space-y-2">
             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground">
@@ -685,17 +685,17 @@ export const SubmitCredentialsPage: React.FC = () => {
         {/* ─── Header / Branding ─────────────────────────────────── */}
         <div className="text-center space-y-3">
           <img src={logoSrc} alt="Opus Form" className="h-8 w-auto mx-auto" />
-          <div className="h-0.5 w-10 bg-brand-accent mx-auto rounded-full" />
-          <h1 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-accent">
+          <div className="h-0.5 w-10 bg-primary mx-auto rounded-full" />
+          <h1 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
             Credential Submission Portal
           </h1>
         </div>
 
         {/* ─── Greeting Card ─────────────────────────────────────── */}
-        <div className="bg-card border border-border rounded-2xl p-5 shadow-xl">
+        <div className="bg-card border border-border hover:border-primary/40 rounded-xl p-5 transition-colors duration-300">
           <div className="flex items-start gap-4">
-            <div className="w-10 h-10 rounded-xl bg-brand-accent/10 flex items-center justify-center shrink-0 border border-brand-accent/20">
-              <AlertCircle className="w-5 h-5 text-brand-accent" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
+              <AlertCircle className="w-5 h-5 text-primary" />
             </div>
             <div className="min-w-0">
               <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
@@ -720,14 +720,14 @@ export const SubmitCredentialsPage: React.FC = () => {
         >
           {/* ─── PER-CERT STEP ─────────────────────────────────── */}
           {!isReviewStep && activeSlot && (
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-2xl space-y-5">
+            <div className="bg-card border border-border rounded-xl p-6 space-y-5">
               {/* Cert header */}
               <div className="pb-4 border-b border-border flex items-center justify-between gap-3">
                 {openEnded ? (
                   <select
                     value={activeSlot.cert}
                     onChange={(e) => updateSlot(currentStep, { cert: e.target.value })}
-                    className="flex-1 min-w-0 bg-secondary/40 border border-border hover:border-muted-foreground/50 focus:border-brand-accent rounded-xl px-3 py-2.5 text-xs text-foreground uppercase font-black tracking-wider outline-none appearance-none transition-colors"
+                    className="flex-1 min-w-0 bg-secondary/40 border border-border hover:border-muted-foreground/50 focus:border-primary rounded-xl px-3 py-2.5 text-xs text-foreground uppercase font-black tracking-wider outline-none appearance-none transition-colors"
                   >
                     {ON_SITE_CERTIFICATIONS.map((cert) => (
                       <option key={cert} value={cert}>
@@ -782,7 +782,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                   type="date"
                   value={activeSlot.expiryDate}
                   onChange={(e) => updateSlot(currentStep, { expiryDate: e.target.value })}
-                  className="w-full bg-secondary/40 border border-border hover:border-muted-foreground/50 focus:border-brand-accent rounded-xl px-4 py-3 text-xs text-foreground outline-none transition-colors min-h-[48px]"
+                  className="w-full bg-secondary/40 border border-border hover:border-muted-foreground/50 focus:border-primary rounded-xl px-4 py-3 text-xs text-foreground outline-none transition-colors min-h-[48px]"
                 />
               </div>
 
@@ -798,7 +798,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           {/* ─── REVIEW STEP ───────────────────────────────────── */}
           {isReviewStep && (
             <div className="space-y-4">
-              <div className="bg-card border border-border rounded-2xl p-5 shadow-2xl">
+              <div className="bg-card border border-border rounded-xl p-5">
                 <h4 className="text-xs font-black uppercase tracking-widest text-foreground mb-4 pb-3 border-b border-border">
                   Review Your Submissions
                 </h4>
@@ -839,13 +839,13 @@ export const SubmitCredentialsPage: React.FC = () => {
                       </div>
                       {/* Status + edit */}
                       <div className="flex items-center gap-2 shrink-0">
-                        <div className="w-5 h-5 rounded-full bg-brand-accent/15 flex items-center justify-center border border-brand-accent/30">
-                          <Check className="w-3 h-3 text-brand-accent" />
+                        <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center border border-primary/30">
+                          <Check className="w-3 h-3 text-primary" />
                         </div>
                         <button
                           type="button"
                           onClick={() => goToStep(idx)}
-                          className="text-muted-foreground hover:text-brand-accent transition-colors cursor-pointer p-1"
+                          className="text-muted-foreground hover:text-primary transition-colors cursor-pointer p-1"
                           aria-label={`Edit ${slot.cert}`}
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -870,7 +870,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full py-4 bg-brand-accent hover:bg-brand-accent/80 disabled:opacity-50 text-primary-foreground rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-accent/20 transition-all min-h-[52px] cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-4 bg-primary hover:bg-primary/80 disabled:opacity-50 text-primary-foreground rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 transition-all min-h-[52px] cursor-pointer flex items-center justify-center gap-2"
               >
                 {submitting ? (
                   <>
@@ -893,7 +893,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           <button
             type="button"
             onClick={addSlot}
-            className="w-full flex items-center justify-center gap-2 py-3.5 border-2 border-dashed border-border hover:border-brand-accent/40 rounded-xl text-[9.5px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-3.5 border-2 border-dashed border-border hover:border-primary/40 rounded-xl text-[9.5px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Add Another Certification
@@ -919,7 +919,7 @@ export const SubmitCredentialsPage: React.FC = () => {
               disabled={!canAdvance()}
               className={`flex-1 py-3.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all min-h-[48px] flex items-center justify-center gap-2 cursor-pointer ${
                 canAdvance()
-                  ? "bg-brand-accent hover:bg-brand-accent/80 text-primary-foreground shadow-lg shadow-brand-accent/20"
+                  ? "bg-primary hover:bg-primary/80 text-primary-foreground shadow-lg shadow-primary/20"
                   : "bg-secondary text-muted-foreground border border-border cursor-not-allowed"
               }`}
             >

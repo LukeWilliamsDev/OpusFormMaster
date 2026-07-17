@@ -99,7 +99,7 @@ const ProgressRing: React.FC<{ progress: number; size?: number }> = ({
         cx={size / 2}
         cy={size / 2}
         r={radius}
-        stroke="rgba(255,255,255,0.08)"
+        stroke="var(--border)"
         strokeWidth={strokeWidth}
         fill="none"
       />
@@ -176,7 +176,7 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep }) => (
           {idx > 0 && (
             <div
               className={`hidden sm:block h-px w-4 transition-colors duration-300 ${
-                isCompleted ? "bg-brand-accent" : "bg-white/10"
+                isCompleted ? "bg-brand-accent" : "bg-border"
               }`}
             />
           )}
@@ -186,7 +186,7 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep }) => (
                 ? "bg-brand-accent/15 text-brand-accent border border-brand-accent/30 shadow-[0_0_12px_rgba(0,191,165,0.15)]"
                 : isCompleted
                   ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                  : "bg-white/5 text-zinc-500 border border-white/5"
+                  : "bg-secondary text-muted-foreground border border-border"
             }`}
           >
             {isCompleted ? (
@@ -253,11 +253,11 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
             <img
               src={slot.thumbnailUrl}
               alt="Preview"
-              className="w-16 h-16 rounded-xl object-cover border border-white/10"
+              className="w-16 h-16 rounded-xl object-cover border border-border"
             />
           ) : (
-            <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-              <FileText className="w-7 h-7 text-zinc-400" />
+            <div className="w-16 h-16 rounded-xl bg-secondary border border-border flex items-center justify-center">
+              <FileText className="w-7 h-7 text-muted-foreground" />
             </div>
           )}
           <div className="flex-1 min-w-0">
@@ -270,7 +270,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
               </span>
             </div>
             {slot.displayFilename && (
-              <p className="text-[10px] font-mono text-zinc-400 truncate" title={slot.displayFilename}>
+              <p className="text-[10px] font-mono text-muted-foreground truncate" title={slot.displayFilename}>
                 {slot.displayFilename}
               </p>
             )}
@@ -278,7 +278,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
           <button
             type="button"
             onClick={onRemoveFile}
-            className="shrink-0 text-zinc-500 hover:text-red-400 transition-colors cursor-pointer p-1"
+            className="shrink-0 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer p-1"
             aria-label="Remove file"
           >
             <X className="w-4 h-4" />
@@ -299,7 +299,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
       className={`relative flex flex-col items-center justify-center py-10 rounded-2xl border-2 border-dashed cursor-pointer transition-all duration-300 ${
         dragActive
           ? "border-brand-accent bg-brand-accent/5 shadow-[0_0_24px_rgba(0,191,165,0.1)]"
-          : "border-zinc-700 hover:border-brand-accent/40 bg-black/10"
+          : "border-border hover:border-brand-accent/40 bg-secondary/40"
       }`}
     >
       <input
@@ -315,12 +315,12 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
         className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-3 transition-all duration-300 ${
           dragActive
             ? "bg-brand-accent/15 border border-brand-accent/30"
-            : "bg-white/5 border border-white/10"
+            : "bg-secondary border border-border"
         }`}
       >
         <FileUp
           className={`w-5 h-5 transition-colors duration-300 ${
-            dragActive ? "text-brand-accent" : "text-zinc-500"
+            dragActive ? "text-brand-accent" : "text-muted-foreground"
           }`}
         />
       </div>
@@ -332,7 +332,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
       <span className="sm:hidden text-[10px] font-black uppercase tracking-widest text-foreground">
         Tap to Upload
       </span>
-      <span className="text-[8px] text-zinc-500 uppercase tracking-widest mt-1.5">
+      <span className="text-[8px] text-muted-foreground uppercase tracking-widest mt-1.5">
         PDF, PNG, or JPG — Max 5 MB
       </span>
       {slot.error && (
@@ -625,7 +625,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground">
             Access Denied
           </h3>
-          <p className="text-[10px] text-zinc-500 uppercase tracking-widest leading-relaxed">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-relaxed">
             {errorMsg}
           </p>
         </div>
@@ -644,13 +644,13 @@ export const SubmitCredentialsPage: React.FC = () => {
             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground">
               Submission Complete
             </h3>
-            <p className="text-[10px] text-zinc-500 uppercase tracking-widest leading-relaxed max-w-xs mx-auto">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-relaxed max-w-xs mx-auto">
               Your credentials have been uploaded successfully and are now pending admin
               verification.
             </p>
           </div>
-          <div className="h-px bg-white/5" />
-          <p className="text-[9px] text-zinc-600 uppercase tracking-widest">
+          <div className="h-px bg-border" />
+          <p className="text-[9px] text-muted-foreground uppercase tracking-widest">
             You can safely close this tab
           </p>
         </div>
@@ -692,7 +692,7 @@ export const SubmitCredentialsPage: React.FC = () => {
         </div>
 
         {/* ─── Greeting Card ─────────────────────────────────────── */}
-        <div className="bg-card border border-white/10 rounded-2xl p-5 shadow-xl">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-xl">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-xl bg-brand-accent/10 flex items-center justify-center shrink-0 border border-brand-accent/20">
               <AlertCircle className="w-5 h-5 text-brand-accent" />
@@ -701,7 +701,7 @@ export const SubmitCredentialsPage: React.FC = () => {
               <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
                 Hi, {staffName}
               </h4>
-              <p className="text-[9px] text-zinc-400 uppercase tracking-widest mt-1.5 leading-relaxed">
+              <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-1.5 leading-relaxed">
                 {openEnded
                   ? "Please upload every on-site certification you currently hold. Select the type, upload a clear copy, and enter the expiration date."
                   : `Please upload clear copies of ${slots.length === 1 ? "the" : "each"} requested certification below. Enter the expiration date as shown on your card.`}
@@ -720,14 +720,14 @@ export const SubmitCredentialsPage: React.FC = () => {
         >
           {/* ─── PER-CERT STEP ─────────────────────────────────── */}
           {!isReviewStep && activeSlot && (
-            <div className="bg-card border border-white/10 rounded-2xl p-6 shadow-2xl space-y-5">
+            <div className="bg-card border border-border rounded-2xl p-6 shadow-2xl space-y-5">
               {/* Cert header */}
-              <div className="pb-4 border-b border-white/5 flex items-center justify-between gap-3">
+              <div className="pb-4 border-b border-border flex items-center justify-between gap-3">
                 {openEnded ? (
                   <select
                     value={activeSlot.cert}
                     onChange={(e) => updateSlot(currentStep, { cert: e.target.value })}
-                    className="flex-1 min-w-0 bg-black/20 border border-border hover:border-muted-foreground/50 focus:border-brand-accent rounded-xl px-3 py-2.5 text-xs text-foreground uppercase font-black tracking-wider outline-none appearance-none transition-colors"
+                    className="flex-1 min-w-0 bg-secondary/40 border border-border hover:border-muted-foreground/50 focus:border-brand-accent rounded-xl px-3 py-2.5 text-xs text-foreground uppercase font-black tracking-wider outline-none appearance-none transition-colors"
                   >
                     {ON_SITE_CERTIFICATIONS.map((cert) => (
                       <option key={cert} value={cert}>
@@ -737,7 +737,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                   </select>
                 ) : (
                   <div>
-                    <p className="text-[8px] text-zinc-500 uppercase tracking-widest mb-1">
+                    <p className="text-[8px] text-muted-foreground uppercase tracking-widest mb-1">
                       Step {currentStep + 1} of {slots.length}
                     </p>
                     <h4 className="text-xs font-black uppercase tracking-widest text-foreground leading-normal">
@@ -749,7 +749,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => removeSlot(currentStep)}
-                    className="shrink-0 text-zinc-500 hover:text-red-400 transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-red-500/10"
+                    className="shrink-0 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-red-500/10"
                     aria-label="Remove certification"
                   >
                     <X className="w-4 h-4" />
@@ -774,7 +774,7 @@ export const SubmitCredentialsPage: React.FC = () => {
 
               {/* Expiry Date */}
               <div className="space-y-2">
-                <label className="text-[8px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-1.5">
+                <label className="text-[8px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
                   <Calendar className="w-3.5 h-3.5" />
                   Expiration Date
                 </label>
@@ -782,7 +782,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                   type="date"
                   value={activeSlot.expiryDate}
                   onChange={(e) => updateSlot(currentStep, { expiryDate: e.target.value })}
-                  className="w-full bg-black/20 border border-border hover:border-muted-foreground/50 focus:border-brand-accent rounded-xl px-4 py-3 text-xs text-foreground outline-none transition-colors min-h-[48px]"
+                  className="w-full bg-secondary/40 border border-border hover:border-muted-foreground/50 focus:border-brand-accent rounded-xl px-4 py-3 text-xs text-foreground outline-none transition-colors min-h-[48px]"
                 />
               </div>
 
@@ -798,26 +798,26 @@ export const SubmitCredentialsPage: React.FC = () => {
           {/* ─── REVIEW STEP ───────────────────────────────────── */}
           {isReviewStep && (
             <div className="space-y-4">
-              <div className="bg-card border border-white/10 rounded-2xl p-5 shadow-2xl">
-                <h4 className="text-xs font-black uppercase tracking-widest text-foreground mb-4 pb-3 border-b border-white/5">
+              <div className="bg-card border border-border rounded-2xl p-5 shadow-2xl">
+                <h4 className="text-xs font-black uppercase tracking-widest text-foreground mb-4 pb-3 border-b border-border">
                   Review Your Submissions
                 </h4>
                 <div className="space-y-3">
                   {slots.map((slot, idx) => (
                     <div
                       key={slot.id}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-black/20 border border-white/5 hover:border-white/10 transition-colors"
+                      className="flex items-center gap-3 p-3 rounded-xl bg-secondary/40 border border-border hover:border-muted-foreground/40 transition-colors"
                     >
                       {/* Thumbnail */}
                       {slot.thumbnailUrl ? (
                         <img
                           src={slot.thumbnailUrl}
                           alt={slot.cert}
-                          className="w-12 h-12 rounded-lg object-cover border border-white/10 shrink-0"
+                          className="w-12 h-12 rounded-lg object-cover border border-border shrink-0"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                          <FileText className="w-5 h-5 text-zinc-500" />
+                        <div className="w-12 h-12 rounded-lg bg-secondary border border-border flex items-center justify-center shrink-0">
+                          <FileText className="w-5 h-5 text-muted-foreground" />
                         </div>
                       )}
                       {/* Details */}
@@ -826,11 +826,11 @@ export const SubmitCredentialsPage: React.FC = () => {
                           {slot.cert}
                         </p>
                         {slot.displayFilename && (
-                          <p className="text-[9px] font-mono text-zinc-500 truncate">
+                          <p className="text-[9px] font-mono text-muted-foreground truncate">
                             {slot.displayFilename}
                           </p>
                         )}
-                        <p className="text-[9px] text-zinc-500 uppercase tracking-widest mt-0.5">
+                        <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-0.5">
                           Expires:{" "}
                           {slot.expiryDate
                             ? new Date(slot.expiryDate).toLocaleDateString("en-GB")
@@ -845,7 +845,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => goToStep(idx)}
-                          className="text-zinc-500 hover:text-brand-accent transition-colors cursor-pointer p-1"
+                          className="text-muted-foreground hover:text-brand-accent transition-colors cursor-pointer p-1"
                           aria-label={`Edit ${slot.cert}`}
                         >
                           <Edit3 className="w-3.5 h-3.5" />
@@ -893,7 +893,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           <button
             type="button"
             onClick={addSlot}
-            className="w-full flex items-center justify-center gap-2 py-3.5 border-2 border-dashed border-zinc-700 hover:border-brand-accent/40 rounded-xl text-[9.5px] font-black uppercase tracking-widest text-zinc-400 hover:text-foreground transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-3.5 border-2 border-dashed border-border hover:border-brand-accent/40 rounded-xl text-[9.5px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Add Another Certification
@@ -907,7 +907,7 @@ export const SubmitCredentialsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={goBack}
-                className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-foreground transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[48px]"
+                className="flex-1 py-3.5 bg-secondary hover:bg-muted border border-border rounded-xl text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[48px]"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Back
@@ -920,7 +920,7 @@ export const SubmitCredentialsPage: React.FC = () => {
               className={`flex-1 py-3.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all min-h-[48px] flex items-center justify-center gap-2 cursor-pointer ${
                 canAdvance()
                   ? "bg-brand-accent hover:bg-brand-accent/80 text-primary-foreground shadow-lg shadow-brand-accent/20"
-                  : "bg-white/5 text-zinc-600 border border-white/5 cursor-not-allowed"
+                  : "bg-secondary text-muted-foreground border border-border cursor-not-allowed"
               }`}
             >
               {currentStep === slots.length - 1 ? "Review" : "Next"}
@@ -934,7 +934,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           <button
             type="button"
             onClick={goBack}
-            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-foreground transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[48px]"
+            className="w-full py-3 bg-secondary hover:bg-muted border border-border rounded-xl text-[9px] font-black uppercase tracking-widest text-muted-foreground hover:text-foreground transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[48px]"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Editing
@@ -942,8 +942,8 @@ export const SubmitCredentialsPage: React.FC = () => {
         )}
 
         {/* ─── Footer ────────────────────────────────────────────── */}
-        <div className="text-center pt-4 border-t border-white/5">
-          <p className="text-[8px] text-zinc-600 uppercase tracking-widest">
+        <div className="text-center pt-4 border-t border-border">
+          <p className="text-[8px] text-muted-foreground uppercase tracking-widest">
             Opus Form Ltd — Secure Document Portal
           </p>
         </div>

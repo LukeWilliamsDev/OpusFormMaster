@@ -607,7 +607,7 @@ export const SubmitCredentialsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8">
-        <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
+        <img src={logoSrc} alt="Opus Form" className="h-12 w-auto" />
         <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
       </div>
     );
@@ -617,7 +617,7 @@ export const SubmitCredentialsPage: React.FC = () => {
   if (errorMsg && !requestData) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4">
-        <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
+        <img src={logoSrc} alt="Opus Form" className="h-12 w-auto" />
         <div className="bg-card border border-red-500/20 rounded-xl p-8 max-w-md w-full text-center space-y-4">
           <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
             <ShieldAlert className="w-6 h-6 text-red-400" />
@@ -637,7 +637,7 @@ export const SubmitCredentialsPage: React.FC = () => {
   if (submitSuccess) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4">
-        <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
+        <img src={logoSrc} alt="Opus Form" className="h-12 w-auto" />
         <div className="bg-card border border-success/20 rounded-xl p-10 max-w-md w-full text-center space-y-6">
           <AnimatedCheckmark />
           <div className="space-y-2">
@@ -684,8 +684,7 @@ export const SubmitCredentialsPage: React.FC = () => {
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
         {/* ─── Header / Branding ─────────────────────────────────── */}
         <div className="text-center space-y-3">
-          <img src={logoSrc} alt="Opus Form" className="h-8 w-auto mx-auto" />
-          <div className="h-0.5 w-10 bg-primary mx-auto rounded-full" />
+          <img src={logoSrc} alt="Opus Form" className="h-12 w-auto mx-auto" />
           <h1 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
             Credential Submission Portal
           </h1>

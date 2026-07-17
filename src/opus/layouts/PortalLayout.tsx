@@ -23,7 +23,8 @@ import { getAvatarPresetClass } from "../pages/Settings";
 import { NavList } from "@/components/application/app-navigation/base-components/nav-list";
 
 export const PortalLayout: React.FC = () => {
-  const { signOut, role, user, profile } = usePortal();
+  const { signOut, role, user, profile, theme } = usePortal();
+  const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
     () => localStorage.getItem("portal-sidebar-collapsed") === "true",
@@ -117,7 +118,7 @@ export const PortalLayout: React.FC = () => {
         >
           {!isSidebarCollapsed && (
             <Link to="/portal/dashboard" className="flex items-center group min-w-0">
-              <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-8 w-auto" />
+              <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
             </Link>
           )}
           <button
@@ -204,9 +205,9 @@ export const PortalLayout: React.FC = () => {
       </aside>
 
       {/* Mobile Sticky Header */}
-      <header className="lg:hidden flex items-center justify-between h-16 bg-muted/30 border-b border-border px-4 sticky top-0 z-40">
+      <header className="lg:hidden flex items-center justify-between h-16 bg-background border-b border-border px-4 sticky top-0 z-40">
         <Link to="/portal/dashboard" className="flex items-center">
-          <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-8 w-auto" />
+          <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
         </Link>
         <div className="flex items-center space-x-2">
           {/* Audit Admin Logout for mobile */}
@@ -253,7 +254,7 @@ export const PortalLayout: React.FC = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center"
                 >
-                  <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-8 w-auto" />
+                  <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
                 </Link>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}

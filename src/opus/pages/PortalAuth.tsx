@@ -16,7 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { NoticeModal } from "@/components/ui/notice-modal";
 
 export const PortalAuthPage: React.FC = () => {
-  const { isAuthenticated, signIn, resetPassword, updatePassword } = usePortal();
+  const { isAuthenticated, signIn, resetPassword, updatePassword, theme } = usePortal();
+  const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const navigate = useNavigate();
 
   const [formMode, setFormMode] = useState<"login" | "forgot" | "reset">("login");
@@ -207,7 +208,7 @@ export const PortalAuthPage: React.FC = () => {
             title="Return to Landing Page"
           >
             <img
-              src="/opus-form-primary-dark.svg"
+              src={logoSrc}
               alt="Opus Form"
               style={{ height: "40px", width: "auto" }}
             />

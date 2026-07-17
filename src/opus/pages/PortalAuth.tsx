@@ -200,24 +200,28 @@ export const PortalAuthPage: React.FC = () => {
 
       <div className="max-w-md w-full z-10 flex flex-col items-center">
         {/* Logo — transparent recreation matching brand exactly, animates in */}
-        <div className="text-center mb-10 sm:mb-12 w-full flex flex-col items-center">
+        <div className="text-center mb-8 sm:mb-10 w-full flex flex-col items-center">
           <button
             type="button"
             onClick={() => navigate("/")}
-            className="focus:outline-none cursor-pointer"
+            className="focus:outline-none cursor-pointer group"
             title="Return to Landing Page"
           >
             <img
               src={logoSrc}
               alt="Opus Form"
               style={{ height: "40px", width: "auto" }}
+              className="transition-opacity group-hover:opacity-80"
             />
           </button>
+          <span className="text-[10px] font-mono font-bold uppercase tracking-[0.22em] text-muted-foreground mt-3">
+            Operations Portal
+          </span>
         </div>
 
         {/* Form container */}
         <div className="w-full">
-          <div className="w-full bg-card border border-border rounded-lg overflow-hidden shadow-lg">
+          <div className="w-full bg-card border border-border rounded-xl overflow-hidden">
             {formMode === "login" && (
               <div className="p-6 sm:p-8">
                 {formError && (

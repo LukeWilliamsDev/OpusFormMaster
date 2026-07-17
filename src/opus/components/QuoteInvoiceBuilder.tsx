@@ -350,7 +350,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
       if (error) throw error;
 
-      setLastSaved(new Date().toLocaleTimeString());
+      setLastSaved(new Date().toLocaleTimeString("en-GB"));
       loadSavedQuotes();
 
       // Do NOT reset inputs. Just clear the "Saved" message on button after a short delay

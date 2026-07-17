@@ -173,27 +173,29 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
         </AnimatePresence>
       </div>
 
-      <div className="hidden md:grid md:grid-cols-5 gap-3">
-        {group === "staff" ? (
-          <WeekGridStaff
-            weekDays={weekDays}
-            weekSchedule={weekSchedule}
-            onAssign={(worker, assignDate) =>
-              setAssignTarget({ mode: "pickProject", worker, date: assignDate })
-            }
-            onRemoveShift={removeShift}
-          />
-        ) : (
-          <WeekGridProject
-            jobs={jobs}
-            weekDays={weekDays}
-            weekSchedule={weekSchedule}
-            onAddStaff={(job, assignDate) =>
-              setAssignTarget({ mode: "pickWorker", job, date: assignDate })
-            }
-            onRemoveShift={removeShift}
-          />
-        )}
+      <div className="hidden md:block overflow-x-auto pb-2 -mx-1 px-1">
+        <div className="grid grid-cols-[repeat(5,minmax(240px,1fr))] gap-3">
+          {group === "staff" ? (
+            <WeekGridStaff
+              weekDays={weekDays}
+              weekSchedule={weekSchedule}
+              onAssign={(worker, assignDate) =>
+                setAssignTarget({ mode: "pickProject", worker, date: assignDate })
+              }
+              onRemoveShift={removeShift}
+            />
+          ) : (
+            <WeekGridProject
+              jobs={jobs}
+              weekDays={weekDays}
+              weekSchedule={weekSchedule}
+              onAddStaff={(job, assignDate) =>
+                setAssignTarget({ mode: "pickWorker", job, date: assignDate })
+              }
+              onRemoveShift={removeShift}
+            />
+          )}
+        </div>
       </div>
 
       <AssignSheet

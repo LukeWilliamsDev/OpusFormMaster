@@ -830,7 +830,10 @@ export const SubmitCredentialsPage: React.FC = () => {
                           </p>
                         )}
                         <p className="text-[9px] text-zinc-500 uppercase tracking-widest mt-0.5">
-                          Expires: {slot.expiryDate || "—"}
+                          Expires:{" "}
+                          {slot.expiryDate
+                            ? new Date(slot.expiryDate).toLocaleDateString("en-GB")
+                            : "—"}
                         </p>
                       </div>
                       {/* Status + edit */}

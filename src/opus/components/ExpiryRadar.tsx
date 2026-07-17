@@ -165,7 +165,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
                         {style.daysText}
                       </span>
                       <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">
-                        Exp: {ticketInfo.expiryDate}
+                        Exp: {new Date(ticketInfo.expiryDate).toLocaleDateString("en-GB")}
                       </span>
                     </div>
                   </div>

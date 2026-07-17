@@ -853,7 +853,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                         <img src={p.file_url} alt="before" className="w-full h-24 object-cover" />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-muted-foreground">
                           <span className="text-white font-bold truncate">{p.uploaded_by}</span>
-                          <span>{new Date(p.uploaded_at).toLocaleDateString()}</span>
+                          <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
                         </div>
                       </div>
                     ))}
@@ -900,7 +900,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                         <img src={p.file_url} alt="after" className="w-full h-24 object-cover" />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-muted-foreground">
                           <span className="text-white font-bold truncate">{p.uploaded_by}</span>
-                          <span>{new Date(p.uploaded_at).toLocaleDateString()}</span>
+                          <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
                         </div>
                       </div>
                     ))}
@@ -1000,7 +1000,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                   </a>
                 </div>
                 <div className="text-[9px] text-muted-foreground font-medium">
-                  {new Date(d.uploaded_at).toLocaleDateString()}
+                  {new Date(d.uploaded_at).toLocaleDateString("en-GB")}
                 </div>
               </div>
             ))}

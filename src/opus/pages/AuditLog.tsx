@@ -451,7 +451,7 @@ export const AuditLogPage: React.FC = () => {
                     Timestamp
                   </p>
                   <p className="text-zinc-300 mt-0.5">
-                    {new Date(selectedLog.created_at).toLocaleString()}
+                    {new Date(selectedLog.created_at).toLocaleString("en-GB")}
                   </p>
                 </div>
                 <div>

@@ -27,18 +27,18 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
       return (
         <div
           key={day.date}
-          className="min-w-0 border border-border rounded-xl bg-card p-2.5 space-y-2.5"
+          className="min-w-0 border border-border rounded-xl bg-card p-3 space-y-3"
         >
           <div className="flex items-center justify-between gap-1.5 px-0.5">
             <div className="flex items-baseline gap-1.5 min-w-0">
-              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
                 {day.shortName}
               </span>
-              <span className="text-[10px] font-bold font-mono text-gray-500">
+              <span className="text-[11px] font-bold font-mono text-gray-500">
                 {day.date.split("-")[2]}
               </span>
             </div>
-            <span className="text-[10px] font-black text-success shrink-0">
+            <span className="text-[11px] font-black text-success shrink-0">
               {schedule?.deployedCount ?? 0}
             </span>
           </div>

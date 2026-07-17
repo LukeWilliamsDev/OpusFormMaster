@@ -47,6 +47,7 @@ interface RosterViewProps {
   jobs?: Job[];
   selectedWorkerDetailsId?: string | null;
   setSelectedWorkerDetailsId?: (id: string | null) => void;
+  autoOpenAddWorker?: boolean;
 }
 
 export const ON_SITE_CERTIFICATIONS = [
@@ -100,10 +101,16 @@ export const RosterView: React.FC<RosterViewProps> = ({
   jobs = [],
   selectedWorkerDetailsId: propSelectedWorkerDetailsId,
   setSelectedWorkerDetailsId: propSetSelectedWorkerDetailsId,
+  autoOpenAddWorker = false,
 }) => {
-  const { profile } = usePortal();
+  const { profile, role } = usePortal();
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddWorkerForm, setShowAddWorkerForm] = useState(false);
+
+  useEffect(() => {
+    if (autoOpenAddWorker) setShowAddWorkerForm(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenAddWorker]);
 
   const [newWorkerName, setNewWorkerName] = useState("");
   const [newWorkerRole, setNewWorkerRole] = useState<string>("Concrete Operative");
@@ -127,6 +134,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       : setLocalSelectedWorkerDetailsId;
 
   const [selectedWorkerToDelete, setSelectedWorkerToDelete] = useState<Worker | null>(null);
+  const [ticketToRemove, setTicketToRemove] = useState<Ticket | null>(null);
   const [selectedWorkerToPermanentDelete, setSelectedWorkerToPermanentDelete] =
     useState<Worker | null>(null);
   const [selectedWorkerToRestore, setSelectedWorkerToRestore] = useState<Worker | null>(null);
@@ -443,6 +451,45 @@ export const RosterView: React.FC<RosterViewProps> = ({
       fetchLogsAndRequests();
     } catch (e) {
       console.error("Failed to update tickets or log audit:", e);
+    }
+  };
+
+  const removeTicket = async (workerId: string, ticket: Ticket) => {
+    const worker = workers.find((w) => w.id === workerId);
+    if (!worker) return;
+
+    const updatedTickets = worker.tickets.filter((t) => t.id !== ticket.id);
+    const updatedWorker = { ...worker, tickets: updatedTickets };
+
+    setWorkers((prev) => prev.map((w) => (w.id === workerId ? updatedWorker : w)));
+
+    try {
+      const { error: dbError } = await supabase
+        .from("staff")
+        .update({ tickets: updatedTickets })
+        .eq("id", workerId);
+
+      if (dbError) throw dbError;
+
+      await supabase.rpc("log_anonymous_audit", {
+        p_user_email: "admin@opusform.co.uk",
+        p_action: "REMOVE_DOCUMENT",
+        p_target_type: "staff",
+        p_target_id: workerId,
+        p_details: {
+          ticket_id: ticket.id,
+          ticket_type: ticket.type,
+          ticket_number: ticket.ticketNumber,
+        },
+      });
+
+      fetchLogsAndRequests();
+      toast.success(`${ticket.type} removed from compliance record`);
+    } catch (e: any) {
+      console.error("Failed to remove ticket or log audit:", e);
+      toast.error("Failed to remove compliance record", { description: e.message });
+      // Roll back the optimistic update
+      setWorkers((prev) => prev.map((w) => (w.id === workerId ? worker : w)));
     }
   };
 
@@ -1138,13 +1185,24 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
                     <div className="flex sm:justify-end">
                       {isExpired ? (
-                        <button
-                          type="button"
-                          onClick={() => setShowReminderConfirm(true)}
-                          className="w-full sm:w-auto px-3.5 py-1.5 bg-red-950/20 border border-red-900/30 hover:bg-red-950/40 text-red-400 rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
-                        >
-                          Request Update
-                        </button>
+                        <div className="flex gap-2 w-full sm:w-auto">
+                          <button
+                            type="button"
+                            onClick={() => setShowReminderConfirm(true)}
+                            className="w-full sm:w-auto px-3.5 py-1.5 bg-red-950/20 border border-red-900/30 hover:bg-red-950/40 text-red-400 rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                          >
+                            Request Update
+                          </button>
+                          {role === "admin" && (
+                            <button
+                              type="button"
+                              onClick={() => setTicketToRemove(ticket)}
+                              className="w-full sm:w-auto px-3.5 py-1.5 border border-zinc-800 hover:bg-zinc-800 text-neutral-400 hover:text-red-400 rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <div className="flex gap-2 w-full sm:w-auto">
                           <button
@@ -1179,6 +1237,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                 Reject
                               </button>
                             </>
+                          )}
+                          {!isPending && role === "admin" && (
+                            <button
+                              type="button"
+                              onClick={() => setTicketToRemove(ticket)}
+                              className="w-full sm:w-auto px-3.5 py-1.5 border border-zinc-800 hover:bg-zinc-800 text-neutral-400 hover:text-red-400 rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                            >
+                              Remove
+                            </button>
                           )}
                         </div>
                       )}
@@ -1692,6 +1759,37 @@ export const RosterView: React.FC<RosterViewProps> = ({
               console.error("Failed to archive staff profile:", err);
               toast.error("Failed to archive profile", { description: err.message });
             }
+          }}
+        />
+
+        {/* Remove Compliance Ticket Confirmation Modal */}
+        <ConfirmDialog
+          open={!!ticketToRemove}
+          onOpenChange={(open) => {
+            if (!open) setTicketToRemove(null);
+          }}
+          tone="destructive"
+          title="Remove Compliance Record"
+          message={
+            ticketToRemove &&
+            selectedWorkerDetails && (
+              <>
+                Are you sure you want to remove{" "}
+                <span className="font-bold text-foreground">{ticketToRemove.type}</span> from{" "}
+                <span className="font-bold text-foreground">{selectedWorkerDetails.name}</span>'s
+                compliance record?
+                <br />
+                <br />
+                This permanently deletes the ticket entry. This cannot be undone from here — the
+                worker will need to re-upload the document if it's still required.
+              </>
+            )
+          }
+          confirmLabel="Remove Record"
+          onConfirm={async () => {
+            if (!ticketToRemove || !selectedWorkerDetails) return;
+            await removeTicket(selectedWorkerDetails.id, ticketToRemove);
+            setTicketToRemove(null);
           }}
         />
 

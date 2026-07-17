@@ -1,8 +1,40 @@
 // @ts-nocheck
-import { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { usePortal } from "../context/PortalContext";
+
+const slugify = (title: string) =>
+  title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+/**
+ * Walks the page's <Section> children to build a table of contents and
+ * stamp each section with a scroll-target id, without every legal page
+ * needing to manage anchors itself.
+ */
+const useTableOfContents = (children: React.ReactNode) => {
+  return useMemo(() => {
+    const toc: { id: string; title: string }[] = [];
+    const stamped = React.Children.map(children, (child) => {
+      if (!React.isValidElement(child) || !child.props?.title) return child;
+      const id = slugify(child.props.title);
+      toc.push({ id, title: child.props.title });
+      return React.cloneElement(child, { id });
+    });
+    return { toc, stamped };
+  }, [children]);
+};
+
+// The app uses HashRouter, which already owns the URL's `#` for routing —
+// a plain `href="#id"` anchor would be intercepted as a route change
+// instead of scrolling. Scroll manually and skip the hash entirely.
+const scrollToSection = (e: React.MouseEvent, id: string) => {
+  e.preventDefault();
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+};
 
 interface LegalPageLayoutProps {
   title: string;
@@ -54,10 +86,12 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
     ];
   };
 
+  const { toc, stamped } = useTableOfContents(children);
+
   if (isAuthenticated) {
     return (
       <div className="flex-1 min-h-0 bg-background text-foreground overflow-y-auto px-4 sm:px-6 py-6 pb-20">
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Breadcrumb style back action */}
           <button
             onClick={() => navigate(-1)}
@@ -73,24 +107,42 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
 
           {/* Title block */}
           <div className="mb-6">
-            <div className="flex items-center gap-2.5 mb-2.5">
-              <Shield className="w-4 h-4 text-primary" />
-              <span className="text-[10px] font-mono font-bold uppercase tracking-[0.22em] text-primary">
-                Internal Legal & Compliance
-              </span>
-            </div>
             <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-foreground leading-tight">
               {title}
             </h1>
-            <p className="text-[10px] font-mono uppercase tracking-[0.15em] mt-1 text-muted-foreground">
+            <p className="text-[10px] font-mono uppercase tracking-[0.15em] mt-1.5 text-muted-foreground">
               Last updated: {lastUpdated}
             </p>
           </div>
 
           <div className="h-px mb-6 bg-border" />
 
-          {/* Legal content */}
-          <div className="legal-content space-y-6">{children}</div>
+          <div className="lg:grid lg:grid-cols-[200px_1fr] lg:gap-10">
+            {/* Section nav */}
+            {toc.length > 0 && (
+              <nav className="hidden lg:block sticky top-6 self-start">
+                <span className="block text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground mb-3">
+                  On this page
+                </span>
+                <ul className="space-y-2">
+                  {toc.map((item) => (
+                    <li key={item.id}>
+                      <a
+                        href={`#${item.id}`}
+                        onClick={(e) => scrollToSection(e, item.id)}
+                        className="block text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors duration-200 leading-snug"
+                      >
+                        {item.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
+
+            {/* Legal content */}
+            <div className="legal-content space-y-6 min-w-0 max-w-3xl">{stamped}</div>
+          </div>
 
           {/* Inline footer links */}
           <div className="border-t border-border mt-12 pt-6 flex flex-wrap gap-x-6 gap-y-2 justify-center">
@@ -127,7 +179,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
         className="sticky top-0 z-30 border-b backdrop-blur-md"
         style={{ borderColor: "var(--border)", backgroundColor: "color-mix(in srgb, var(--background) 92%, transparent)" }}
       >
-        <div className="max-w-3xl mx-auto flex items-center justify-between px-6 py-4">
+        <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <button
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200"
@@ -140,13 +192,13 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             Back
           </button>
           <Link to="/" className="flex items-center gap-2" aria-label="Home">
-            <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-6 w-auto" />
+            <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-8 w-auto" />
           </Link>
         </div>
       </header>
 
       {/* Content */}
-      <main className="max-w-3xl mx-auto px-6 py-10 pb-20 relative z-10">
+      <main className="max-w-6xl mx-auto px-6 py-10 pb-20 relative z-10">
         {/* Title block */}
         <div
           className="mb-10 sm:mb-12 transition-all duration-700 ease-out"
@@ -155,15 +207,6 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             transform: visible ? "translateY(0)" : "translateY(16px)",
           }}
         >
-          <div className="flex items-center gap-2.5 mb-5">
-            <Shield className="w-4 h-4" style={{ color: "var(--primary)" }} />
-            <span
-              className="text-[10px] font-mono font-bold uppercase tracking-[0.22em]"
-              style={{ color: "var(--primary)" }}
-            >
-              Legal & Compliance
-            </span>
-          </div>
           <h1
             className="text-[22px] sm:text-[26px] font-bold tracking-tight leading-tight"
             style={{ color: "var(--foreground)" }}
@@ -171,7 +214,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             {title}
           </h1>
           <p
-            className="text-[11px] font-mono uppercase tracking-[0.15em] mt-3"
+            className="text-[11px] font-mono uppercase tracking-[0.15em] mt-2"
             style={{ color: "var(--muted-foreground)" }}
           >
             Last updated: {lastUpdated}
@@ -181,15 +224,45 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
         {/* Divider */}
         <div className="h-px mb-8" style={{ backgroundColor: "var(--border)" }} />
 
-        {/* Legal content */}
-        <div
-          className="legal-content space-y-8 transition-all duration-700 ease-out"
-          style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? "translateY(0)" : "translateY(16px)",
-          }}
-        >
-          {children}
+        <div className="lg:grid lg:grid-cols-[200px_1fr] lg:gap-10">
+          {/* Section nav */}
+          {toc.length > 0 && (
+            <nav className="hidden lg:block sticky top-24 self-start">
+              <span
+                className="block text-[10px] font-mono font-bold uppercase tracking-[0.18em] mb-3"
+                style={{ color: "var(--muted-foreground)" }}
+              >
+                On this page
+              </span>
+              <ul className="space-y-2">
+                {toc.map((item) => (
+                  <li key={item.id}>
+                    <a
+                      href={`#${item.id}`}
+                      onClick={(e) => scrollToSection(e, item.id)}
+                      className="block text-[11px] font-medium transition-colors duration-200 leading-snug"
+                      style={{ color: "var(--muted-foreground)" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--primary)")}
+                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted-foreground)")}
+                    >
+                      {item.title}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          )}
+
+          {/* Legal content */}
+          <div
+            className="legal-content space-y-8 min-w-0 max-w-3xl transition-all duration-700 ease-out"
+            style={{
+              opacity: visible ? 1 : 0,
+              transform: visible ? "translateY(0)" : "translateY(16px)",
+            }}
+          >
+            {stamped}
+          </div>
         </div>
       </main>
 
@@ -246,11 +319,12 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
 
 /* Reusable sub-components for consistent legal page formatting */
 
-export const Section: React.FC<{ title: string; children: React.ReactNode }> = ({
+export const Section: React.FC<{ title: string; children: React.ReactNode; id?: string }> = ({
   title,
   children,
+  id,
 }) => (
-  <section>
+  <section id={id} style={{ scrollMarginTop: "6rem" }}>
     <h2
       className="text-[11px] font-mono font-bold uppercase tracking-[0.2em] mb-4"
       style={{ color: "var(--primary)" }}

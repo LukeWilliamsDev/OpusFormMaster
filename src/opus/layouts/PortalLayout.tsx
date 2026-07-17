@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState } from "react";
-import { NavLink, Outlet, useNavigate, Link, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
   HardHat,
@@ -10,10 +10,10 @@ import {
   History,
   LogOut,
   Menu,
+  Moon,
+  Sun,
   X,
   User as UserIcon,
-  PanelLeftClose,
-  PanelLeftOpen,
   Shield,
   ShieldCheck,
 } from "lucide-react";
@@ -21,9 +21,11 @@ import { motion, AnimatePresence } from "motion/react";
 import { usePortal } from "../context/PortalContext";
 import { getAvatarPresetClass } from "../pages/Settings";
 import { NavList } from "@/components/application/app-navigation/base-components/nav-list";
+import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 
 export const PortalLayout: React.FC = () => {
-  const { signOut, role, user, profile, theme } = usePortal();
+  const { signOut, role, user, profile, theme, setTheme } = usePortal();
+  const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
   const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
@@ -109,100 +111,24 @@ export const PortalLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 selection:text-white flex flex-col lg:flex-row">
       {/* Desktop Sidebar */}
-      <aside
-        className={`hidden lg:flex flex-col ${isSidebarCollapsed ? "w-16" : "w-52 xl:w-56"} bg-muted/30 border-r border-border shrink-0 sticky top-0 h-screen z-40 transition-[width] duration-200`}
-      >
-        {/* Sidebar Header */}
-        <div
-          className={`p-4 border-b border-border flex items-center ${isSidebarCollapsed ? "justify-center" : "justify-between"}`}
-        >
-          {!isSidebarCollapsed && (
-            <Link to="/portal/dashboard" className="flex items-center group min-w-0">
-              <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
-            </Link>
-          )}
-          <button
-            onClick={toggleSidebar}
-            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer shrink-0"
-            title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isSidebarCollapsed ? (
-              <PanelLeftOpen className="w-4 h-4" />
-            ) : (
-              <PanelLeftClose className="w-4 h-4" />
-            )}
-          </button>
-        </div>
-
-        {/* Current Active User Profile Banner (Interactive) */}
-        <Link
-          to="/portal/settings"
-          className={`${isSidebarCollapsed ? "px-0 py-3 justify-center" : "px-4 py-3 space-x-3"} border-b border-border bg-muted/20 hover:bg-muted/40 transition-all flex items-center group cursor-pointer`}
-          title={isSidebarCollapsed ? profile?.full_name || user?.email || "User" : undefined}
-        >
-          <div
-            className={`w-7 h-7 rounded-full bg-gradient-to-br ${getAvatarPresetClass(profile?.avatar_url)} flex items-center justify-center border border-border shrink-0`}
-          >
-            {profile?.full_name ? (
-              <span className="text-[11px] font-black tracking-wider text-white">
-                {profile.full_name
-                  .split(" ")
-                  .map((p) => p[0])
-                  .join("")
-                  .toUpperCase()
-                  .slice(0, 2)}
-              </span>
-            ) : (
-              <UserIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
-            )}
-          </div>
-          {!isSidebarCollapsed && (
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-[12px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
-                {profile?.full_name || user?.email || "User"}
-              </span>
-              <div className="flex items-center space-x-1.5 mt-0.5">
-                <Shield className="w-3 h-3 text-success" />
-                <span className="text-[11px] text-success capitalize font-medium">
-                  {role || "operative"}
-                </span>
-              </div>
-            </div>
-          )}
-        </Link>
-
-        {/* Desktop Sidebar Navigation */}
-        <nav className={`flex-1 py-4 space-y-1 overflow-y-auto ${isSidebarCollapsed ? "px-2" : "px-3"}`}>
-          <NavList
-            items={navItems.map((item) => ({ label: item.name, href: item.path, icon: item.icon }))}
-            iconOnly={isSidebarCollapsed}
-            isActive={(item) => checkIsActive(navItems.find((n) => n.name === item.label)!.path)}
-          />
-        </nav>
-
-        {/* Sidebar Footer — Legal & Logout */}
-        <div
-          className={`border-t border-border bg-muted/20 ${isSidebarCollapsed ? "p-2 space-y-1" : "p-3 space-y-1"}`}
-        >
-          <NavLink
-            to="/portal/privacy"
-            title={isSidebarCollapsed ? "Legal & Privacy" : undefined}
-            className={`flex items-center w-full py-2 text-[11px] font-medium text-muted-foreground hover:text-primary rounded-lg transition-all ${isSidebarCollapsed ? "justify-center px-0" : "px-3 space-x-3"}`}
-          >
-            <Shield className="w-3.5 h-3.5 shrink-0" />
-            {!isSidebarCollapsed && <span className="tracking-wide">Legal & Privacy</span>}
-          </NavLink>
-          <button
-            onClick={handleLogoutClick}
-            title={isSidebarCollapsed ? "Log Out" : undefined}
-            className={`flex items-center w-full py-2.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground hover:bg-destructive/10 rounded-lg transition-all cursor-pointer ${isSidebarCollapsed ? "justify-center px-0" : "justify-between px-3 hover:border-l-4 hover:border-destructive"}`}
-          >
-            {!isSidebarCollapsed && <span className="tracking-wide">Log Out</span>}
-            <LogOut className="w-4 h-4 shrink-0" />
-          </button>
-        </div>
-      </aside>
+      <SidebarNavigationSlim
+        items={navItems.map((item) => ({ label: item.name, href: item.path, icon: item.icon }))}
+        footerItems={[{ label: "Legal & Privacy", href: "/portal/privacy", icon: Shield }]}
+        isActive={(item) => checkIsActive(item.href!)}
+        collapsed={isSidebarCollapsed}
+        onToggleCollapse={toggleSidebar}
+        logoSrc={logoSrc}
+        logoHref="/portal/dashboard"
+        profile={{
+          name: profile?.full_name || user?.email || "User",
+          role: role || "operative",
+          avatarClass: getAvatarPresetClass(profile?.avatar_url),
+          href: "/portal/settings",
+        }}
+        onLogout={handleLogoutClick}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+      />
 
       {/* Mobile Sticky Header */}
       <header className="lg:hidden flex items-center justify-between h-16 bg-background border-b border-border px-4 sticky top-0 z-40">
@@ -210,6 +136,13 @@ export const PortalLayout: React.FC = () => {
           <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
         </Link>
         <div className="flex items-center space-x-2">
+          <button
+            onClick={toggleTheme}
+            className="p-2 text-muted-foreground hover:text-foreground cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Toggle light/dark theme"
+          >
+            {theme === "light" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+          </button>
           {/* Audit Admin Logout for mobile */}
           {user?.email === "admin@opusform.co.uk" && (
             <button
@@ -297,29 +230,37 @@ export const PortalLayout: React.FC = () => {
               </Link>
 
               {/* Mobile Drawer Menu Links */}
-              <nav className="space-y-1.5 flex-1 overflow-y-auto">
-                {navItems.map((item) => {
-                  const isActive = checkIsActive(item.path);
-                  const Icon = item.icon;
-                  return (
-                    <NavLink
-                      key={item.name}
-                      to={item.path}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-[13px] font-semibold tracking-wide transition-colors min-h-[44px] ${
-                        isActive
-                          ? "bg-primary/10 text-foreground border-l-4 border-primary"
-                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span>{item.name}</span>
-                    </NavLink>
-                  );
-                })}
+              <nav
+                className="space-y-1.5 flex-1 overflow-y-auto"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <NavList
+                  items={navItems.map((item) => ({ label: item.name, href: item.path, icon: item.icon }))}
+                  isActive={(item) => checkIsActive(item.href!)}
+                />
               </nav>
 
-              <div className="mt-auto pt-4 border-t border-border">
+              <div className="mt-auto pt-4 border-t border-border space-y-2">
+                <div className="flex items-center justify-between px-1 py-1.5">
+                  <span className="text-[13px] font-semibold text-muted-foreground">
+                    Light / Dark
+                  </span>
+                  <button
+                    onClick={toggleTheme}
+                    role="switch"
+                    aria-checked={theme === "light"}
+                    aria-label="Toggle light/dark theme"
+                    className="relative w-11 h-6 shrink-0 rounded-full bg-secondary border border-border transition-colors cursor-pointer"
+                  >
+                    <Sun className="absolute left-1 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                    <Moon className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                    <span
+                      className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-primary shadow transition-transform duration-200 ${
+                        theme === "light" ? "translate-x-5" : ""
+                      }`}
+                    />
+                  </button>
+                </div>
                 <button
                   onClick={() => {
                     setIsMobileMenuOpen(false);

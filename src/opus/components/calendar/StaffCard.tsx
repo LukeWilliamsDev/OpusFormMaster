@@ -37,7 +37,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
   return (
     <div
       className={`border rounded-xl bg-card transition-all ${
-        dense ? "p-2.5 space-y-2" : "p-4 space-y-3"
+        dense ? "p-3 space-y-2" : "p-4 space-y-3"
       } ${isAssigned ? "border-border" : "border-border opacity-60 hover:opacity-100"}`}
     >
       <div className="flex items-start justify-between gap-2.5">
@@ -56,7 +56,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
           <div className="min-w-0">
             <h4
               className={`font-bold text-foreground leading-tight ${
-                dense ? "text-xs truncate whitespace-nowrap max-w-[110px]" : "text-sm break-words"
+                dense ? "text-xs truncate whitespace-nowrap max-w-[150px]" : "text-sm break-words"
               }`}
               title={worker.name}
             >
@@ -64,7 +64,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
             </h4>
             <p
               className={`text-gray-500 font-bold uppercase tracking-widest mt-1 ${
-                dense ? "text-[10px]" : "text-[11px]"
+                dense ? "text-[11px]" : "text-[11px]"
               }`}
             >
               {worker.role}

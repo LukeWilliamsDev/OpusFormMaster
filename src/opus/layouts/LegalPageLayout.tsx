@@ -63,7 +63,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             onClick={() => navigate(-1)}
             className="flex items-center gap-2 text-[10px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200 mb-6"
             style={{ color: "var(--primary)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#F4F4F0")}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "var(--foreground)")}
             onMouseLeave={(e) => (e.currentTarget.style.color = "var(--primary)")}
             aria-label="Go back"
           >
@@ -82,7 +82,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             <h1 className="text-[20px] sm:text-[24px] font-bold tracking-tight text-foreground leading-tight">
               {title}
             </h1>
-            <p className="text-[10px] font-mono uppercase tracking-[0.15em] mt-1 text-[#555558]">
+            <p className="text-[10px] font-mono uppercase tracking-[0.15em] mt-1 text-muted-foreground">
               Last updated: {lastUpdated}
             </p>
           </div>
@@ -98,7 +98,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
               <Link
                 key={link.path}
                 to={link.path}
-                className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-[#888888] hover:text-primary transition-colors duration-200"
+                className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-primary transition-colors duration-200"
               >
                 {link.label}
               </Link>

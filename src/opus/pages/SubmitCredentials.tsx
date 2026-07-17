@@ -324,11 +324,11 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
         />
       </div>
       {/* Desktop text */}
-      <span className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-white">
+      <span className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-foreground">
         Drag & Drop or Click to Upload
       </span>
       {/* Mobile text */}
-      <span className="sm:hidden text-[10px] font-black uppercase tracking-widest text-white">
+      <span className="sm:hidden text-[10px] font-black uppercase tracking-widest text-foreground">
         Tap to Upload
       </span>
       <span className="text-[8px] text-zinc-500 uppercase tracking-widest mt-1.5">
@@ -603,7 +603,7 @@ export const SubmitCredentialsPage: React.FC = () => {
   // Loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1A1B1E] flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-2 border-brand-accent/20 border-t-brand-accent animate-spin" />
       </div>
     );
@@ -612,12 +612,12 @@ export const SubmitCredentialsPage: React.FC = () => {
   // Error (no request data)
   if (errorMsg && !requestData) {
     return (
-      <div className="min-h-screen bg-[#1A1B1E] flex items-center justify-center p-4">
-        <div className="bg-[#222428] border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl shadow-red-500/5">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl shadow-red-500/5">
           <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
             <ShieldAlert className="w-6 h-6 text-red-400" />
           </div>
-          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">
+          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground">
             Access Denied
           </h3>
           <p className="text-[10px] text-zinc-500 uppercase tracking-widest leading-relaxed">
@@ -631,14 +631,14 @@ export const SubmitCredentialsPage: React.FC = () => {
   // Success
   if (submitSuccess) {
     return (
-      <div className="min-h-screen bg-[#1A1B1E] flex items-center justify-center p-4">
-        <div className="bg-[#222428] border border-emerald-500/20 rounded-2xl p-10 max-w-md w-full text-center space-y-6 shadow-2xl">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="bg-card border border-emerald-500/20 rounded-2xl p-10 max-w-md w-full text-center space-y-6 shadow-2xl">
           <AnimatedCheckmark />
           <div className="space-y-2">
             <p className="text-[9px] font-black text-brand-accent uppercase tracking-[0.3em] font-archivo">
               OPUS FORM
             </p>
-            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white">
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground">
               Submission Complete
             </h3>
             <p className="text-[10px] text-zinc-500 uppercase tracking-widest leading-relaxed max-w-xs mx-auto">
@@ -662,7 +662,7 @@ export const SubmitCredentialsPage: React.FC = () => {
   const activeSlot = !isReviewStep ? slots[currentStep] : null;
 
   return (
-    <div className="min-h-screen bg-[#1A1B1E] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       {/* Keyframe animations */}
       <style>{`
         @keyframes scaleIn {
@@ -681,7 +681,7 @@ export const SubmitCredentialsPage: React.FC = () => {
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
         {/* ─── Header / Branding ─────────────────────────────────── */}
         <div className="text-center space-y-3">
-          <p className="text-[11px] font-black uppercase tracking-[0.35em] font-archivo text-white">
+          <p className="text-[11px] font-black uppercase tracking-[0.35em] font-archivo text-foreground">
             OPUS FORM
           </p>
           <div className="h-0.5 w-10 bg-brand-accent mx-auto rounded-full" />
@@ -691,13 +691,13 @@ export const SubmitCredentialsPage: React.FC = () => {
         </div>
 
         {/* ─── Greeting Card ─────────────────────────────────────── */}
-        <div className="bg-[#222428] border border-white/10 rounded-2xl p-5 shadow-xl">
+        <div className="bg-card border border-white/10 rounded-2xl p-5 shadow-xl">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-xl bg-brand-accent/10 flex items-center justify-center shrink-0 border border-brand-accent/20">
               <AlertCircle className="w-5 h-5 text-brand-accent" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs font-black uppercase tracking-wider text-white">
+              <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
                 Hi, {staffName}
               </h4>
               <p className="text-[9px] text-zinc-400 uppercase tracking-widest mt-1.5 leading-relaxed">
@@ -719,14 +719,14 @@ export const SubmitCredentialsPage: React.FC = () => {
         >
           {/* ─── PER-CERT STEP ─────────────────────────────────── */}
           {!isReviewStep && activeSlot && (
-            <div className="bg-[#222428] border border-white/10 rounded-2xl p-6 shadow-2xl space-y-5">
+            <div className="bg-card border border-white/10 rounded-2xl p-6 shadow-2xl space-y-5">
               {/* Cert header */}
               <div className="pb-4 border-b border-white/5 flex items-center justify-between gap-3">
                 {openEnded ? (
                   <select
                     value={activeSlot.cert}
                     onChange={(e) => updateSlot(currentStep, { cert: e.target.value })}
-                    className="flex-1 min-w-0 bg-black/20 border border-[#333] hover:border-[#444] focus:border-brand-accent rounded-xl px-3 py-2.5 text-xs text-white uppercase font-black tracking-wider outline-none appearance-none transition-colors"
+                    className="flex-1 min-w-0 bg-black/20 border border-border hover:border-muted-foreground/50 focus:border-brand-accent rounded-xl px-3 py-2.5 text-xs text-foreground uppercase font-black tracking-wider outline-none appearance-none transition-colors"
                   >
                     {ON_SITE_CERTIFICATIONS.map((cert) => (
                       <option key={cert} value={cert}>
@@ -739,7 +739,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                     <p className="text-[8px] text-zinc-500 uppercase tracking-widest mb-1">
                       Step {currentStep + 1} of {slots.length}
                     </p>
-                    <h4 className="text-xs font-black uppercase tracking-widest text-white leading-normal">
+                    <h4 className="text-xs font-black uppercase tracking-widest text-foreground leading-normal">
                       {activeSlot.cert}
                     </h4>
                   </div>
@@ -781,7 +781,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                   type="date"
                   value={activeSlot.expiryDate}
                   onChange={(e) => updateSlot(currentStep, { expiryDate: e.target.value })}
-                  className="w-full bg-black/20 border border-[#333] hover:border-[#444] focus:border-brand-accent rounded-xl px-4 py-3 text-xs text-white outline-none transition-colors min-h-[48px]"
+                  className="w-full bg-black/20 border border-border hover:border-muted-foreground/50 focus:border-brand-accent rounded-xl px-4 py-3 text-xs text-foreground outline-none transition-colors min-h-[48px]"
                 />
               </div>
 
@@ -797,8 +797,8 @@ export const SubmitCredentialsPage: React.FC = () => {
           {/* ─── REVIEW STEP ───────────────────────────────────── */}
           {isReviewStep && (
             <div className="space-y-4">
-              <div className="bg-[#222428] border border-white/10 rounded-2xl p-5 shadow-2xl">
-                <h4 className="text-xs font-black uppercase tracking-widest text-white mb-4 pb-3 border-b border-white/5">
+              <div className="bg-card border border-white/10 rounded-2xl p-5 shadow-2xl">
+                <h4 className="text-xs font-black uppercase tracking-widest text-foreground mb-4 pb-3 border-b border-white/5">
                   Review Your Submissions
                 </h4>
                 <div className="space-y-3">
@@ -821,7 +821,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                       )}
                       {/* Details */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-white truncate">
+                        <p className="text-[10px] font-black uppercase tracking-wider text-foreground truncate">
                           {slot.cert}
                         </p>
                         {slot.displayFilename && (
@@ -866,7 +866,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full py-4 bg-brand-accent hover:bg-brand-accent/80 disabled:opacity-50 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-accent/20 transition-all min-h-[52px] cursor-pointer flex items-center justify-center gap-2"
+                className="w-full py-4 bg-brand-accent hover:bg-brand-accent/80 disabled:opacity-50 text-primary-foreground rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-brand-accent/20 transition-all min-h-[52px] cursor-pointer flex items-center justify-center gap-2"
               >
                 {submitting ? (
                   <>
@@ -889,7 +889,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           <button
             type="button"
             onClick={addSlot}
-            className="w-full flex items-center justify-center gap-2 py-3.5 border-2 border-dashed border-zinc-700 hover:border-brand-accent/40 rounded-xl text-[9.5px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-colors cursor-pointer"
+            className="w-full flex items-center justify-center gap-2 py-3.5 border-2 border-dashed border-zinc-700 hover:border-brand-accent/40 rounded-xl text-[9.5px] font-black uppercase tracking-widest text-zinc-400 hover:text-foreground transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             Add Another Certification
@@ -903,7 +903,7 @@ export const SubmitCredentialsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={goBack}
-                className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[48px]"
+                className="flex-1 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-foreground transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[48px]"
               >
                 <ChevronLeft className="w-4 h-4" />
                 Back
@@ -915,7 +915,7 @@ export const SubmitCredentialsPage: React.FC = () => {
               disabled={!canAdvance()}
               className={`flex-1 py-3.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all min-h-[48px] flex items-center justify-center gap-2 cursor-pointer ${
                 canAdvance()
-                  ? "bg-brand-accent hover:bg-brand-accent/80 text-white shadow-lg shadow-brand-accent/20"
+                  ? "bg-brand-accent hover:bg-brand-accent/80 text-primary-foreground shadow-lg shadow-brand-accent/20"
                   : "bg-white/5 text-zinc-600 border border-white/5 cursor-not-allowed"
               }`}
             >
@@ -930,7 +930,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           <button
             type="button"
             onClick={goBack}
-            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-white transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[48px]"
+            className="w-full py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-foreground transition-all cursor-pointer flex items-center justify-center gap-2 min-h-[48px]"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Editing

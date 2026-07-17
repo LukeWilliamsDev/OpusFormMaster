@@ -9,8 +9,8 @@ export const Route = createFileRoute("/$")({
 
 function OpusSplat() {
   return (
-    <ClientOnly fallback={<div className="min-h-screen bg-[#1A1B1E]" />}>
-      <Suspense fallback={<div className="min-h-screen bg-[#1A1B1E]" />}>
+    <ClientOnly fallback={<div className="min-h-screen bg-background" />}>
+      <Suspense fallback={<div className="min-h-screen bg-background" />}>
         <OpusApp />
       </Suspense>
     </ClientOnly>

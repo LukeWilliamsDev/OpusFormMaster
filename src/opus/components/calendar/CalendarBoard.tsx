@@ -90,7 +90,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
               group === "staff"
                 ? "bg-primary border-primary text-white shadow-lg shadow-primary/10"
-                : "bg-[#16161a]/50 border-[#2a2a30] text-gray-400 hover:text-white"
+                : "bg-card/50 border-border text-gray-400 hover:text-foreground"
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
@@ -102,7 +102,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
               group === "project"
                 ? "bg-primary border-primary text-white shadow-lg shadow-primary/10"
-                : "bg-[#16161a]/50 border-[#2a2a30] text-gray-400 hover:text-white"
+                : "bg-card/50 border-border text-gray-400 hover:text-foreground"
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -116,7 +116,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              className="bg-[#16161a] border border-[#2a2a30] rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-primary transition-colors"
+              className="bg-card border border-border rounded-xl px-3 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
             >
               <option value="all">All Roles</option>
               {uniqueRoles.map((role) => (
@@ -134,7 +134,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search staff or projects…"
-              className="w-full bg-[#16161a] border border-[#2a2a30] rounded-xl pl-9 pr-3 py-2.5 text-xs text-white placeholder:text-gray-600 focus:outline-none focus:border-primary transition-colors"
+              className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2.5 text-xs text-foreground placeholder:text-gray-600 focus:outline-none focus:border-primary transition-colors"
             />
           </div>
         </div>

@@ -37,7 +37,7 @@ import { ModernSlaveryStatementPage } from "./pages/ModernSlaveryStatement";
 const ProtectedRoute: React.FC = () => {
   const { isAuthenticated, authLoading } = usePortal();
   if (authLoading) {
-    return <div className="min-h-screen bg-[#1A1B1E]" />;
+    return <div className="min-h-screen bg-background" />;
   }
   return isAuthenticated ? <PortalLayout /> : <Navigate to="/portal" replace />;
 };
@@ -50,7 +50,7 @@ const RoleGuard: React.FC<{
 }> = ({ allow, children }) => {
   const { role, user, authLoading } = usePortal();
   if (authLoading || role === null) {
-    return <div className="min-h-screen bg-[#1A1B1E]" />;
+    return <div className="min-h-screen bg-background" />;
   }
   // admin@opusform.co.uk can ONLY see the audit trail and policies
   if (user?.email === "admin@opusform.co.uk") {
@@ -68,7 +68,7 @@ const RoleGuard: React.FC<{
 const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { role, user, authLoading } = usePortal();
   if (authLoading || role === null) {
-    return <div className="min-h-screen bg-[#1A1B1E]" />;
+    return <div className="min-h-screen bg-background" />;
   }
   if (role !== "admin" || user?.email !== "admin@opusform.co.uk") {
     const fallback = role === "operative" ? "/portal/roster?view=calendar" : "/portal/dashboard";

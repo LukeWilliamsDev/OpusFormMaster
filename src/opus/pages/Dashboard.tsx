@@ -404,15 +404,15 @@ export const DashboardPage: React.FC = () => {
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white font-archivo uppercase">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground font-archivo uppercase">
             Concrete Operations Center
           </h1>
-          <p className="text-sm text-[#9a9a9e] mt-1 font-medium">
+          <p className="text-sm text-muted-foreground mt-1 font-medium">
             Overview for <span className="text-primary font-semibold">{user?.email}</span> — role:{" "}
-            <span className="text-[#10b981] font-semibold capitalize">{role}</span>
+            <span className="text-success font-semibold capitalize">{role}</span>
           </p>
         </div>
-        <div className="flex items-center space-x-3 text-[#9a9a9e] text-[12px] bg-[#1a1a1e] border border-[#2a2a30] py-2 px-3 rounded-lg self-start">
+        <div className="flex items-center space-x-3 text-muted-foreground text-[12px] bg-card border border-border py-2 px-3 rounded-lg self-start">
           <Clock className="w-4 h-4 text-primary" />
           <span className="font-semibold">
             {new Date().toLocaleDateString("en-GB", {
@@ -429,12 +429,12 @@ export const DashboardPage: React.FC = () => {
         <form onSubmit={handleCommandSubmit} className="relative">
           <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
             <Search
-              className={`w-5 h-5 transition-colors duration-200 ${isSearchFocused ? "text-primary" : "text-[#9a9a9e]"}`}
+              className={`w-5 h-5 transition-colors duration-200 ${isSearchFocused ? "text-primary" : "text-muted-foreground"}`}
             />
           </div>
           <input
             type="text"
-            className="w-full bg-[#1a1a1e] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary/40 rounded-xl pl-12 pr-28 py-3.5 text-sm text-white placeholder-[#9a9a9e]/60 outline-none transition-all duration-200 min-h-[48px]"
+            className="w-full bg-card border border-border focus:border-primary focus:ring-1 focus:ring-primary/40 rounded-xl pl-12 pr-28 py-3.5 text-sm text-foreground placeholder-muted-foreground/60 outline-none transition-all duration-200 min-h-[48px]"
             placeholder="Search site, staff name, role, or estimate ref..."
             value={commandInput}
             onChange={(e) => setCommandInput(e.target.value)}
@@ -442,14 +442,14 @@ export const DashboardPage: React.FC = () => {
             onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
           />
           <div className="absolute inset-y-0 right-3 flex items-center space-x-2">
-            <kbd className="hidden sm:inline-flex items-center bg-[#2a2a30] border border-[#3a3a42] text-[11px] px-2 py-0.5 rounded font-mono text-[#9a9a9e] font-semibold">
+            <kbd className="hidden sm:inline-flex items-center bg-secondary border border-border text-[11px] px-2 py-0.5 rounded font-mono text-muted-foreground font-semibold">
               ESC
             </kbd>
             {commandInput && (
               <button
                 type="button"
                 onClick={() => setCommandInput("")}
-                className="p-1 hover:bg-[#2a2a30] rounded text-[#9a9a9e] hover:text-white"
+                className="p-1 hover:bg-secondary rounded text-muted-foreground hover:text-foreground"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -464,11 +464,11 @@ export const DashboardPage: React.FC = () => {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 8 }}
-              className="absolute left-0 right-0 mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl shadow-2xl z-50 overflow-hidden"
+              className="absolute left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden"
             >
               {/* Data search matches */}
               {searchResults && (
-                <div className="max-h-80 overflow-y-auto divide-y divide-[#2a2a30] p-2 space-y-3">
+                <div className="max-h-80 overflow-y-auto divide-y divide-border p-2 space-y-3">
                   {/* Job Matches */}
                   {searchResults.jobs.length > 0 && (
                     <div>
@@ -480,18 +480,18 @@ export const DashboardPage: React.FC = () => {
                           <div
                             key={job.id}
                             onMouseDown={() => navigate(`/portal/ledger?jobId=${job.id}`)}
-                            className="px-3 py-2 hover:bg-[#2a2a30] rounded-lg cursor-pointer flex items-center justify-between"
+                            className="px-3 py-2 hover:bg-secondary rounded-lg cursor-pointer flex items-center justify-between"
                           >
                             <div className="flex items-center space-x-2.5">
                               <Briefcase className="w-4 h-4 text-primary" />
-                              <span className="text-[12px] font-semibold text-white">
+                              <span className="text-[12px] font-semibold text-foreground">
                                 {job.siteName}
                               </span>
-                              <span className="text-[11px] font-mono text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">
+                              <span className="text-[11px] font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
                                 {job.jobRef}
                               </span>
                             </div>
-                            <span className="text-[11px] text-[#9a9a9e] uppercase font-bold">
+                            <span className="text-[11px] text-muted-foreground uppercase font-bold">
                               {job.status}
                             </span>
                           </div>
@@ -513,18 +513,18 @@ export const DashboardPage: React.FC = () => {
                             onMouseDown={() =>
                               navigate(`/portal/roster?view=staff&workerId=${worker.id}`)
                             }
-                            className="px-3 py-2 hover:bg-[#2a2a30] rounded-lg cursor-pointer flex items-center justify-between"
+                            className="px-3 py-2 hover:bg-secondary rounded-lg cursor-pointer flex items-center justify-between"
                           >
                             <div className="flex items-center space-x-2.5">
                               <UserCheck className="w-4 h-4 text-primary" />
-                              <span className="text-[12px] font-semibold text-white">
+                              <span className="text-[12px] font-semibold text-foreground">
                                 {worker.name}
                               </span>
-                              <span className="text-[11px] text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">
+                              <span className="text-[11px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
                                 {worker.role}
                               </span>
                             </div>
-                            <span className="text-[11px] text-[#10b981] font-semibold">Ready</span>
+                            <span className="text-[11px] text-success font-semibold">Ready</span>
                           </div>
                         ))}
                       </div>
@@ -542,18 +542,18 @@ export const DashboardPage: React.FC = () => {
                           <div
                             key={quote.id}
                             onMouseDown={() => navigate(`/portal/pipeline?view=pipeline-registry`)}
-                            className="px-3 py-2 hover:bg-[#2a2a30] rounded-lg cursor-pointer flex items-center justify-between"
+                            className="px-3 py-2 hover:bg-secondary rounded-lg cursor-pointer flex items-center justify-between"
                           >
                             <div className="flex items-center space-x-2.5">
                               <FileText className="w-4 h-4 text-primary" />
-                              <span className="text-[12px] font-semibold text-white">
+                              <span className="text-[12px] font-semibold text-foreground">
                                 {quote.clientName}
                               </span>
-                              <span className="text-[11px] font-mono text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded">
+                              <span className="text-[11px] font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
                                 {quote.reference}
                               </span>
                             </div>
-                            <span className="text-[12px] font-mono text-white font-semibold">
+                            <span className="text-[12px] font-mono text-foreground font-semibold">
                               £{quote.netTotal.toLocaleString("en-GB")}
                             </span>
                           </div>
@@ -563,7 +563,7 @@ export const DashboardPage: React.FC = () => {
                   )}
 
                   {!searchResults.hasAny && (
-                    <div className="p-4 text-center text-[12px] text-[#9a9a9e]">
+                    <div className="p-4 text-center text-[12px] text-muted-foreground">
                       No matched jobs, staff, or quotes found for "{commandInput}"
                     </div>
                   )}
@@ -576,16 +576,16 @@ export const DashboardPage: React.FC = () => {
 
       {/* Timeframe selector header */}
       <div className="flex items-center justify-between mt-1">
-        <h2 className="text-xs font-black uppercase tracking-widest text-[#9a9a9e]">
+        <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
           Operations Summary
         </h2>
-        <div className="flex bg-[#16161a] border border-[#2a2a30] rounded-lg p-0.5">
+        <div className="flex bg-background border border-border rounded-lg p-0.5">
           {(["daily", "weekly", "monthly"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTimeframe(t)}
               className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
-                timeframe === t ? "bg-primary text-white" : "text-gray-400 hover:text-white"
+                timeframe === t ? "bg-primary text-foreground" : "text-gray-400 hover:text-foreground"
               }`}
             >
               {t}
@@ -597,13 +597,13 @@ export const DashboardPage: React.FC = () => {
       {/* 3 Metric Cards Row */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         {/* Metric 1 */}
-        <div className="bg-[#1a1a1e] border border-[#2a2a30] hover:border-primary/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
+        <div className="bg-card border border-border hover:border-primary/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 Active Job Sites
               </span>
-              <div className="text-3xl font-bold text-white mt-1 font-mono tracking-tight">
+              <div className="text-3xl font-bold text-foreground mt-1 font-mono tracking-tight">
                 {activeJobsFiltered.length}
               </div>
             </div>
@@ -615,7 +615,7 @@ export const DashboardPage: React.FC = () => {
                   cx="22"
                   cy="22"
                   r="18"
-                  stroke="#2a2a30"
+                  stroke="var(--border)"
                   strokeWidth="2.5"
                   fill="transparent"
                 />
@@ -638,7 +638,7 @@ export const DashboardPage: React.FC = () => {
                   }
                 />
               </svg>
-              <span className="absolute text-[8px] font-black text-white font-mono">
+              <span className="absolute text-[8px] font-black text-foreground font-mono">
                 {contractMaxPoursCountFiltered
                   ? Math.round((activePoursCountFiltered / contractMaxPoursCountFiltered) * 100)
                   : 0}
@@ -647,16 +647,16 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-[#2a2a30] flex flex-col gap-2">
-            <div className="flex items-center justify-between text-[11px] text-[#9a9a9e]">
+          <div className="mt-4 pt-3 border-t border-border flex flex-col gap-2">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span className="font-medium">Pours progress</span>
-              <span className="font-mono text-white font-bold">
+              <span className="font-mono text-foreground font-bold">
                 {activePoursCountFiltered} / {contractMaxPoursCountFiltered} Pours
               </span>
             </div>
             <button
               onClick={() => navigate("/portal/ledger")}
-              className="text-[10px] font-black uppercase tracking-wider text-primary hover:text-white transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
+              className="text-[10px] font-black uppercase tracking-wider text-primary hover:text-foreground transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
             >
               Log Pour / Inspect Ledger &rarr;
             </button>
@@ -664,34 +664,34 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Metric 2 */}
-        <div className="bg-[#1a1a1e] border border-[#2a2a30] hover:border-primary/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
+        <div className="bg-card border border-border hover:border-primary/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 Scheduled Crew
               </span>
-              <div className="text-3xl font-bold text-white mt-1 font-mono tracking-tight">
+              <div className="text-3xl font-bold text-foreground mt-1 font-mono tracking-tight">
                 {scheduledWorkersCountFiltered}
               </div>
             </div>
-            <UserCheck className="w-5 h-5 text-[#10b981] opacity-80" />
+            <UserCheck className="w-5 h-5 text-success opacity-80" />
           </div>
 
-          <div className="mt-4 pt-3 border-t border-[#2a2a30] flex flex-col gap-2">
+          <div className="mt-4 pt-3 border-t border-border flex flex-col gap-2">
             {/* Progress bar */}
             <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px] text-[#9a9a9e]">
+              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
                 <span>Crew active:</span>
-                <span className="font-mono text-white font-bold">
+                <span className="font-mono text-foreground font-bold">
                   {workers.length
                     ? Math.round((scheduledWorkersCountFiltered / workers.length) * 100)
                     : 0}
                   %
                 </span>
               </div>
-              <div className="w-full bg-[#2a2a30] h-1 rounded-full overflow-hidden">
+              <div className="w-full bg-secondary h-1 rounded-full overflow-hidden">
                 <div
-                  className="bg-[#10b981] h-full rounded-full transition-all duration-500"
+                  className="bg-success h-full rounded-full transition-all duration-500"
                   style={{
                     width: `${workers.length ? (scheduledWorkersCountFiltered / workers.length) * 100 : 0}%`,
                   }}
@@ -700,7 +700,7 @@ export const DashboardPage: React.FC = () => {
             </div>
             <button
               onClick={() => navigate("/portal/roster")}
-              className="text-[10px] font-black uppercase tracking-wider text-[#10b981] hover:text-white transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
+              className="text-[10px] font-black uppercase tracking-wider text-success hover:text-foreground transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
             >
               Manage Shift Dispatch &rarr;
             </button>
@@ -708,10 +708,10 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Metric 3 */}
-        <div className="bg-[#1a1a1e] border border-[#2a2a30] hover:border-primary/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
+        <div className="bg-card border border-border hover:border-primary/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
           <div className="flex justify-between items-start">
             <div>
-              <span className="text-[11px] font-bold text-[#9a9a9e] uppercase tracking-wider">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
                 Pipeline Run-Rate
               </span>
               <div className="text-3xl font-bold text-primary mt-1 font-mono tracking-tight">
@@ -755,14 +755,14 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-[#2a2a30] flex flex-col gap-2">
-            <div className="flex items-center justify-between text-[11px] text-[#9a9a9e]">
+          <div className="mt-4 pt-3 border-t border-border flex flex-col gap-2">
+            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
               <span className="font-medium">Contracts ledger</span>
-              <span className="font-mono text-white font-bold">Excludes VAT</span>
+              <span className="font-mono text-foreground font-bold">Excludes VAT</span>
             </div>
             <button
               onClick={() => navigate("/portal/pipeline")}
-              className="text-[10px] font-black uppercase tracking-wider text-primary hover:text-white transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
+              className="text-[10px] font-black uppercase tracking-wider text-primary hover:text-foreground transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
             >
               Open Quotes & Billing Board &rarr;
             </button>
@@ -773,43 +773,43 @@ export const DashboardPage: React.FC = () => {
       {/* Main Grid: Compliance Alerts and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column: Compliance Alerts (2/3 width) */}
-        <div className="lg:col-span-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-6 flex flex-col space-y-6">
-          <div className="flex items-center justify-between border-b border-[#2a2a30] pb-4">
+        <div className="lg:col-span-2 bg-card border border-border rounded-xl p-6 flex flex-col space-y-6">
+          <div className="flex items-center justify-between border-b border-border pb-4">
             <div className="flex items-center space-x-2.5">
-              <AlertTriangle className="w-5 h-5 text-[#f59e0b]" />
-              <h2 className="text-base font-bold text-white font-archivo uppercase tracking-wide">
+              <AlertTriangle className="w-5 h-5 text-warning" />
+              <h2 className="text-base font-bold text-foreground font-archivo uppercase tracking-wide">
                 Compliance Warnings
               </h2>
             </div>
-            <span className="text-[12px] bg-[#ef4444]/10 text-[#ef4444] px-2.5 py-1 rounded-md font-bold font-mono">
+            <span className="text-[12px] bg-destructive/10 text-destructive px-2.5 py-1 rounded-md font-bold font-mono">
               {expiringTickets.length} Action Required
             </span>
           </div>
 
-          <div className="divide-y divide-[#2a2a30] flex-1 overflow-y-auto max-h-[360px]">
+          <div className="divide-y divide-border flex-1 overflow-y-auto max-h-[360px]">
             {expiringTickets.map((alert) => (
               <div
                 key={alert.alertId}
-                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2.5 border-l-[3px] hover:bg-[#16161a] transition-colors ${
-                  alert.isExpired ? "border-l-[#ef4444]" : "border-l-[#f59e0b]"
+                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2.5 border-l-[3px] hover:bg-background transition-colors ${
+                  alert.isExpired ? "border-l-destructive" : "border-l-warning"
                 }`}
               >
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[12px] font-bold text-white leading-none">
+                    <span className="text-[12px] font-bold text-foreground leading-none">
                       {alert.workerName}
                     </span>
                     {alert.workerRole && (
-                      <span className="text-[10px] text-[#9a9a9e] bg-[#2a2a30] px-1.5 py-0.5 rounded font-medium">
+                      <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-medium">
                         {alert.workerRole}
                       </span>
                     )}
                     <span
                       className={`text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded ${
                         alert.isExpired
-                          ? "bg-[#ef4444]/10 text-[#ef4444]"
-                          : "bg-[#f59e0b]/10 text-[#f59e0b]"
+                          ? "bg-destructive/10 text-destructive"
+                          : "bg-warning/10 text-warning"
                       }`}
                     >
                       {alert.isExpired
@@ -817,7 +817,7 @@ export const DashboardPage: React.FC = () => {
                         : `EXPIRING ${alert.diffDays}d`}
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#9a9a9e] mt-0.5 truncate">
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                     {alert.ticketType} &bull; <span className="font-mono">{alert.expiryDate}</span>
                     {alert.ticketNumber && (
                       <>
@@ -832,13 +832,13 @@ export const DashboardPage: React.FC = () => {
                 <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
                   <button
                     onClick={() => setRemindConfirmAlert(alert)}
-                    className="text-[11px] font-black uppercase tracking-widest px-2.5 py-1 rounded bg-[#2a2a30] hover:bg-[#3a3a42] text-white transition-colors cursor-pointer"
+                    className="text-[11px] font-black uppercase tracking-widest px-2.5 py-1 rounded bg-secondary hover:bg-muted text-foreground transition-colors cursor-pointer"
                   >
                     Remind
                   </button>
                   <button
                     onClick={() => handleUpdateAlert(alert.workerId)}
-                    className="text-[11px] font-bold text-primary hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
+                    className="text-[11px] font-bold text-primary hover:text-foreground transition-colors flex items-center gap-1 cursor-pointer"
                   >
                     Update <ArrowRight className="w-3 h-3" />
                   </button>
@@ -848,10 +848,10 @@ export const DashboardPage: React.FC = () => {
 
             {expiringTickets.length === 0 && (
               <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
-                <CheckCircle className="w-12 h-12 text-[#10b981]/80" />
+                <CheckCircle className="w-12 h-12 text-success/80" />
                 <div>
-                  <h4 className="text-[12px] font-bold text-white">Roster Fully Compliant</h4>
-                  <p className="text-[12px] text-[#9a9a9e] mt-1">
+                  <h4 className="text-[12px] font-bold text-foreground">Roster Fully Compliant</h4>
+                  <p className="text-[12px] text-muted-foreground mt-1">
                     All active operatives have up-to-date qualifications.
                   </p>
                 </div>
@@ -872,16 +872,16 @@ export const DashboardPage: React.FC = () => {
               remindConfirmAlert && (
                 <>
                   Send a compliance reminder email to{" "}
-                  <span className="text-white font-bold">{remindConfirmAlert.workerName}</span>{" "}
+                  <span className="text-foreground font-bold">{remindConfirmAlert.workerName}</span>{" "}
                   requesting they update their{" "}
-                  <span className="text-white font-bold">{remindConfirmAlert.ticketType}</span>{" "}
+                  <span className="text-foreground font-bold">{remindConfirmAlert.ticketType}</span>{" "}
                   credential which{" "}
                   {remindConfirmAlert.isExpired ? (
-                    <span className="text-[#ef4444] font-bold">
+                    <span className="text-destructive font-bold">
                       expired {Math.abs(remindConfirmAlert.diffDays)} days ago
                     </span>
                   ) : (
-                    <span className="text-[#f59e0b] font-bold">
+                    <span className="text-warning font-bold">
                       expires in {remindConfirmAlert.diffDays} days
                     </span>
                   )}
@@ -899,9 +899,9 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Right Column: Quick Actions Panel (1/3 width) */}
-        <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-6 flex flex-col space-y-6">
-          <div className="border-b border-[#2a2a30] pb-4">
-            <h2 className="text-base font-bold text-white font-archivo uppercase tracking-wide">
+        <div className="bg-card border border-border rounded-xl p-6 flex flex-col space-y-6">
+          <div className="border-b border-border pb-4">
+            <h2 className="text-base font-bold text-foreground font-archivo uppercase tracking-wide">
               Quick Operations
             </h2>
           </div>
@@ -910,77 +910,77 @@ export const DashboardPage: React.FC = () => {
             {/* Create Job */}
             <button
               onClick={() => setIsJobModalOpen(true)}
-              className="w-full text-left p-4 rounded-xl bg-[#16161a] border border-[#2a2a30] hover:border-primary/40 hover:bg-[#202026] transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
+              className="w-full text-left p-4 rounded-xl bg-background border border-border hover:border-primary/40 hover:bg-secondary transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all">
                   <Plus className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[12px] font-bold text-white">Create New Job</h3>
-                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">
+                  <h3 className="text-[12px] font-bold text-foreground">Create New Job</h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     Initialize a site reference and set pour limits
                   </p>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
             </button>
 
             {/* Add Staff */}
             <button
               onClick={() => setIsWorkerModalOpen(true)}
-              className="w-full text-left p-4 rounded-xl bg-[#16161a] border border-[#2a2a30] hover:border-[#10b981]/40 hover:bg-[#202026] transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
+              className="w-full text-left p-4 rounded-xl bg-background border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="p-2.5 rounded-lg bg-[#10b981]/10 text-[#10b981] group-hover:bg-[#10b981] group-hover:text-white transition-all">
+                <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all">
                   <UserPlus className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[12px] font-bold text-white">Add New Staff</h3>
-                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">
+                  <h3 className="text-[12px] font-bold text-foreground">Add New Staff</h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     Register a worker and upload safety certifications
                   </p>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
             </button>
 
             {/* Create Quote */}
             <button
               onClick={() => navigate("/portal/pipeline?view=quote-builder")}
-              className="w-full text-left p-4 rounded-xl bg-[#16161a] border border-[#2a2a30] hover:border-primary/40 hover:bg-[#202026] transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
+              className="w-full text-left p-4 rounded-xl bg-background border border-border hover:border-primary/40 hover:bg-secondary transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-all">
+                <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all">
                   <Calculator className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[12px] font-bold text-white">Create Quote</h3>
-                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">
+                  <h3 className="text-[12px] font-bold text-foreground">Create Quote</h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     Build a client invoice with custom VAT/CIS settings
                   </p>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
             </button>
 
             {/* View Audit Trail */}
             <button
               onClick={() => navigate("/portal/audit")}
-              className="w-full text-left p-4 rounded-xl bg-[#16161a] border border-[#2a2a30] hover:border-[#f59e0b]/40 hover:bg-[#202026] transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
+              className="w-full text-left p-4 rounded-xl bg-background border border-border hover:border-warning/40 hover:bg-secondary transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
             >
               <div className="flex items-center space-x-3.5">
-                <div className="p-2.5 rounded-lg bg-[#f59e0b]/10 text-[#f59e0b] group-hover:bg-[#f59e0b] group-hover:text-white transition-all">
+                <div className="p-2.5 rounded-lg bg-warning/10 text-warning group-hover:bg-warning group-hover:text-foreground transition-all">
                   <History className="w-4 h-4" />
                 </div>
                 <div>
-                  <h3 className="text-[12px] font-bold text-white">View Audit Trail</h3>
-                  <p className="text-[11px] text-[#9a9a9e] mt-0.5">
+                  <h3 className="text-[12px] font-bold text-foreground">View Audit Trail</h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     Inspect system change history and operator events
                   </p>
                 </div>
               </div>
-              <ArrowRight className="w-4 h-4 text-white/30 group-hover:text-white group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
             </button>
           </div>
         </div>
@@ -1001,15 +1001,15 @@ export const DashboardPage: React.FC = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#1a1a1e] border border-[#2a2a30] rounded-xl shadow-2xl z-50 overflow-hidden"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden"
             >
-              <div className="p-6 border-b border-[#2a2a30] flex items-center justify-between">
-                <h3 className="text-base font-bold text-white font-archivo uppercase">
+              <div className="p-6 border-b border-border flex items-center justify-between">
+                <h3 className="text-base font-bold text-foreground font-archivo uppercase">
                   Create New Project Job
                 </h3>
                 <button
                   onClick={() => setIsJobModalOpen(false)}
-                  className="text-[#9a9a9e] hover:text-white p-1"
+                  className="text-muted-foreground hover:text-foreground p-1"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1017,14 +1017,14 @@ export const DashboardPage: React.FC = () => {
 
               <form onSubmit={handleAddJobSubmit} className="p-6 space-y-4 text-[12px]">
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                     Site Name *
                   </label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Riverside Phase 3"
-                    className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
+                    className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none min-h-[44px]"
                     value={jobForm.siteName}
                     onChange={(e) => setJobForm({ ...jobForm, siteName: e.target.value })}
                   />
@@ -1032,26 +1032,26 @@ export const DashboardPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                       Main Contractor *
                     </label>
                     <input
                       type="text"
                       required
                       placeholder="e.g. Balfour Beatty"
-                      className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
+                      className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none min-h-[44px]"
                       value={jobForm.mainContractor}
                       onChange={(e) => setJobForm({ ...jobForm, mainContractor: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                       Postcode
                     </label>
                     <input
                       type="text"
                       placeholder="e.g. SW1A 1AA"
-                      className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
+                      className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none min-h-[44px]"
                       value={jobForm.postcode}
                       onChange={(e) => setJobForm({ ...jobForm, postcode: e.target.value })}
                     />
@@ -1060,14 +1060,14 @@ export const DashboardPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                       Contract Max Pours
                     </label>
                     <input
                       type="number"
                       required
                       min="1"
-                      className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none font-mono min-h-[44px]"
+                      className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none font-mono min-h-[44px]"
                       value={jobForm.contractMaxPours}
                       onChange={(e) =>
                         setJobForm({ ...jobForm, contractMaxPours: Number(e.target.value) })
@@ -1075,14 +1075,14 @@ export const DashboardPage: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                       Schedule Value (£)
                     </label>
                     <input
                       type="number"
                       required
                       min="0"
-                      className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none font-mono min-h-[44px]"
+                      className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none font-mono min-h-[44px]"
                       value={jobForm.scheduleValue}
                       onChange={(e) =>
                         setJobForm({ ...jobForm, scheduleValue: Number(e.target.value) })
@@ -1091,17 +1091,17 @@ export const DashboardPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-4 flex items-center justify-end space-x-3 border-t border-[#2a2a30] mt-6">
+                <div className="pt-4 flex items-center justify-end space-x-3 border-t border-border mt-6">
                   <button
                     type="button"
                     onClick={() => setIsJobModalOpen(false)}
-                    className="h-11 px-5 rounded-lg bg-[#2a2a30] hover:bg-[#3a3a42] text-white transition-colors cursor-pointer min-h-[44px]"
+                    className="h-11 px-5 rounded-lg bg-secondary hover:bg-muted text-foreground transition-colors cursor-pointer min-h-[44px]"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="h-11 px-5 rounded-lg bg-primary hover:bg-primary/80 text-white font-semibold transition-colors cursor-pointer min-h-[44px]"
+                    className="h-11 px-5 rounded-lg bg-primary hover:bg-primary/80 text-foreground font-semibold transition-colors cursor-pointer min-h-[44px]"
                   >
                     Create Project
                   </button>
@@ -1127,15 +1127,15 @@ export const DashboardPage: React.FC = () => {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-[#1a1a1e] border border-[#2a2a30] rounded-xl shadow-2xl z-50 overflow-hidden"
+              className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden"
             >
-              <div className="p-6 border-b border-[#2a2a30] flex items-center justify-between">
-                <h3 className="text-base font-bold text-white font-archivo uppercase">
+              <div className="p-6 border-b border-border flex items-center justify-between">
+                <h3 className="text-base font-bold text-foreground font-archivo uppercase">
                   Register New Operative
                 </h3>
                 <button
                   onClick={() => setIsWorkerModalOpen(false)}
-                  className="text-[#9a9a9e] hover:text-white p-1"
+                  className="text-muted-foreground hover:text-foreground p-1"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1146,14 +1146,14 @@ export const DashboardPage: React.FC = () => {
                 className="p-6 space-y-4 text-[12px] max-h-[500px] overflow-y-auto"
               >
                 <div>
-                  <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                     Worker Name *
                   </label>
                   <input
                     type="text"
                     required
                     placeholder="e.g. Connor O'Neill"
-                    className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
+                    className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none min-h-[44px]"
                     value={workerForm.name}
                     onChange={(e) => setWorkerForm({ ...workerForm, name: e.target.value })}
                   />
@@ -1161,11 +1161,11 @@ export const DashboardPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                       Operational Role
                     </label>
                     <select
-                      className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px] cursor-pointer"
+                      className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none min-h-[44px] cursor-pointer"
                       value={workerForm.role}
                       onChange={(e) => setWorkerForm({ ...workerForm, role: e.target.value })}
                     >
@@ -1176,13 +1176,13 @@ export const DashboardPage: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                       Postcode
                     </label>
                     <input
                       type="text"
                       placeholder="e.g. SW1A 1AA"
-                      className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
+                      className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none min-h-[44px]"
                       value={workerForm.postcode}
                       onChange={(e) => setWorkerForm({ ...workerForm, postcode: e.target.value })}
                     />
@@ -1191,25 +1191,25 @@ export const DashboardPage: React.FC = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                       Phone Number
                     </label>
                     <input
                       type="tel"
                       placeholder="e.g. +44 7700 900100"
-                      className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
+                      className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none min-h-[44px]"
                       value={workerForm.phone}
                       onChange={(e) => setWorkerForm({ ...workerForm, phone: e.target.value })}
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                       Email Address
                     </label>
                     <input
                       type="email"
                       placeholder="e.g. connor@opusconcrete.co.uk"
-                      className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px]"
+                      className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none min-h-[44px]"
                       value={workerForm.email}
                       onChange={(e) => setWorkerForm({ ...workerForm, email: e.target.value })}
                     />
@@ -1217,17 +1217,17 @@ export const DashboardPage: React.FC = () => {
                 </div>
 
                 {/* Inline Ticket fields */}
-                <div className="border-t border-[#2a2a30] pt-4 mt-2 space-y-3.5">
+                <div className="border-t border-border pt-4 mt-2 space-y-3.5">
                   <span className="text-[11px] font-bold text-primary uppercase tracking-wider block">
                     Compliance Qualification Ticket
                   </span>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                         Ticket Type
                       </label>
                       <select
-                        className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none min-h-[44px] cursor-pointer"
+                        className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none min-h-[44px] cursor-pointer"
                         value={workerForm.ticketType}
                         onChange={(e) =>
                           setWorkerForm({ ...workerForm, ticketType: e.target.value })
@@ -1241,25 +1241,25 @@ export const DashboardPage: React.FC = () => {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                      <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                         Ticket Number
                       </label>
                       <input
                         type="text"
                         placeholder="e.g. CSCS-449200"
-                        className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none font-mono min-h-[44px]"
+                        className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none font-mono min-h-[44px]"
                         value={workerForm.ticketNo}
                         onChange={(e) => setWorkerForm({ ...workerForm, ticketNo: e.target.value })}
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold uppercase tracking-wider text-[#9a9a9e] mb-1.5">
+                    <label className="block text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                       Expiry Date
                     </label>
                     <input
                       type="date"
-                      className="w-full bg-[#16161a] border border-[#2a2a30] focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-white outline-none font-mono min-h-[44px]"
+                      className="w-full bg-background border border-border focus:border-primary focus:ring-1 focus:ring-primary rounded-lg px-3.5 py-2.5 text-foreground outline-none font-mono min-h-[44px]"
                       value={workerForm.ticketExpiry}
                       onChange={(e) =>
                         setWorkerForm({ ...workerForm, ticketExpiry: e.target.value })
@@ -1268,17 +1268,17 @@ export const DashboardPage: React.FC = () => {
                   </div>
                 </div>
 
-                <div className="pt-4 flex items-center justify-end space-x-3 border-t border-[#2a2a30] mt-6">
+                <div className="pt-4 flex items-center justify-end space-x-3 border-t border-border mt-6">
                   <button
                     type="button"
                     onClick={() => setIsWorkerModalOpen(false)}
-                    className="h-11 px-5 rounded-lg bg-[#2a2a30] hover:bg-[#3a3a42] text-white transition-colors cursor-pointer min-h-[44px]"
+                    className="h-11 px-5 rounded-lg bg-secondary hover:bg-muted text-foreground transition-colors cursor-pointer min-h-[44px]"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="h-11 px-5 rounded-lg bg-[#10b981] hover:bg-[#10b981]/80 text-white font-semibold transition-colors cursor-pointer min-h-[44px]"
+                    className="h-11 px-5 rounded-lg bg-success hover:bg-success/80 text-foreground font-semibold transition-colors cursor-pointer min-h-[44px]"
                   >
                     Register Worker
                   </button>

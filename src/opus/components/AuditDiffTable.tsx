@@ -39,7 +39,7 @@ export const AuditDiffTable: React.FC<AuditDiffTableProps> = ({ diff }) => {
     <div className="border border-white/5 rounded-lg overflow-hidden bg-black/15 my-2 max-w-full">
       <table className="w-full text-left border-collapse text-[10px]">
         <thead>
-          <tr className="border-b border-white/5 bg-white/[0.02] text-[#666] uppercase font-bold tracking-wider">
+          <tr className="border-b border-white/5 bg-white/[0.02] text-muted-foreground uppercase font-bold tracking-wider">
             <th className="py-2 px-3 w-1/4">Field</th>
             <th className="py-2 px-3 w-3/8 text-red-400/90 bg-red-950/5">Before</th>
             <th className="py-2 px-3 w-3/8 text-emerald-400/90 bg-emerald-950/5">After</th>

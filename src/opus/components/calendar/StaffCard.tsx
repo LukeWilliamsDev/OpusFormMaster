@@ -36,9 +36,9 @@ export const StaffCard: React.FC<StaffCardProps> = ({
 
   return (
     <div
-      className={`border rounded-xl bg-[#16161a] transition-all ${
+      className={`border rounded-xl bg-card transition-all ${
         dense ? "p-2.5 space-y-2" : "p-4 space-y-3"
-      } ${isAssigned ? "border-[#2a2a30]" : "border-[#2a2a30] opacity-60 hover:opacity-100"}`}
+      } ${isAssigned ? "border-border" : "border-border opacity-60 hover:opacity-100"}`}
     >
       <div className="flex items-start justify-between gap-2.5">
         <div className="flex items-start gap-3 min-w-0">
@@ -55,7 +55,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
           </div>
           <div className="min-w-0">
             <h4
-              className={`font-bold text-white leading-tight ${
+              className={`font-bold text-foreground leading-tight ${
                 dense ? "text-xs truncate whitespace-nowrap max-w-[110px]" : "text-sm break-words"
               }`}
               title={worker.name}
@@ -141,7 +141,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
         <button
           type="button"
           onClick={onAssign}
-          className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-[#3a3a42] text-gray-500 hover:text-white hover:border-primary font-black uppercase tracking-wider transition-colors cursor-pointer ${
+          className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-border text-gray-500 hover:text-foreground hover:border-primary font-black uppercase tracking-wider transition-colors cursor-pointer ${
             dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"
           }`}
         >

@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { usePortal } from "../context/PortalContext";
 import { getAvatarPresetClass } from "../pages/Settings";
+import { NavList } from "@/components/application/app-navigation/base-components/nav-list";
 
 export const PortalLayout: React.FC = () => {
   const { signOut, role, user, profile } = usePortal();
@@ -121,7 +122,7 @@ export const PortalLayout: React.FC = () => {
           )}
           <button
             onClick={toggleSidebar}
-            className="p-1.5 text-[#888888] hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer shrink-0"
+            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer shrink-0"
             title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
@@ -161,8 +162,8 @@ export const PortalLayout: React.FC = () => {
                 {profile?.full_name || user?.email || "User"}
               </span>
               <div className="flex items-center space-x-1.5 mt-0.5">
-                <Shield className="w-3 h-3 text-[#10b981]" />
-                <span className="text-[11px] text-[#10b981] capitalize font-medium">
+                <Shield className="w-3 h-3 text-success" />
+                <span className="text-[11px] text-success capitalize font-medium">
                   {role || "operative"}
                 </span>
               </div>
@@ -171,30 +172,12 @@ export const PortalLayout: React.FC = () => {
         </Link>
 
         {/* Desktop Sidebar Navigation */}
-        <nav
-          className={`flex-1 py-4 space-y-1 overflow-y-auto ${isSidebarCollapsed ? "px-2" : "px-3"}`}
-        >
-          {navItems.map((item) => {
-            const isActive = checkIsActive(item.path);
-            const Icon = item.icon;
-            return (
-              <NavLink
-                key={item.name}
-                to={item.path}
-                title={isSidebarCollapsed ? item.name : undefined}
-                className={`flex items-center ${isSidebarCollapsed ? "justify-center px-0" : "space-x-3 px-3"} py-2.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all duration-200 ${
-                  isActive
-                    ? "bg-primary text-white shadow-md"
-                    : "text-[#888888] hover:text-foreground hover:bg-muted"
-                }`}
-              >
-                <Icon
-                  className={`w-4 h-4 shrink-0 transition-colors ${isActive ? "text-white" : "text-[#888888] group-hover:text-foreground"}`}
-                />
-                {!isSidebarCollapsed && <span>{item.name}</span>}
-              </NavLink>
-            );
-          })}
+        <nav className={`flex-1 py-4 space-y-1 overflow-y-auto ${isSidebarCollapsed ? "px-2" : "px-3"}`}>
+          <NavList
+            items={navItems.map((item) => ({ label: item.name, href: item.path, icon: item.icon }))}
+            iconOnly={isSidebarCollapsed}
+            isActive={(item) => checkIsActive(navItems.find((n) => n.name === item.label)!.path)}
+          />
         </nav>
 
         {/* Sidebar Footer — Legal & Logout */}
@@ -204,7 +187,7 @@ export const PortalLayout: React.FC = () => {
           <NavLink
             to="/portal/privacy"
             title={isSidebarCollapsed ? "Legal & Privacy" : undefined}
-            className={`flex items-center w-full py-2 text-[11px] font-medium text-[#555558] hover:text-primary rounded-lg transition-all ${isSidebarCollapsed ? "justify-center px-0" : "px-3 space-x-3"}`}
+            className={`flex items-center w-full py-2 text-[11px] font-medium text-muted-foreground hover:text-primary rounded-lg transition-all ${isSidebarCollapsed ? "justify-center px-0" : "px-3 space-x-3"}`}
           >
             <Shield className="w-3.5 h-3.5 shrink-0" />
             {!isSidebarCollapsed && <span className="tracking-wide">Legal & Privacy</span>}
@@ -212,7 +195,7 @@ export const PortalLayout: React.FC = () => {
           <button
             onClick={handleLogoutClick}
             title={isSidebarCollapsed ? "Log Out" : undefined}
-            className={`flex items-center w-full py-2.5 text-[13px] font-semibold text-[#888888] hover:text-foreground hover:bg-[#ef4444]/10 rounded-lg transition-all cursor-pointer ${isSidebarCollapsed ? "justify-center px-0" : "justify-between px-3 hover:border-l-4 hover:border-[#ef4444]"}`}
+            className={`flex items-center w-full py-2.5 text-[13px] font-semibold text-muted-foreground hover:text-foreground hover:bg-destructive/10 rounded-lg transition-all cursor-pointer ${isSidebarCollapsed ? "justify-center px-0" : "justify-between px-3 hover:border-l-4 hover:border-destructive"}`}
           >
             {!isSidebarCollapsed && <span className="tracking-wide">Log Out</span>}
             <LogOut className="w-4 h-4 shrink-0" />
@@ -223,14 +206,14 @@ export const PortalLayout: React.FC = () => {
       {/* Mobile Sticky Header */}
       <header className="lg:hidden flex items-center justify-between h-16 bg-muted/30 border-b border-border px-4 sticky top-0 z-40">
         <Link to="/portal/dashboard" className="flex items-center">
-          <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-6 w-auto" />
+          <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-8 w-auto" />
         </Link>
         <div className="flex items-center space-x-2">
           {/* Audit Admin Logout for mobile */}
           {user?.email === "admin@opusform.co.uk" && (
             <button
               onClick={handleLogoutClick}
-              className="p-2 text-[#888888] hover:text-foreground cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2 text-muted-foreground hover:text-foreground cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
               title="Logout"
             >
               <LogOut className="w-5 h-5" />
@@ -274,7 +257,7 @@ export const PortalLayout: React.FC = () => {
                 </Link>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 text-[#9a9a9e] cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  className="p-2 text-muted-foreground cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -299,14 +282,14 @@ export const PortalLayout: React.FC = () => {
                         .slice(0, 2)}
                     </span>
                   ) : (
-                    <UserIcon className="w-4 h-4 text-[#888888] group-hover:text-white transition-colors" />
+                    <UserIcon className="w-4 h-4 text-muted-foreground group-hover:text-white transition-colors" />
                   )}
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
                   <span className="text-[13px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                     {profile?.full_name || user?.email || "User"}
                   </span>
-                  <span className="text-[11px] text-[#10b981] capitalize font-medium">
+                  <span className="text-[11px] text-success capitalize font-medium">
                     {role || "operative"}
                   </span>
                 </div>
@@ -325,7 +308,7 @@ export const PortalLayout: React.FC = () => {
                       className={`flex items-center space-x-3 px-4 py-3 rounded-lg text-[13px] font-semibold tracking-wide transition-colors min-h-[44px] ${
                         isActive
                           ? "bg-primary/10 text-foreground border-l-4 border-primary"
-                          : "text-[#9a9a9e] hover:text-foreground hover:bg-muted"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted"
                       }`}
                     >
                       <Icon className="w-5 h-5" />
@@ -341,7 +324,7 @@ export const PortalLayout: React.FC = () => {
                     setIsMobileMenuOpen(false);
                     handleLogoutClick();
                   }}
-                  className="flex items-center justify-center space-x-3 w-full py-3 bg-[#ef4444]/10 hover:bg-[#ef4444]/20 border border-[#ef4444]/20 rounded-lg text-[13px] font-semibold text-foreground hover:text-white transition-all cursor-pointer min-h-[44px]"
+                  className="flex items-center justify-center space-x-3 w-full py-3 bg-destructive/10 hover:bg-destructive/20 border border-destructive/20 rounded-lg text-[13px] font-semibold text-foreground hover:text-white transition-all cursor-pointer min-h-[44px]"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>Logout</span>

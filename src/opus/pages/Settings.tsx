@@ -134,31 +134,31 @@ export const SettingsPage: React.FC = () => {
     <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-4xl mx-auto animate-fade-in space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-black uppercase tracking-widest text-white">
+        <h1 className="text-xl sm:text-2xl font-black uppercase tracking-widest text-foreground">
           Profile Settings
         </h1>
-        <p className="text-xs text-gray-500 mt-1 uppercase font-bold tracking-wider">
+        <p className="text-xs text-muted-foreground mt-1 uppercase font-bold tracking-wider">
           Manage your account credentials, preferences, and avatar preset
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Side: Avatar selector card */}
-        <div className="md:col-span-1 bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-5 space-y-6 flex flex-col items-center">
-          <div className="text-xs font-black uppercase tracking-widest text-gray-400 self-start">
+        <div className="md:col-span-1 bg-card border border-border rounded-xl p-5 space-y-6 flex flex-col items-center">
+          <div className="text-xs font-black uppercase tracking-widest text-muted-foreground self-start">
             Profile Image
           </div>
 
           {/* Avatar Preview */}
           <div
-            className={`w-28 h-28 rounded-full bg-gradient-to-br ${getAvatarPresetClass(selectedAvatar)} flex items-center justify-center border-2 border-[#2a2a30] shadow-2xl relative transition-all duration-300`}
+            className={`w-28 h-28 rounded-full bg-gradient-to-br ${getAvatarPresetClass(selectedAvatar)} flex items-center justify-center border-2 border-border shadow-2xl relative transition-all duration-300`}
           >
             <span className="text-3xl font-black tracking-widest">{getUserInitials()}</span>
           </div>
 
           {/* Presets Grid */}
           <div className="w-full space-y-3">
-            <div className="text-[10px] font-black uppercase tracking-widest text-gray-600">
+            <div className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
               Select Preset
             </div>
             <div className="grid grid-cols-3 gap-2">
@@ -170,8 +170,8 @@ export const SettingsPage: React.FC = () => {
                   title={preset.name}
                   className={`h-10 rounded-lg bg-gradient-to-br ${preset.colors} border-2 relative transition-all ${
                     selectedAvatar === preset.id
-                      ? "border-white scale-105 shadow-md"
-                      : "border-[#2a2a30] opacity-75 hover:opacity-100"
+                      ? "border-foreground scale-105 shadow-md"
+                      : "border-border opacity-75 hover:opacity-100"
                   }`}
                 >
                   {selectedAvatar === preset.id && (
@@ -188,10 +188,10 @@ export const SettingsPage: React.FC = () => {
         {/* Right Side: Account Details & Password Forms */}
         <div className="md:col-span-2 space-y-6">
           {/* Account Details Card */}
-          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-6 space-y-5">
-            <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
+          <div className="bg-card border border-border rounded-xl p-6 space-y-5">
+            <div className="flex items-center gap-2 border-b border-border pb-3">
               <User className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-white">
+              <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
                 Account Details
               </h3>
             </div>
@@ -201,8 +201,8 @@ export const SettingsPage: React.FC = () => {
                 <div
                   className={`flex items-center gap-2 p-3.5 rounded-lg text-xs font-bold uppercase tracking-wider ${
                     profileMessage.type === "success"
-                      ? "bg-[#10b981]/10 border border-[#10b981]/30 text-[#10b981]"
-                      : "bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#ef4444]"
+                      ? "bg-success/10 border border-success/30 text-success"
+                      : "bg-destructive/10 border border-destructive/30 text-destructive"
                   }`}
                 >
                   {profileMessage.type === "success" ? (
@@ -216,34 +216,34 @@ export const SettingsPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                  <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                     Email (Read Only)
                   </span>
-                  <div className="flex items-center gap-2 bg-[#111114]/50 border border-[#2a2a30]/60 rounded-lg p-3 px-4 text-gray-600 cursor-not-allowed">
+                  <div className="flex items-center gap-2 bg-background/50 border border-border/60 rounded-lg p-3 px-4 text-muted-foreground cursor-not-allowed">
                     <span className="text-xs font-bold">{user?.email || ""}</span>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                  <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                     System Role
                   </span>
-                  <div className="flex items-center gap-2 bg-[#111114]/50 border border-[#2a2a30]/60 rounded-lg p-3 px-4 text-gray-600 cursor-not-allowed">
-                    <Shield className="w-3.5 h-3.5 text-gray-600" />
+                  <div className="flex items-center gap-2 bg-background/50 border border-border/60 rounded-lg p-3 px-4 text-muted-foreground cursor-not-allowed">
+                    <Shield className="w-3.5 h-3.5 text-muted-foreground" />
                     <span className="text-xs font-bold capitalize">{role || "operative"}</span>
                   </div>
                 </div>
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                   Full Name
                 </span>
-                <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-3 px-4 focus-within:border-muted-foreground transition-colors">
                   <input
                     type="text"
                     required
-                    className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold"
+                    className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Enter your full name"
@@ -252,14 +252,14 @@ export const SettingsPage: React.FC = () => {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                   Phone Number
                 </span>
-                <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
-                  <Phone className="w-4 h-4 text-gray-600 shrink-0" />
+                <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-3 px-4 focus-within:border-muted-foreground transition-colors">
+                  <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     type="tel"
-                    className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold"
+                    className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="+44 7700 900077"
@@ -270,7 +270,7 @@ export const SettingsPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isSavingProfile}
-                className="w-full sm:w-auto bg-[#2e2e2e] border border-[#3a3a3a] hover:bg-[#383838] text-white text-[11px] font-black tracking-widest uppercase py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
+                className="w-full sm:w-auto bg-secondary border border-border hover:bg-secondary/80 text-secondary-foreground text-[11px] font-black tracking-widest uppercase py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
               >
                 {isSavingProfile ? "Saving..." : "Save Profile Details"}
               </button>
@@ -278,10 +278,10 @@ export const SettingsPage: React.FC = () => {
           </div>
 
           {/* Change Password Card */}
-          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-6 space-y-5">
-            <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
+          <div className="bg-card border border-border rounded-xl p-6 space-y-5">
+            <div className="flex items-center gap-2 border-b border-border pb-3">
               <Key className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-white">
+              <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
                 Security / Update Password
               </h3>
             </div>
@@ -291,8 +291,8 @@ export const SettingsPage: React.FC = () => {
                 <div
                   className={`flex items-center gap-2 p-3.5 rounded-lg text-xs font-bold uppercase tracking-wider ${
                     passwordMessage.type === "success"
-                      ? "bg-[#10b981]/10 border border-[#10b981]/30 text-[#10b981]"
-                      : "bg-[#ef4444]/10 border border-[#ef4444]/30 text-[#ef4444]"
+                      ? "bg-success/10 border border-success/30 text-success"
+                      : "bg-destructive/10 border border-destructive/30 text-destructive"
                   }`}
                 >
                   {passwordMessage.type === "success" ? (
@@ -305,14 +305,14 @@ export const SettingsPage: React.FC = () => {
               )}
 
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                   Current Password
                 </span>
-                <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-3 px-4 focus-within:border-muted-foreground transition-colors">
                   <input
                     type="password"
                     required
-                    className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold"
+                    className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="••••••••"
@@ -322,14 +322,14 @@ export const SettingsPage: React.FC = () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                  <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                     New Password
                   </span>
-                  <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                  <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-3 px-4 focus-within:border-muted-foreground transition-colors">
                     <input
                       type="password"
                       required
-                      className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold"
+                      className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Min 8 characters"
@@ -338,14 +338,14 @@ export const SettingsPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                  <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                     Confirm New Password
                   </span>
-                  <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                  <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-3 px-4 focus-within:border-muted-foreground transition-colors">
                     <input
                       type="password"
                       required
-                      className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold"
+                      className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Match new password"
@@ -357,7 +357,7 @@ export const SettingsPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isUpdatingPassword}
-                className="w-full sm:w-auto bg-[#2e2e2e] border border-[#3a3a3a] hover:bg-[#383838] text-white text-[11px] font-black tracking-widest uppercase py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
+                className="w-full sm:w-auto bg-secondary border border-border hover:bg-secondary/80 text-secondary-foreground text-[11px] font-black tracking-widest uppercase py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
               >
                 {isUpdatingPassword ? "Updating..." : "Update Password"}
               </button>

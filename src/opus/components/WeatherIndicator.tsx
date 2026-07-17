@@ -11,8 +11,8 @@ interface WeatherProps {
 
 export const WeatherIndicator: React.FC<WeatherProps> = ({ weather }) => {
   return (
-    <div className="flex items-center justify-between bg-[#151515] px-1.5 py-1 rounded border border-[#222]">
-      <span className="text-[9px] font-medium text-[#888]">
+    <div className="flex items-center justify-between bg-card px-1.5 py-1 rounded border border-border">
+      <span className="text-[9px] font-medium text-muted-foreground">
         {weather.condition} &bull; {weather.temperature}°C
       </span>
       <span

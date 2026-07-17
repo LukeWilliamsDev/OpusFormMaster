@@ -96,7 +96,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between border-b border-[#2a2a2a] pb-3">
+      <div className="flex items-center justify-between border-b border-border pb-3">
         <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white font-archivo">
           <AlertTriangle className="w-4 h-4 text-amber-500 animate-pulse" />
           <span>30-Day Expiry Radar</span>
@@ -106,10 +106,10 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
         </span>
       </div>
 
-      <div className="bg-[#1e1e1e] border border-[#2e2e2e] rounded-xl p-4 space-y-4 shadow-2xl">
+      <div className="bg-card border border-border rounded-xl p-4 space-y-4 shadow-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
           <span>Operational compliance warning dashboard</span>
-          <span className="text-[10px] text-[#888] font-mono font-bold">
+          <span className="text-[10px] text-muted-foreground font-mono font-bold">
             Total: {sortedTickets.length} flagged
           </span>
         </div>
@@ -130,7 +130,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
                 <div
                   key={`${ticketInfo.workerId}-${ticketInfo.ticketId}`}
                   onClick={() => onSelectWorker?.(ticketInfo.workerId)}
-                  className={`w-full py-4 px-4 rounded-xl border bg-[#1A1B1E] flex flex-col gap-2.5 transition-all duration-150 cursor-pointer select-none ${style.cardBg}`}
+                  className={`w-full py-4 px-4 rounded-xl border bg-background flex flex-col gap-2.5 transition-all duration-150 cursor-pointer select-none ${style.cardBg}`}
                 >
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center justify-between">
@@ -148,7 +148,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
                     </div>
                   </div>
 
-                  <div className="h-px bg-[#2e2e2e]/50" />
+                  <div className="h-px bg-border/50" />
 
                   <div className="flex justify-between items-center text-xs gap-2">
                     <div className="flex flex-col truncate">

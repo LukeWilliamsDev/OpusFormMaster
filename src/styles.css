@@ -49,26 +49,26 @@
 /* Sourced from: icon bg #16171A, logo text #F7F5F2, accent dot #B5651D       */
 :root {
   --radius: 0.625rem;
-  --background: #16171A;          /* Icon dark background */
-  --foreground: #F7F5F2;          /* Logo dark-mode text — warm, high-contrast white */
-  --card: #1E1F23;                /* Slightly lifted dark surface */
-  --card-foreground: #F7F5F2;
-  --popover: #1E1F23;
-  --popover-foreground: #F7F5F2;
+  --background: #1B1C20;          /* Lifted off pure-near-black — softer, lower-glare surface */
+  --foreground: #EDEBE6;          /* Off-white instead of stark white — reduces halation on dark bg */
+  --card: #232429;                /* Slightly lifted dark surface */
+  --card-foreground: #EDEBE6;
+  --popover: #232429;
+  --popover-foreground: #EDEBE6;
   --primary: #B5651D;             /* Brand burnt-orange */
-  --primary-foreground: #F7F5F2;
-  --secondary: #2B2D32;           /* Subtle raised surface */
-  --secondary-foreground: #D4D0CB;
-  --muted: #1E1F23;
-  --muted-foreground: #8A8680;    /* Warm mid-tone grey */
+  --primary-foreground: #EDEBE6;
+  --secondary: #2E3036;           /* Subtle raised surface */
+  --secondary-foreground: #DAD6CF;
+  --muted: #232429;
+  --muted-foreground: #ACA89F;    /* Warm mid-tone grey, boosted to ~7:1 (AAA) for readability */
   --accent: #B5651D;
-  --accent-foreground: #F7F5F2;
+  --accent-foreground: #EDEBE6;
   --destructive: #C0392B;
-  --destructive-foreground: #F7F5F2;
+  --destructive-foreground: #EDEBE6;
   --success: #2E7D52;
   --warning: #C47A28;             /* Slightly brighter warm orange for warnings */
-  --border: #2B2D32;
-  --input: #2B2D32;
+  --border: #2E3036;
+  --input: #2E3036;
   --ring: #B5651D;
 }
 
@@ -86,7 +86,7 @@
   --secondary: #EAE5DC;           /* Slightly deeper cream */
   --secondary-foreground: #2B2F33;
   --muted: #EAE5DC;
-  --muted-foreground: #6B6560;    /* Warm helper text */
+  --muted-foreground: #5A5450;    /* Warm helper text, boosted contrast for readability */
   --accent: #B5651D;
   --accent-foreground: #FDFAF5;
   --destructive: #C0392B;
@@ -140,15 +140,15 @@
   animation: leaflet-ping 1.5s ease-out infinite; pointer-events: none;
 }
 .leaflet-popup-content-wrapper {
-  background: #1e1e20 !important; color: #e0e0e0 !important;
-  border: 1px solid #2e2e30; border-radius: 12px !important;
+  background: var(--card) !important; color: var(--card-foreground) !important;
+  border: 1px solid var(--border); border-radius: 12px !important;
   box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5) !important; font-family: inherit;
 }
-.leaflet-popup-tip { background: #1e1e20 !important; border-left: 1px solid #2e2e30; border-bottom: 1px solid #2e2e30; }
-.leaflet-popup-close-button { color: #888 !important; font-size: 14px !important; padding: 6px !important; }
-.leaflet-bar { border: 1px solid #2e2e30 !important; box-shadow: none !important; border-radius: 8px !important; overflow: hidden; }
-.leaflet-bar a { background-color: #1a1b1e !important; color: #e0e0e0 !important; border-bottom: 1px solid #2e2e30 !important; }
-.leaflet-bar a:hover { background-color: #2a2b2e !important; color: #fff !important; }
+.leaflet-popup-tip { background: var(--card) !important; border-left: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.leaflet-popup-close-button { color: var(--muted-foreground) !important; font-size: 14px !important; padding: 6px !important; }
+.leaflet-bar { border: 1px solid var(--border) !important; box-shadow: none !important; border-radius: 8px !important; overflow: hidden; }
+.leaflet-bar a { background-color: var(--secondary) !important; color: var(--secondary-foreground) !important; border-bottom: 1px solid var(--border) !important; }
+.leaflet-bar a:hover { background-color: var(--muted) !important; color: var(--foreground) !important; }
 
 /* Custom scrollbar for horizontal calendar view */
 .custom-scrollbar::-webkit-scrollbar {
@@ -158,7 +158,7 @@
   background: transparent;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #2a2a30;
+  background: var(--secondary);
   border-radius: 9999px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {

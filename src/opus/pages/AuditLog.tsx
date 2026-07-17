@@ -211,9 +211,9 @@ export const AuditLogPage: React.FC = () => {
   };
 
   return (
-    <div className="pt-24 pb-12 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-8 animate-fade-in text-white flex flex-col min-h-[calc(100vh-4rem)] bg-[#111114]">
+    <div className="pt-24 pb-12 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-8 animate-fade-in text-foreground flex flex-col min-h-[calc(100vh-4rem)] bg-background">
       {/* Header matching 2d */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#1e1e24] pb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold font-archivo tracking-tight">
             Audit Trail
@@ -229,8 +229,8 @@ export const AuditLogPage: React.FC = () => {
             }}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               actionFilter === "ALL"
-                ? "bg-[#2a2a30] text-white"
-                : "bg-[#1a1a1e] border border-[#2a2a30] text-[#888]"
+                ? "bg-secondary text-foreground"
+                : "bg-card border border-border text-muted-foreground"
             }`}
           >
             All Events
@@ -242,8 +242,8 @@ export const AuditLogPage: React.FC = () => {
             }}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               actionFilter === "LOGIN_SUCCESS"
-                ? "bg-[#2a2a30] text-white"
-                : "bg-[#1a1a1e] border border-[#2a2a30] text-[#888]"
+                ? "bg-secondary text-foreground"
+                : "bg-card border border-border text-muted-foreground"
             }`}
           >
             Logins
@@ -255,8 +255,8 @@ export const AuditLogPage: React.FC = () => {
             }}
             className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
               actionFilter === "APPROVE_DOCUMENT"
-                ? "bg-[#2a2a30] text-white"
-                : "bg-[#1a1a1e] border border-[#2a2a30] text-[#888]"
+                ? "bg-secondary text-foreground"
+                : "bg-card border border-border text-muted-foreground"
             }`}
           >
             Approvals
@@ -265,7 +265,7 @@ export const AuditLogPage: React.FC = () => {
       </div>
 
       {/* Timeline timeline entries layout container */}
-      <div className="flex-grow flex flex-col justify-between bg-[#111114] rounded-xl overflow-hidden min-h-[480px]">
+      <div className="flex-grow flex flex-col justify-between bg-background rounded-xl overflow-hidden min-h-[480px]">
         <div>
           {loading ? (
             <div className="py-20 text-center text-xs font-mono text-zinc-500">
@@ -276,12 +276,12 @@ export const AuditLogPage: React.FC = () => {
               No logs matching filters.
             </div>
           ) : (
-            <div className="divide-y divide-[#1e1e24] px-4">
+            <div className="divide-y divide-border px-4">
               {paginatedLogs.map((log) => {
                 // Colored severity bullets for timeline matching 2d
                 let bulletColor = "bg-primary";
                 if (log.action.includes("LOGIN_SUCCESS") || log.action.includes("APPROVE")) {
-                  bulletColor = "bg-[#10b981]";
+                  bulletColor = "bg-success";
                 } else if (log.action.includes("CREATE") || log.action.includes("UPDATE")) {
                   bulletColor = "bg-primary";
                 } else if (
@@ -289,9 +289,9 @@ export const AuditLogPage: React.FC = () => {
                   log.action.includes("DELETE") ||
                   log.action.includes("REJECT")
                 ) {
-                  bulletColor = "bg-[#ef4444]";
+                  bulletColor = "bg-destructive";
                 } else {
-                  bulletColor = "bg-[#f59e0b]";
+                  bulletColor = "bg-warning";
                 }
 
                 const isRecordChange =
@@ -397,7 +397,7 @@ export const AuditLogPage: React.FC = () => {
           onClick={handleBackdropClick}
           className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in text-white"
         >
-          <div className="w-full max-w-2xl bg-[#18181a] border-l border-white/5 h-full p-6 flex flex-col justify-between shadow-2xl animate-slide-in-right">
+          <div className="w-full max-w-2xl bg-card border-l border-white/5 h-full p-6 flex flex-col justify-between shadow-2xl animate-slide-in-right">
             <div className="space-y-6 overflow-y-auto pr-1">
               {/* Drawer Header */}
               <div className="flex items-center justify-between border-b border-white/5 pb-4">

@@ -1,5 +1,7 @@
 // @ts-nocheck
 import React, { useEffect, useState } from "react";
+import { Sun, Moon } from "lucide-react";
+import { usePortal } from "../context/PortalContext";
 
 interface LandingPageProps {
   onNavigateToPortal: () => void;
@@ -8,43 +10,49 @@ interface LandingPageProps {
 // Logo loaded from public asset
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) => {
+  const { theme, setTheme } = usePortal();
   const [visible, setVisible] = useState(false);
-  const [lineVisible, setLineVisible] = useState(false);
   const [footerVisible, setFooterVisible] = useState(false);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setVisible(true), 150);
-    const t2 = setTimeout(() => setLineVisible(true), 700);
-    const t4 = setTimeout(() => setFooterVisible(true), 1400);
+    const t1 = setTimeout(() => setVisible(true), 100);
+    const t2 = setTimeout(() => setFooterVisible(true), 300);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
-      clearTimeout(t4);
     };
   }, []);
 
   return (
     <div
       id="opus-landing-root"
-      className="min-h-screen flex flex-col justify-between relative overflow-hidden font-sans"
-      style={{ backgroundColor: "#16171A" }}
+      className="min-h-screen flex flex-col justify-between relative overflow-hidden font-sans bg-background"
     >
-      {/* Subtle concrete-texture grid overlay */}
+      {/* Static blueprint-style grid overlay, with occasional accent points at intersections */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 0 L 60 0 L 60 60' fill='none' stroke='%23ffffff' stroke-width='0.4'/%3E%3C/svg%3E")`,
-          opacity: 0.025,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 80 0 L 0 0 L 0 80' fill='none' stroke='%23${
+            theme === "light" ? "2B2F33" : "EDEBE6"
+          }' stroke-width='0.5'/%3E%3Ccircle cx='0' cy='0' r='1.3' fill='%23B5651D'/%3E%3C/svg%3E")`,
+          opacity: 0.05,
         }}
       />
 
-      {/* Portal access — discreet top-right */}
-      <header className="w-full flex justify-end items-center z-20 px-8 pt-7">
+      {/* Theme toggle + Portal access — discreet top-right */}
+      <header className="w-full flex justify-end items-center gap-5 z-20 px-8 pt-7">
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="transition-colors duration-300 text-muted-foreground hover:text-primary"
+          aria-label="Toggle light/dark theme"
+        >
+          {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
         <button
           onClick={onNavigateToPortal}
           className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] transition-all duration-300"
           style={{ color: "var(--primary)" }}
-          onMouseEnter={(e) => (e.currentTarget.style.color = "#F4F4F0")}
+          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--foreground)")}
           onMouseLeave={(e) => (e.currentTarget.style.color = "var(--primary)")}
           aria-label="Portal Access"
         >
@@ -65,7 +73,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
           }}
         >
           <img
-            src="/opus-form-primary-dark.svg"
+            src={theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg"}
             alt="Opus Form"
             style={{ width: "100%", height: "auto" }}
             draggable={false}
@@ -78,7 +86,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
       <footer
         className="w-full z-20 px-8 pb-7 pt-5"
         style={{
-          borderTop: "1px solid #2e2e33",
+          borderTop: "1px solid var(--border)",
           opacity: footerVisible ? 1 : 0,
           transition: "opacity 500ms ease-out",
         }}
@@ -102,7 +110,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
 
         {/* Company details + contact */}
         <div
-          className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono uppercase text-muted-foreground/80 text-center max-w-xl lg:max-w-none mx-auto"
+          className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono font-semibold uppercase text-muted-foreground/80 text-center max-w-xl lg:max-w-none mx-auto"
           style={{ letterSpacing: "0.15em" }}
         >
           <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">

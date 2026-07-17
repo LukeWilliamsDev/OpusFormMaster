@@ -187,7 +187,7 @@ export const PortalAuthPage: React.FC = () => {
     }, 3000);
   };
   return (
-    <div className="min-h-screen bg-[#111114] text-[#E4E4E7] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans">
+    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans">
       {/* Subtle concrete-texture grid overlay */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -216,7 +216,7 @@ export const PortalAuthPage: React.FC = () => {
 
         {/* Form container */}
         <div className="w-full">
-          <div className="w-full bg-[#16161a] border border-[#2a2a30] rounded-lg overflow-hidden shadow-lg">
+          <div className="w-full bg-card border border-border rounded-lg overflow-hidden shadow-lg">
             {formMode === "login" && (
               <div className="p-6 sm:p-8">
                 {formError && (
@@ -228,11 +228,11 @@ export const PortalAuthPage: React.FC = () => {
 
                 <form onSubmit={handleLogin} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[12px] font-semibold text-[#888] uppercase tracking-wider block mb-2">
+                    <label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
                       Email
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#555]">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground">
                         <Mail className="w-4 h-4" />
                       </div>
                       <input
@@ -240,26 +240,26 @@ export const PortalAuthPage: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="dispatcher@opusform.co.uk"
-                        className="w-full pl-12 pr-4 py-3 rounded-md border border-[#2a2a30] bg-[#1a1a1e] text-[#e4e4e7] focus:border-primary transition-colors placeholder:text-[#555] font-medium text-sm outline-none"
+                        className="w-full pl-12 pr-4 py-3 rounded-md border border-border bg-secondary text-foreground focus:border-primary transition-colors placeholder:text-muted-foreground font-medium text-sm outline-none"
                       />
                     </div>
                   </div>
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-[12px] font-semibold text-[#888] uppercase tracking-wider">
+                      <label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">
                         Password
                       </label>
                       <button
                         type="button"
                         onClick={() => setFormMode("forgot")}
-                        className="text-[12px] font-semibold text-[#666] hover:text-[#888] transition-colors cursor-pointer"
+                        className="text-[12px] font-semibold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       >
                         Forgot password?
                       </button>
                     </div>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#555]">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground">
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
@@ -267,7 +267,7 @@ export const PortalAuthPage: React.FC = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••"
-                        className="w-full pl-12 pr-12 py-3 rounded-md border border-[#2a2a30] bg-[#1a1a1e] text-[#e4e4e7] focus:border-primary transition-colors placeholder:text-[#555] font-medium text-sm outline-none"
+                        className="w-full pl-12 pr-12 py-3 rounded-md border border-border bg-secondary text-foreground focus:border-primary transition-colors placeholder:text-muted-foreground font-medium text-sm outline-none"
                       />
                     </div>
                   </div>
@@ -289,33 +289,33 @@ export const PortalAuthPage: React.FC = () => {
               <div className="p-6 sm:p-8">
                 <button
                   onClick={() => setFormMode("login")}
-                  className="flex items-center text-[9px] font-bold text-[#555] hover:text-[#b0b8c4] mb-8 transition-colors uppercase tracking-widest gap-1.5 cursor-pointer"
+                  className="flex items-center text-[9px] font-bold text-muted-foreground hover:text-foreground mb-8 transition-colors uppercase tracking-widest gap-1.5 cursor-pointer"
                 >
                   <ArrowLeft className="w-3 h-3" /> Return to Login
                 </button>
 
-                <div className="flex items-center gap-2.5 text-[11px] font-extrabold tracking-widest uppercase text-[#e0e0e0] mb-4">
-                  <div className="w-[3px] h-4 bg-[#b0b8c4] rounded-[2px]" />
+                <div className="flex items-center gap-2.5 text-[11px] font-extrabold tracking-widest uppercase text-foreground mb-4">
+                  <div className="w-[3px] h-4 bg-foreground rounded-[2px]" />
                   Password Recovery
                 </div>
-                <p className="text-[10px] text-[#555] mb-8 font-bold leading-relaxed uppercase tracking-widest">
+                <p className="text-[10px] text-muted-foreground mb-8 font-bold leading-relaxed uppercase tracking-widest">
                   Enter your authorized email to receive a secure restoration link.
                 </p>
 
                 <form onSubmit={handleForgot} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-[#555] uppercase tracking-widest block ml-1 mb-2">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block ml-1 mb-2">
                       Email Identifier
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#555]">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground">
                         <Mail className="w-4 h-4" />
                       </div>
                       <input
                         type="email"
                         required
                         placeholder="name@opusform.co.uk"
-                        className="w-full pl-12 pr-4 py-3 rounded-md border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-primary transition-colors placeholder:text-[#444] font-medium text-sm outline-none"
+                        className="w-full pl-12 pr-4 py-3 rounded-md border border-border bg-secondary text-foreground focus:border-primary transition-colors placeholder:text-muted-foreground font-medium text-sm outline-none"
                       />
                     </div>
                   </div>
@@ -337,8 +337,8 @@ export const PortalAuthPage: React.FC = () => {
 
             {formMode === "reset" && (
               <div className="p-6 sm:p-8">
-                <div className="flex items-center gap-2.5 text-[11px] font-extrabold tracking-widest uppercase text-[#e0e0e0] mb-8">
-                  <div className="w-[3px] h-4 bg-[#b0b8c4] rounded-[2px]" />
+                <div className="flex items-center gap-2.5 text-[11px] font-extrabold tracking-widest uppercase text-foreground mb-8">
+                  <div className="w-[3px] h-4 bg-foreground rounded-[2px]" />
                   Set New Password
                 </div>
 
@@ -351,11 +351,11 @@ export const PortalAuthPage: React.FC = () => {
 
                 <form onSubmit={handleResetPassword} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-[#555] uppercase tracking-widest block ml-1 mb-2">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block ml-1 mb-2">
                       New Password
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#555]">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground">
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
@@ -363,12 +363,12 @@ export const PortalAuthPage: React.FC = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-12 pr-12 py-3 rounded-md border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-primary transition-colors placeholder:text-[#444] font-medium text-sm outline-none tracking-widest"
+                        className="w-full pl-12 pr-12 py-3 rounded-md border border-border bg-secondary text-foreground focus:border-primary transition-colors placeholder:text-muted-foreground font-medium text-sm outline-none tracking-widest"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#555] hover:text-[#b0b8c4] transition-colors cursor-pointer"
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       >
                         {showPassword ? (
                           <EyeOff className="w-4 h-4" />
@@ -379,8 +379,8 @@ export const PortalAuthPage: React.FC = () => {
                     </div>
 
                     {password.length > 0 && (
-                      <div className="p-3 bg-[#1A1B1E] border border-[#2e2e2e] rounded-md space-y-2">
-                        <div className="text-[9px] font-bold text-[#555] uppercase tracking-widest mb-1">
+                      <div className="p-3 bg-secondary border border-border rounded-md space-y-2">
+                        <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
                           Strength Criteria:
                         </div>
                         {[
@@ -395,9 +395,9 @@ export const PortalAuthPage: React.FC = () => {
                             className="flex items-center gap-2 text-[9px] uppercase tracking-wider font-bold"
                           >
                             <div
-                              className={`w-1.5 h-1.5 rounded-full ${rule.met ? "bg-primary animate-pulse" : "bg-[#333]"}`}
+                              className={`w-1.5 h-1.5 rounded-full ${rule.met ? "bg-primary animate-pulse" : "bg-border"}`}
                             />
-                            <span className={rule.met ? "text-[#859bb0]" : "text-[#444]"}>
+                            <span className={rule.met ? "text-foreground" : "text-muted-foreground"}>
                               {rule.label}
                             </span>
                           </div>
@@ -407,11 +407,11 @@ export const PortalAuthPage: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-[#555] uppercase tracking-widest block ml-1 mb-2">
+                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block ml-1 mb-2">
                       Confirm Password
                     </label>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#555]">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground">
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
@@ -419,12 +419,12 @@ export const PortalAuthPage: React.FC = () => {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
-                        className="w-full pl-12 pr-12 py-3 rounded-md border border-[#2e2e2e] bg-[#1A1B1E] text-[#e0e0e0] focus:border-primary transition-colors placeholder:text-[#444] font-medium text-sm outline-none tracking-widest"
+                        className="w-full pl-12 pr-12 py-3 rounded-md border border-border bg-secondary text-foreground focus:border-primary transition-colors placeholder:text-muted-foreground font-medium text-sm outline-none tracking-widest"
                       />
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-[#555] hover:text-[#b0b8c4] transition-colors cursor-pointer"
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       >
                         {showConfirmPassword ? (
                           <EyeOff className="w-4 h-4" />
@@ -455,7 +455,7 @@ export const PortalAuthPage: React.FC = () => {
           </div>
 
           {/* Footer */}
-          <div className="text-center mt-12 text-[9px] text-[#555] font-bold uppercase tracking-[0.25em]">
+          <div className="text-center mt-12 text-[9px] text-muted-foreground font-bold uppercase tracking-[0.25em]">
             OPUS FORM · {new Date().getFullYear()}
           </div>
         </div>

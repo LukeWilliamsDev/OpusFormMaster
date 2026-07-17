@@ -62,7 +62,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                   {day.date.split("-")[2]}
                 </span>
               </div>
-              <span className="text-[10px] font-black text-[#8FB996] shrink-0">
+              <span className="text-[10px] font-black text-success shrink-0">
                 {schedule?.deployedCount ?? 0}
               </span>
             </div>

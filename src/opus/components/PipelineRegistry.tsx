@@ -234,19 +234,19 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
       {/* Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
             Quote Management
           </h1>
 
           {/* Search Bar */}
-          <div className="flex items-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg px-3 py-1.5 w-full sm:max-w-xs">
+          <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 w-full sm:max-w-xs">
             <Search className="w-4 h-4 text-gray-500" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               placeholder="Search quotes..."
-              className="bg-transparent border-none text-xs text-[#e4e4e7] placeholder:text-[#555] outline-none flex-1"
+              className="bg-transparent border-none text-xs text-foreground placeholder:text-muted-foreground outline-none flex-1"
             />
           </div>
         </div>
@@ -254,7 +254,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         {/* New Quote Button */}
         <button
           onClick={onNewQuote}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-[#2a3038] hover:bg-[#323a44] border border-[#3e4854] text-white rounded-lg text-xs font-bold transition-all shadow-lg select-none"
+          className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-lg text-xs font-bold transition-all shadow-lg select-none"
         >
           <Plus className="w-4 h-4" />
           <span>New Quote</span>
@@ -263,19 +263,19 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
       <main className="mt-0 pb-8 space-y-6">
         {!isLoading && sortedQuotes.length === 0 && (
-          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl px-4 py-12 text-center text-xs font-bold uppercase tracking-wider text-gray-500">
+          <div className="bg-card border border-border rounded-xl px-4 py-12 text-center text-xs font-bold uppercase tracking-wider text-gray-500">
             No matching pipeline estimates found
           </div>
         )}
 
         {/* Desktop Table (lg and up) */}
         <div className="hidden lg:block space-y-4">
-          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl overflow-hidden shadow-2xl">
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl">
             {/* Table Header */}
-            <div className="grid grid-cols-[110px_1.6fr_1fr_120px_110px] gap-4 px-5 py-3 border-b border-[#2a2a30] bg-[#161618]">
+            <div className="grid grid-cols-[110px_1.6fr_1fr_120px_110px] gap-4 px-5 py-3 border-b border-border bg-background">
               <button
                 onClick={() => handleSort("ref")}
-                className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-[#555] hover:text-[#e4e4e7] transition-colors focus:outline-none select-none text-left"
+                className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-left"
               >
                 Ref
                 {sortField === "ref" &&
@@ -287,7 +287,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               </button>
               <button
                 onClick={() => handleSort("client")}
-                className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-[#555] hover:text-[#e4e4e7] transition-colors focus:outline-none select-none text-left"
+                className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-left"
               >
                 Client / Site
                 {sortField === "client" &&
@@ -299,7 +299,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               </button>
               <button
                 onClick={() => handleSort("date")}
-                className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-[#555] hover:text-[#e4e4e7] transition-colors focus:outline-none select-none text-left"
+                className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-left"
               >
                 Date
                 {sortField === "date" &&
@@ -311,7 +311,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               </button>
               <button
                 onClick={() => handleSort("value")}
-                className="flex items-center justify-end gap-1 text-[11px] font-bold tracking-wider uppercase text-[#555] hover:text-[#e4e4e7] transition-colors focus:outline-none select-none text-right w-full"
+                className="flex items-center justify-end gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-right w-full"
               >
                 Value
                 {sortField === "value" &&
@@ -323,7 +323,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               </button>
               <button
                 onClick={() => handleSort("status")}
-                className="flex items-center justify-end gap-1 text-[11px] font-bold tracking-wider uppercase text-[#555] hover:text-[#e4e4e7] transition-colors focus:outline-none select-none text-right w-full"
+                className="flex items-center justify-end gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-right w-full"
               >
                 Status
                 {sortField === "status" &&
@@ -335,7 +335,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               </button>
             </div>
 
-            <div className="divide-y divide-[#1e1e24]">
+            <div className="divide-y divide-border">
               <AnimatePresence mode="popLayout">
                 {sortedQuotes.map((quote) => (
                   <motion.div
@@ -344,7 +344,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     layout
-                    className="grid grid-cols-[110px_1.6fr_1fr_120px_110px] gap-4 px-5 py-4 items-center hover:bg-[#1e1e22]/50 transition-colors duration-150 cursor-pointer"
+                    className="grid grid-cols-[110px_1.6fr_1fr_120px_110px] gap-4 px-5 py-4 items-center hover:bg-secondary/50 transition-colors duration-150 cursor-pointer"
                     onClick={() => setSelectedQuoteForControl(quote)}
                   >
                     {/* Quote Ref */}
@@ -354,7 +354,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
                     {/* Site / Contractor */}
                     <div className="space-y-0.5">
-                      <div className="text-sm font-semibold text-white">
+                      <div className="text-sm font-semibold text-foreground">
                         {quote.clientInfo?.entity || "No Contractor Data"}
                       </div>
                       <div className="text-xs text-gray-500">
@@ -369,7 +369,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
                     {/* Estimated Value */}
                     <div className="text-right">
-                      <span className="text-[14px] font-mono font-bold text-white tracking-wide">
+                      <span className="text-[14px] font-mono font-bold text-foreground tracking-wide">
                         £
                         {(quote.totals?.grossTotal || 0).toLocaleString(undefined, {
                           minimumFractionDigits: 0,
@@ -402,7 +402,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
           {sortedQuotes.map((quote) => (
             <div
               key={quote.id}
-              className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-3 cursor-pointer active:bg-[#1e1e22]/50 transition-colors"
+              className="bg-card border border-border rounded-xl p-4 space-y-3 cursor-pointer active:bg-secondary/50 transition-colors"
               onClick={() => setSelectedQuoteForControl(quote)}
             >
               {/* Ref + Status */}
@@ -423,7 +423,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
               {/* Contractor / Site */}
               <div className="space-y-0.5">
-                <div className="text-sm font-semibold text-white">
+                <div className="text-sm font-semibold text-foreground">
                   {quote.clientInfo?.entity || "No Contractor Data"}
                 </div>
                 <div className="text-xs text-gray-500">
@@ -434,7 +434,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               {/* Date + Value */}
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-400 font-medium">{quote.date || "Pending"}</span>
-                <span className="text-[14px] font-mono font-bold text-white tracking-wide">
+                <span className="text-[14px] font-mono font-bold text-foreground tracking-wide">
                   £
                   {(quote.totals?.grossTotal || 0).toLocaleString(undefined, {
                     minimumFractionDigits: 0,
@@ -459,8 +459,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         message={
           <>
             Are you sure you want to delete the quote{" "}
-            <span className="font-bold text-white">{selectedQuoteToDelete?.reference}</span> for{" "}
-            <span className="font-bold text-white">
+            <span className="font-bold text-foreground">{selectedQuoteToDelete?.reference}</span> for{" "}
+            <span className="font-bold text-foreground">
               {selectedQuoteToDelete?.clientInfo?.entity}
             </span>
             ?
@@ -485,17 +485,17 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         message={
           <>
             You are about to create a job from quote{" "}
-            <span className="font-bold text-white">{convertingQuote?.reference}</span>.
+            <span className="font-bold text-foreground">{convertingQuote?.reference}</span>.
             <div className="mt-3 bg-white/5 border border-white/5 rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-center">
                 <span className="text-xs font-medium text-white/50">Main Contractor:</span>
-                <span className="text-sm font-semibold text-white">
+                <span className="text-sm font-semibold text-foreground">
                   {convertingQuote?.clientInfo?.entity}
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-xs font-medium text-white/50">Site Name:</span>
-                <span className="text-sm font-semibold text-white max-w-[180px] text-right truncate">
+                <span className="text-sm font-semibold text-foreground max-w-[180px] text-right truncate">
                   {convertingQuote?.clientInfo?.site}
                 </span>
               </div>
@@ -528,12 +528,12 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-xl bg-[#1e1e24] border-l border-white/10 shadow-2xl h-full flex flex-col z-10"
+              className="relative w-full max-w-xl bg-card border-l border-white/10 shadow-2xl h-full flex flex-col z-10"
             >
               {/* Sticky Header */}
               <div className="p-6 border-b border-white/5 bg-white/[0.01] flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white">
+                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground">
                     Quote Control Center
                   </h3>
                   <span
@@ -548,7 +548,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 </div>
                 <button
                   onClick={() => setSelectedQuoteForControl(null)}
-                  className="p-1 rounded-lg bg-[#2a2a30] hover:bg-[#333] border border-white/10 text-gray-400 hover:text-white transition-colors"
+                  className="p-1 rounded-lg bg-secondary hover:bg-secondary/80 border border-white/10 text-gray-400 hover:text-foreground transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -558,15 +558,15 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               <div className="p-6 flex-1 overflow-y-auto space-y-6">
                 {/* Meta details */}
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-[#1a1a1e] border border-[#2a2a30] p-4 rounded-xl">
+                  <div className="bg-card border border-border p-4 rounded-xl">
                     <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest block mb-1">
                       Contractor
                     </span>
-                    <span className="text-xs font-semibold text-white">
+                    <span className="text-xs font-semibold text-foreground">
                       {selectedQuoteForControl.clientInfo?.entity || "N/A"}
                     </span>
                   </div>
-                  <div className="bg-[#1a1a1e] border border-[#2a2a30] p-4 rounded-xl">
+                  <div className="bg-card border border-border p-4 rounded-xl">
                     <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest block mb-1">
                       Reference
                     </span>
@@ -574,19 +574,19 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                       {selectedQuoteForControl.reference}
                     </span>
                   </div>
-                  <div className="bg-[#1a1a1e] border border-[#2a2a30] p-4 rounded-xl">
+                  <div className="bg-card border border-border p-4 rounded-xl">
                     <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest block mb-1">
                       Site / Project
                     </span>
-                    <span className="text-xs font-semibold text-white">
+                    <span className="text-xs font-semibold text-foreground">
                       {selectedQuoteForControl.clientInfo?.site || "N/A"}
                     </span>
                   </div>
-                  <div className="bg-[#1a1a1e] border border-[#2a2a30] p-4 rounded-xl">
+                  <div className="bg-card border border-border p-4 rounded-xl">
                     <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest block mb-1">
                       Postcode
                     </span>
-                    <span className="text-xs font-semibold text-white">
+                    <span className="text-xs font-semibold text-foreground">
                       {selectedQuoteForControl.clientInfo?.postcode || "N/A"}
                     </span>
                   </div>
@@ -597,8 +597,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                   <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest block">
                     Bill of Quantities
                   </span>
-                  <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl overflow-hidden">
-                    <div className="grid grid-cols-[1fr_60px_60px_80px] gap-2 p-3 bg-[#161618] border-b border-[#2a2a30] text-[11px] font-black uppercase text-gray-400 tracking-widest">
+                  <div className="bg-card border border-border rounded-xl overflow-hidden">
+                    <div className="grid grid-cols-[1fr_60px_60px_80px] gap-2 p-3 bg-background border-b border-border text-[11px] font-black uppercase text-gray-400 tracking-widest">
                       <span>Description</span>
                       <span className="text-right">Qty</span>
                       <span>Unit</span>
@@ -616,7 +616,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                               {item.quantity}
                             </span>
                             <span className="text-white/40 italic">{item.unit}</span>
-                            <span className="text-right font-mono font-semibold text-white">
+                            <span className="text-right font-mono font-semibold text-foreground">
                               {typeof item.rate === "string" &&
                               (item.rate.toUpperCase() === "INCLUDED" ||
                                 item.rate.toUpperCase() === "INCL")
@@ -635,12 +635,12 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 </div>
 
                 {/* Summary Totals */}
-                <div className="bg-[#1a1a1e] border border-[#2a2a30] p-4 rounded-xl grid grid-cols-3 gap-2 text-center">
+                <div className="bg-card border border-border p-4 rounded-xl grid grid-cols-3 gap-2 text-center">
                   <div>
                     <span className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest block mb-0.5">
                       Net Subtotal
                     </span>
-                    <span className="text-xs font-mono font-semibold text-white">
+                    <span className="text-xs font-mono font-semibold text-foreground">
                       £
                       {(selectedQuoteForControl.totals?.netTotal || 0).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
@@ -652,7 +652,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     <span className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest block mb-0.5">
                       VAT ({selectedQuoteForControl.vatRate || 20}%)
                     </span>
-                    <span className="text-xs font-mono font-semibold text-white">
+                    <span className="text-xs font-mono font-semibold text-foreground">
                       £
                       {(selectedQuoteForControl.totals?.vatAmount || 0).toLocaleString(undefined, {
                         minimumFractionDigits: 2,
@@ -660,7 +660,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                       })}
                     </span>
                   </div>
-                  <div className="bg-[#24262b] border border-white/10 rounded-lg p-2">
+                  <div className="bg-secondary border border-white/10 rounded-lg p-2">
                     <span className="text-[7.5px] font-black text-primary uppercase tracking-widest block mb-0.5">
                       Gross Total
                     </span>
@@ -682,7 +682,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     setSelectedQuoteForControl(null);
                     onEditQuote(selectedQuoteForControl.id);
                   }}
-                  className="flex-1 py-3 bg-[#2a2a30] hover:bg-[#333] border border-white/10 text-white rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
+                  className="flex-1 py-3 bg-secondary hover:bg-secondary/80 border border-white/10 text-foreground rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
                 >
                   Edit Quote
                 </button>
@@ -692,7 +692,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     setSelectedQuoteForControl(null);
                     setConvertingQuote(quote);
                   }}
-                  className="flex-1 py-3 bg-primary hover:brightness-110 text-white rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
+                  className="flex-1 py-3 bg-primary hover:brightness-110 text-primary-foreground rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
                 >
                   Convert to Job
                 </button>

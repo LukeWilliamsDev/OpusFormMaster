@@ -64,11 +64,11 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
       <div className="flex items-center gap-2 text-xs">
         <span className="font-bold text-gray-400">{formatDayHeading(date)}</span>
         <span className="text-gray-600">·</span>
-        <span className="font-black text-[#8FB996]">{schedule.deployedCount} staff deployed</span>
+        <span className="font-black text-success">{schedule.deployedCount} staff deployed</span>
       </div>
 
       {activeJobs.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-10 text-gray-500 border border-dashed border-[#2a2a30] rounded-xl">
+        <div className="flex flex-col items-center gap-2 py-10 text-gray-500 border border-dashed border-border rounded-xl">
           <Users className="w-6 h-6" />
           <span className="text-xs font-bold uppercase tracking-wider">No active projects</span>
         </div>
@@ -80,7 +80,7 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
           return (
             <div
               key={job.id}
-              className={`border rounded-xl bg-[#1a1a1e] p-4 space-y-3 ${colors.border}`}
+              className={`border rounded-xl bg-card p-4 space-y-3 ${colors.border}`}
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
@@ -117,7 +117,7 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
               <button
                 type="button"
                 onClick={() => onAddStaff(job)}
-                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg border border-dashed border-[#3a3a42] text-gray-500 hover:text-white hover:border-primary text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg border border-dashed border-border text-gray-500 hover:text-foreground hover:border-primary text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Staff Member

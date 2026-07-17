@@ -466,14 +466,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
   });
 
   return (
-    <div className="space-y-6 font-sans text-[#E4E4E7] p-4 md:p-6 max-w-7xl mx-auto bg-[#0F1012] min-h-screen">
+    <div className="space-y-6 font-sans text-foreground p-4 md:p-6 max-w-7xl mx-auto bg-background min-h-screen">
       {/* Header Bar */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#27272A]">
+      <div className="flex items-center justify-between pb-4 border-b border-border">
         <button
           onClick={onBack}
-          className="flex items-center gap-1 text-muted-foreground hover:text-white font-medium text-sm transition-colors cursor-pointer"
+          className="flex items-center gap-1 text-muted-foreground hover:text-foreground font-medium text-sm transition-colors cursor-pointer"
         >
-          <ChevronLeft className="w-5 h-5 text-[#475569]" />
+          <ChevronLeft className="w-5 h-5 text-muted-foreground" />
           <span>Job Ledger</span>
         </button>
         <div className="text-xs font-semibold bg-secondary border border-border text-muted-foreground px-3 py-1 rounded-md font-mono">
@@ -483,7 +483,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
 
       {/* Title & Contractor info */}
       <div className="space-y-1 pb-2">
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">{job.siteName}</h1>
+        <h1 className="text-3xl font-extrabold text-foreground tracking-tight">{job.siteName}</h1>
         <p className="text-sm text-muted-foreground">
           {job.mainContractor} · <span className="font-mono">{job.postcode}</span>
         </p>
@@ -492,11 +492,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
       {/* Main Grid: Status, Progress, and Live Weather */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Project Status Selector Card */}
-        <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5">
-          <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider mb-4">
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-4">
             Project Status
           </div>
-          <div className="flex bg-[#0F1012] p-1 rounded-lg border border-[#27272A] gap-1">
+          <div className="flex bg-background p-1 rounded-lg border border-border gap-1">
             {(["in-progress", "pending", "completed"] as const).map((s) => {
               const isActive =
                 (s === "in-progress" && status === "in-progress") ||
@@ -507,7 +507,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                   key={s}
                   onClick={() => handleStatusChange(s)}
                   className={`flex-1 text-center py-2.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    isActive ? "bg-[#3D4E5D] text-white" : "text-[#525866] hover:text-muted-foreground"
+                    isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   {s === "in-progress" ? "In Progress" : s}
@@ -518,44 +518,44 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
         </div>
 
         {/* Pour Progress Card */}
-        <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5">
-          <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider mb-3">
+        <div className="bg-card border border-border rounded-xl p-5">
+          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-3">
             Pour Progress
           </div>
           <div className="flex justify-between items-baseline mb-2">
-            <span className="text-sm font-semibold text-white">
+            <span className="text-sm font-semibold text-foreground">
               {currentPours} of {contractMaxPours} contracted
             </span>
-            <span className="text-[#FF9F0A] text-sm font-bold">{pourPercent}%</span>
+            <span className="text-primary text-sm font-bold">{pourPercent}%</span>
           </div>
-          <div className="h-1.5 bg-[#27272A] rounded-full overflow-hidden">
+          <div className="h-1.5 bg-secondary rounded-full overflow-hidden">
             <div
-              className="h-full bg-[#FF9F0A] rounded-full transition-all duration-500"
+              className="h-full bg-primary rounded-full transition-all duration-500"
               style={{ width: `${Math.min(100, (currentPours / (contractMaxPours || 1)) * 100)}%` }}
             />
           </div>
         </div>
 
         {/* Live Weather Card */}
-        <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 flex flex-col justify-between">
-          <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider">
+        <div className="bg-card border border-border rounded-xl p-5 flex flex-col justify-between">
+          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
             Live Weather Risk
           </div>
           {loadingWeather ? (
-            <div className="flex items-center gap-2 text-xs text-[#71717A] py-2">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
               <Loader className="w-4 h-4 animate-spin text-primary" />
               <span>Fetching Weather...</span>
             </div>
           ) : weatherData ? (
             <div className="flex items-center justify-between mt-2">
               <div className="space-y-1">
-                <div className="text-lg font-bold text-white flex items-center gap-2">
+                <div className="text-lg font-bold text-foreground flex items-center gap-2">
                   <span>{weatherData.temp}°C</span>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
                       weatherData.isImpactful
-                        ? "bg-[#451A1A] text-[#EF4444] border border-[#EF4444]/20"
-                        : "bg-[#142A1E] text-[#10B981] border border-[#10B981]/20"
+                        ? "bg-destructive/15 text-destructive border border-destructive/20"
+                        : "bg-success/15 text-success border border-success/20"
                     }`}
                   >
                     {weatherData.riskLevel} Risk
@@ -572,22 +572,22 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
               )}
             </div>
           ) : (
-            <p className="text-xs text-[#71717A] mt-2">Weather details unavailable.</p>
+            <p className="text-xs text-muted-foreground mt-2">Weather details unavailable.</p>
           )}
         </div>
       </div>
 
       {/* Interactive Proximity Suppliers Map */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-[#161619] border border-[#27272A] rounded-xl overflow-hidden flex flex-col">
-          <div className="p-4 border-b border-[#27272A] flex justify-between items-center">
+        <div className="lg:col-span-2 bg-card border border-border rounded-xl overflow-hidden flex flex-col">
+          <div className="p-4 border-b border-border flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-[#EF4444]" />
-              <span className="text-xs font-bold uppercase tracking-wider text-white">
+              <MapPin className="w-4 h-4 text-destructive" />
+              <span className="text-xs font-bold uppercase tracking-wider text-foreground">
                 Live Site Proximity Matrix
               </span>
             </div>
-            <span className="text-[10px] text-[#71717A] font-mono">OpenStreetMap Engine</span>
+            <span className="text-[10px] text-muted-foreground font-mono">OpenStreetMap Engine</span>
           </div>
           {siteCoords ? (
             <div className="flex-1 min-h-[300px] relative">
@@ -602,20 +602,20 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
               />
             </div>
           ) : (
-            <div className="p-8 text-center text-xs text-[#525866] py-16">
+            <div className="p-8 text-center text-xs text-muted-foreground py-16">
               Geocoding site coordinates...
             </div>
           )}
         </div>
 
         {/* Local Suppliers List */}
-        <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 flex flex-col justify-between">
+        <div className="bg-card border border-border rounded-xl p-5 flex flex-col justify-between">
           <div className="space-y-4">
-            <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider">
+            <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
               Closest Local Suppliers
             </div>
             {loadingSuppliers ? (
-              <div className="flex items-center gap-2 text-xs text-[#71717A] py-4">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
                 <Loader className="w-4 h-4 animate-spin text-primary" />
                 <span>Searching local building merchants...</span>
               </div>
@@ -628,16 +628,16 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer flex justify-between items-start ${
                       selectedSupplierId === s.id
                         ? "bg-secondary border-primary"
-                        : "bg-[#0F1012] border-[#27272A] hover:border-[#3F3F46]"
+                        : "bg-background border-border hover:border-muted-foreground/40"
                     }`}
                   >
                     <div className="space-y-0.5 max-w-[70%]">
-                      <div className="text-xs font-bold text-white truncate">{s.name}</div>
-                      <div className="text-[10px] text-[#71717A] truncate">{s.address}</div>
-                      <div className="text-[10px] text-[#FF9F0A] font-mono">{s.phone}</div>
+                      <div className="text-xs font-bold text-foreground truncate">{s.name}</div>
+                      <div className="text-[10px] text-muted-foreground truncate">{s.address}</div>
+                      <div className="text-[10px] text-primary font-mono">{s.phone}</div>
                     </div>
                     <div className="text-right">
-                      <span className="text-[10px] font-bold bg-[#1A1B1E] border border-[#27272A] px-2 py-0.5 rounded text-muted-foreground">
+                      <span className="text-[10px] font-bold bg-background border border-border px-2 py-0.5 rounded text-muted-foreground">
                         {s.distance}
                       </span>
                     </div>
@@ -645,7 +645,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                 ))}
               </div>
             ) : (
-              <div className="text-xs text-[#71717A] py-4">
+              <div className="text-xs text-muted-foreground py-4">
                 No local tool hire or building merchants found.
               </div>
             )}
@@ -656,21 +656,21 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
       {/* Project Management Grid: Daily Site Diary & Checklist + Staff on Site */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Site Diary & Checklist */}
-        <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 space-y-4">
+        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div className="flex items-center gap-2">
             <ClipboardList className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-white">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
               Daily Site Diary & H&S Clearance
             </h2>
           </div>
 
-          <div className="space-y-3 bg-[#0F1012] border border-[#27272A] rounded-lg p-4">
-            <div className="text-[10px] font-bold uppercase text-[#71717A]">
+          <div className="space-y-3 bg-background border border-border rounded-lg p-4">
+            <div className="text-[10px] font-bold uppercase text-muted-foreground">
               Health & Safety Checklists
             </div>
 
             <div className="space-y-2.5">
-              <label className="flex items-center gap-2.5 text-xs text-white cursor-pointer select-none">
+              <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={hsChecklist.ppe}
@@ -678,12 +678,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     setHsChecklist((prev) => ({ ...prev, ppe: e.target.checked }));
                     setDiarySaved(false);
                   }}
-                  className="rounded border-[#27272A] text-primary focus:ring-0 bg-[#161619] w-4 h-4"
+                  className="rounded border-border text-primary focus:ring-0 bg-card w-4 h-4"
                 />
                 <span>Operatives wearing full PPE (Hard Hat, Boots, Hi-Vis)</span>
               </label>
 
-              <label className="flex items-center gap-2.5 text-xs text-white cursor-pointer select-none">
+              <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={hsChecklist.briefing}
@@ -691,12 +691,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     setHsChecklist((prev) => ({ ...prev, briefing: e.target.checked }));
                     setDiarySaved(false);
                   }}
-                  className="rounded border-[#27272A] text-primary focus:ring-0 bg-[#161619] w-4 h-4"
+                  className="rounded border-border text-primary focus:ring-0 bg-card w-4 h-4"
                 />
                 <span>Daily site safety briefing completed</span>
               </label>
 
-              <label className="flex items-center gap-2.5 text-xs text-white cursor-pointer select-none">
+              <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={hsChecklist.delivery}
@@ -704,12 +704,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     setHsChecklist((prev) => ({ ...prev, delivery: e.target.checked }));
                     setDiarySaved(false);
                   }}
-                  className="rounded border-[#27272A] text-primary focus:ring-0 bg-[#161619] w-4 h-4"
+                  className="rounded border-border text-primary focus:ring-0 bg-card w-4 h-4"
                 />
                 <span>Concrete delivery access & wash-out zone ready</span>
               </label>
 
-              <label className="flex items-center gap-2.5 text-xs text-white cursor-pointer select-none">
+              <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={hsChecklist.weather}
@@ -717,7 +717,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     setHsChecklist((prev) => ({ ...prev, weather: e.target.checked }));
                     setDiarySaved(false);
                   }}
-                  className="rounded border-[#27272A] text-primary focus:ring-0 bg-[#161619] w-4 h-4"
+                  className="rounded border-border text-primary focus:ring-0 bg-card w-4 h-4"
                 />
                 <span>Weather risk assessed & cleared for execution</span>
               </label>
@@ -725,7 +725,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block">
+            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
               Daily Notes & Observations
             </label>
             <textarea
@@ -736,18 +736,18 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                 setDiarySaved(false);
               }}
               placeholder="Record any delays, materials delivered, visitors, or site concerns..."
-              className="w-full bg-[#0F1012] border border-[#27272A] text-xs text-white rounded-lg p-3 outline-none focus:border-primary"
+              className="w-full bg-background border border-border text-xs text-foreground rounded-lg p-3 outline-none focus:border-primary"
             />
           </div>
 
           <div className="flex justify-between items-center pt-2">
-            <span className="text-[10px] text-[#71717A] font-mono">
+            <span className="text-[10px] text-muted-foreground font-mono">
               {diarySaved ? "✓ Saved" : "● Unsaved changes"}
             </span>
             <button
               onClick={saveSiteDiary}
               disabled={savingDiary}
-              className="px-4 py-2 bg-primary hover:bg-primary text-white font-bold rounded-lg text-xs cursor-pointer flex items-center gap-1.5 transition-all"
+              className="px-4 py-2 bg-primary hover:bg-primary text-primary-foreground font-bold rounded-lg text-xs cursor-pointer flex items-center gap-1.5 transition-all"
             >
               {savingDiary && <Loader className="w-3 h-3 animate-spin" />}
               Save Site Journal
@@ -756,11 +756,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
         </div>
 
         {/* Staff on Site */}
-        <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 space-y-4">
+        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-white">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
                 Staff Scheduled On Site
               </h2>
             </div>
@@ -770,7 +770,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
           </div>
 
           {loadingStaff ? (
-            <div className="flex items-center gap-2 text-xs text-[#71717A] py-8">
+            <div className="flex items-center gap-2 text-xs text-muted-foreground py-8">
               <Loader className="w-4 h-4 animate-spin text-primary" />
               <span>Loading staff matrix...</span>
             </div>
@@ -778,18 +778,18 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
             <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
               {Object.keys(groupedStaff).map((roleName) => (
                 <div key={roleName} className="space-y-1.5">
-                  <div className="text-[10px] text-primary font-bold uppercase tracking-wider border-b border-[#27272A] pb-1">
+                  <div className="text-[10px] text-primary font-bold uppercase tracking-wider border-b border-border pb-1">
                     {roleName} ({groupedStaff[roleName].length})
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {groupedStaff[roleName].map((w) => (
                       <div
                         key={w.id}
-                        className="bg-[#0F1012] border border-[#27272A] rounded-lg p-2.5 flex items-center justify-between"
+                        className="bg-background border border-border rounded-lg p-2.5 flex items-center justify-between"
                       >
-                        <span className="text-xs font-bold text-white">{w.name}</span>
+                        <span className="text-xs font-bold text-foreground">{w.name}</span>
                         {w.postcode && (
-                          <span className="text-[9px] text-[#71717A] font-mono">{w.postcode}</span>
+                          <span className="text-[9px] text-muted-foreground font-mono">{w.postcode}</span>
                         )}
                       </div>
                     ))}
@@ -798,7 +798,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
               ))}
             </div>
           ) : (
-            <div className="text-xs text-[#71717A] py-8 text-center uppercase tracking-wider">
+            <div className="text-xs text-muted-foreground py-8 text-center uppercase tracking-wider">
               No staff members scheduled to this job site.
             </div>
           )}
@@ -808,11 +808,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
       {/* Attachments Section: Photos and Documents */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Before & After Photo Gallery */}
-        <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 space-y-4">
-          <div className="flex justify-between items-center border-b border-[#27272A] pb-3">
+        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+          <div className="flex justify-between items-center border-b border-border pb-3">
             <div className="flex items-center gap-2">
               <Camera className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-white">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
                 Before & After Site Media
               </h2>
             </div>
@@ -821,7 +821,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {/* Before Section */}
             <div className="space-y-2">
-              <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider flex justify-between items-center">
+              <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
                 <span>Before Pours</span>
                 <label className="text-[10px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
                   {uploadingPhotoBefore ? (
@@ -842,13 +842,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                   />
                 </label>
               </div>
-              <div className="bg-[#0F1012] border border-[#27272A] rounded-xl min-h-[140px] flex items-center justify-center p-3">
+              <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
                 {beforePhotos.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2 w-full">
                     {beforePhotos.map((p) => (
                       <div
                         key={p.id}
-                        className="relative group rounded-lg overflow-hidden border border-[#27272A]"
+                        className="relative group rounded-lg overflow-hidden border border-border"
                       >
                         <img src={p.file_url} alt="before" className="w-full h-24 object-cover" />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-muted-foreground">
@@ -859,7 +859,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     ))}
                   </div>
                 ) : (
-                  <span className="text-[10px] text-[#525866] uppercase tracking-widest font-semibold">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
                     No Media
                   </span>
                 )}
@@ -868,7 +868,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
 
             {/* After Section */}
             <div className="space-y-2">
-              <div className="text-[10px] text-[#71717A] font-bold uppercase tracking-wider flex justify-between items-center">
+              <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
                 <span>After Pours</span>
                 <label className="text-[10px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
                   {uploadingPhotoAfter ? (
@@ -889,13 +889,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                   />
                 </label>
               </div>
-              <div className="bg-[#0F1012] border border-[#27272A] rounded-xl min-h-[140px] flex items-center justify-center p-3">
+              <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
                 {afterPhotos.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2 w-full">
                     {afterPhotos.map((p) => (
                       <div
                         key={p.id}
-                        className="relative group rounded-lg overflow-hidden border border-[#27272A]"
+                        className="relative group rounded-lg overflow-hidden border border-border"
                       >
                         <img src={p.file_url} alt="after" className="w-full h-24 object-cover" />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-muted-foreground">
@@ -906,7 +906,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     ))}
                   </div>
                 ) : (
-                  <span className="text-[10px] text-[#525866] uppercase tracking-widest font-semibold">
+                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
                     No Media
                   </span>
                 )}
@@ -916,11 +916,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
         </div>
 
         {/* Project Documents & Drag-and-Drop */}
-        <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5 space-y-4">
-          <div className="flex justify-between items-center border-b border-[#27272A] pb-3">
+        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+          <div className="flex justify-between items-center border-b border-border pb-3">
             <div className="flex items-center gap-2">
               <FileText className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-white">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
                 Project Documents
               </h2>
             </div>
@@ -943,17 +943,17 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
           {generatedLink && (
             <div className="bg-secondary border border-border rounded-xl p-3.5 flex items-center justify-between gap-3 animate-fade-in">
               <div className="space-y-0.5 max-w-[75%]">
-                <div className="text-[10px] font-bold text-white uppercase tracking-wider">
+                <div className="text-[10px] font-bold text-foreground uppercase tracking-wider">
                   Secure Upload Link Generated
                 </div>
                 <div className="text-[11px] text-muted-foreground truncate font-mono">{generatedLink}</div>
               </div>
               <button
                 onClick={copyToClipboard}
-                className="px-3 py-1.5 bg-[#161619] border border-[#27272A] text-white hover:bg-[#27272A] rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3 py-1.5 bg-card border border-border text-foreground hover:bg-secondary rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 {copiedLink ? (
-                  <Check className="w-3.5 h-3.5 text-[#10B981]" />
+                  <Check className="w-3.5 h-3.5 text-success" />
                 ) : (
                   <Copy className="w-3.5 h-3.5" />
                 )}
@@ -963,7 +963,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
           )}
 
           {/* Drag and drop zone */}
-          <div className="border border-dashed border-[#27272A] hover:border-[#3F3F46] rounded-xl p-6 bg-[#0F1012] text-center relative transition-all">
+          <div className="border border-dashed border-border hover:border-muted-foreground/40 rounded-xl p-6 bg-background text-center relative transition-all">
             <input
               type="file"
               onChange={(e) =>
@@ -973,11 +973,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
               disabled={uploadingDoc}
             />
             <div className="flex flex-col items-center gap-2">
-              <FileText className="w-8 h-8 text-[#71717A]" />
-              <div className="text-xs font-bold text-white">
+              <FileText className="w-8 h-8 text-muted-foreground" />
+              <div className="text-xs font-bold text-foreground">
                 {uploadingDoc ? "Uploading..." : "Drop files here or click to upload"}
               </div>
-              <div className="text-[10px] text-[#71717A]">PDF, Excel, Word, or CAD Drawings</div>
+              <div className="text-[10px] text-muted-foreground">PDF, Excel, Word, or CAD Drawings</div>
             </div>
           </div>
 
@@ -986,27 +986,27 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
             {projectDocs.map((d) => (
               <div
                 key={d.id}
-                className="flex justify-between items-center p-2.5 bg-[#0F1012] border border-[#27272A] rounded-lg hover:border-[#3F3F46] transition-all"
+                className="flex justify-between items-center p-2.5 bg-background border border-border rounded-lg hover:border-muted-foreground/40 transition-all"
               >
                 <div className="flex items-center gap-2 truncate max-w-[70%]">
-                  <FileText className="w-4 h-4 text-[#71717A] shrink-0" />
+                  <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
                   <a
                     href={d.file_url}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-xs text-white hover:text-primary truncate font-mono"
+                    className="text-xs text-foreground hover:text-primary truncate font-mono"
                   >
                     {d.file_name}
                   </a>
                 </div>
-                <div className="text-[9px] text-[#71717A] font-medium">
+                <div className="text-[9px] text-muted-foreground font-medium">
                   {new Date(d.uploaded_at).toLocaleDateString()}
                 </div>
               </div>
             ))}
 
             {projectDocs.length === 0 && (
-              <div className="text-center py-6 text-[10px] text-[#525866] uppercase tracking-wider font-semibold">
+              <div className="text-center py-6 text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
                 No documents uploaded yet
               </div>
             )}
@@ -1015,13 +1015,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
       </div>
 
       {/* Pour History Logs Card */}
-      <div className="bg-[#161619] border border-[#27272A] rounded-xl p-5">
+      <div className="bg-card border border-border rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-white">Pour History</h2>
+          <h2 className="text-base font-bold text-foreground">Pour History</h2>
 
           <div className="flex items-center gap-3">
             {!isHsComplete && (
-              <span className="text-[10px] text-[#FF9F0A] font-bold flex items-center gap-1">
+              <span className="text-[10px] text-warning font-bold flex items-center gap-1">
                 <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
                 <span>Clear daily checklist to log pours</span>
               </span>
@@ -1031,8 +1031,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
               disabled={!isHsComplete}
               className={`px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border ${
                 isHsComplete
-                  ? "bg-[#161619] border-[#27272A] hover:bg-[#27272A] text-white"
-                  : "bg-[#27272A] border-[#27272A] text-[#71717A] cursor-not-allowed"
+                  ? "bg-card border-border hover:bg-secondary text-foreground"
+                  : "bg-secondary border-border text-muted-foreground cursor-not-allowed"
               }`}
             >
               {isAddingPour ? "Cancel" : "+ Log Pour"}
@@ -1043,17 +1043,17 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
         {isAddingPour && isHsComplete && (
           <form
             onSubmit={handleAddPourSubmit}
-            className="mb-4 p-4 bg-[#0F1012] border border-[#27272A] rounded-lg space-y-4"
+            className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4"
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block mb-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
                   Mix Type
                 </label>
                 <select
                   value={newPourMix}
                   onChange={(e) => setNewPourMix(e.target.value)}
-                  className="w-full bg-[#161619] border border-[#27272A] text-xs text-white rounded-lg px-3 py-2 outline-none cursor-pointer"
+                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none cursor-pointer"
                 >
                   <option value="C28/35">C28/35</option>
                   <option value="C32/40">C32/40</option>
@@ -1061,7 +1061,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block mb-1">
+                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
                   Volume (m³)
                 </label>
                 <input
@@ -1070,13 +1070,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                   min="1"
                   value={newPourVolume}
                   onChange={(e) => setNewPourVolume(e.target.value)}
-                  className="w-full bg-[#161619] border border-[#27272A] text-xs text-white rounded-lg px-3 py-2 outline-none font-mono"
+                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
                 />
               </div>
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-[#71717A] uppercase tracking-wider block mb-1">
+              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
                 Pour Notes
               </label>
               <input
@@ -1084,14 +1084,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                 placeholder="Notes..."
                 value={newPourNotes}
                 onChange={(e) => setNewPourNotes(e.target.value)}
-                className="w-full bg-[#161619] border border-[#27272A] text-xs text-white rounded-lg px-3 py-2 outline-none"
+                className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none"
               />
             </div>
 
             <div className="flex justify-end">
               <button
                 type="submit"
-                className="px-4 py-2 bg-[#3D4E5D] text-white font-bold rounded-lg text-xs cursor-pointer"
+                className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg text-xs cursor-pointer"
               >
                 Commit Pour Log
               </button>
@@ -1103,20 +1103,20 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
           {pourLogs.map((log) => (
             <div
               key={log.id}
-              className="flex justify-between items-center p-4 bg-[#161619] border border-[#27272A] rounded-xl hover:bg-[#1a1a1f] transition-all"
+              className="flex justify-between items-center p-4 bg-card border border-border rounded-xl hover:bg-secondary transition-all"
             >
               <div className="space-y-1">
-                <div className="text-sm font-bold text-white">Pour #{log.pourNumber}</div>
-                <div className="text-xs text-[#71717A]">
+                <div className="text-sm font-bold text-foreground">Pour #{log.pourNumber}</div>
+                <div className="text-xs text-muted-foreground">
                   {log.mixType} · {log.volumeM3}m³
                 </div>
               </div>
-              <div className="text-xs text-[#71717A] font-semibold">{formatPourDate(log.date)}</div>
+              <div className="text-xs text-muted-foreground font-semibold">{formatPourDate(log.date)}</div>
             </div>
           ))}
 
           {pourLogs.length === 0 && (
-            <div className="py-8 text-center text-xs text-[#525866] uppercase tracking-wider">
+            <div className="py-8 text-center text-xs text-muted-foreground uppercase tracking-wider">
               No pours logged yet
             </div>
           )}

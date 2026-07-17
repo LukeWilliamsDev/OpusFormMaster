@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Mail,
@@ -16,8 +16,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { NoticeModal } from "@/components/ui/notice-modal";
 
 export const PortalAuthPage: React.FC = () => {
-  const { isAuthenticated, signIn, resetPassword, updatePassword, theme } = usePortal();
-  const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
+  const { isAuthenticated, signIn, signOut, resetPassword, updatePassword, theme } = usePortal();
+  const logoSrc =
+    theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const navigate = useNavigate();
 
   const [formMode, setFormMode] = useState<"login" | "forgot" | "reset">("login");
@@ -28,6 +29,9 @@ export const PortalAuthPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState<number | null>(null);
+  const [lockCountdown, setLockCountdown] = useState(0);
   const [notification, setNotification] = useState<{
     type: "success" | "error";
     title: string;
@@ -59,6 +63,26 @@ export const PortalAuthPage: React.FC = () => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // A recovery link authenticates the browser the moment it loads, before the password is
+  // actually changed. If the link leaks (forwarded email, shared inbox, link-preview crawler)
+  // or the user abandons the flow, sign the recovery session back out rather than leaving it live.
+  const resetCompletedRef = useRef(false);
+  useEffect(() => {
+    if (formMode !== "reset") return;
+    resetCompletedRef.current = false;
+
+    const signOutIfAbandoned = () => {
+      if (!resetCompletedRef.current) {
+        signOut();
+      }
+    };
+    window.addEventListener("beforeunload", signOutIfAbandoned);
+    return () => {
+      window.removeEventListener("beforeunload", signOutIfAbandoned);
+      signOutIfAbandoned();
+    };
+  }, [formMode, signOut]);
+
   // Redirect if already authenticated and not resetting password or showing success modal
   useEffect(() => {
     const hash = window.location.hash;
@@ -70,9 +94,28 @@ export const PortalAuthPage: React.FC = () => {
     }
   }, [isAuthenticated, navigate, formMode, notification]);
 
+  // After repeated failed attempts, tick a countdown that keeps the form locked as defense-in-depth
+  useEffect(() => {
+    if (!lockedUntil) return;
+    const interval = setInterval(() => {
+      const remaining = Math.ceil((lockedUntil - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setLockedUntil(null);
+        setLockCountdown(0);
+        clearInterval(interval);
+      } else {
+        setLockCountdown(remaining);
+      }
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [lockedUntil]);
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError(null);
+    if (lockedUntil && Date.now() < lockedUntil) {
+      return;
+    }
     if (!email || !password) {
       setFormError("Please enter both email and password.");
       return;
@@ -81,9 +124,21 @@ export const PortalAuthPage: React.FC = () => {
     const { error } = await signIn(email.trim(), password);
     setIsSubmitting(false);
     if (error) {
-      setFormError(error);
+      const attempts = failedAttempts + 1;
+      setFailedAttempts(attempts);
+      if (attempts >= 5) {
+        const lockMs = 30_000;
+        setLockedUntil(Date.now() + lockMs);
+        setLockCountdown(Math.ceil(lockMs / 1000));
+        setFormError(
+          `Too many failed attempts. Please wait ${Math.ceil(lockMs / 1000)}s before trying again.`,
+        );
+      } else {
+        setFormError(error);
+      }
       return;
     }
+    setFailedAttempts(0);
     navigate("/portal/dashboard");
   };
 
@@ -97,26 +152,6 @@ export const PortalAuthPage: React.FC = () => {
     setFormError(null);
 
     try {
-      // Check if user is registered in the profiles table via RPC helper (to bypass RLS for anonymous guests)
-      const { data: isRegistered, error: queryError } = await supabase.rpc(
-        "check_email_registered",
-        { _email: target },
-      );
-
-      if (queryError) throw queryError;
-
-      if (!isRegistered) {
-        setIsSubmitting(false);
-        setNotification({
-          type: "error",
-          title: "EMAIL NOT REGISTERED",
-          message:
-            "The email address entered is not registered for portal access. Please contact your administrator.",
-        });
-        return;
-      }
-
-      // Proceed to reset password since email is verified
       const { error } = await resetPassword(target);
       setIsSubmitting(false);
       if (error) {
@@ -128,7 +163,7 @@ export const PortalAuthPage: React.FC = () => {
         type: "success",
         title: "RECOVERY LINK SENT",
         message:
-          "A secure password restoration link has been dispatched to your email address. Please check your inbox.",
+          "If that email address is registered for portal access, a secure password restoration link has been dispatched. Please check your inbox.",
       });
       setFormMode("login");
     } catch (err) {
@@ -177,6 +212,7 @@ export const PortalAuthPage: React.FC = () => {
       return;
     }
     setFormError(null);
+    resetCompletedRef.current = true;
     setNotification({
       type: "success",
       title: "PASSWORD UPDATED",
@@ -189,18 +225,20 @@ export const PortalAuthPage: React.FC = () => {
   };
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden font-sans">
-      {/* Subtle concrete-texture grid overlay */}
+      {/* Static blueprint-style grid overlay, matching the landing page */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 0 L 60 0 L 60 60' fill='none' stroke='%23ffffff' stroke-width='0.4'/%3E%3C/svg%3E")`,
-          opacity: 0.025,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 80 0 L 0 0 L 0 80' fill='none' stroke='%23${
+            theme === "light" ? "2B2F33" : "EDEBE6"
+          }' stroke-width='0.5'/%3E%3Ccircle cx='0' cy='0' r='1.3' fill='%23B5651D'/%3E%3C/svg%3E")`,
+          opacity: theme === "light" ? 0.18 : 0.1,
         }}
       />
 
       <div className="max-w-md w-full z-10 flex flex-col items-center">
         {/* Logo — transparent recreation matching brand exactly, animates in */}
-        <div className="text-center mb-8 sm:mb-10 w-full flex flex-col items-center">
+        <div className="text-center mb-6 sm:mb-8 w-full flex flex-col items-center">
           <button
             type="button"
             onClick={() => navigate("/")}
@@ -210,22 +248,22 @@ export const PortalAuthPage: React.FC = () => {
             <img
               src={logoSrc}
               alt="Opus Form"
-              style={{ height: "40px", width: "auto" }}
-              className="transition-opacity group-hover:opacity-80"
+              className="h-12 w-auto transition-opacity group-hover:opacity-80"
             />
           </button>
-          <span className="text-[10px] font-mono font-bold uppercase tracking-[0.22em] text-muted-foreground mt-3">
-            Operations Portal
-          </span>
         </div>
 
         {/* Form container */}
         <div className="w-full">
-          <div className="w-full bg-card border border-border rounded-xl overflow-hidden">
+          <div className="w-full bg-card border border-border rounded-xl overflow-hidden shadow-xl shadow-black/20">
             {formMode === "login" && (
               <div className="p-6 sm:p-8">
                 {formError && (
-                  <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md text-[10px] font-bold text-red-400 uppercase tracking-widest flex items-center gap-2.5">
+                  <div
+                    role="alert"
+                    aria-live="assertive"
+                    className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md text-[10px] font-bold text-red-400 uppercase tracking-widest flex items-center gap-2.5"
+                  >
                     <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
                     <span>{formError}</span>
                   </div>
@@ -233,7 +271,10 @@ export const PortalAuthPage: React.FC = () => {
 
                 <form onSubmit={handleLogin} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider block mb-2">
+                    <label
+                      htmlFor="login-email"
+                      className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider block mb-2"
+                    >
                       Email
                     </label>
                     <div className="relative">
@@ -241,7 +282,9 @@ export const PortalAuthPage: React.FC = () => {
                         <Mail className="w-4 h-4" />
                       </div>
                       <input
+                        id="login-email"
                         type="email"
+                        autoComplete="email"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="dispatcher@opusform.co.uk"
@@ -252,7 +295,10 @@ export const PortalAuthPage: React.FC = () => {
 
                   <div className="space-y-2">
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">
+                      <label
+                        htmlFor="login-password"
+                        className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider"
+                      >
                         Password
                       </label>
                       <button
@@ -268,20 +314,37 @@ export const PortalAuthPage: React.FC = () => {
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
+                        id="login-password"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="current-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••••"
                         className="w-full pl-12 pr-12 py-3 rounded-md border border-border bg-secondary text-foreground focus:border-primary transition-colors placeholder:text-muted-foreground font-medium text-sm outline-none"
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        className="absolute inset-y-0 right-0 pr-4 flex items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="w-4 h-4" />
+                        ) : (
+                          <Eye className="w-4 h-4" />
+                        )}
+                      </button>
                     </div>
                   </div>
                   <button
                     type="submit"
+                    disabled={isSubmitting || !!lockedUntil}
                     className="w-full py-3 px-4 bg-primary hover:bg-primary/90 disabled:bg-primary/50 disabled:cursor-not-allowed text-white rounded-md text-[14px] font-bold transition-colors flex items-center justify-center gap-2 active:scale-[0.98] cursor-pointer"
                   >
                     {isSubmitting ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : lockedUntil ? (
+                      <span>Try again in {lockCountdown}s</span>
                     ) : (
                       <span>Sign In</span>
                     )}
@@ -309,7 +372,10 @@ export const PortalAuthPage: React.FC = () => {
 
                 <form onSubmit={handleForgot} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block ml-1 mb-2">
+                    <label
+                      htmlFor="forgot-email"
+                      className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block ml-1 mb-2"
+                    >
                       Email Identifier
                     </label>
                     <div className="relative">
@@ -317,8 +383,10 @@ export const PortalAuthPage: React.FC = () => {
                         <Mail className="w-4 h-4" />
                       </div>
                       <input
+                        id="forgot-email"
                         type="email"
                         required
+                        autoComplete="email"
                         placeholder="name@opusform.co.uk"
                         className="w-full pl-12 pr-4 py-3 rounded-md border border-border bg-secondary text-foreground focus:border-primary transition-colors placeholder:text-muted-foreground font-medium text-sm outline-none"
                       />
@@ -348,7 +416,11 @@ export const PortalAuthPage: React.FC = () => {
                 </div>
 
                 {formError && (
-                  <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md text-[10px] font-bold text-red-400 uppercase tracking-widest flex items-center gap-2.5">
+                  <div
+                    role="alert"
+                    aria-live="assertive"
+                    className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md text-[10px] font-bold text-red-400 uppercase tracking-widest flex items-center gap-2.5"
+                  >
                     <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
                     <span>{formError}</span>
                   </div>
@@ -356,7 +428,10 @@ export const PortalAuthPage: React.FC = () => {
 
                 <form onSubmit={handleResetPassword} className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block ml-1 mb-2">
+                    <label
+                      htmlFor="reset-new-password"
+                      className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block ml-1 mb-2"
+                    >
                       New Password
                     </label>
                     <div className="relative">
@@ -364,7 +439,9 @@ export const PortalAuthPage: React.FC = () => {
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
+                        id="reset-new-password"
                         type={showPassword ? "text" : "password"}
+                        autoComplete="new-password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="••••••••"
@@ -373,6 +450,7 @@ export const PortalAuthPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
                         className="absolute inset-y-0 right-0 pr-4 flex items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       >
                         {showPassword ? (
@@ -402,7 +480,9 @@ export const PortalAuthPage: React.FC = () => {
                             <div
                               className={`w-1.5 h-1.5 rounded-full ${rule.met ? "bg-primary animate-pulse" : "bg-border"}`}
                             />
-                            <span className={rule.met ? "text-foreground" : "text-muted-foreground"}>
+                            <span
+                              className={rule.met ? "text-foreground" : "text-muted-foreground"}
+                            >
                               {rule.label}
                             </span>
                           </div>
@@ -412,7 +492,10 @@ export const PortalAuthPage: React.FC = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block ml-1 mb-2">
+                    <label
+                      htmlFor="reset-confirm-password"
+                      className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block ml-1 mb-2"
+                    >
                       Confirm Password
                     </label>
                     <div className="relative">
@@ -420,7 +503,9 @@ export const PortalAuthPage: React.FC = () => {
                         <Lock className="w-4 h-4" />
                       </div>
                       <input
+                        id="reset-confirm-password"
                         type={showConfirmPassword ? "text" : "password"}
+                        autoComplete="new-password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="••••••••"
@@ -429,6 +514,7 @@ export const PortalAuthPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        aria-label={showConfirmPassword ? "Hide password" : "Show password"}
                         className="absolute inset-y-0 right-0 pr-4 flex items-center text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                       >
                         {showConfirmPassword ? (

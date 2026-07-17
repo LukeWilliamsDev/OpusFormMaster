@@ -16,6 +16,7 @@ import {
   Loader,
 } from "lucide-react";
 import { ON_SITE_CERTIFICATIONS } from "../components/RosterView";
+import { usePortal } from "../context/PortalContext";
 
 /* ─── Types ──────────────────────────────────────────────────────── */
 
@@ -348,6 +349,8 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
    ═══════════════════════════════════════════════════════════════════ */
 
 export const SubmitCredentialsPage: React.FC = () => {
+  const { theme } = usePortal();
+  const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
@@ -603,7 +606,8 @@ export const SubmitCredentialsPage: React.FC = () => {
   // Loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8">
+        <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
         <div className="w-8 h-8 rounded-full border-2 border-brand-accent/20 border-t-brand-accent animate-spin" />
       </div>
     );
@@ -612,7 +616,8 @@ export const SubmitCredentialsPage: React.FC = () => {
   // Error (no request data)
   if (errorMsg && !requestData) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4">
+        <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
         <div className="bg-card border border-red-500/20 rounded-2xl p-8 max-w-md w-full text-center space-y-4 shadow-2xl shadow-red-500/5">
           <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
             <ShieldAlert className="w-6 h-6 text-red-400" />
@@ -631,13 +636,11 @@ export const SubmitCredentialsPage: React.FC = () => {
   // Success
   if (submitSuccess) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4">
+        <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
         <div className="bg-card border border-emerald-500/20 rounded-2xl p-10 max-w-md w-full text-center space-y-6 shadow-2xl">
           <AnimatedCheckmark />
           <div className="space-y-2">
-            <p className="text-[9px] font-black text-brand-accent uppercase tracking-[0.3em] font-archivo">
-              OPUS FORM
-            </p>
             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground">
               Submission Complete
             </h3>
@@ -681,9 +684,7 @@ export const SubmitCredentialsPage: React.FC = () => {
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
         {/* ─── Header / Branding ─────────────────────────────────── */}
         <div className="text-center space-y-3">
-          <p className="text-[11px] font-black uppercase tracking-[0.35em] font-archivo text-foreground">
-            OPUS FORM
-          </p>
+          <img src={logoSrc} alt="Opus Form" className="h-8 w-auto mx-auto" />
           <div className="h-0.5 w-10 bg-brand-accent mx-auto rounded-full" />
           <h1 className="text-[10px] font-black uppercase tracking-[0.2em] text-brand-accent">
             Credential Submission Portal

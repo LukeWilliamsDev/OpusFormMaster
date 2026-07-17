@@ -2,8 +2,11 @@ import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../../integrations/supabase/client";
 import { FileUp, Check, AlertCircle, Loader, UploadCloud } from "lucide-react";
+import { usePortal } from "../context/PortalContext";
 
 export const JobUploadPortalPage: React.FC = () => {
+  const { theme } = usePortal();
+  const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const { token } = useParams<{ token: string }>();
   const [loading, setLoading] = useState(true);
   const [jobData, setJobData] = useState<any>(null);
@@ -136,7 +139,8 @@ export const JobUploadPortalPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4">
+        <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
         <div className="flex flex-col items-center gap-3">
           <Loader className="w-8 h-8 text-primary animate-spin" />
           <span className="text-xs text-muted-foreground font-bold uppercase tracking-widest">
@@ -149,7 +153,8 @@ export const JobUploadPortalPage: React.FC = () => {
 
   if (errorMsg) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4">
+        <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
         <div className="w-full max-w-md bg-card border border-border rounded-2xl p-6 text-center space-y-4">
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 border border-primary/20 text-primary">
             <AlertCircle className="w-6 h-6" />
@@ -162,7 +167,8 @@ export const JobUploadPortalPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4 font-sans text-foreground">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4 font-sans text-foreground">
+      <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
       <div className="w-full max-w-lg bg-card border border-border rounded-2xl p-6 md:p-8 space-y-6">
         {/* Title and Job info */}
         <div className="text-center space-y-2">

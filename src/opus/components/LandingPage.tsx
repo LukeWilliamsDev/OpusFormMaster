@@ -35,7 +35,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 80 0 L 0 0 L 0 80' fill='none' stroke='%23${
             theme === "light" ? "2B2F33" : "EDEBE6"
           }' stroke-width='0.5'/%3E%3Ccircle cx='0' cy='0' r='1.3' fill='%23B5651D'/%3E%3C/svg%3E")`,
-          opacity: 0.05,
+          opacity: theme === "light" ? 0.18 : 0.1,
         }}
       />
 

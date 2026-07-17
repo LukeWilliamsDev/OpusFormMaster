@@ -1,1 +1,5 @@
 project_id = "fgpthpxmiroyebrzjdzo"
+
+[auth]
+minimum_password_length = 8
+password_requirements = "lower_upper_letters_digits_symbols"

@@ -187,7 +187,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [theme, setThemeState] = useState<"dark" | "light">(() => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("opus_portal_theme");
-      return saved === "light" ? "light" : "dark";
+      if (saved === "light" || saved === "dark") return saved;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
     }
     return "dark";
   });
@@ -483,13 +484,17 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      await supabase.rpc("log_anonymous_audit", {
-        p_user_email: email,
-        p_action: "LOGIN_FAILURE",
-        p_target_type: "auth",
-        p_target_id: "unknown",
-        p_details: { error: error.message },
-      });
+      try {
+        await supabase.rpc("log_anonymous_audit", {
+          p_user_email: email,
+          p_action: "LOGIN_FAIL",
+          p_target_type: "auth",
+          p_target_id: "unknown",
+          p_details: { error: error.message },
+        });
+      } catch (auditError) {
+        console.error("Audit logging failed:", auditError);
+      }
     } else {
       const {
         data: { user },

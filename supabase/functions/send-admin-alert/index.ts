@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { EMAIL_COLORS, emailShell } from "../_shared/email-theme.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -107,25 +108,22 @@ serve(async (req) => {
       timeStyle: "short",
     });
 
-    const emailHtml = `
-      <div style="background-color:#1a1b1f;padding:40px 20px;font-family:Inter,sans-serif;font-size:14px;line-height:1.6;color:#d1d5db;">
-        <div style="max-width:600px;margin:0 auto;background-color:#242428;border:1px solid #2e2e33;border-radius:12px;overflow:hidden;">
-          <div style="background-color:#26262B;padding:24px 40px;border-bottom:3px solid #ef4444;">
-            <p style="margin:0;font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:0.2em;color:#ef4444;">System Alert</p>
-            <p style="margin:6px 0 0;font-size:16px;font-weight:700;color:#f4f4f0;">${escapeHtml(subject)}</p>
-          </div>
-          <div style="padding:32px 40px;">
-            <p style="margin:0 0 16px;font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:0.1em;color:#526E8C;">Details</p>
-            <div style="background-color:#1a1b1f;border:1px solid #2e2e33;border-left:3px solid #ef4444;border-radius:6px;padding:16px;margin-bottom:24px;">
-              <pre style="margin:0;white-space:pre-wrap;word-break:break-word;font-family:monospace;font-size:12px;color:#e5e7eb;">${escapeHtml(body)}</pre>
-            </div>
-            <p style="margin:0;font-size:11px;color:#9ca3af;">Timestamp: <strong style="color:#d1d5db;">${timestamp} (UK time)</strong></p>
-            <div style="border-top:1px solid #2e2e33;padding-top:20px;margin-top:24px;">
-              <p style="margin:0;font-size:11px;color:#9ca3af;">Automated alert from <strong style="color:#d1d5db;">Opus Form</strong>. Do not reply.</p>
-            </div>
-          </div>
-        </div>
-      </div>`;
+    const bodyHtml = `
+      <p class="text-title" style="margin: 0 0 16px; font-size: 16px; font-weight: 700;">${escapeHtml(subject)}</p>
+      <p style="margin: 0 0 16px; font-size: 12px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: ${EMAIL_COLORS.accent};">Details</p>
+      <div class="bg-page border-theme" style="border: 1px solid #D9D3C7; border-left: 3px solid ${EMAIL_COLORS.alert}; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+        <pre class="text-title" style="margin: 0; white-space: pre-wrap; word-break: break-word; font-family: monospace; font-size: 12px;">${escapeHtml(body)}</pre>
+      </div>
+      <p class="text-secondary" style="margin: 0 0 24px; font-size: 11px;">Timestamp: <strong class="text-title">${timestamp} (UK time)</strong></p>
+    `;
+
+    const emailHtml = emailShell({
+      eyebrow: "System Alert",
+      bodyHtml,
+      footerName: "Opus Form Alerts (automated — do not reply)",
+      footerEmail: "support@opusform.co.uk",
+      accentColor: EMAIL_COLORS.alert,
+    });
 
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",

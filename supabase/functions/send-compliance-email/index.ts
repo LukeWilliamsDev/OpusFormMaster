@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { EMAIL_COLORS, emailShell } from "../_shared/email-theme.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -131,105 +132,51 @@ serve(async (req) => {
     });
 
     // Compose HTML
-    let emailHtml = "";
-    emailHtml += "<head>";
-    emailHtml += '  <meta name="color-scheme" content="light dark">';
-    emailHtml += '  <meta name="supported-color-schemes" content="light dark">';
-    emailHtml += "  <style>";
-    emailHtml += "    :root { color-scheme: light dark; supported-color-schemes: light dark; }";
-    emailHtml += "    @media (prefers-color-scheme: dark) {";
-    emailHtml +=
-      "      .dark-bg { background-color: #1a1b1f !important; background-image: none !important; }";
-    emailHtml +=
-      "      .card-bg { background-color: #242428 !important; background-image: none !important; }";
-    emailHtml +=
-      "      .header-bg { background-color: #26262B !important; background-image: none !important; }";
-    emailHtml += "      .text-title { color: #e5e7eb !important; }";
-    emailHtml += "      .text-body { color: #d1d5db !important; }";
-    emailHtml += "      .text-secondary { color: #9ca3af !important; }";
-    emailHtml += "    }";
-    emailHtml += "    [data-ogsc] .text-title { color: #e5e7eb !important; }";
-    emailHtml += "    [data-ogsc] .text-body { color: #d1d5db !important; }";
-    emailHtml += "    [data-ogsc] .text-secondary { color: #9ca3af !important; }";
-    emailHtml +=
-      "    [data-ogsb] .dark-bg { background-color: #1a1b1f !important; background-image: none !important; }";
-    emailHtml +=
-      "    [data-ogsb] .card-bg { background-color: #242428 !important; background-image: none !important; }";
-    emailHtml +=
-      "    [data-ogsb] .header-bg { background-color: #26262B !important; background-image: none !important; }";
-    emailHtml += "  </style>";
-    emailHtml += "</head>";
-    emailHtml +=
-      '<div class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; padding: 40px 20px; font-family: \'Inter\', -apple-system, sans-serif; font-size: 14px; line-height: 1.6; color: #d1d5db;">';
-    emailHtml +=
-      '  <div class="card-bg" style="max-width: 600px; margin: 0 auto; background-image: linear-gradient(#242428, #242428); background-color: #242428; border: 1px solid #2e2e33; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">';
-    emailHtml += "    <!-- Header -->";
-    emailHtml +=
-      '    <div class="header-bg" style="background-image: linear-gradient(#26262B, #26262B); background-color: #26262B; padding: 30px 40px; border-bottom: 3px solid #526E8C; text-align: center;">';
-    emailHtml +=
-      '      <img src="https://fgpthpxmiroyebrzjdzo.supabase.co/functions/v1/send-quote-pdf" alt="OPUS FORM" width="180" style="display: inline-block; border: 0; outline: none; text-decoration: none;" />';
-    emailHtml += "    </div>";
-    emailHtml += "    ";
-    emailHtml += "    <!-- Body -->";
-    emailHtml += '    <div style="padding: 40px;">';
-    emailHtml +=
-      '      <div style="text-transform: uppercase; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; color: #526E8C; margin-bottom: 20px;">';
-    emailHtml += "        Compliance Document Request";
-    emailHtml += "      </div>";
-    emailHtml += "      ";
-    emailHtml +=
-      '      <p class="text-title" style="margin: 0 0 16px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px; font-weight: 700;" data-ogsc="color: #e5e7eb;">Hello ' +
+    let bodyHtml = "";
+    bodyHtml +=
+      '      <p class="text-title" style="margin: 0 0 16px; font-size: 16px; font-weight: 700;">Hello ' +
       escapeHtml(workerName || "Worker") +
       ",</p>";
-    emailHtml +=
-      '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">An administrator has requested that you submit compliance documentation. Please upload the required credentials before the link expires.</p>';
-    emailHtml += "      ";
+    bodyHtml +=
+      '      <p class="text-secondary" style="margin: 0 0 24px;">An administrator has requested that you submit compliance documentation. Please upload the required credentials before the link expires.</p>';
     if (requestedCerts && requestedCerts.length > 0) {
-      emailHtml +=
-        '      <div style="background-color: #1a1b1f; border: 1px solid #2e2e33; border-radius: 8px; padding: 20px; margin-bottom: 32px;">';
-      emailHtml +=
-        '        <p style="margin: 0 0 12px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #526E8C;">Required Certifications:</p>';
-      emailHtml += '        <ul style="margin: 0; padding-left: 20px; color: #e5e7eb;">';
+      bodyHtml +=
+        '      <div class="bg-page border-theme" style="border: 1px solid #D9D3C7; border-radius: 8px; padding: 20px; margin-bottom: 32px;">';
+      bodyHtml +=
+        `        <p style="margin: 0 0 12px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: ${EMAIL_COLORS.accent};">Required Certifications:</p>`;
+      bodyHtml += '        <ul class="text-title" style="margin: 0; padding-left: 20px;">';
       for (const cert of requestedCerts) {
-        emailHtml +=
+        bodyHtml +=
           '          <li style="margin-bottom: 6px; font-weight: bold; font-size: 13px;">' +
           escapeHtml(cert) +
           "</li>";
       }
-      emailHtml += "        </ul>";
-      emailHtml += "      </div>";
+      bodyHtml += "        </ul>";
+      bodyHtml += "      </div>";
     } else {
-      emailHtml +=
-        '      <div style="background-color: #1a1b1f; border: 1px solid #2e2e33; border-radius: 8px; padding: 20px; margin-bottom: 32px;">';
-      emailHtml +=
-        '        <p style="margin: 0; font-size: 13px; font-weight: bold; color: #e5e7eb;">Please upload all your on-site certifications and licenses using the secure link below.</p>';
-      emailHtml += "      </div>";
+      bodyHtml +=
+        '      <div class="bg-page border-theme" style="border: 1px solid #D9D3C7; border-radius: 8px; padding: 20px; margin-bottom: 32px;">';
+      bodyHtml +=
+        '        <p class="text-title" style="margin: 0; font-size: 13px; font-weight: bold;">Please upload all your on-site certifications and licenses using the secure link below.</p>';
+      bodyHtml += "      </div>";
     }
-    emailHtml += "      ";
-    emailHtml += '      <div style="text-align: center; margin-bottom: 32px;">';
-    emailHtml +=
+    bodyHtml += '      <div style="text-align: center; margin-bottom: 32px;">';
+    bodyHtml +=
       '        <a href="' +
       uploadUrl +
-      '" style="display: inline-block; padding: 14px 28px; background-color: #526E8C; color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em; box-shadow: 0 4px 12px rgba(82, 110, 140, 0.3);">Upload Documents</a>';
-    emailHtml += "      </div>";
-    emailHtml += "      ";
-    emailHtml +=
-      '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important; font-size: 12px; text-align: center;" data-ogsc="color: #9ca3af;">This link is secure and passwordless. It will expire on: <strong>' +
+      `" style="display: inline-block; padding: 14px 28px; background-color: ${EMAIL_COLORS.accent}; color: ${EMAIL_COLORS.accentForeground.light}; text-decoration: none; border-radius: 8px; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em; box-shadow: 0 4px 12px rgba(181, 101, 29, 0.3);">Upload Documents</a>`;
+    bodyHtml += "      </div>";
+    bodyHtml +=
+      '      <p class="text-secondary" style="margin: 0 0 24px; font-size: 12px; text-align: center;">This link is secure and passwordless. It will expire on: <strong>' +
       formattedExpiry +
       " (UK time)</strong></p>";
-    emailHtml += "      ";
-    emailHtml +=
-      '      <div style="border-top: 1px solid #2e2e33; padding-top: 24px; margin-top: 32px;">';
-    emailHtml +=
-      '        <p class="text-title" style="margin: 0 0 4px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;" data-ogsc="color: #e5e7eb;">Kind regards,</p>';
-    emailHtml +=
-      '        <p class="text-title" style="margin: 0 0 4px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;" data-ogsc="color: #e5e7eb;">Opus Form Support</p>';
-    emailHtml +=
-      '        <a href="mailto:support@opusform.co.uk" style="color: #526E8C; -webkit-text-fill-color: #526E8C !important; text-decoration: none; font-size: 12px; font-weight: 700;" data-ogsc="color: #526E8C;">support@opusform.co.uk</a>';
-    emailHtml += "      </div>";
-    emailHtml += "    </div>";
-    emailHtml += "  </div>";
-    emailHtml += "</div>";
+
+    const emailHtml = emailShell({
+      eyebrow: "Compliance Document Request",
+      bodyHtml,
+      footerName: "Opus Form Support",
+      footerEmail: "support@opusform.co.uk",
+    });
 
     const sender = config["RESEND_FROM_EMAIL"] || "support@opusform.co.uk";
 

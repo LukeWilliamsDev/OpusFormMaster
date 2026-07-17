@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { emailShell, logoSvg } from "../_shared/email-theme.ts";
 
 // NOTE: This Edge Function MUST be deployed with `verify_jwt: false`
 // to allow email clients (Gmail, Outlook, etc.) to fetch the corporate SVG logo
@@ -37,12 +38,12 @@ interface RequestPayload {
 serve(async (req) => {
   // Handle GET request to serve the SVG logo directly
   if (req.method === "GET") {
-    const svg =
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120" width="100%" height="100%"><text x="250" y="70" font-family="\'Inter\', \'Arial Black\', system-ui, -apple-system, sans-serif" font-weight="900" font-size="46" fill="#F4F4F0" letter-spacing="9" text-anchor="middle">OPUS FORM</text><line x1="120" y1="92" x2="380" y2="92" stroke="#526E8C" stroke-width="4" stroke-linecap="round"/></svg>';
+    const theme = new URL(req.url).searchParams.get("theme") === "dark" ? "dark" : "light";
+    const svg = logoSvg(theme);
     return new Response(svg, {
       headers: {
         "Content-Type": "image/svg+xml",
-        "Cache-Control": "public, max-age=31536000",
+        "Cache-Control": "public, max-age=86400",
         ...corsHeaders,
       },
       status: 200,
@@ -218,124 +219,57 @@ serve(async (req) => {
       );
     }
 
-    // Serve the logo directly from this function's public GET endpoint to bypass private repository blockages
-    const resolvedLogoUrl = supabaseUrl + "/functions/v1/send-quote-pdf";
-
-    // Compose HTML message body using standard string concatenation to completely avoid Deno/JSON escaping bugs
-    let emailHtml = "";
-    emailHtml += "<head>";
-    emailHtml += '  <meta name="color-scheme" content="light dark">';
-    emailHtml += '  <meta name="supported-color-schemes" content="light dark">';
-    emailHtml += "  <style>";
-    emailHtml += "    :root { color-scheme: light dark; supported-color-schemes: light dark; }";
-    emailHtml += "    @media (prefers-color-scheme: dark) {";
-    emailHtml +=
-      "      .dark-bg { background-color: #1a1b1f !important; background-image: none !important; }";
-    emailHtml +=
-      "      .card-bg { background-color: #242428 !important; background-image: none !important; }";
-    emailHtml +=
-      "      .header-bg { background-color: #26262B !important; background-image: none !important; }";
-    emailHtml += "      .text-title { color: #e5e7eb !important; }";
-    emailHtml += "      .text-body { color: #d1d5db !important; }";
-    emailHtml += "      .text-secondary { color: #9ca3af !important; }";
-    emailHtml += "    }";
-    emailHtml += "    [data-ogsc] .text-title { color: #e5e7eb !important; }";
-    emailHtml += "    [data-ogsc] .text-body { color: #d1d5db !important; }";
-    emailHtml += "    [data-ogsc] .text-secondary { color: #9ca3af !important; }";
-    emailHtml +=
-      "    [data-ogsb] .dark-bg { background-color: #1a1b1f !important; background-image: none !important; }";
-    emailHtml +=
-      "    [data-ogsb] .card-bg { background-color: #242428 !important; background-image: none !important; }";
-    emailHtml +=
-      "    [data-ogsb] .header-bg { background-color: #26262B !important; background-image: none !important; }";
-    emailHtml += "  </style>";
-    emailHtml += "</head>";
-    emailHtml +=
-      '<div class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; padding: 40px 20px; font-family: \'Inter\', -apple-system, sans-serif; font-size: 14px; line-height: 1.6; color: #d1d5db;">';
-    emailHtml +=
-      '  <div class="card-bg" style="max-width: 600px; margin: 0 auto; background-image: linear-gradient(#242428, #242428); background-color: #242428; border: 1px solid #2e2e33; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.4);">';
-    emailHtml += "    <!-- Header -->";
-    emailHtml +=
-      '    <div class="header-bg" style="background-image: linear-gradient(#26262B, #26262B); background-color: #26262B; padding: 30px 40px; border-bottom: 3px solid #526E8C; text-align: center;">';
-    if (resolvedLogoUrl) {
-      emailHtml +=
-        '      <img src="' +
-        resolvedLogoUrl +
-        '" alt="OPUS FORM" width="180" style="display: inline-block; border: 0; outline: none; text-decoration: none;" />';
-    } else {
-      emailHtml +=
-        '      <div style="font-family: Arial, sans-serif; font-size: 24px; font-weight: 900; color: #F4F4F0; letter-spacing: 4px;">OPUS FORM</div>';
-    }
-    emailHtml += "    </div>";
-    emailHtml += "    ";
-    emailHtml += "    <!-- Body -->";
-    emailHtml += '    <div style="padding: 40px;">';
-    emailHtml +=
-      '      <div style="text-transform: uppercase; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; color: #526E8C; margin-bottom: 20px;">';
-    emailHtml += "        Quotation Summary";
-    emailHtml += "      </div>";
-    emailHtml += "      ";
-    emailHtml +=
-      '      <p class="text-title" style="margin: 0 0 16px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px; font-weight: 700;" data-ogsc="color: #e5e7eb;">Dear ' +
+    let bodyHtml = "";
+    bodyHtml +=
+      '      <p class="text-title" style="margin: 0 0 16px; font-size: 16px; font-weight: 700;">Dear ' +
       escapeHtml(clientName || "Valued Client") +
       ",</p>";
-    emailHtml +=
-      '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">Please find attached our formal quotation <strong class="text-title" style="color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">#' +
+    bodyHtml +=
+      '      <p class="text-secondary" style="margin: 0 0 24px;">Please find attached our formal quotation <strong class="text-title">#' +
       escapeHtml(quoteRef) +
       "</strong> for the concrete works at " +
       escapeHtml(siteName || "Site") +
       (postcode ? ", " + escapeHtml(postcode) : "") +
       ".</p>";
-    emailHtml += "      ";
-    emailHtml += "      <!-- Summary Table -->";
-    emailHtml +=
-      '      <table style="width: 100%; border-collapse: collapse; margin-bottom: 32px; border: 1px solid #2e2e33; border-radius: 8px; overflow: hidden;">';
-    emailHtml +=
-      '        <tr class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">';
-    emailHtml +=
-      '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;" data-ogsc="color: #9ca3af;">Net Subtotal</td>';
-    emailHtml +=
-      '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">£' +
+    bodyHtml += "      <!-- Summary Table -->";
+    bodyHtml +=
+      '      <table class="border-theme" style="width: 100%; border-collapse: collapse; margin-bottom: 32px; border: 1px solid #D9D3C7; border-radius: 8px; overflow: hidden;">';
+    bodyHtml += '        <tr class="bg-page border-theme" style="border-bottom: 1px solid #D9D3C7;">';
+    bodyHtml +=
+      '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">Net Subtotal</td>';
+    bodyHtml +=
+      '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900;">£' +
       Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
       "</td>";
-    emailHtml += "        </tr>";
-    emailHtml +=
-      '        <tr class="dark-bg" style="background-image: linear-gradient(#1a1b1f, #1a1b1f); background-color: #1a1b1f; border-bottom: 1px solid #2e2e33;">';
-    emailHtml +=
-      '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;" data-ogsc="color: #9ca3af;">UK Standard VAT (20%)</td>';
-    emailHtml +=
-      '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important;" data-ogsc="color: #e5e7eb;">£' +
+    bodyHtml += "        </tr>";
+    bodyHtml += '        <tr class="bg-page border-theme" style="border-bottom: 1px solid #D9D3C7;">';
+    bodyHtml +=
+      '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">UK Standard VAT (20%)</td>';
+    bodyHtml +=
+      '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900;">£' +
       Number(vatAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
       "</td>";
-    emailHtml += "        </tr>";
-    emailHtml +=
-      '        <tr class="header-bg" style="background-image: linear-gradient(#26262B, #26262B); background-color: #26262B;">';
-    emailHtml +=
-      '          <td class="text-title" style="padding: 16px; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;" data-ogsc="color: #e5e7eb;">Total (inc. VAT)</td>';
-    emailHtml +=
-      '          <td class="text-title" style="padding: 16px; text-align: right; font-weight: 900; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 16px;" data-ogsc="color: #e5e7eb;">£' +
+    bodyHtml += "        </tr>";
+    bodyHtml += '        <tr class="bg-header">';
+    bodyHtml +=
+      '          <td class="text-title" style="padding: 16px; font-weight: 900; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;">Total (inc. VAT)</td>';
+    bodyHtml +=
+      '          <td class="text-title" style="padding: 16px; text-align: right; font-weight: 900; font-size: 16px;">£' +
       Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
       "</td>";
-    emailHtml += "        </tr>";
-    emailHtml += "      </table>";
-    emailHtml += "      ";
-    emailHtml +=
-      '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">The attached PDF includes the full bill of quantities, structural scopes, our standard terms and conditions, and banking details for your reference.</p>';
-    emailHtml +=
-      '      <p class="text-secondary" style="margin: 0 0 24px; color: #9ca3af; -webkit-text-fill-color: #9ca3af !important;" data-ogsc="color: #9ca3af;">Should you have any questions or wish to discuss the quotation further, please do not hesitate to get in touch.</p>';
-    emailHtml += "      ";
-    emailHtml +=
-      '      <div style="border-top: 1px solid #2e2e33; padding-top: 24px; margin-top: 32px;">';
-    emailHtml +=
-      '        <p class="text-title" style="margin: 0 0 4px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;" data-ogsc="color: #e5e7eb;">Kind regards,</p>';
-    emailHtml +=
-      '        <p class="text-title" style="margin: 0 0 4px; color: #e5e7eb; -webkit-text-fill-color: #e5e7eb !important; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;" data-ogsc="color: #e5e7eb;">Opus Form Billing</p>';
-    emailHtml +=
-      '        <a href="mailto:billing@opusform.co.uk" style="color: #526E8C; -webkit-text-fill-color: #526E8C !important; text-decoration: none; font-size: 12px; font-weight: 700;" data-ogsc="color: #526E8C;">billing@opusform.co.uk</a>';
-    emailHtml += "      </div>";
-    emailHtml += "    </div>";
-    emailHtml += "  </div>";
-    emailHtml += "</div>";
+    bodyHtml += "        </tr>";
+    bodyHtml += "      </table>";
+    bodyHtml +=
+      '      <p class="text-secondary" style="margin: 0 0 24px;">The attached PDF includes the full bill of quantities, structural scopes, our standard terms and conditions, and banking details for your reference.</p>';
+    bodyHtml +=
+      '      <p class="text-secondary" style="margin: 0 0 24px;">Should you have any questions or wish to discuss the quotation further, please do not hesitate to get in touch.</p>';
+
+    const emailHtml = emailShell({
+      eyebrow: "Quotation Summary",
+      bodyHtml,
+      footerName: "Opus Form Billing",
+      footerEmail: "billing@opusform.co.uk",
+    });
 
     // Determine the sender address (sandbox domain onboarding@resend.dev if custom domain is not verified yet)
     // Resolves key RESEND_FROM_EMAIL first, defaults to onboarding@resend.dev.

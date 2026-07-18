@@ -117,14 +117,15 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
             className="fixed z-50 inset-x-0 bottom-0 md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md"
           >
             <div className="bg-card border border-border rounded-t-2xl md:rounded-2xl max-h-[75vh] flex flex-col shadow-2xl">
-              <div className="flex items-start justify-between gap-3 p-4 border-b border-border">
-                <div className="min-w-0">
-                  <h3 className="text-sm font-bold text-white truncate">
+              <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border">
+                <div className="flex items-baseline gap-2 min-w-0">
+                  <h3 className="text-sm font-bold text-foreground truncate">
                     {target.mode === "pickProject"
                       ? `Assign ${target.worker.name}`
                       : `Add staff to ${target.job.siteName}`}
                   </h3>
-                  <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest mt-1">
+                  <span className="text-muted-foreground shrink-0">&bull;</span>
+                  <p className="text-[11px] text-muted-foreground font-bold uppercase tracking-widest shrink-0">
                     {formatDayHeading(target.date)}
                   </p>
                 </div>
@@ -134,7 +135,7 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                   size="icon"
                   onClick={onClose}
                   aria-label="Close"
-                  className="h-auto w-auto p-1.5 text-muted-foreground hover:text-white rounded-lg"
+                  className="h-auto w-auto p-1.5 text-muted-foreground hover:text-foreground rounded-lg shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </Button>
@@ -172,7 +173,7 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                       type="button"
                       variant="outline"
                       onClick={() => setPending(null)}
-                      className="flex-1 h-auto px-3 py-2 rounded-lg bg-card border-border text-muted-foreground text-[11px] font-black uppercase tracking-wider hover:text-white shadow-none"
+                      className="flex-1 h-auto px-3 py-2 rounded-lg bg-card border-border text-muted-foreground text-[11px] font-black uppercase tracking-wider hover:text-foreground shadow-none"
                     >
                       Cancel
                     </Button>
@@ -230,7 +231,7 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                       className="w-full flex items-center justify-between gap-2 px-3 py-3 rounded-xl border border-border bg-card hover:border-primary text-left transition-all cursor-pointer"
                     >
                       <div className="min-w-0">
-                        <div className="text-xs font-bold text-white truncate">{worker.name}</div>
+                        <div className="text-xs font-bold text-foreground truncate">{worker.name}</div>
                         <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
                           {worker.role} {worker.postcode ? `• ${worker.postcode}` : ""}
                         </div>

@@ -40,8 +40,8 @@ export const StaffCard: React.FC<StaffCardProps> = ({
     return (
       <div
         onClick={!isAssigned ? onAssign : undefined}
-        className={`flex items-center gap-3 py-2 border-b border-border/60 last:border-0 transition-opacity ${
-          isAssigned ? "" : "opacity-60 hover:opacity-100"
+        className={`flex items-center gap-3 py-2 border-b border-border/70 [.light-theme_&]:border-border last:border-0 transition-opacity ${
+          isAssigned ? "" : "opacity-75 [.light-theme_&]:opacity-90 hover:opacity-100"
         } ${
           !isAssigned && onAssign
             ? "pointer-events-none 2xl:pointer-events-auto 2xl:cursor-pointer 2xl:hover:bg-secondary/30 2xl:-mx-2 2xl:px-2 2xl:rounded-lg"
@@ -58,7 +58,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
             {worker.name}
           </h4>
           <p
-            className="text-muted-foreground font-bold uppercase tracking-widest text-[10px] truncate"
+            className="text-muted-foreground [.light-theme_&]:text-slate-600 font-bold uppercase tracking-widest text-[10px] truncate"
             title={worker.role}
           >
             {worker.role}
@@ -80,7 +80,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
             <button
               type="button"
               onClick={onAssign}
-              className="pointer-events-auto 2xl:hidden flex items-center gap-1 px-2 py-2.5 -my-1 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary font-black uppercase tracking-wider text-[10px] transition-colors cursor-pointer shrink-0"
+              className="pointer-events-auto 2xl:hidden flex items-center gap-1 px-2 py-2.5 -my-1 rounded-lg border border-solid border-slate-600 [.light-theme_&]:border-slate-400 text-slate-300 [.light-theme_&]:text-slate-700 hover:text-foreground hover:border-primary font-black uppercase tracking-wider text-[10px] transition-colors cursor-pointer shrink-0"
             >
               <Plus className="w-3 h-3" />
               Assign

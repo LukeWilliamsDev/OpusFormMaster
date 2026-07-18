@@ -27,8 +27,8 @@ export const TicketWarningBadge: React.FC<{ worker: Worker; compact?: boolean }>
 
   const colorClasses =
     worst.status === "EXPIRED"
-      ? "bg-red-500/20 border-red-500/30 text-red-400"
-      : "bg-amber-500/20 border-amber-500/30 text-amber-400";
+      ? "bg-red-500/25 [.light-theme_&]:bg-red-500/15 border-red-500/50 [.light-theme_&]:border-red-600/60 text-red-400 [.light-theme_&]:text-red-600"
+      : "bg-amber-500/25 [.light-theme_&]:bg-amber-500/15 border-amber-500/50 [.light-theme_&]:border-amber-600/60 text-amber-400 [.light-theme_&]:text-amber-700";
 
   return (
     <span

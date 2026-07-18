@@ -203,4 +203,10 @@
 - Replaced mock/hash-based weather and the hardcoded OpenWeatherMap API key with live Open-Meteo forecast (14-day past + 16-day ahead, keyless) and Nominatim geocoding, cached per postcode via shared `useJobForecast` hook; wired into calendar chips, Job Ledger site-warnings badge, and Job Details' Live Weather Risk card.
 - Fixed nearby-suppliers search (was an unbounded free-text match returning irrelevant results); bounded to a ~15mi viewbox around the site. Corrected mixed/mislabeled distance units to miles throughout.
 - Migrated behavioral agent rules (token conservation, spawn-task usage, terse responses, Composio availability) from per-project memory to global `~/.claude/CLAUDE.md`; added UI/UX skill-check requirement and scoped rules to subagents.
+
+## 2026-07-19
+- Fixed light-theme contrast: hardcoded dark-only text/border colors (`gray-300`, `zinc-*`, `neutral-*`, inline `#hex`) replaced with theme tokens across quote builder, staff roster, audit log, legal pages, and map popups.
+- Converted fixed near-black status/urgency badges (job calendar chips, expiry radar, pipeline registry, audit diff table) to opacity-tinted `success`/`warning`/`destructive` tokens that adapt to both themes.
+- Fixed mojibake (`Â£`, `Â·`, `â€"`) baked into RosterView and PipelineRegistry source strings from a prior mis-encoded paste.
+- Corrected `/commit` skill's default branch from `Dev` to `dev` (actual remote branch name; old default would have failed to push).
 

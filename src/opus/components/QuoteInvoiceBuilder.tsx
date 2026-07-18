@@ -942,19 +942,19 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 border-b border-border pb-3">
               <Building2 className="w-4 h-4 text-muted-foreground" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-white">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-foreground">
                 Client & Project
               </h3>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
+                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                   Client Name
                 </span>
-                <div className="flex items-center bg-background border border-border rounded-lg p-2.5 px-3 focus-within:border-gray-500 transition-colors">
+                <div className="flex items-center bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
                   <input
                     type="text"
-                    className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
+                    className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium"
                     value={clientInfo.entity}
                     onChange={(e) => setClientInfo({ ...clientInfo, entity: e.target.value })}
                     placeholder="e.g. ABC CONSTRUCTIONS LTD"
@@ -962,14 +962,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
+                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                   Email
                 </span>
-                <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-2.5 px-3 focus-within:border-gray-500 transition-colors">
+                <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
                   <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     type="email"
-                    className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold"
+                    className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium"
                     value={clientInfo.email}
                     onChange={(e) => setClientInfo({ ...clientInfo, email: e.target.value })}
                     placeholder="accounts@client.com"
@@ -977,14 +977,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
+                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                   Project / Site Name
                 </span>
-                <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-2.5 px-3 focus-within:border-gray-500 transition-colors">
+                <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
                   <LayoutGrid className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     type="text"
-                    className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
+                    className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium"
                     value={clientInfo.site}
                     onChange={(e) => setClientInfo({ ...clientInfo, site: e.target.value })}
                     placeholder="e.g. Project Titan"
@@ -992,14 +992,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
+                <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                   Site Postcode
                 </span>
-                <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-2.5 px-3 focus-within:border-gray-500 transition-colors">
+                <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
                   <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     type="text"
-                    className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-widest"
+                    className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium tracking-wide"
                     value={clientInfo.postcode}
                     onChange={(e) => setClientInfo({ ...clientInfo, postcode: e.target.value })}
                     placeholder="e.g. SW1A 1AA"
@@ -1019,7 +1019,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <ClipboardList className="w-4 h-4 text-muted-foreground" />
-                <h3 className="text-xs font-black uppercase tracking-widest text-white">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-foreground">
                   Line Items
                 </h3>
               </div>
@@ -1226,7 +1226,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-muted-foreground" />
-                <h3 className="text-xs font-black uppercase tracking-widest text-white">
+                <h3 className="text-[11px] font-bold uppercase tracking-wider text-foreground">
                   Terms & Conditions
                 </h3>
               </div>
@@ -1270,7 +1270,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
             <div className="flex items-center gap-2 border-b border-border pb-3">
               <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-white">
+              <h3 className="text-[11px] font-bold uppercase tracking-wider text-foreground">
                 Summary & Authorization
               </h3>
             </div>

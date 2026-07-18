@@ -1,5 +1,5 @@
 import React from "react";
-import { Plus, Users } from "lucide-react";
+import { CloudRain, CloudSun, Plus, Snowflake, Thermometer, Users, Wind } from "lucide-react";
 import { Job } from "../../types/erp";
 import { useJobForecast, getWeatherOnDate } from "../../utils/weather";
 import { DaySchedule } from "../../hooks/useDaySchedule";
@@ -20,10 +20,26 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
 
   return (
     <div
-      className={`px-1.5 py-1 rounded-md border text-[9px] font-black uppercase tracking-wider truncate ${colorClass}`}
-      title={`${weather.condition} · ${weather.riskLevel} risk · ${weather.temperature}°C`}
+      className={`flex items-center justify-between gap-1 px-1.5 py-1 rounded-md border text-[9px] font-black uppercase tracking-wider ${colorClass}`}
+      title={weather.advice}
     >
-      {weather.condition} · {weather.riskLevel}
+      <span className="flex items-center gap-1 truncate">
+        {weather.condition === "Rain" ? (
+          <CloudRain className="w-2.5 h-2.5 shrink-0" />
+        ) : weather.condition === "Frost" ? (
+          <Snowflake className="w-2.5 h-2.5 shrink-0" />
+        ) : weather.condition === "Wind" ? (
+          <Wind className="w-2.5 h-2.5 shrink-0" />
+        ) : (
+          <CloudSun className="w-2.5 h-2.5 shrink-0" />
+        )}
+        <span className="truncate">
+          {weather.condition} · {weather.riskLevel}
+        </span>
+      </span>
+      <span className="flex items-center gap-0.5 opacity-80 shrink-0">
+        <Thermometer className="w-2.5 h-2.5" /> {weather.temperature}°
+      </span>
     </div>
   );
 };

@@ -8,7 +8,7 @@ interface WeekHeaderProps {
 }
 
 export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) => (
-  <div className="flex items-center justify-between bg-card border border-border rounded-xl px-2 py-1.5 2xl:py-1">
+  <div className="flex items-center justify-between bg-card border border-border rounded-xl px-2 py-1">
     <button
       type="button"
       onClick={() => onNavigate(-1)}

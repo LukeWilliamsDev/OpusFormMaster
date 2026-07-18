@@ -82,12 +82,12 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   return (
     <div className="max-w-3xl md:max-w-none mx-auto space-y-4">
       {/* Toggle + search + filters */}
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
-        <div className="grid grid-cols-2 lg:flex lg:items-center gap-2">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+        <div className="grid grid-cols-2 md:flex md:items-center gap-2">
           <button
             type="button"
             onClick={() => onChangeGroup("staff")}
-            className={`flex items-center justify-center lg:justify-start gap-2 px-4 py-2.5 2xl:py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
+            className={`flex items-center justify-center md:justify-start gap-2 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
               group === "staff"
                 ? "bg-primary border-primary text-white shadow-lg shadow-primary/10"
                 : "bg-card/50 border-border text-muted-foreground hover:text-foreground"
@@ -99,7 +99,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
           <button
             type="button"
             onClick={() => onChangeGroup("project")}
-            className={`flex items-center justify-center lg:justify-start gap-2 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
+            className={`flex items-center justify-center md:justify-start gap-2 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
               group === "project"
                 ? "bg-primary border-primary text-white shadow-lg shadow-primary/10"
                 : "bg-card/50 border-border text-muted-foreground hover:text-foreground"
@@ -110,13 +110,13 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
           </button>
         </div>
 
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2">
+        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
           {/* Role Filter */}
           {group === "staff" && (
             <select
               value={selectedRole}
               onChange={(e) => setSelectedRole(e.target.value)}
-              className="bg-card border border-border rounded-xl px-3 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
+              className="bg-card border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
             >
               <option value="all">All Roles</option>
               {uniqueRoles.map((role) => (
@@ -127,14 +127,14 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             </select>
           )}
 
-          <div className="relative lg:w-56">
+          <div className="relative md:w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search staff or projects…"
-              className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+              className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
             />
           </div>
         </div>

@@ -638,10 +638,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
       worker.tickets?.filter((t) => getTicketStatus(t) === "EXPIRING_SOON").length || 0;
     const ticketCount = worker.tickets?.length || 0;
 
-    let statusText = "ALL CLEAR";
+    let statusText = ticketCount === 0 ? "NO TICKETS" : "ALL CLEAR";
     let badgeColorClasses =
-      "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold";
-    let avatarBorderColorClasses = "border-emerald-500/30 text-emerald-400 bg-emerald-500/5";
+      ticketCount === 0
+        ? "bg-zinc-500/10 border border-zinc-500/30 text-zinc-400 font-bold"
+        : "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold";
+    let avatarBorderColorClasses =
+      ticketCount === 0
+        ? "border-zinc-500/30 text-zinc-400 bg-zinc-500/5"
+        : "border-emerald-500/30 text-emerald-400 bg-emerald-500/5";
     if (expiredCount > 0) {
       statusText = `${expiredCount} EXPIRED`;
       badgeColorClasses = "bg-red-500/20 border border-red-500/30 text-red-400 font-bold";
@@ -660,7 +665,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       <div
         key={worker.id}
         onClick={() => setSelectedWorkerDetailsId(worker.id)}
-        className="bg-card hover:bg-secondary border border-border rounded-2xl p-4 flex items-center justify-between cursor-pointer transition-all duration-150"
+        className="bg-card hover:bg-secondary border border-border rounded-2xl p-4 flex flex-col justify-between gap-3 cursor-pointer transition-all duration-150"
       >
         <div className="flex items-center space-x-3 min-w-0">
           <div
@@ -672,20 +677,23 @@ export const RosterView: React.FC<RosterViewProps> = ({
             <h4 className="text-[14px] font-bold text-foreground tracking-wide truncate">
               {worker.name}
             </h4>
-            <span className="text-[11px] text-zinc-400 font-medium block mt-0.5">
+            <span className="text-[11px] text-zinc-400 font-medium block mt-0.5 truncate">
               {worker.role}
             </span>
           </div>
         </div>
-        <div className="flex flex-col items-end shrink-0 space-y-1">
+        <div className="flex items-center gap-2 pt-3 border-t border-border">
           <span
             className={`px-2 py-0.5 rounded text-[9.5px] font-semibold tracking-wider uppercase ${badgeColorClasses}`}
           >
             {statusText}
           </span>
-          <span className="text-[10px] text-zinc-500 font-medium tracking-wide">
-            {ticketCount} {ticketCount === 1 ? "ticket" : "tickets"}
-          </span>
+          {ticketCount > 0 && ticketCount !== expiredCount && (
+            <span className="flex items-center gap-1 text-[10px] text-zinc-500 font-medium tracking-wide">
+              <FileText className="w-3 h-3" />
+              {ticketCount} {ticketCount === 1 ? "ticket" : "tickets"}
+            </span>
+          )}
         </div>
       </div>
     );
@@ -2096,12 +2104,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search staff by name, role, site..."
-                className="w-full bg-background border border-border text-xs text-foreground rounded-xl pl-11 pr-4 py-2.5 focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground shadow-inner font-medium tracking-wide"
+                className="w-full bg-background border border-border text-xs text-foreground rounded-xl pl-11 pr-4 py-2 focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground shadow-inner font-medium tracking-wide"
               />
             </div>
             <button
               onClick={() => setShowAddWorkerForm(!showAddWorkerForm)}
-              className="p-2.5 md:px-4 md:py-2.5 bg-primary hover:bg-primary text-primary-foreground rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-[11.5px] font-semibold tracking-wider whitespace-nowrap cursor-pointer shrink-0"
+              className="p-2 md:px-4 md:py-2 bg-primary hover:bg-primary text-primary-foreground rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-[11.5px] font-semibold tracking-wider whitespace-nowrap cursor-pointer shrink-0"
             >
               {showAddWorkerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
               <span className="hidden md:inline">
@@ -2115,7 +2123,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             <button
               type="button"
               onClick={() => setRosterMode("active")}
-              className={`px-4 py-2 rounded-xl text-[12px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
                 rosterMode === "active"
                   ? "bg-primary border-primary text-primary-foreground"
                   : "bg-card/60 border-border text-muted-foreground hover:text-foreground"
@@ -2126,7 +2134,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             <button
               type="button"
               onClick={() => setRosterMode("archived")}
-              className={`px-4 py-2 rounded-xl text-[12px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
+              className={`px-3.5 py-1.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
                 rosterMode === "archived"
                   ? "bg-amber-600 border-amber-600 text-white"
                   : "bg-card/60 border-border text-muted-foreground hover:text-amber-500"

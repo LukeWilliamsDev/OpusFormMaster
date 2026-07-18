@@ -14,6 +14,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE_DIR =
   'C:\\Users\\Luke\\.gemini\\antigravity-ide\\brain\\b941d7a6-eee2-48ac-aee3-9dda6fa1c3c9';
 
+const LOGO_SVG_PATH = path.join(__dirname, '..', 'public', 'opus-form-primary-light.svg');
+
 // Only the final, terminology-aligned suite of 6 policies (per walkthrough.md).
 // Deliberately hardcoded rather than globbed so bundle/scratch files in the
 // source folder (opus_form_policies.md, task.md, walkthrough.md, etc.) are never picked up.
@@ -27,22 +29,26 @@ const POLICIES = [
   { source: 'Sustainability_Policy.md', outputName: 'Sustainability-Policy', reference: 'OF-POL-06', kind: 'Company Policy' },
 ];
 
-const OUTPUT_DIR = path.join(__dirname, 'policies');
+const OUTPUT_DIR = path.join(__dirname, '..', 'policies');
 
 const COMPANY_NAME = 'Opus Form Ltd';
 const COMPANY_NUMBER = '17228356';
 
-const INK = '#232E38';
-const BODY_TEXT = '#414B54';
-const MUTED = '#76828C';
-const MUTED_2 = '#98A2AA';
-const ACCENT = '#5C7285';
-const ACCENT_DEEP = '#38495A';
-const LINE = '#DCE1E6';
-const WASH = '#F4F6F7';
+// Dark Industrial brand palette (see src/styles.css) — warm cream/charcoal, burnt-orange accent.
+const INK = '#2B2F33';
+const BODY_TEXT = '#4A4640';
+const MUTED = '#7A756C';
+const MUTED_2 = '#9B958A';
+const ACCENT = '#B5651D';
+const ACCENT_DEEP = '#8F4F16';
+const LINE = '#D9D3C7';
+const WASH = '#EAE5DC';
 
-const SANS_STACK = `-apple-system, 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif`;
-const MONO_STACK = `ui-monospace, 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace`;
+// Matches the site's type system (src/routes/__root.tsx Google Fonts link + src/styles.css vars).
+const SANS_STACK = `'Public Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif`;
+const DISPLAY_STACK = `'Archivo', ${SANS_STACK}`;
+const MONO_STACK = `'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace`;
+const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Public+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');`;
 
 const SMALL_WORDS = new Set(['and', 'of', 'the', 'in', 'on', 'for', 'to', 'a', 'an', '&']);
 
@@ -60,14 +66,14 @@ function toTitleCase(str) {
     .join(' ');
 }
 
-// The brand SVG (public/opus-form-primary.svg) uses a wide viewBox with the wordmark
-// centered for the app's dark hero banners, leaving large empty margins either side.
-// That layout doesn't translate to a compact print letterhead, so this is a dark-on-white
-// text lockup for print use only — the source asset itself is never modified.
-// Rendered as real text with a CSS border (not a fixed-coordinate SVG line) so the
-// underline always matches the text's actual rendered width, regardless of font metrics.
-function printLogo({ fontSize }) {
-  return `<div style="display:inline-block; font-family:${SANS_STACK}; font-weight:900; font-size:${fontSize}; letter-spacing:0.14em; color:${INK}; line-height:1; border-bottom:3px solid ${ACCENT}; padding-bottom:0.28em;">OPUS FORM</div>`;
+// Embeds the actual brand asset (public/opus-form-primary-light.svg) rather than
+// approximating it — guarantees the print lockup is pixel-identical to the real wordmark.
+// The source viewBox (0 0 480 120) has wide side margins for the app's hero banners;
+// cropped here to a tight bounding box around the glyphs for a compact letterhead.
+function printLogo({ height }) {
+  const raw = fs.readFileSync(LOGO_SVG_PATH, 'utf8');
+  const inner = raw.match(/<svg[^>]*>([\s\S]*)<\/svg>/)[1];
+  return `<svg viewBox="30 20 405 65" height="${height}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
 }
 
 // Strips the "# TITLE" / **Company:** / **Managing Director:** / **Date:** preamble
@@ -129,6 +135,8 @@ const renderer = {
 marked.use({ renderer });
 
 const PRINT_CSS = `
+  ${FONT_IMPORT}
+
   * { box-sizing: border-box; }
 
   html, body {
@@ -172,6 +180,7 @@ const PRINT_CSS = `
   }
 
   .title-block h1 {
+    font-family: ${DISPLAY_STACK};
     font-size: 22pt;
     font-weight: 800;
     letter-spacing: -0.01em;
@@ -215,6 +224,7 @@ const PRINT_CSS = `
   .content { max-width: 165mm; }
 
   .content h2, .content h3 {
+    font-family: ${DISPLAY_STACK};
     color: ${INK};
     font-weight: 700;
     margin: 8mm 0 2mm;
@@ -358,7 +368,7 @@ function buildHtml({ title, kind, bodyHtml, director, issued, reference }) {
 </head>
 <body>
   <div class="doc-header">
-    ${printLogo({ fontSize: '22px' })}
+    ${printLogo({ height: '20px' })}
     <div class="reg">
       ${COMPANY_NAME}<br>
       Company No. ${COMPANY_NUMBER}<br>

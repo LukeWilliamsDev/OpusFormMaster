@@ -641,20 +641,20 @@ export const RosterView: React.FC<RosterViewProps> = ({
     let statusText = ticketCount === 0 ? "NO TICKETS" : "ALL CLEAR";
     let badgeColorClasses =
       ticketCount === 0
-        ? "bg-zinc-500/10 border border-zinc-500/30 text-zinc-400 font-bold"
-        : "bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold";
+        ? "bg-muted border border-border text-muted-foreground font-bold"
+        : "bg-success/10 border border-success/30 text-success font-bold";
     let avatarBorderColorClasses =
       ticketCount === 0
-        ? "border-zinc-500/30 text-zinc-400 bg-zinc-500/5"
-        : "border-emerald-500/30 text-emerald-400 bg-emerald-500/5";
+        ? "border-border text-muted-foreground bg-muted"
+        : "border-success/30 text-success bg-success/5";
     if (expiredCount > 0) {
       statusText = `${expiredCount} EXPIRED`;
-      badgeColorClasses = "bg-red-500/20 border border-red-500/30 text-red-400 font-bold";
-      avatarBorderColorClasses = "border-red-500/30 text-red-400 bg-red-500/5";
+      badgeColorClasses = "bg-destructive/10 border border-destructive/30 text-destructive font-bold";
+      avatarBorderColorClasses = "border-destructive/30 text-destructive bg-destructive/5";
     } else if (expiringCount > 0) {
       statusText = "EXPIRING";
-      badgeColorClasses = "bg-amber-500/20 border border-amber-500/30 text-amber-400 font-bold";
-      avatarBorderColorClasses = "border-amber-500/30 text-amber-400 bg-amber-500/5";
+      badgeColorClasses = "bg-warning/15 border border-warning/30 text-warning font-bold";
+      avatarBorderColorClasses = "border-warning/30 text-warning bg-warning/5";
     }
 
     const nameParts = worker.name.split(" ");
@@ -677,7 +677,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             <h4 className="text-[14px] font-bold text-foreground tracking-wide truncate">
               {worker.name}
             </h4>
-            <span className="text-[11px] text-zinc-400 font-medium block mt-0.5 truncate">
+            <span className="text-[11px] text-muted-foreground font-medium block mt-0.5 truncate">
               {worker.role}
             </span>
           </div>
@@ -689,7 +689,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             {statusText}
           </span>
           {ticketCount > 0 && ticketCount !== expiredCount && (
-            <span className="flex items-center gap-1 text-[10px] text-zinc-500 font-medium tracking-wide">
+            <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium tracking-wide">
               <FileText className="w-3 h-3" />
               {ticketCount} {ticketCount === 1 ? "ticket" : "tickets"}
             </span>

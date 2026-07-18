@@ -455,7 +455,7 @@ export const DashboardPage: React.FC = () => {
                 key={t}
                 onClick={() => setTimeframe(t)}
                 className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
-                  timeframe === t ? "bg-primary text-foreground" : "text-muted-foreground hover:text-foreground"
+                  timeframe === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {t}

@@ -81,21 +81,21 @@
   --card-foreground: #2B2F33;
   --popover: #FDFAF5;
   --popover-foreground: #2B2F33;
-  --primary: #B5651D;             /* Brand burnt-orange, consistent in both modes */
+  --primary: #8D4F17;             /* Darkened from brand #B5651D — the lighter value fails WCAG AA (4.16:1) as text on this theme's cream surfaces; this hits ~5.7:1 */
   --primary-foreground: #FDFAF5;
   --secondary: #EAE5DC;           /* Slightly deeper cream */
   --secondary-foreground: #2B2F33;
   --muted: #EAE5DC;
   --muted-foreground: #5A5450;    /* Warm helper text, boosted contrast for readability */
-  --accent: #B5651D;
+  --accent: #8D4F17;
   --accent-foreground: #FDFAF5;
   --destructive: #C0392B;
   --destructive-foreground: #FDFAF5;
   --success: #2E7D52;
-  --warning: #C47A28;
+  --warning: #A16421;              /* Darkened from #C47A28 — fails WCAG AA as text on this theme's cream surfaces */
   --border: #D9D3C7;              /* Warm grey border */
   --input: #EAE5DC;
-  --ring: #B5651D;
+  --ring: #8D4F17;
 }
 
 @layer base {

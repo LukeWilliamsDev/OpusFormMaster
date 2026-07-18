@@ -14,11 +14,8 @@ Opus Form Ltd is a **Concrete Flooring Contractor**. The Opus Form application i
 - Before starting any large task or system change, ask clarifying questions upfront — specific design answers avoid token-consuming churn and repeated file reads.
 
 ## Token Conservation
-- **No project-wide builds** (`npm run build` etc.) unless validating a final solution; use silent flags or redirect output to avoid log bloat.
-- **Narrow scopes**: target specific subfolders (e.g. `src/components`, `supabase/functions/send-quote-pdf`) in searches — never the project root.
-- **Sliced reads**: use `StartLine`/`EndLine` to read only relevant lines; never view whole files over 100 lines.
-- **No subagents** unless a task is highly complex, parallelizable, and explicitly benefits from split context — spawning duplicates context and burns quota.
-- **Manual verification preferred** over automated builds/typechecks; run automated validation only when strictly necessary.
+Global rules (sliced reads, narrow scopes, no unnecessary builds/subagents) are defined once in `~/.claude/CLAUDE.md` and apply here automatically. Project-specific addition:
+- Target subfolders concretely (e.g. `src/components`, `supabase/functions/send-quote-pdf`) — never the project root.
 - If the transcript exceeds 10 turns, suggest the user issue `/end` and start a fresh thread.
 
 ## Verification — DO NOT RUN DEV SERVERS
@@ -29,8 +26,7 @@ Opus Form Ltd is a **Concrete Flooring Contractor**. The Opus Form application i
 Execute the `/end` workflow ONLY when the user explicitly issues `/end` — see `.agents/skills/end/SKILL.md`.
 
 ## Response Format
-- Prepend a badge to every response: `> [Emoji] **ACTIVE PERSONA:** [Agent Name] | **SUB-TASK:** [Description]`
-- Keep explanations extremely brief: state what was accomplished and link the modified files. No line-by-line change narration.
+Prepend a badge to every response: `> [Emoji] **ACTIVE PERSONA:** [Agent Name] | **SUB-TASK:** [Description]`. Brevity/style rules are global (see `~/.claude/CLAUDE.md`).
 
 ## Personas
 Activate with `"Switch to [persona]"`; return to default with `"Switch to lead-developer"` or `"Exit persona"`.

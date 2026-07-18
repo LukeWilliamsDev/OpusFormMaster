@@ -807,7 +807,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   );
 
   return (
-    <div className="flex flex-col flex-1 w-full text-white">
+    <div className="flex flex-col flex-1 w-full text-foreground">
       {/* --- STICKY ACTION BAR --- */}
       <div className="sticky top-16 lg:top-0 z-40 bg-background/90 backdrop-blur border-b border-border mb-4">
         <div className="max-w-xl mx-auto px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3">
@@ -815,7 +815,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="flex items-center gap-1.5 text-muted-foreground hover:text-white transition-colors text-[11px] font-black uppercase tracking-widest shrink-0"
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-[11px] font-black uppercase tracking-widest shrink-0"
           >
             ← Back
           </button>
@@ -836,21 +836,21 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="lg:hidden flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+            className="lg:hidden flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
           >
             <Eye className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Preview</span>
           </button>
           <button
             onClick={handleSaveDraft}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
           >
             <Save className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{lastSaved ? "SAVED" : "SAVE"}</span>
           </button>
           <button
             onClick={handleDownloadPDF}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">PDF</span>
@@ -881,7 +881,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             <button
               type="button"
               onClick={() => setShowHistory((h) => !h)}
-              className="w-full flex items-center justify-between p-4 text-[11px] font-black tracking-widest uppercase text-muted-foreground hover:text-white transition-colors"
+              className="w-full flex items-center justify-between p-4 text-[11px] font-black tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
             >
               <div className="flex items-center gap-2">
                 <History className="w-3.5 h-3.5" />
@@ -910,7 +910,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                     >
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-black uppercase tracking-widest text-white">
+                          <span className="text-[11px] font-black uppercase tracking-widest text-foreground">
                             {q.reference}
                           </span>
                           <span className="text-[11px] text-muted-foreground">{q.date}</span>
@@ -1026,7 +1026,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               <button
                 type="button"
                 onClick={addItem}
-                className="flex items-center gap-1.5 bg-secondary border border-border rounded-lg p-1.5 px-3 text-white text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+                className="flex items-center gap-1.5 bg-secondary border border-border rounded-lg p-1.5 px-3 text-foreground text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5 text-primary" />
                 ADD LINE
@@ -1053,7 +1053,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                     <div className="relative flex-1 pr-7">
                       <input
                         type="text"
-                        className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider py-1.5"
+                        className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold tracking-wider py-1.5"
                         value={item.description}
                         onChange={(e) => updateItem(item.id, { description: e.target.value })}
                         onFocus={() => setFocusedItemId(item.id)}
@@ -1087,7 +1087,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                                     rate: suggestion.rate,
                                   });
                                 }}
-                                className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-white hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
+                                className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
                               >
                                 <div className="flex justify-between items-center">
                                   <span>{suggestion.description}</span>
@@ -1111,7 +1111,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         <div className="flex items-center bg-card border border-border rounded-lg h-9 px-2">
                           <input
                             type="number"
-                            className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
+                            className="w-full bg-transparent border-none outline-none text-foreground text-xs font-mono font-bold"
                             value={item.quantity}
                             onChange={(e) =>
                               updateItem(item.id, { quantity: Number(e.target.value) })
@@ -1126,7 +1126,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         <div className="relative flex items-center bg-card border border-border rounded-lg h-9 px-2">
                           <input
                             type="text"
-                            className="w-full bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
+                            className="w-full bg-transparent border-none outline-none text-foreground text-[11px] font-bold uppercase"
                             value={item.unit}
                             onChange={(e) => updateItem(item.id, { unit: e.target.value })}
                             onFocus={() => setUnitFocusedItemId(item.id)}
@@ -1151,7 +1151,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                                     key={u}
                                     type="button"
                                     onClick={() => updateItem(item.id, { unit: u })}
-                                    className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-white hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
+                                    className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
                                   >
                                     {u}
                                   </button>
@@ -1168,7 +1168,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         <div className="flex items-center bg-card border border-border rounded-lg h-9 px-2 gap-1.5">
                           <input
                             type="text"
-                            className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
+                            className="w-full bg-transparent border-none outline-none text-foreground text-xs font-mono font-bold"
                             value={item.rate}
                             onChange={(e) => updateItem(item.id, { rate: e.target.value })}
                             placeholder="0.00"
@@ -1233,7 +1233,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               <button
                 type="button"
                 onClick={() => setTerms([...terms, ""])}
-                className="bg-secondary border border-border hover:border-muted-foreground/40 rounded-md w-[26px] h-[26px] flex items-center justify-center cursor-pointer text-muted-foreground hover:text-white transition-colors"
+                className="bg-secondary border border-border hover:border-muted-foreground/40 rounded-md w-[26px] h-[26px] flex items-center justify-center cursor-pointer text-muted-foreground hover:text-foreground transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -1251,7 +1251,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                       newTerms[index] = e.target.value;
                       setTerms(newTerms);
                     }}
-                    className="w-full bg-transparent border-none outline-none text-[11px] text-gray-300 leading-relaxed resize-none h-14 font-medium"
+                    className="w-full bg-transparent border-none outline-none text-[11px] text-foreground leading-relaxed resize-none h-14 font-medium"
                     placeholder="Enter condition..."
                   />
                   <button
@@ -1284,7 +1284,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 </span>
               </div>
               <div className="flex justify-between text-[16px] pt-1">
-                <span className="font-bold text-white">Total</span>
+                <span className="font-bold text-foreground">Total</span>
                 <span className="font-extrabold text-primary font-mono">
                   £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
@@ -1299,7 +1299,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           {/* Desktop: sticky PDF mirror. Always mounted (hidden via CSS, not unmounted) so it
               remains the single canonical .print-area target at every breakpoint. */}
           <div className="hidden lg:block sticky top-[58px]">
-            <div className="flex items-center gap-2 text-white/20 px-1 mb-3">
+            <div className="flex items-center gap-2 text-foreground/20 px-1 mb-3">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="text-[11px] font-black uppercase tracking-[0.2em]">
                 PDF Live Mirror
@@ -1327,14 +1327,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             className="lg:hidden fixed inset-0 z-[95] bg-black/85 backdrop-blur-sm flex flex-col"
           >
             <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border shrink-0">
-              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white flex items-center gap-2">
+              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-foreground flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 PDF Live Preview
               </span>
               <button
                 type="button"
                 onClick={() => setPreviewOpen(false)}
-                className="text-muted-foreground hover:text-white transition-colors p-1"
+                className="text-muted-foreground hover:text-foreground transition-colors p-1"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1391,7 +1391,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         message={
           <>
             Are you sure you want to delete the quote{" "}
-            <span className="font-bold text-white">{quoteToDelete?.reference}</span>?
+            <span className="font-bold text-foreground">{quoteToDelete?.reference}</span>?
             <div className="mt-3 p-4 bg-white/5 border border-white/5 rounded-lg text-xs font-medium text-red-400 leading-relaxed">
               This action is irreversible and will permanently delete this quote draft from the database.
             </div>

@@ -193,4 +193,14 @@
 - Built `/portal/policies` dashboard strictly restricted to `admin@opusform.co.uk` using `AuditLogGuard`.
 - Integrated Policies page into `PortalLayout` sidebar navigation alongside Audit Trail.
 - Hardcoded static policy names in `AdminPolicies.tsx` to securely bypass RLS `list()` restrictions and eliminate backend API overhead.
+
+## 2026-07-18
+- Redesigned calendar week grid: unified single-bordered grid replacing five separate day cards, role-based color-coded initials badges (first-seen palette assignment, no red/green), site-wide `text-muted-foreground` token adoption replacing raw Tailwind grays.
+- Restructured toolbar (Staff/Project toggle, role filter, search) to a shared `lg` breakpoint for consistent mobile/tablet stacking.
+- Made unassigned staff rows clickable to assign on desktop only (CSS `pointer-events` gated), hiding the redundant Assign button at `2xl`.
+- Redesigned assign sheet: neutral-card project buttons (job color as accent only, was full alert-red background), `MapPin` icon replacing emoji, corrected distance units to miles.
+- Added explicit "0 deployed" state and a green "Clear" weather chip for non-impactful forecast days.
+- Replaced mock/hash-based weather and the hardcoded OpenWeatherMap API key with live Open-Meteo forecast (14-day past + 16-day ahead, keyless) and Nominatim geocoding, cached per postcode via shared `useJobForecast` hook; wired into calendar chips, Job Ledger site-warnings badge, and Job Details' Live Weather Risk card.
+- Fixed nearby-suppliers search (was an unbounded free-text match returning irrelevant results); bounded to a ~15mi viewbox around the site. Corrected mixed/mislabeled distance units to miles throughout.
+- Migrated behavioral agent rules (token conservation, spawn-task usage, terse responses, Composio availability) from per-project memory to global `~/.claude/CLAUDE.md`; added UI/UX skill-check requirement and scoped rules to subagents.
 

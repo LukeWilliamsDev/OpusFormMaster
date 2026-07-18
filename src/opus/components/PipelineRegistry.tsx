@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -383,8 +383,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                       <span
                         className={`px-2 py-1 rounded text-[11px] font-bold ${
                           quote.isSent
-                            ? "bg-[#162230] border border-[#2a4a6a] text-primary"
-                            : "bg-[#2a2a10] border border-[#4a4a20] text-[#c0c040]"
+                            ? "bg-primary/10 border border-primary/20 text-primary"
+                            : "bg-warning/10 border border-warning/20 text-warning"
                         }`}
                       >
                         {quote.isSent ? "Sent" : "Draft"}
@@ -413,8 +413,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 <span
                   className={`px-2 py-1 rounded text-[11px] font-bold ${
                     quote.isSent
-                      ? "bg-[#162230] border border-[#2a4a6a] text-primary"
-                      : "bg-[#2a2a10] border border-[#4a4a20] text-[#c0c040]"
+                      ? "bg-primary/10 border border-primary/20 text-primary"
+                      : "bg-warning/10 border border-warning/20 text-warning"
                   }`}
                 >
                   {quote.isSent ? "Sent" : "Draft"}
@@ -539,8 +539,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                   <span
                     className={`px-1.5 py-0.5 rounded text-[11px] font-black uppercase tracking-widest ${
                       selectedQuoteForControl.isSent
-                        ? "bg-[#162230] border border-[#2a4a6a] text-primary"
-                        : "bg-[#2a2a10] border border-[#4a4a20] text-[#c0c040]"
+                        ? "bg-primary/10 border border-primary/20 text-primary"
+                        : "bg-warning/10 border border-warning/20 text-warning"
                     }`}
                   >
                     {selectedQuoteForControl.isSent ? "Sent" : "Draft"}

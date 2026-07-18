@@ -49,47 +49,44 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
 
   const getTicketStyle = (ticket: TicketInfo) => {
     if (ticket.diffDays < 0) {
-      // Expired (Red Theme)
+      // Expired
       return {
-        cardBg: "bg-red-950/20 border-red-900/30 hover:border-red-700/50 hover:bg-red-950/30",
-        badgeBg: "bg-red-900/50 text-red-400 border-red-800/40",
+        cardBg: "bg-destructive/10 border-destructive/20 hover:border-destructive/40 hover:bg-destructive/15",
+        badgeBg: "bg-destructive/20 text-destructive border-destructive/30",
         statusText: "Blocked",
         daysText: "Expired",
-        daysColor: "text-red-400",
-        iconColor: "text-red-500",
+        daysColor: "text-destructive",
+        iconColor: "text-destructive",
       };
     } else if (ticket.diffDays <= 14) {
-      // <= 14 days (Amber Theme)
+      // <= 14 days (Critical — stronger warning tint)
       return {
-        cardBg:
-          "bg-amber-950/30 border-amber-900/30 hover:border-amber-700/50 hover:bg-amber-950/40",
-        badgeBg: "bg-amber-900/50 text-amber-400 border-amber-800/40",
+        cardBg: "bg-warning/15 border-warning/30 hover:border-warning/50 hover:bg-warning/20",
+        badgeBg: "bg-warning/25 text-warning border-warning/40",
         statusText: "Critical",
         daysText: `${ticket.diffDays} days left`,
-        daysColor: "text-amber-400",
-        iconColor: "text-amber-500",
+        daysColor: "text-warning",
+        iconColor: "text-warning",
       };
     } else if (ticket.diffDays <= 30) {
-      // <= 30 days (Soft Yellow/Orange Theme)
+      // <= 30 days (softer warning tint)
       return {
-        cardBg:
-          "bg-yellow-950/15 border-yellow-900/25 hover:border-yellow-800/45 hover:bg-yellow-950/25",
-        badgeBg: "bg-yellow-900/40 text-yellow-400 border-yellow-800/30",
+        cardBg: "bg-warning/5 border-warning/15 hover:border-warning/30 hover:bg-warning/10",
+        badgeBg: "bg-warning/15 text-warning border-warning/25",
         statusText: "Warning",
         daysText: `${ticket.diffDays} days left`,
-        daysColor: "text-yellow-400",
-        iconColor: "text-yellow-500",
+        daysColor: "text-warning",
+        iconColor: "text-warning",
       };
     } else {
-      // Valid (Emerald Theme)
+      // Valid
       return {
-        cardBg:
-          "bg-emerald-950/20 border-emerald-900/30 hover:border-emerald-700/50 hover:bg-emerald-950/30",
-        badgeBg: "bg-emerald-900/50 text-emerald-400 border-emerald-800/40",
+        cardBg: "bg-success/10 border-success/20 hover:border-success/40 hover:bg-success/15",
+        badgeBg: "bg-success/20 text-success border-success/30",
         statusText: "Valid",
         daysText: `${ticket.diffDays} days left`,
-        daysColor: "text-emerald-400",
-        iconColor: "text-emerald-500",
+        daysColor: "text-success",
+        iconColor: "text-success",
       };
     }
   };
@@ -97,7 +94,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between border-b border-border pb-3">
-        <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-white font-archivo">
+        <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-foreground font-archivo">
           <AlertTriangle className="w-4 h-4 text-amber-500 animate-pulse" />
           <span>30-Day Expiry Radar</span>
         </div>
@@ -134,7 +131,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
                 >
                   <div className="flex flex-col gap-0.5">
                     <div className="flex items-center justify-between">
-                      <div className="text-sm font-bold text-white truncate mr-2">
+                      <div className="text-sm font-bold text-foreground truncate mr-2">
                         {ticketInfo.workerName}
                       </div>
                       <span
@@ -152,7 +149,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
 
                   <div className="flex justify-between items-center text-xs gap-2">
                     <div className="flex flex-col truncate">
-                      <span className="text-gray-300 font-semibold truncate text-[11px]">
+                      <span className="text-foreground font-semibold truncate text-[11px]">
                         {ticketInfo.ticketType} Card
                       </span>
                       <span className="text-muted-foreground text-[9px] font-mono font-bold truncate mt-0.5">

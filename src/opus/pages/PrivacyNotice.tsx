@@ -8,17 +8,17 @@ export const PrivacyNoticePage: React.FC = () => (
   <LegalPageLayout title="Staff Privacy Notice" lastUpdated="July 2026">
     <Section title="1. Who We Are">
       <p>
-        Opus Form Ltd ("<strong style={{ color: "#d4d4d8" }}>we</strong>", "
-        <strong style={{ color: "#d4d4d8" }}>us</strong>", "
-        <strong style={{ color: "#d4d4d8" }}>our</strong>") is a concrete flooring contractor and the data controller for personal data processed through this internal platform. This notice applies to all staff, contractors, and operatives whose data is managed through our proprietary workforce management portal.
+        Opus Form Ltd ("<strong style={{ color: "var(--foreground)" }}>we</strong>", "
+        <strong style={{ color: "var(--foreground)" }}>us</strong>", "
+        <strong style={{ color: "var(--foreground)" }}>our</strong>") is a concrete flooring contractor and the data controller for personal data processed through this internal platform. This notice applies to all staff, contractors, and operatives whose data is managed through our proprietary workforce management portal.
       </p>
       <p>
-        <strong style={{ color: "#d4d4d8" }}>Registered Address:</strong> 128 City Road, London,
+        <strong style={{ color: "var(--foreground)" }}>Registered Address:</strong> 128 City Road, London,
         England, EC1V 2NX
         <br />
-        <strong style={{ color: "#d4d4d8" }}>Company Number:</strong> 17228356
+        <strong style={{ color: "var(--foreground)" }}>Company Number:</strong> 17228356
         <br />
-        <strong style={{ color: "#d4d4d8" }}>Contact:</strong>{" "}
+        <strong style={{ color: "var(--foreground)" }}>Contact:</strong>{" "}
         <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
           admin@opusform.co.uk
         </a>

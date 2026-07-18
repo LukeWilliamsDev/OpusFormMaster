@@ -13,10 +13,10 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
   if (!weather) return null;
 
   const colorClass = !weather.isImpactful
-    ? "bg-[#132A1C] border-[#3E8E5C] text-[#6FCF97]"
+    ? "bg-success/10 border-success/30 text-success"
     : weather.riskLevel === "High"
-      ? "bg-[#2B1D11] border-[#C3813B] text-[#FFB057]"
-      : "bg-[#252011] border-[#9E8530] text-[#E0C043]";
+      ? "bg-warning/10 border-warning/30 text-warning"
+      : "bg-warning/10 border-warning/20 text-warning";
 
   return (
     <div

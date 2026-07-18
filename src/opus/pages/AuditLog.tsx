@@ -268,11 +268,11 @@ export const AuditLogPage: React.FC = () => {
       <div className="flex-grow flex flex-col justify-between bg-background rounded-xl overflow-hidden min-h-[480px]">
         <div>
           {loading ? (
-            <div className="py-20 text-center text-xs font-mono text-zinc-500">
+            <div className="py-20 text-center text-xs font-mono text-muted-foreground">
               Loading audit trail...
             </div>
           ) : paginatedLogs.length === 0 ? (
-            <div className="py-20 text-center text-xs font-mono text-zinc-500">
+            <div className="py-20 text-center text-xs font-mono text-muted-foreground">
               No logs matching filters.
             </div>
           ) : (
@@ -361,29 +361,29 @@ export const AuditLogPage: React.FC = () => {
 
         {/* Pagination Controls - Always Locked to the Bottom of this container */}
         <div className="border-t border-white/5 px-4 py-3 flex items-center justify-between bg-black/10 mt-auto">
-          <span className="text-[10px] font-mono text-zinc-500">
+          <span className="text-[10px] font-mono text-muted-foreground">
             Showing{" "}
-            <span className="text-zinc-300">
+            <span className="text-foreground">
               {(currentPage - 1) * itemsPerPage + 1}-
               {Math.min(currentPage * itemsPerPage, filteredLogs.length)}
             </span>{" "}
-            of <span className="text-zinc-300">{filteredLogs.length}</span> actions
+            of <span className="text-foreground">{filteredLogs.length}</span> actions
           </span>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="p-1.5 rounded bg-zinc-800 border border-white/5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 transition-all"
+              className="p-1.5 rounded bg-secondary border border-white/5 text-muted-foreground hover:text-white disabled:opacity-30 disabled:hover:text-muted-foreground transition-all"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-[10px] font-mono text-zinc-300 px-2">
+            <span className="text-[10px] font-mono text-foreground px-2">
               Page {currentPage} of {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="p-1.5 rounded bg-zinc-800 border border-white/5 text-zinc-400 hover:text-white disabled:opacity-30 disabled:hover:text-zinc-400 transition-all"
+              className="p-1.5 rounded bg-secondary border border-white/5 text-muted-foreground hover:text-white disabled:opacity-30 disabled:hover:text-muted-foreground transition-all"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -408,7 +408,7 @@ export const AuditLogPage: React.FC = () => {
                     >
                       {selectedLog.action}
                     </span>
-                    <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-widest">
+                    <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">
                       {selectedLog.target_type}
                     </span>
                   </div>
@@ -438,7 +438,7 @@ export const AuditLogPage: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setSelectedLog(null)}
-                  className="p-2 hover:bg-white/5 rounded-lg text-zinc-500 hover:text-white transition-all"
+                  className="p-2 hover:bg-white/5 rounded-lg text-muted-foreground hover:text-white transition-all"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -447,26 +447,26 @@ export const AuditLogPage: React.FC = () => {
               {/* Meta Info */}
               <div className="grid grid-cols-2 gap-4 bg-white/[0.02] border border-white/5 rounded-xl p-4 text-[11px] font-mono">
                 <div>
-                  <p className="text-zinc-500 uppercase font-black text-[9px] tracking-wider">
+                  <p className="text-muted-foreground uppercase font-black text-[9px] tracking-wider">
                     Timestamp
                   </p>
-                  <p className="text-zinc-300 mt-0.5">
+                  <p className="text-foreground mt-0.5">
                     {new Date(selectedLog.created_at).toLocaleString("en-GB")}
                   </p>
                 </div>
                 <div>
-                  <p className="text-zinc-500 uppercase font-black text-[9px] tracking-wider">
+                  <p className="text-muted-foreground uppercase font-black text-[9px] tracking-wider">
                     Operator
                   </p>
-                  <p className="text-zinc-300 mt-0.5">
+                  <p className="text-foreground mt-0.5">
                     {selectedLog.user_email || "System / Automated"}
                   </p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-zinc-500 uppercase font-black text-[9px] tracking-wider">
+                  <p className="text-muted-foreground uppercase font-black text-[9px] tracking-wider">
                     Target Resource
                   </p>
-                  <p className="text-zinc-300 mt-0.5 select-all font-sans font-bold text-sm">
+                  <p className="text-foreground mt-0.5 select-all font-sans font-bold text-sm">
                     {getTargetDisplayName(
                       selectedLog.target_type,
                       selectedLog.target_id,
@@ -476,7 +476,7 @@ export const AuditLogPage: React.FC = () => {
                   {/* Use optional chaining to safely check target_id prefix if it is null */}
                   {selectedLog.target_type === "staff" &&
                     selectedLog.target_id?.startsWith("worker-") && (
-                      <span className="text-[9px] text-zinc-600 font-mono tracking-normal block mt-0.5">
+                      <span className="text-[9px] text-muted-foreground font-mono tracking-normal block mt-0.5">
                         ID: {selectedLog.target_id}
                       </span>
                     )}
@@ -485,7 +485,7 @@ export const AuditLogPage: React.FC = () => {
 
               {/* Data Diff */}
               <div className="space-y-2">
-                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-zinc-400 tracking-wider">
+                <div className="flex items-center gap-1.5 text-[10px] font-black uppercase text-muted-foreground tracking-wider">
                   <FileJson className="w-3.5 h-3.5" />
                   <span>Payload Details</span>
                 </div>
@@ -495,24 +495,24 @@ export const AuditLogPage: React.FC = () => {
                     diff={computeDiff(selectedLog.details.old, selectedLog.details.new)}
                   />
                 ) : (
-                  <pre className="p-4 bg-black/20 border border-white/5 rounded-xl text-[10px] font-mono text-zinc-300 overflow-x-auto max-h-[400px]">
+                  <pre className="p-4 bg-black/20 border border-white/5 rounded-xl text-[10px] font-mono text-foreground overflow-x-auto max-h-[400px]">
                     {JSON.stringify(selectedLog.details, null, 2)}
                   </pre>
                 )}
               </div>
             </div>
 
-            <div className="border-t border-white/5 pt-4 mt-6 flex justify-between gap-4">
+            <div className="border-t border-border pt-4 mt-6 flex justify-between gap-4">
               <button
                 onClick={() => requestRestore(selectedLog)}
                 disabled={restoring}
-                className="px-4 py-2 bg-brand-accent/80 hover:bg-brand-accent text-xs font-mono font-bold uppercase rounded-lg transition-all text-white disabled:opacity-50"
+                className="px-4 py-2 bg-primary/80 hover:bg-primary text-xs font-mono font-bold uppercase rounded-lg transition-all text-primary-foreground disabled:opacity-50"
               >
                 {restoring ? "Restoring..." : "Restore to this State"}
               </button>
               <button
                 onClick={() => setSelectedLog(null)}
-                className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-mono font-bold uppercase rounded-lg border border-white/5 transition-all text-zinc-300"
+                className="px-4 py-2 bg-secondary hover:bg-muted text-xs font-mono font-bold uppercase rounded-lg border border-white/5 transition-all text-foreground"
               >
                 Close Inspector
               </button>

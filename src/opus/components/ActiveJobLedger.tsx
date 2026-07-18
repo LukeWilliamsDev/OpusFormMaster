@@ -40,7 +40,7 @@ const JobWarnings: React.FC<{ job: Job; followup: { reason: string } | null; den
     <>
       {showWeather && (
         <span
-          className={`inline-flex items-center gap-1 rounded bg-[#ef4444]/10 ${badgePad} border border-[#ef4444]/20 text-[11px] font-bold text-[#ef4444] shrink-0`}
+          className={`inline-flex items-center gap-1 rounded bg-destructive/10 ${badgePad} border border-destructive/20 text-[11px] font-bold text-destructive shrink-0`}
         >
           <CloudSun className="w-3.5 h-3.5" />
           <span>
@@ -50,7 +50,7 @@ const JobWarnings: React.FC<{ job: Job; followup: { reason: string } | null; den
       )}
       {followup && (
         <span
-          className={`inline-flex items-center gap-1 rounded bg-[#f59e0b]/10 ${badgePad} border border-[#f59e0b]/20 text-[11px] font-bold text-[#f59e0b] shrink-0`}
+          className={`inline-flex items-center gap-1 rounded bg-warning/10 ${badgePad} border border-warning/20 text-[11px] font-bold text-warning shrink-0`}
         >
           <AlertCircle className="w-3.5 h-3.5" />
           <span>{followup.reason}</span>
@@ -157,8 +157,8 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                             job.status === "in-progress"
                               ? "bg-primary/10 border-primary/20 text-primary"
                               : job.status === "pending"
-                                ? "bg-[#f59e0b]/10 border-[#f59e0b]/20 text-[#f59e0b]"
-                                : "bg-[#10b981]/10 border-[#10b981]/20 text-[#10b981]"
+                                ? "bg-warning/10 border-warning/20 text-warning"
+                                : "bg-success/10 border-success/20 text-success"
                           }`}
                         >
                           {job.status === "in-progress" ? "In Progress" : job.status}
@@ -232,8 +232,8 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                           job.status === "in-progress"
                             ? "bg-primary/10 border-primary/20 text-primary"
                             : job.status === "pending"
-                              ? "bg-[#f59e0b]/10 border-[#f59e0b]/20 text-[#f59e0b]"
-                              : "bg-[#10b981]/10 border-[#10b981]/20 text-[#10b981]"
+                              ? "bg-warning/10 border-warning/20 text-warning"
+                              : "bg-success/10 border-success/20 text-success"
                         }`}
                       >
                         {job.status === "in-progress" ? "In Progress" : job.status}

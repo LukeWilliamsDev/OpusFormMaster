@@ -597,14 +597,14 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                   <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block">
                     Bill of Quantities
                   </span>
-                  <div className="bg-card border border-border rounded-xl overflow-hidden">
-                    <div className="grid grid-cols-[1fr_60px_60px_80px] gap-2 p-3 bg-background border-b border-border text-[11px] font-black uppercase text-muted-foreground tracking-widest">
+                  <div className="bg-card border border-border rounded-xl overflow-x-auto">
+                    <div className="grid grid-cols-[1fr_60px_60px_80px] gap-2 p-3 bg-background border-b border-border text-[11px] font-black uppercase text-muted-foreground tracking-widest min-w-[380px]">
                       <span>Description</span>
                       <span className="text-right">Qty</span>
                       <span>Unit</span>
                       <span className="text-right">Rate</span>
                     </div>
-                    <div className="divide-y divide-white/5">
+                    <div className="divide-y divide-white/5 min-w-[380px]">
                       {selectedQuoteForControl.items && selectedQuoteForControl.items.length > 0 ? (
                         selectedQuoteForControl.items.map((item) => (
                           <div

@@ -809,7 +809,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   return (
     <div className="flex flex-col flex-1 w-full text-white">
       {/* --- STICKY ACTION BAR --- */}
-      <div className="sticky top-16 lg:top-0 z-40 bg-background/90 backdrop-blur border-b border-border px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 mb-4">
+      <div className="sticky top-16 lg:top-0 z-40 bg-background/90 backdrop-blur border-b border-border mb-4">
+        <div className="max-w-4xl mx-auto px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
@@ -867,6 +868,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             )}
             <span className="hidden sm:inline">{isSendingEmail ? "SENDING..." : "SEND"}</span>
           </button>
+        </div>
         </div>
       </div>
 

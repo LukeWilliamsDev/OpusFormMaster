@@ -50,10 +50,8 @@ interface Quote {
     postcode: string;
   };
   items: MeasuredItem[];
-  vatRate: number;
   totals: {
     netTotal: number;
-    vatAmount: number;
     grossTotal: number;
   };
   isSavedLocal?: boolean;
@@ -79,6 +77,15 @@ const SUGGESTED_ITEMS = [
 ];
 
 const COMMON_UNITS = ["m²", "m³", "m", "No.", "Sum"];
+
+const COMPANY_INFO = {
+  companyNumber: "17228356",
+  bank: "Barclays Business Banking",
+  accountName: "Opus Form Ltd",
+  sortCode: "20-00-00",
+  accountNumber: "13319268",
+  iban: "GB29 NWBK 6016 1331 9268 19",
+};
 
 const INITIAL_ITEMS: MeasuredItem[] = [];
 
@@ -212,7 +219,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     );
   }, [clientInfo.entity]);
 
-  const [vatRate, setVatRate] = useState(20);
   const [showSavedQuotes, setShowSavedQuotes] = useState(false);
   const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
@@ -239,7 +245,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         date: row.date,
         clientInfo: row.client_info,
         items: row.items,
-        vatRate: Number(row.vat_rate),
         totals: row.totals,
         isSent: row.is_sent,
       }));
@@ -317,10 +322,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       }
       return acc + item.quantity * rateValue;
     }, 0);
-    const vatAmount = netTotal * (vatRate / 100);
-    const grossTotal = netTotal + vatAmount;
-    return { netTotal, vatAmount, grossTotal };
-  }, [items, vatRate]);
+    return { netTotal, grossTotal: netTotal };
+  }, [items]);
 
   const generateNewReference = () => `JOB-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -339,7 +342,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       date: new Date().toLocaleDateString("en-GB"),
       client_info: clientInfo,
       items,
-      vat_rate: vatRate,
+      vat_rate: 0,
       totals,
       is_sent: false,
       tenant_id: profile?.tenant_id,
@@ -366,7 +369,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const loadQuote = (quote: Quote) => {
     setClientInfo(quote.clientInfo);
     setItems(quote.items);
-    setVatRate(quote.vatRate);
     setQuoteReference(quote.reference);
     setCurrentQuoteId(quote.id);
     setShowSavedQuotes(false);
@@ -390,7 +392,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               date: data.date,
               clientInfo: data.client_info,
               items: data.items,
-              vatRate: Number(data.vat_rate),
               totals: data.totals,
               isSent: data.is_sent,
             };
@@ -497,7 +498,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               ? `${window.location.origin}/opus-form-primary-light.svg`
               : undefined,
           netTotal: totals.netTotal,
-          vatAmount: totals.vatAmount,
           grossTotal: totals.grossTotal,
         },
       });
@@ -523,7 +523,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         date: new Date().toLocaleDateString("en-GB"),
         client_info: clientInfo,
         items,
-        vat_rate: vatRate,
+        vat_rate: 0,
         totals,
         is_sent: true,
         tenant_id: profile?.tenant_id,
@@ -598,52 +598,42 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         marginBottom: `${1122 * scaleValue - 1122}px`,
       }}
     >
-      {/* PDF CONTENT â€” header */}
-      <div className="bg-[#26262B] p-8 sm:p-12 flex justify-between items-start">
-        <div className="flex flex-col">
-          <div className="font-archivo text-[32px] sm:text-[40px] font-black text-white tracking-tight leading-none">
-            OPUS FORM
-          </div>
-          <div className="h-1 bg-[#426E91] mt-2 w-full" />
-        </div>
+      {/* PDF CONTENT — header */}
+      <div className="bg-[#26262B] px-8 sm:px-12 py-9 flex justify-between items-center">
+        <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-9 sm:h-10 w-auto" />
         <div className="text-right">
-          <div className="text-[28px] sm:text-[32px] font-black text-[#F4F4F0] tracking-[0.04em] leading-none mb-3">
+          <div className="text-[26px] sm:text-[30px] font-black text-[#F4F4F0] tracking-[0.08em] leading-none mb-4">
             QUOTE
           </div>
-          <table className="ml-auto border-collapse">
-            <tbody className="text-[11px] tracking-[0.05em]">
-              <tr>
-                <td className="text-[#A8A8A0] py-0.5 px-4">REFERENCE</td>
-                <td className="text-[#F4F4F0] font-black text-right">#{quoteReference}</td>
-              </tr>
-              <tr>
-                <td className="text-[#A8A8A0] py-0.5 px-4">DATE</td>
-                <td className="text-[#F4F4F0] font-black text-right">
-                  {new Date().toLocaleDateString("en-GB")}
-                </td>
-              </tr>
-              <tr>
-                <td className="text-[#A8A8A0] py-0.5 px-4">VALID UNTIL</td>
-                <td className="text-[#F4F4F0] font-black text-right">
-                  {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB")}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="flex items-center justify-end gap-5">
+            <div className="text-right">
+              <div className="text-[9.5px] text-[#8A8A82] uppercase tracking-[0.12em]">
+                Reference
+              </div>
+              <div className="text-[12.5px] text-[#F4F4F0] font-black mt-0.5">
+                #{quoteReference}
+              </div>
+            </div>
+            <div className="w-px h-7 bg-[#3A3A40]" />
+            <div className="text-right">
+              <div className="text-[9.5px] text-[#8A8A82] uppercase tracking-[0.12em]">Date</div>
+              <div className="text-[12.5px] text-[#F4F4F0] font-black mt-0.5">
+                {new Date().toLocaleDateString("en-GB")}
+              </div>
+            </div>
+            <div className="w-px h-7 bg-[#3A3A40]" />
+            <div className="text-right">
+              <div className="text-[9.5px] text-[#8A8A82] uppercase tracking-[0.12em]">
+                Valid Until
+              </div>
+              <div className="text-[12.5px] text-[#F4F4F0] font-black mt-0.5">
+                {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB")}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       <div className="h-1 bg-primary" />
-      <div className="bg-[#F8F7F4] px-12 py-3.5 flex flex-wrap gap-10 border-b border-[#E4E0D8]">
-        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">
-          Company No. 17228356
-        </span>
-        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">
-          VAT Reg No. GB 412 8876 21
-        </span>
-        <span className="text-[11px] text-[#888] tracking-[0.06em] uppercase">
-          operations@opusform.co.uk
-        </span>
-      </div>
       <div className="px-12 py-8 flex-1 flex flex-col">
         <div className="mb-7 grid grid-cols-2 gap-4">
           <div>
@@ -683,10 +673,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-[#26262B]">
-                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[42%]">
-                  Description of Structural Elements
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[42%] whitespace-nowrap">
+                  Description
                 </th>
-                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%]">
+                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-right w-[16%] whitespace-nowrap">
                   Volume / Qty
                 </th>
                 <th className="text-[11px] font-black tracking-[0.1em] uppercase text-[#F4F4F0] p-3 text-left w-[10%]">
@@ -752,16 +742,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 £{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
             </div>
-            <div className="flex justify-between p-2 px-3 text-xs border-b border-[#EDEAE4] text-[#666]">
-              <span className="uppercase tracking-widest text-[11px]">
-                UK STANDARD VAT ({vatRate}%)
-              </span>
-              <span className="font-black text-[#333]">
-                £{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </span>
-            </div>
             <div className="flex justify-between p-3.5 px-3 bg-[#26262B] text-[#F4F4F0] font-black text-[15px]">
-              <span className="uppercase tracking-widest">Concrete Works Total</span>
+              <span className="uppercase tracking-widest">Total</span>
               <span>
                 £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
@@ -774,11 +756,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           <div className="text-[11px] font-black tracking-[0.12em] uppercase text-primary mb-2.5">
             Standard Terms & Pour Conditions
           </div>
-          <ul className="list-disc pl-3.5 space-y-1.5">
+          <ul className="space-y-1.5">
             {terms.map(
               (term, index) =>
                 term.trim() && (
-                  <li key={index} className="text-[10.5px] text-[#555] leading-relaxed">
+                  <li
+                    key={index}
+                    className="text-[10.5px] text-[#555] leading-relaxed pl-3 relative before:content-[''] before:absolute before:left-0 before:top-[6px] before:w-[5px] before:h-[5px] before:bg-primary"
+                  >
                     {term}
                   </li>
                 ),
@@ -786,37 +771,34 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           </ul>
         </div>
         <div className="mb-8">
-          <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#888] mb-2">
+          <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#888] mb-2.5">
             Banking Details
           </div>
-          <div className="grid grid-cols-2 gap-x-10 gap-y-2">
-            <div>
-              <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Bank</div>
-              <div className="font-black text-[#333] text-[11px]">Barclays Business Banking</div>
-            </div>
-            <div>
-              <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">
-                Account Name
+          <div className="flex flex-wrap items-start gap-x-6 gap-y-3 border-t border-[#E4E0D8] pt-3.5">
+            {[
+              { label: "Bank", value: COMPANY_INFO.bank },
+              { label: "Account Name", value: COMPANY_INFO.accountName },
+              { label: "Sort Code", value: COMPANY_INFO.sortCode },
+              { label: "Account No.", value: COMPANY_INFO.accountNumber },
+              { label: "IBAN", value: COMPANY_INFO.iban },
+            ].map((field, idx, arr) => (
+              <div key={field.label} className="flex items-start gap-6">
+                <div>
+                  <div className="text-[9.5px] text-[#AAA] uppercase tracking-[0.1em]">
+                    {field.label}
+                  </div>
+                  <div className="font-black text-[#333] text-[11px] mt-0.5">{field.value}</div>
+                </div>
+                {idx < arr.length - 1 && <div className="w-px h-7 bg-[#E4E0D8]" />}
               </div>
-              <div className="font-black text-[#333] text-[11px]">Opus Form Ltd</div>
-            </div>
-            <div>
-              <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Sort Code</div>
-              <div className="font-black text-[#333] text-[11px]">20-00-00</div>
-            </div>
-            <div>
-              <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">Account No.</div>
-              <div className="font-black text-[#333] text-[11px]">13319268</div>
-            </div>
-            <div>
-              <div className="text-[11px] text-[#AAA] uppercase tracking-[0.06em]">IBAN</div>
-              <div className="font-black text-[#333] text-[11px]">GB29 NWBK 6016 1331 9268 19</div>
-            </div>
+            ))}
           </div>
         </div>
       </div>
       <div className="bg-[#26262B] px-8 sm:px-12 py-3.5 flex justify-between items-center mt-auto">
-        <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">Opus Form Ltd</span>
+        <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">
+          Opus Form Ltd &middot; Company No. {COMPANY_INFO.companyNumber}
+        </span>
         <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">
           operations@opusform.co.uk
         </span>
@@ -1282,36 +1264,13 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             </div>
           </div>
 
-          {/* VAT + TOTALS + SEND */}
+          {/* TOTALS + SEND */}
           <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
             <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
               <CheckCircle2 className="w-4 h-4 text-[#b0b8c4]" />
               <h3 className="text-xs font-black uppercase tracking-widest text-white">
                 Summary & Authorization
               </h3>
-            </div>
-
-            {/* VAT row */}
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
-                VAT Rate
-              </span>
-              <div className="flex gap-2">
-                {[0, 5, 20].map((v) => (
-                  <button
-                    key={v}
-                    type="button"
-                    onClick={() => setVatRate(v)}
-                    className={`px-3 py-1 rounded text-[11px] font-black tracking-widest transition-all ${
-                      vatRate === v
-                        ? "bg-primary text-white"
-                        : "bg-[#2e2e2e] text-gray-400 border border-[#383838] hover:bg-[#333]"
-                    }`}
-                  >
-                    {v}%
-                  </button>
-                ))}
-              </div>
             </div>
 
             {/* Totals grid */}
@@ -1322,14 +1281,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                   £{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
-              <div className="flex justify-between text-[13px] border-b border-[#2a2a30] pb-2">
-                <span className="text-gray-500">VAT ({vatRate}%)</span>
-                <span className="font-semibold font-mono">
-                  £{totals.vatAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
-              </div>
               <div className="flex justify-between text-[16px] pt-1">
-                <span className="font-bold text-white">Gross Total</span>
+                <span className="font-bold text-white">Total</span>
                 <span className="font-extrabold text-primary font-mono">
                   £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>

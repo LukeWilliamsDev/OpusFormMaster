@@ -30,7 +30,6 @@ interface RequestPayload {
   pdfUrl?: string; // Public URL pointer to PDF
   logoUrl?: string; // Absolute URL of corporate SVG logo
   netTotal?: number;
-  vatAmount?: number;
   grossTotal?: number;
   fromEmail?: string; // Optional custom sender
 }
@@ -115,7 +114,6 @@ serve(async (req) => {
       pdfUrl,
       logoUrl,
       netTotal,
-      vatAmount,
       grossTotal,
       fromEmail,
     } = payload;
@@ -242,17 +240,9 @@ serve(async (req) => {
       Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
       "</td>";
     bodyHtml += "        </tr>";
-    bodyHtml += '        <tr class="bg-page border-theme" style="border-bottom: 1px solid #D9D3C7;">';
-    bodyHtml +=
-      '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">UK Standard VAT (20%)</td>';
-    bodyHtml +=
-      '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900;">£' +
-      Number(vatAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
-      "</td>";
-    bodyHtml += "        </tr>";
     bodyHtml += '        <tr class="bg-header">';
     bodyHtml +=
-      '          <td class="text-title" style="padding: 16px; font-weight: 900; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;">Total (inc. VAT)</td>';
+      '          <td class="text-title" style="padding: 16px; font-weight: 900; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;">Total</td>';
     bodyHtml +=
       '          <td class="text-title" style="padding: 16px; text-align: right; font-weight: 900; font-size: 16px;">£' +
       Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +

@@ -597,34 +597,48 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                   <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block">
                     Bill of Quantities
                   </span>
-                  <div className="bg-card border border-border rounded-xl overflow-x-auto">
-                    <div className="grid grid-cols-[1fr_60px_60px_80px] gap-2 p-3 bg-background border-b border-border text-[11px] font-black uppercase text-muted-foreground tracking-widest min-w-[380px]">
+                  <div className="bg-card border border-border rounded-xl overflow-hidden">
+                    <div className="hidden sm:grid sm:grid-cols-[1fr_60px_60px_80px] gap-2 p-3 bg-background border-b border-border text-[11px] font-black uppercase text-muted-foreground tracking-widest">
                       <span>Description</span>
                       <span className="text-right">Qty</span>
                       <span>Unit</span>
                       <span className="text-right">Rate</span>
                     </div>
-                    <div className="divide-y divide-white/5 min-w-[380px]">
+                    <div className="divide-y divide-white/5">
                       {selectedQuoteForControl.items && selectedQuoteForControl.items.length > 0 ? (
-                        selectedQuoteForControl.items.map((item) => (
-                          <div
-                            key={item.id}
-                            className="grid grid-cols-[1fr_60px_60px_80px] gap-2 p-3 text-xs"
-                          >
-                            <span className="text-white/80 font-medium">{item.description}</span>
-                            <span className="text-right font-mono font-semibold text-white/50">
-                              {item.quantity}
-                            </span>
-                            <span className="text-white/40 italic">{item.unit}</span>
-                            <span className="text-right font-mono font-semibold text-foreground">
-                              {typeof item.rate === "string" &&
-                              (item.rate.toUpperCase() === "INCLUDED" ||
-                                item.rate.toUpperCase() === "INCL")
-                                ? "INCL"
-                                : `£${Number(item.rate || 0).toFixed(2)}`}
-                            </span>
-                          </div>
-                        ))
+                        selectedQuoteForControl.items.map((item) => {
+                          const rateDisplay =
+                            typeof item.rate === "string" &&
+                            (item.rate.toUpperCase() === "INCLUDED" ||
+                              item.rate.toUpperCase() === "INCL")
+                              ? "INCL"
+                              : `£${Number(item.rate || 0).toFixed(2)}`;
+                          return (
+                            <div
+                              key={item.id}
+                              className="p-3 text-xs sm:grid sm:grid-cols-[1fr_60px_60px_80px] sm:gap-2 sm:items-center"
+                            >
+                              <span className="text-white/80 font-medium block">
+                                {item.description}
+                              </span>
+                              <div className="flex items-center justify-between gap-2 mt-1.5 sm:hidden text-[11px]">
+                                <span className="text-white/50 font-mono">
+                                  {item.quantity} <span className="text-white/40 italic">{item.unit}</span>
+                                </span>
+                                <span className="font-mono font-semibold text-foreground">
+                                  {rateDisplay}
+                                </span>
+                              </div>
+                              <span className="hidden sm:block text-right font-mono font-semibold text-white/50">
+                                {item.quantity}
+                              </span>
+                              <span className="hidden sm:block text-white/40 italic">{item.unit}</span>
+                              <span className="hidden sm:block text-right font-mono font-semibold text-foreground">
+                                {rateDisplay}
+                              </span>
+                            </div>
+                          );
+                        })
                       ) : (
                         <div className="p-4 text-center text-xs text-white/30 italic">
                           No billable items added

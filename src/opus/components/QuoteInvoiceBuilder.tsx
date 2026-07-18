@@ -809,7 +809,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   return (
     <div className="flex flex-col flex-1 w-full text-white">
       {/* --- STICKY ACTION BAR --- */}
-      <div className="sticky top-16 lg:top-0 z-40 bg-[#111114]/90 backdrop-blur border-b border-[#2a2a30] px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 mb-4">
+      <div className="sticky top-16 lg:top-0 z-40 bg-background/90 backdrop-blur border-b border-border px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 mb-4">
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
@@ -818,9 +818,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           >
             ← Back
           </button>
-          <div className="w-px h-4 bg-[#2a2a30] hidden sm:block" />
-          <div className="flex items-center gap-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg px-3 py-1.5 flex-1 sm:flex-initial min-w-0">
-            <span className="text-[11px] font-black tracking-widest text-[#888] uppercase whitespace-nowrap">
+          <div className="w-px h-4 bg-border hidden sm:block" />
+          <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 flex-1 sm:flex-initial min-w-0">
+            <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase whitespace-nowrap">
               Ref
             </span>
             <input
@@ -835,21 +835,21 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="lg:hidden flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
+            className="lg:hidden flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
           >
             <Eye className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Preview</span>
           </button>
           <button
             onClick={handleSaveDraft}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
           >
             <Save className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{lastSaved ? "SAVED" : "SAVE"}</span>
           </button>
           <button
             onClick={handleDownloadPDF}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-white text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">PDF</span>
@@ -875,7 +875,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         {/* -- LEFT PANEL: Form -- */}
         <div className="flex flex-col gap-5 flex-1 min-w-0">
           {/* SAVED HISTORY (collapsed accordion) */}
-          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl overflow-hidden">
+          <div className="bg-card border border-border rounded-xl overflow-hidden">
             <button
               type="button"
               onClick={() => setShowHistory((h) => !h)}
@@ -894,8 +894,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             {showHistory && (
               <div className="px-4 pb-4 flex flex-col gap-[5px] max-h-52 overflow-y-auto custom-scrollbar">
                 {savedQuotes.length === 0 ? (
-                  <div className="bg-[#111114] border border-dashed border-[#2a2a30] rounded-lg p-6 text-center">
-                    <div className="text-[11px] font-black tracking-widest text-[#555] uppercase">
+                  <div className="bg-background border border-dashed border-border rounded-lg p-6 text-center">
+                    <div className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                       No saved quotes found
                     </div>
                   </div>
@@ -904,18 +904,18 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                     <div
                       key={q.id}
                       onClick={() => loadQuote(q)}
-                      className="flex items-center justify-between bg-[#111114] border border-[#2a2a30] rounded-lg p-2.5 px-3 hover:border-primary/30 cursor-pointer transition-all duration-200"
+                      className="flex items-center justify-between bg-background border border-border rounded-lg p-2.5 px-3 hover:border-primary/30 cursor-pointer transition-all duration-200"
                     >
                       <div>
                         <div className="flex items-center gap-1.5">
                           <span className="text-[11px] font-black uppercase tracking-widest text-white">
                             {q.reference}
                           </span>
-                          <span className="text-[11px] text-[#888]">{q.date}</span>
+                          <span className="text-[11px] text-muted-foreground">{q.date}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2.5">
-                        <span className="text-[11px] font-mono font-black uppercase tracking-widest text-[#888]">
+                        <span className="text-[11px] font-mono font-black uppercase tracking-widest text-muted-foreground">
                           £
                           {q.totals?.grossTotal?.toLocaleString(undefined, {
                             maximumFractionDigits: 0,
@@ -923,7 +923,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         </span>
                         <button
                           onClick={(e) => confirmDeleteQuote(e, q)}
-                          className="bg-transparent border-none cursor-pointer text-[#555] p-0.5 flex items-center hover:text-red-500 transition-colors"
+                          className="bg-transparent border-none cursor-pointer text-muted-foreground p-0.5 flex items-center hover:text-red-500 transition-colors"
                           title="Delete saved quote"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -937,19 +937,19 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           </div>
 
           {/* CLIENT DETAILS */}
-          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
-            <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
-              <Building2 className="w-4 h-4 text-[#b0b8c4]" />
+          <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 border-b border-border pb-3">
+              <Building2 className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-xs font-black uppercase tracking-widest text-white">
                 Client & Project
               </h3>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div className="flex flex-col gap-1.5">
                 <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                   Client Name
                 </span>
-                <div className="flex items-center bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                <div className="flex items-center bg-background border border-border rounded-lg p-2.5 px-3 focus-within:border-gray-500 transition-colors">
                   <input
                     type="text"
                     className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
@@ -963,7 +963,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                   Email
                 </span>
-                <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-2.5 px-3 focus-within:border-gray-500 transition-colors">
                   <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     type="email"
@@ -978,7 +978,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                   Project / Site Name
                 </span>
-                <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-2.5 px-3 focus-within:border-gray-500 transition-colors">
                   <LayoutGrid className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     type="text"
@@ -993,7 +993,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                   Site Postcode
                 </span>
-                <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
+                <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-2.5 px-3 focus-within:border-gray-500 transition-colors">
                   <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     type="text"
@@ -1013,10 +1013,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           </div>
 
           {/* LINE ITEMS */}
-          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3">
+          <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
-                <ClipboardList className="w-4 h-4 text-[#b0b8c4]" />
+                <ClipboardList className="w-4 h-4 text-muted-foreground" />
                 <h3 className="text-xs font-black uppercase tracking-widest text-white">
                   Line Items
                 </h3>
@@ -1024,7 +1024,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               <button
                 type="button"
                 onClick={addItem}
-                className="flex items-center gap-1.5 bg-[#2e2e2e] border border-[#3a3a3a] rounded-lg p-1.5 px-3 text-white text-[11px] font-black tracking-widest uppercase hover:bg-[#383838] transition-colors"
+                className="flex items-center gap-1.5 bg-secondary border border-border rounded-lg p-1.5 px-3 text-white text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5 text-primary" />
                 ADD LINE
@@ -1035,7 +1035,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               {items.map((item) => (
                 <div
                   key={item.id}
-                  className="p-3 bg-[#111114] border border-[#2a2a30] rounded-xl relative group"
+                  className="p-3 bg-background border border-border rounded-xl relative group"
                 >
                   {/* Delete button (always visible in corner on all screen sizes) */}
                   <button
@@ -1066,7 +1066,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
-                            className="absolute left-0 right-0 top-full mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
+                            className="absolute left-0 right-0 top-full mt-2 bg-card border border-border rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
                           >
                             {SUGGESTED_ITEMS.filter(
                               (s) =>
@@ -1085,7 +1085,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                                     rate: suggestion.rate,
                                   });
                                 }}
-                                className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
+                                className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-white hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
                               >
                                 <div className="flex justify-between items-center">
                                   <span>{suggestion.description}</span>
@@ -1106,7 +1106,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         <span className="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
                           Qty
                         </span>
-                        <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2">
+                        <div className="flex items-center bg-card border border-border rounded-lg h-9 px-2">
                           <input
                             type="number"
                             className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
@@ -1121,7 +1121,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         <span className="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
                           Unit
                         </span>
-                        <div className="relative flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2">
+                        <div className="relative flex items-center bg-card border border-border rounded-lg h-9 px-2">
                           <input
                             type="text"
                             className="w-full bg-transparent border-none outline-none text-white text-[11px] font-bold uppercase"
@@ -1139,7 +1139,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute left-0 right-0 top-full mt-2 bg-[#1a1a1e] border border-[#2a2a30] rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
+                                className="absolute left-0 right-0 top-full mt-2 bg-card border border-border rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
                               >
                                 {COMMON_UNITS.filter(
                                   (u) =>
@@ -1149,7 +1149,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                                     key={u}
                                     type="button"
                                     onClick={() => updateItem(item.id, { unit: u })}
-                                    className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
+                                    className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-white hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
                                   >
                                     {u}
                                   </button>
@@ -1163,7 +1163,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         <span className="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
                           Rate (£)
                         </span>
-                        <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1.5">
+                        <div className="flex items-center bg-card border border-border rounded-lg h-9 px-2 gap-1.5">
                           <input
                             type="text"
                             className="w-full bg-transparent border-none outline-none text-white text-xs font-mono font-bold"
@@ -1181,7 +1181,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                             className={`px-1.5 py-1 rounded text-[10px] font-black tracking-wide shrink-0 ${
                               isIncludedRate(item.rate)
                                 ? "bg-primary text-white shadow-sm"
-                                : "bg-[#16161a] text-muted-foreground border border-[#383838] hover:bg-[#333]"
+                                : "bg-background text-muted-foreground border border-border hover:bg-secondary"
                             }`}
                           >
                             INCL
@@ -1203,14 +1203,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 </div>
               ))}
               {items.length === 0 && (
-                <div className="bg-[#111114] border border-dashed border-[#2a2a30]/60 rounded-xl p-8 text-center">
+                <div className="bg-background border border-dashed border-border/60 rounded-xl p-8 text-center">
                   <div className="text-[11px] font-black tracking-widest text-muted-foreground uppercase mb-3">
                     No line items added yet
                   </div>
                   <button
                     type="button"
                     onClick={addItem}
-                    className="text-[11px] font-black tracking-wide text-primary hover:brightness-110 uppercase bg-[#2e2e2e] px-4 py-2 rounded-lg border border-[#3e3e3e]"
+                    className="text-[11px] font-black tracking-wide text-primary hover:brightness-110 uppercase bg-secondary px-4 py-2 rounded-lg border border-border"
                   >
                     Initialize First Line
                   </button>
@@ -1220,10 +1220,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           </div>
 
           {/* TERMS */}
-          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
-            <div className="flex items-center justify-between border-b border-[#2a2a30] pb-3">
+          <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between border-b border-border pb-3">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#b0b8c4]" />
+                <FileText className="w-4 h-4 text-muted-foreground" />
                 <h3 className="text-xs font-black uppercase tracking-widest text-white">
                   Terms & Conditions
                 </h3>
@@ -1231,7 +1231,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               <button
                 type="button"
                 onClick={() => setTerms([...terms, ""])}
-                className="bg-[#2e2e2e] border border-[#3e3e3e] hover:border-gray-400 rounded-md w-[26px] h-[26px] flex items-center justify-center cursor-pointer text-[#888] hover:text-white transition-colors"
+                className="bg-secondary border border-border hover:border-muted-foreground/40 rounded-md w-[26px] h-[26px] flex items-center justify-center cursor-pointer text-muted-foreground hover:text-white transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
               </button>
@@ -1240,7 +1240,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               {terms.map((term, index) => (
                 <div
                   key={index}
-                  className="flex items-start justify-between gap-3 bg-[#111114] border border-[#2a2a30] rounded-xl p-3"
+                  className="flex items-start justify-between gap-3 bg-background border border-border rounded-xl p-3"
                 >
                   <textarea
                     value={term}
@@ -1265,9 +1265,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           </div>
 
           {/* TOTALS + SEND */}
-          <div className="bg-[#1a1a1e] border border-[#2a2a30] rounded-xl p-4 space-y-4">
-            <div className="flex items-center gap-2 border-b border-[#2a2a30] pb-3">
-              <CheckCircle2 className="w-4 h-4 text-[#b0b8c4]" />
+          <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 border-b border-border pb-3">
+              <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
               <h3 className="text-xs font-black uppercase tracking-widest text-white">
                 Summary & Authorization
               </h3>
@@ -1275,7 +1275,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
             {/* Totals grid */}
             <div className="flex flex-col gap-2">
-              <div className="flex justify-between text-[13px] border-b border-[#2a2a30] pb-2">
+              <div className="flex justify-between text-[13px] border-b border-border pb-2">
                 <span className="text-muted-foreground">Net Total</span>
                 <span className="font-semibold font-mono">
                   £{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -1305,7 +1305,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             </div>
             <div
               ref={containerRef}
-              className="w-full relative flex justify-center items-start overflow-hidden bg-[#131417] border border-[#2a2a30] py-6 rounded-xl font-archivo no-scrollbar"
+              className="w-full relative flex justify-center items-start overflow-hidden bg-background border border-border py-6 rounded-xl font-archivo no-scrollbar"
             >
               {pdfDocument(scale, true)}
             </div>
@@ -1324,7 +1324,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             exit={{ opacity: 0 }}
             className="lg:hidden fixed inset-0 z-[95] bg-black/85 backdrop-blur-sm flex flex-col"
           >
-            <div className="flex items-center justify-between px-4 py-3 bg-[#1a1a1e] border-b border-[#2a2a30] shrink-0">
+            <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border shrink-0">
               <span className="text-[11px] font-black uppercase tracking-[0.2em] text-white flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 PDF Live Preview
@@ -1339,7 +1339,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             </div>
             <div
               ref={modalContainerRef}
-              className="flex-1 overflow-y-auto flex justify-center items-start bg-[#131417] py-6 px-3 font-archivo no-scrollbar"
+              className="flex-1 overflow-y-auto flex justify-center items-start bg-background py-6 px-3 font-archivo no-scrollbar"
             >
               {pdfDocument(modalScale)}
             </div>
@@ -1365,7 +1365,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               {validationErrors.map((error, idx) => (
                 <li
                   key={idx}
-                  className="flex items-center gap-2 text-[11px] text-gray-300 uppercase font-black tracking-widest bg-[#1a1a1c] border border-[#2d2d30] p-2.5 rounded-lg"
+                  className="flex items-center gap-2 text-[11px] text-gray-300 uppercase font-black tracking-widest bg-card border border-border p-2.5 rounded-lg"
                 >
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500/80" />
                   {error}

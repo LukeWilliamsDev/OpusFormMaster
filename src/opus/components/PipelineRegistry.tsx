@@ -240,7 +240,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
           {/* Search Bar */}
           <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 w-full sm:max-w-xs">
-            <Search className="w-4 h-4 text-gray-500" />
+            <Search className="w-4 h-4 text-muted-foreground" />
             <input
               type="text"
               value={searchTerm}
@@ -263,7 +263,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
       <main className="mt-0 pb-8 space-y-6">
         {!isLoading && sortedQuotes.length === 0 && (
-          <div className="bg-card border border-border rounded-xl px-4 py-12 text-center text-xs font-bold uppercase tracking-wider text-gray-500">
+          <div className="bg-card border border-border rounded-xl px-4 py-12 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
             No matching pipeline estimates found
           </div>
         )}
@@ -357,13 +357,13 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                       <div className="text-sm font-semibold text-foreground">
                         {quote.clientInfo?.entity || "No Contractor Data"}
                       </div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-muted-foreground">
                         {quote.clientInfo?.site || "No site info"}
                       </div>
                     </div>
 
                     {/* Date */}
-                    <div className="text-xs text-gray-400 font-medium">
+                    <div className="text-xs text-muted-foreground font-medium">
                       {quote.date || "Pending"}
                     </div>
 
@@ -426,14 +426,14 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 <div className="text-sm font-semibold text-foreground">
                   {quote.clientInfo?.entity || "No Contractor Data"}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-muted-foreground">
                   {quote.clientInfo?.site || "No site info"}
                 </div>
               </div>
 
               {/* Date + Value */}
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400 font-medium">{quote.date || "Pending"}</span>
+                <span className="text-xs text-muted-foreground font-medium">{quote.date || "Pending"}</span>
                 <span className="text-[14px] font-mono font-bold text-foreground tracking-wide">
                   £
                   {(quote.totals?.grossTotal || 0).toLocaleString(undefined, {
@@ -548,7 +548,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 </div>
                 <button
                   onClick={() => setSelectedQuoteForControl(null)}
-                  className="p-1 rounded-lg bg-secondary hover:bg-secondary/80 border border-white/10 text-gray-400 hover:text-foreground transition-colors"
+                  className="p-1 rounded-lg bg-secondary hover:bg-secondary/80 border border-white/10 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -559,7 +559,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 {/* Meta details */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-card border border-border p-4 rounded-xl">
-                    <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest block mb-1">
+                    <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block mb-1">
                       Contractor
                     </span>
                     <span className="text-xs font-semibold text-foreground">
@@ -567,7 +567,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     </span>
                   </div>
                   <div className="bg-card border border-border p-4 rounded-xl">
-                    <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest block mb-1">
+                    <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block mb-1">
                       Reference
                     </span>
                     <span className="text-xs font-mono font-semibold text-primary">
@@ -575,7 +575,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     </span>
                   </div>
                   <div className="bg-card border border-border p-4 rounded-xl">
-                    <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest block mb-1">
+                    <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block mb-1">
                       Site / Project
                     </span>
                     <span className="text-xs font-semibold text-foreground">
@@ -583,7 +583,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     </span>
                   </div>
                   <div className="bg-card border border-border p-4 rounded-xl">
-                    <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest block mb-1">
+                    <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block mb-1">
                       Postcode
                     </span>
                     <span className="text-xs font-semibold text-foreground">
@@ -594,11 +594,11 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
                 {/* Items list */}
                 <div className="space-y-2">
-                  <span className="text-[11px] font-black text-gray-500 uppercase tracking-widest block">
+                  <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block">
                     Bill of Quantities
                   </span>
                   <div className="bg-card border border-border rounded-xl overflow-hidden">
-                    <div className="grid grid-cols-[1fr_60px_60px_80px] gap-2 p-3 bg-background border-b border-border text-[11px] font-black uppercase text-gray-400 tracking-widest">
+                    <div className="grid grid-cols-[1fr_60px_60px_80px] gap-2 p-3 bg-background border-b border-border text-[11px] font-black uppercase text-muted-foreground tracking-widest">
                       <span>Description</span>
                       <span className="text-right">Qty</span>
                       <span>Unit</span>
@@ -637,7 +637,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 {/* Summary Totals */}
                 <div className="bg-card border border-border p-4 rounded-xl grid grid-cols-3 gap-2 text-center">
                   <div>
-                    <span className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest block mb-0.5">
+                    <span className="text-[7.5px] font-black text-muted-foreground uppercase tracking-widest block mb-0.5">
                       Net Subtotal
                     </span>
                     <span className="text-xs font-mono font-semibold text-foreground">
@@ -649,7 +649,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     </span>
                   </div>
                   <div>
-                    <span className="text-[7.5px] font-black text-gray-500 uppercase tracking-widest block mb-0.5">
+                    <span className="text-[7.5px] font-black text-muted-foreground uppercase tracking-widest block mb-0.5">
                       VAT ({selectedQuoteForControl.vatRate || 20}%)
                     </span>
                     <span className="text-xs font-mono font-semibold text-foreground">

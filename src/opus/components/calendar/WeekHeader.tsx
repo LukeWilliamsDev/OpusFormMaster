@@ -8,12 +8,12 @@ interface WeekHeaderProps {
 }
 
 export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) => (
-  <div className="flex items-center justify-between bg-card border border-border rounded-xl px-2 py-1.5">
+  <div className="flex items-center justify-between bg-card border border-border rounded-xl px-2 py-1.5 2xl:py-1">
     <button
       type="button"
       onClick={() => onNavigate(-1)}
       aria-label="Previous week"
-      className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
+      className="min-w-[44px] min-h-[44px] 2xl:min-w-[32px] 2xl:min-h-[32px] flex items-center justify-center hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
     >
       <ChevronLeft className="w-4 h-4" />
     </button>
@@ -24,7 +24,7 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) 
       type="button"
       onClick={() => onNavigate(1)}
       aria-label="Next week"
-      className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
+      className="min-w-[44px] min-h-[44px] 2xl:min-w-[32px] 2xl:min-h-[32px] flex items-center justify-center hover:bg-secondary text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
     >
       <ChevronRight className="w-4 h-4" />
     </button>

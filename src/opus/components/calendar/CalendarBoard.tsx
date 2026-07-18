@@ -82,15 +82,15 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   return (
     <div className="max-w-3xl md:max-w-none mx-auto space-y-4">
       {/* Toggle + search + filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+        <div className="grid grid-cols-2 lg:flex lg:items-center gap-2">
           <button
             type="button"
             onClick={() => onChangeGroup("staff")}
-            className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
+            className={`flex items-center justify-center lg:justify-start gap-2 px-4 py-2.5 2xl:py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
               group === "staff"
                 ? "bg-primary border-primary text-white shadow-lg shadow-primary/10"
-                : "bg-card/50 border-border text-gray-400 hover:text-foreground"
+                : "bg-card/50 border-border text-muted-foreground hover:text-foreground"
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
@@ -99,10 +99,10 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
           <button
             type="button"
             onClick={() => onChangeGroup("project")}
-            className={`flex items-center gap-2 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
+            className={`flex items-center justify-center lg:justify-start gap-2 px-4 py-2.5 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
               group === "project"
                 ? "bg-primary border-primary text-white shadow-lg shadow-primary/10"
-                : "bg-card/50 border-border text-gray-400 hover:text-foreground"
+                : "bg-card/50 border-border text-muted-foreground hover:text-foreground"
             }`}
           >
             <Layers className="w-4 h-4" />
@@ -110,7 +110,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
           </button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-2">
           {/* Role Filter */}
           {group === "staff" && (
             <select
@@ -127,14 +127,14 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             </select>
           )}
 
-          <div className="relative sm:w-56">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-500" />
+          <div className="relative lg:w-56">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search staff or projects…"
-              className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2.5 text-xs text-foreground placeholder:text-gray-600 focus:outline-none focus:border-primary transition-colors"
+              className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
             />
           </div>
         </div>
@@ -142,7 +142,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
 
       <WeekHeader weekDays={weekDays} onNavigate={handleNavigateWeek} />
 
-      <div className="md:hidden space-y-4">
+      <div className="2xl:hidden space-y-4">
         <DayTabs weekDays={weekDays} selectedDate={date} onSelect={onChangeDate} />
 
         <AnimatePresence mode="wait">
@@ -173,8 +173,8 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
         </AnimatePresence>
       </div>
 
-      <div className="hidden md:block overflow-x-auto pb-2 -mx-1 px-1">
-        <div className="grid grid-cols-[repeat(5,minmax(240px,1fr))] gap-3">
+      <div className="hidden 2xl:block pb-2">
+        <div className="grid grid-cols-[repeat(5,minmax(240px,1fr))] border border-border rounded-xl bg-card overflow-hidden">
           {group === "staff" ? (
             <WeekGridStaff
               weekDays={weekDays}

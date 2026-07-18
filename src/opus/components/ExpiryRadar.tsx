@@ -101,13 +101,13 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
           <AlertTriangle className="w-4 h-4 text-amber-500 animate-pulse" />
           <span>30-Day Expiry Radar</span>
         </div>
-        <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">
+        <span className="text-[9px] font-black text-muted-foreground uppercase tracking-widest">
           Compliance Control
         </span>
       </div>
 
       <div className="bg-card border border-border rounded-xl p-4 space-y-4 shadow-2xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
           <span>Operational compliance warning dashboard</span>
           <span className="text-[10px] text-muted-foreground font-mono font-bold">
             Total: {sortedTickets.length} flagged
@@ -117,7 +117,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
         {/* Responsive grid to prevent horizontal scrolling on mobile viewports */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {sortedTickets.length === 0 ? (
-            <div className="py-8 text-center text-xs text-gray-500 col-span-full flex flex-col items-center justify-center gap-2">
+            <div className="py-8 text-center text-xs text-muted-foreground col-span-full flex flex-col items-center justify-center gap-2">
               <ShieldCheck className="w-8 h-8 text-emerald-500 opacity-60" />
               <span className="font-black uppercase tracking-widest text-[9px]">
                 All active personnel are fully compliant
@@ -143,7 +143,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
                         {style.statusText}
                       </span>
                     </div>
-                    <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider truncate">
+                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider truncate">
                       {ticketInfo.workerRole}
                     </div>
                   </div>
@@ -155,7 +155,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
                       <span className="text-gray-300 font-semibold truncate text-[11px]">
                         {ticketInfo.ticketType} Card
                       </span>
-                      <span className="text-gray-500 text-[9px] font-mono font-bold truncate mt-0.5">
+                      <span className="text-muted-foreground text-[9px] font-mono font-bold truncate mt-0.5">
                         No. {ticketInfo.ticketNumber}
                       </span>
                     </div>
@@ -164,7 +164,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
                       <span className={`font-mono font-bold text-[11px] ${style.daysColor}`}>
                         {style.daysText}
                       </span>
-                      <span className="text-[9px] text-gray-500 font-bold uppercase tracking-wider mt-0.5">
+                      <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">
                         Exp: {new Date(ticketInfo.expiryDate).toLocaleDateString("en-GB")}
                       </span>
                     </div>

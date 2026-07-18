@@ -4,7 +4,6 @@ import { useSearchParams, useNavigate } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { ActiveJobLedger } from "../components/ActiveJobLedger";
 import { JobDetails } from "../components/JobDetails";
-import { getWeatherForJob } from "../utils/weather";
 import { Job } from "../types/erp";
 
 export const JobLedgerPage: React.FC = () => {
@@ -21,21 +20,8 @@ export const JobLedgerPage: React.FC = () => {
     { name: "Oakwood Hub", keyword: "Oakwood", fallbackId: "2", reason: "Materials Delay" },
   ];
 
-  const getJobActionRequired = (job: Job) => {
-    const weather = getWeatherForJob(job);
-    const followup = followups.find((f) =>
-      job.siteName.toLowerCase().includes(f.keyword.toLowerCase()),
-    );
-
-    if (weather.isImpactful || followup) {
-      return {
-        hasAction: true,
-        weather: weather.isImpactful ? weather : null,
-        followup: followup || null,
-      };
-    }
-    return { hasAction: false, weather: null, followup: null };
-  };
+  const getJobFollowup = (job: Job) =>
+    followups.find((f) => job.siteName.toLowerCase().includes(f.keyword.toLowerCase())) || null;
 
   const filteredJobs = jobs.filter((job) => filterStatus === "all" || job.status === filterStatus);
 
@@ -72,7 +58,7 @@ export const JobLedgerPage: React.FC = () => {
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
         onSelectJob={handleSelectJob}
-        getJobActionRequired={getJobActionRequired}
+        getJobFollowup={getJobFollowup}
       />
     </div>
   );

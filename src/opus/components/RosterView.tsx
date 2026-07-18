@@ -1282,7 +1282,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             <MapPin className="w-3 h-3 text-[#facc15]" />
                             {job.siteName}
                           </h4>
-                          <p className="text-[10px] font-medium text-gray-500 leading-none mt-0.5">
+                          <p className="text-[10px] font-medium text-muted-foreground leading-none mt-0.5">
                             Contractor: {job.mainContractor} &bull; Ref: {job.jobRef} &bull;
                             Postcode: {job.postcode || "N/A"}
                           </p>

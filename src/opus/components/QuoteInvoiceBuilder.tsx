@@ -644,7 +644,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               {clientInfo.entity ? (
                 <div className="space-y-1">
                   <p className="font-black text-gray-900 text-sm">{clientInfo.entity}</p>
-                  <p className="text-gray-600 tracking-wide">
+                  <p className="text-muted-foreground tracking-wide">
                     {clientInfo.email ? clientInfo.email.toLowerCase() : "..."}
                   </p>
                 </div>
@@ -661,7 +661,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               {clientInfo.site ? (
                 <div className="space-y-1">
                   <p className="font-black text-gray-900 text-sm">{clientInfo.site}</p>
-                  <p className="text-gray-600 tracking-wide">{clientInfo.postcode || "..."}</p>
+                  <p className="text-muted-foreground tracking-wide">{clientInfo.postcode || "..."}</p>
                 </div>
               ) : (
                 <span className="text-[#AAA]">No project data entered</span>
@@ -814,7 +814,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           <button
             type="button"
             onClick={onBack}
-            className="flex items-center gap-1.5 text-gray-500 hover:text-white transition-colors text-[11px] font-black uppercase tracking-widest shrink-0"
+            className="flex items-center gap-1.5 text-muted-foreground hover:text-white transition-colors text-[11px] font-black uppercase tracking-widest shrink-0"
           >
             ← Back
           </button>
@@ -879,7 +879,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             <button
               type="button"
               onClick={() => setShowHistory((h) => !h)}
-              className="w-full flex items-center justify-between p-4 text-[11px] font-black tracking-widest uppercase text-gray-400 hover:text-white transition-colors"
+              className="w-full flex items-center justify-between p-4 text-[11px] font-black tracking-widest uppercase text-muted-foreground hover:text-white transition-colors"
             >
               <div className="flex items-center gap-2">
                 <History className="w-3.5 h-3.5" />
@@ -946,7 +946,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                   Client Name
                 </span>
                 <div className="flex items-center bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
@@ -960,11 +960,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                   Email
                 </span>
                 <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
-                  <Mail className="w-4 h-4 text-gray-600 shrink-0" />
+                  <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     type="email"
                     className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold"
@@ -975,11 +975,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                   Project / Site Name
                 </span>
                 <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
-                  <LayoutGrid className="w-4 h-4 text-gray-600 shrink-0" />
+                  <LayoutGrid className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     type="text"
                     className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-wider"
@@ -990,11 +990,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 </div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <span className="text-[11px] font-black tracking-widest text-gray-400 uppercase">
+                <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
                   Site Postcode
                 </span>
                 <div className="flex items-center gap-2 bg-[#111114] border border-[#2a2a30] rounded-lg p-3 px-4 focus-within:border-gray-500 transition-colors">
-                  <MapPin className="w-4 h-4 text-gray-600 shrink-0" />
+                  <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
                   <input
                     type="text"
                     className="w-full bg-transparent border-none outline-none text-white text-xs placeholder:text-gray-700 font-bold tracking-widest"
@@ -1041,7 +1041,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                   <button
                     type="button"
                     onClick={() => removeItem(item.id)}
-                    className="absolute top-2.5 right-2.5 text-gray-600 hover:text-red-400 transition-colors p-1 cursor-pointer z-10"
+                    className="absolute top-2.5 right-2.5 text-muted-foreground hover:text-red-400 transition-colors p-1 cursor-pointer z-10"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -1085,7 +1085,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                                     rate: suggestion.rate,
                                   });
                                 }}
-                                className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-gray-400 hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
+                                className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
                               >
                                 <div className="flex justify-between items-center">
                                   <span>{suggestion.description}</span>
@@ -1103,7 +1103,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                     {/* Labeled grid for inputs on all screen sizes */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">
+                        <span className="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
                           Qty
                         </span>
                         <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2">
@@ -1118,7 +1118,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">
+                        <span className="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
                           Unit
                         </span>
                         <div className="relative flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2">
@@ -1149,7 +1149,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                                     key={u}
                                     type="button"
                                     onClick={() => updateItem(item.id, { unit: u })}
-                                    className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-gray-400 hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
+                                    className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-white hover:bg-[#2e2e2e] transition-colors border-b border-[#2a2a30]/30 last:border-none"
                                   >
                                     {u}
                                   </button>
@@ -1160,7 +1160,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">
+                        <span className="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
                           Rate (£)
                         </span>
                         <div className="flex items-center bg-[#1a1a1e] border border-[#2a2a30] rounded-lg h-9 px-2 gap-1.5">
@@ -1181,7 +1181,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                             className={`px-1.5 py-1 rounded text-[10px] font-black tracking-wide shrink-0 ${
                               isIncludedRate(item.rate)
                                 ? "bg-primary text-white shadow-sm"
-                                : "bg-[#16161a] text-gray-400 border border-[#383838] hover:bg-[#333]"
+                                : "bg-[#16161a] text-muted-foreground border border-[#383838] hover:bg-[#333]"
                             }`}
                           >
                             INCL
@@ -1189,7 +1189,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         </div>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-[9px] font-black tracking-widest text-gray-600 uppercase">
+                        <span className="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
                           Total
                         </span>
                         <div className="flex items-center h-9 px-1 text-xs font-black font-mono text-primary">
@@ -1204,7 +1204,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               ))}
               {items.length === 0 && (
                 <div className="bg-[#111114] border border-dashed border-[#2a2a30]/60 rounded-xl p-8 text-center">
-                  <div className="text-[11px] font-black tracking-widest text-gray-600 uppercase mb-3">
+                  <div className="text-[11px] font-black tracking-widest text-muted-foreground uppercase mb-3">
                     No line items added yet
                   </div>
                   <button
@@ -1255,7 +1255,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                   <button
                     type="button"
                     onClick={() => setTerms(terms.filter((_, i) => i !== index))}
-                    className="text-gray-600 hover:text-red-400 transition-colors p-1"
+                    className="text-muted-foreground hover:text-red-400 transition-colors p-1"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -1276,7 +1276,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             {/* Totals grid */}
             <div className="flex flex-col gap-2">
               <div className="flex justify-between text-[13px] border-b border-[#2a2a30] pb-2">
-                <span className="text-gray-500">Net Total</span>
+                <span className="text-muted-foreground">Net Total</span>
                 <span className="font-semibold font-mono">
                   £{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
@@ -1332,7 +1332,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               <button
                 type="button"
                 onClick={() => setPreviewOpen(false)}
-                className="text-gray-400 hover:text-white transition-colors p-1"
+                className="text-muted-foreground hover:text-white transition-colors p-1"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1358,7 +1358,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         title="VALIDATION FAILURE"
         message={
           <>
-            <p className="text-[11px] text-gray-400 uppercase tracking-wider leading-relaxed mb-4">
+            <p className="text-[11px] text-muted-foreground uppercase tracking-wider leading-relaxed mb-4">
               The following fields are required before sending:
             </p>
             <ul className="space-y-2">

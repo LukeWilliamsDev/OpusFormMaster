@@ -3,25 +3,69 @@ import React from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { CloudSun, AlertCircle, ChevronRight, HardHat, DollarSign } from "lucide-react";
 import { Job } from "../types/erp";
+import { useJobForecast, getWeatherOnDate } from "../utils/weather";
+import { toLocalISODate } from "../utils/week";
 
 interface ActiveJobLedgerProps {
   filteredJobs: Job[];
   filterStatus: Job["status"] | "all";
   setFilterStatus: (status: Job["status"] | "all") => void;
   onSelectJob: (id: string) => void;
-  getJobActionRequired: (job: Job) => {
-    hasAction: boolean;
-    weather: { condition: string; temperature: number } | null;
-    followup: { reason: string } | null;
-  };
+  getJobFollowup: (job: Job) => { reason: string } | null;
 }
+
+/**
+ * Weather is fetched live per postcode, so it renders through its own
+ * component (rows are inline JSX, not components, and hooks can't live in a
+ * .map callback). Also owns the empty-state dash for both badges.
+ */
+const JobWarnings: React.FC<{ job: Job; followup: { reason: string } | null; dense?: boolean }> = ({
+  job,
+  followup,
+  dense,
+}) => {
+  const { forecast } = useJobForecast(job.postcode);
+  const weather = getWeatherOnDate(forecast, toLocalISODate(new Date()));
+  const showWeather = weather?.isImpactful;
+
+  if (!showWeather && !followup) {
+    return dense ? null : (
+      <span className="text-[12px] text-muted-foreground font-medium">—</span>
+    );
+  }
+
+  const badgePad = dense ? "px-1.5 py-0.5" : "px-2 py-0.5";
+
+  return (
+    <>
+      {showWeather && (
+        <span
+          className={`inline-flex items-center gap-1 rounded bg-[#ef4444]/10 ${badgePad} border border-[#ef4444]/20 text-[11px] font-bold text-[#ef4444] shrink-0`}
+        >
+          <CloudSun className="w-3.5 h-3.5" />
+          <span>
+            {weather.condition} ({weather.temperature}°C)
+          </span>
+        </span>
+      )}
+      {followup && (
+        <span
+          className={`inline-flex items-center gap-1 rounded bg-[#f59e0b]/10 ${badgePad} border border-[#f59e0b]/20 text-[11px] font-bold text-[#f59e0b] shrink-0`}
+        >
+          <AlertCircle className="w-3.5 h-3.5" />
+          <span>{followup.reason}</span>
+        </span>
+      )}
+    </>
+  );
+};
 
 export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
   filteredJobs,
   filterStatus,
   setFilterStatus,
   onSelectJob,
-  getJobActionRequired,
+  getJobFollowup,
 }) => {
   return (
     <div className="space-y-5">
@@ -84,7 +128,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
               </div>
             ) : (
               filteredJobs.map((job) => {
-                const action = getJobActionRequired(job);
+                const followup = getJobFollowup(job);
                 const progressPercent = Math.min(
                   100,
                   ((job.currentPours || 0) / (job.contractMaxPours || 1)) * 100,
@@ -134,20 +178,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                       {/* Mobile-only warning badges & Value / Progress */}
                       <div className="md:hidden space-y-2 mt-3 pt-2.5 border-t border-border">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          {action.weather && (
-                            <span className="inline-flex items-center gap-1 rounded bg-[#ef4444]/10 px-1.5 py-0.5 border border-[#ef4444]/20 text-[11px] font-bold text-[#ef4444]">
-                              <CloudSun className="w-3.5 h-3.5" />
-                              <span>
-                                {action.weather.condition} ({action.weather.temperature}°C)
-                              </span>
-                            </span>
-                          )}
-                          {action.followup && (
-                            <span className="inline-flex items-center gap-1 rounded bg-[#f59e0b]/10 px-1.5 py-0.5 border border-[#f59e0b]/20 text-[11px] font-bold text-[#f59e0b]">
-                              <AlertCircle className="w-3.5 h-3.5" />
-                              <span>{action.followup.reason}</span>
-                            </span>
-                          )}
+                          <JobWarnings job={job} followup={followup} dense />
                         </div>
                         <div className="flex items-center justify-between text-[12px] text-foreground">
                           <span className="font-semibold">
@@ -168,26 +199,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
 
                     {/* Desktop Warnings Column */}
                     <div className="hidden md:flex flex-col items-start justify-center gap-1.5 w-full text-left">
-                      {action.weather || action.followup ? (
-                        <>
-                          {action.weather && (
-                            <span className="inline-flex items-center gap-1 rounded bg-[#ef4444]/10 px-2 py-0.5 border border-[#ef4444]/20 text-[11px] font-bold text-[#ef4444] shrink-0">
-                              <CloudSun className="w-3.5 h-3.5" />
-                              <span>
-                                {action.weather.condition} ({action.weather.temperature}°C)
-                              </span>
-                            </span>
-                          )}
-                          {action.followup && (
-                            <span className="inline-flex items-center gap-1 rounded bg-[#f59e0b]/10 px-2 py-0.5 border border-[#f59e0b]/20 text-[11px] font-bold text-[#f59e0b] shrink-0">
-                              <AlertCircle className="w-3.5 h-3.5" />
-                              <span>{action.followup.reason}</span>
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        <span className="text-[12px] text-muted-foreground font-medium">—</span>
-                      )}
+                      <JobWarnings job={job} followup={followup} />
                     </div>
 
                     {/* Pour Progress Column */}

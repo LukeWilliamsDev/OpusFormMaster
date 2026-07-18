@@ -3,6 +3,9 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   ChevronLeft,
   CloudRain,
+  CloudSun,
+  Snowflake,
+  Wind,
   Camera,
   FileText,
   Link as LinkIcon,
@@ -19,6 +22,8 @@ import {
 import { Job, Worker } from "../types/erp";
 import { supabase } from "../../integrations/supabase/client";
 import { OSMMap } from "./OSMMap";
+import { useJobForecast, getWeatherOnDate, geocodePostcode } from "../utils/weather";
+import { toLocalISODate } from "../utils/week";
 
 interface PourLog {
   id: string;
@@ -70,8 +75,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
   const [copiedLink, setCopiedLink] = useState(false);
 
   // Weather & Suppliers state
-  const [weatherData, setWeatherData] = useState<any>(null);
-  const [loadingWeather, setLoadingWeather] = useState(true);
+  const { forecast, loading: loadingWeather } = useJobForecast(job.postcode);
+  const weatherData = getWeatherOnDate(forecast, toLocalISODate(new Date()));
   const [siteCoords, setSiteCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
@@ -135,7 +140,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
 
   // Haversine Distance helper
   const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // km
+    const R = 3958.8; // miles
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
@@ -149,75 +154,51 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
   };
 
   const geocodeAndFetchWeatherAndSuppliers = async () => {
-    if (!job.postcode) {
-      setLoadingWeather(false);
-      return;
-    }
+    if (!job.postcode) return;
     try {
-      // 1. Geocode site postcode using OSM Nominatim
-      const geoUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(job.postcode)}&countrycodes=gb&limit=1`;
-      const geoRes = await fetch(geoUrl, {
+      // Live weather comes from the shared useJobForecast hook above; this
+      // just resolves coords (shares the same geocode cache) for the
+      // nearby-suppliers lookup and site map pin.
+      const coords = await geocodePostcode(job.postcode);
+      if (!coords) return;
+      const lat = coords.lat;
+      const lng = coords.lon;
+      setSiteCoords({ lat, lng });
+
+      setLoadingSuppliers(true);
+      // Bound the search to a box around the site (~15mi) instead of a bare
+      // text match, otherwise Nominatim returns text-relevant results from
+      // anywhere rather than genuinely nearby suppliers.
+      const boxDelta = 0.25;
+      const viewbox = [lng - boxDelta, lat + boxDelta, lng + boxDelta, lat - boxDelta].join(",");
+      const suppliersUrl = `https://nominatim.openstreetmap.org/search?format=json&q=tool+hire&viewbox=${viewbox}&bounded=1&limit=5`;
+      const supRes = await fetch(suppliersUrl, {
         headers: { "User-Agent": "OpusForm/1.0 (admin@opusform.co.uk)" },
       });
-      const geoData = await geoRes.json();
+      const supData = await supRes.json();
 
-      if (geoData && geoData[0]) {
-        const lat = parseFloat(geoData[0].lat);
-        const lng = parseFloat(geoData[0].lon);
-        setSiteCoords({ lat, lng });
+      if (supData && Array.isArray(supData)) {
+        const mapped = supData
+          .map((item: any) => {
+            const sLat = parseFloat(item.lat);
+            const sLng = parseFloat(item.lon);
+            const dist = calculateDistance(lat, lng, sLat, sLng);
+            return {
+              id: item.place_id.toString(),
+              name: item.display_name.split(",")[0],
+              address: item.display_name.split(",").slice(1, 4).join(","),
+              phone: "0113 " + Math.floor(1000000 + Math.random() * 9000000),
+              distance: `${dist.toFixed(1)} mi`,
+              coords: { lat: sLat, lng: sLng },
+            };
+          })
+          .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
 
-        // 2. Fetch OpenWeatherMap Weather using API key
-        const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&appid=39b85af056be30c05f01ac45aa9249e1&units=metric`;
-        const weatherRes = await fetch(weatherUrl);
-        const wData = await weatherRes.json();
-
-        if (wData && wData.main) {
-          const isImpactful =
-            wData.weather[0].main.toLowerCase().includes("rain") ||
-            wData.weather[0].main.toLowerCase().includes("snow") ||
-            wData.wind?.speed > 8;
-
-          setWeatherData({
-            temp: Math.round(wData.main.temp),
-            desc: wData.weather[0].description,
-            icon: wData.weather[0].icon,
-            riskLevel: isImpactful ? "High" : "Low",
-            isImpactful,
-          });
-        }
-
-        // 3. Fetch closest suppliers from Nominatim
-        setLoadingSuppliers(true);
-        const suppliersUrl = `https://nominatim.openstreetmap.org/search?format=json&q=tool+hire+${encodeURIComponent(job.postcode)}&limit=5`;
-        const supRes = await fetch(suppliersUrl, {
-          headers: { "User-Agent": "OpusForm/1.0 (admin@opusform.co.uk)" },
-        });
-        const supData = await supRes.json();
-
-        if (supData && Array.isArray(supData)) {
-          const mapped = supData
-            .map((item: any) => {
-              const sLat = parseFloat(item.lat);
-              const sLng = parseFloat(item.lon);
-              const dist = calculateDistance(lat, lng, sLat, sLng);
-              return {
-                id: item.place_id.toString(),
-                name: item.display_name.split(",")[0],
-                address: item.display_name.split(",").slice(1, 4).join(","),
-                phone: "0113 " + Math.floor(1000000 + Math.random() * 9000000),
-                distance: `${dist.toFixed(1)} km`,
-                coords: { lat: sLat, lng: sLng },
-              };
-            })
-            .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
-
-          setSuppliers(mapped);
-        }
+        setSuppliers(mapped);
       }
     } catch (err) {
-      console.error("Error geocoding or fetching weather/suppliers:", err);
+      console.error("Error geocoding or fetching suppliers:", err);
     } finally {
-      setLoadingWeather(false);
       setLoadingSuppliers(false);
     }
   };
@@ -550,7 +531,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
             <div className="flex items-center justify-between mt-2">
               <div className="space-y-1">
                 <div className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <span>{weatherData.temp}°C</span>
+                  <span>{weatherData.temperature}°C</span>
                   <span
                     className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
                       weatherData.isImpactful
@@ -561,14 +542,16 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
                     {weatherData.riskLevel} Risk
                   </span>
                 </div>
-                <p className="text-xs text-muted-foreground capitalize">{weatherData.desc}</p>
+                <p className="text-xs text-muted-foreground">{weatherData.condition}</p>
               </div>
-              {weatherData.icon && (
-                <img
-                  src={`https://openweathermap.org/img/wn/${weatherData.icon}@2x.png`}
-                  alt="weather"
-                  className="w-12 h-12"
-                />
+              {weatherData.condition === "Rain" ? (
+                <CloudRain className="w-8 h-8 text-muted-foreground" />
+              ) : weatherData.condition === "Frost" ? (
+                <Snowflake className="w-8 h-8 text-muted-foreground" />
+              ) : weatherData.condition === "Wind" ? (
+                <Wind className="w-8 h-8 text-muted-foreground" />
+              ) : (
+                <CloudSun className="w-8 h-8 text-muted-foreground" />
               )}
             </div>
           ) : (

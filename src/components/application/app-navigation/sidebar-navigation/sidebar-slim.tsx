@@ -112,7 +112,7 @@ export const SidebarNavigationSlim = ({
                         {initials ? (
                             <span className="text-[11px] font-black tracking-wider text-white">{initials}</span>
                         ) : (
-                            <UserIcon className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                            <UserIcon className="w-4 h-4 text-muted-foreground group-hover:text-white transition-colors" />
                         )}
                     </div>
                     {!collapsed && (

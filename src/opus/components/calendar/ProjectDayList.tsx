@@ -1,18 +1,20 @@
 import React from "react";
 import { CloudRain, CloudSun, Plus, Snowflake, Thermometer, Users, Wind } from "lucide-react";
 import { Job } from "../../types/erp";
-import { getWeatherForJob } from "../../utils/weather";
+import { useJobForecast, getWeatherOnDate } from "../../utils/weather";
 import { formatDayHeading } from "../../utils/week";
 import { DaySchedule } from "../../hooks/useDaySchedule";
 import { getJobColorClasses } from "./jobColors";
 import { StaffCard } from "./StaffCard";
 
-const WeatherChip: React.FC<{ job: Job }> = ({ job }) => {
-  const weather = getWeatherForJob(job);
-  if (!weather || !weather.isImpactful) return null;
+const WeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) => {
+  const { forecast } = useJobForecast(job.postcode);
+  const weather = getWeatherOnDate(forecast, date);
+  if (!weather) return null;
 
-  const colorClass =
-    weather.riskLevel === "High"
+  const colorClass = !weather.isImpactful
+    ? "bg-[#132A1C] border-[#3E8E5C] text-[#6FCF97]"
+    : weather.riskLevel === "High"
       ? "bg-[#2B1D11] border-[#C3813B] text-[#FFB057]"
       : "bg-[#252011] border-[#9E8530] text-[#E0C043]";
 
@@ -62,13 +64,13 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-xs">
-        <span className="font-bold text-gray-400">{formatDayHeading(date)}</span>
-        <span className="text-gray-600">·</span>
+        <span className="font-bold text-muted-foreground">{formatDayHeading(date)}</span>
+        <span className="text-muted-foreground">·</span>
         <span className="font-black text-success">{schedule.deployedCount} staff deployed</span>
       </div>
 
       {activeJobs.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-10 text-gray-500 border border-dashed border-border rounded-xl">
+        <div className="flex flex-col items-center gap-2 py-10 text-muted-foreground border border-dashed border-border rounded-xl">
           <Users className="w-6 h-6" />
           <span className="text-xs font-bold uppercase tracking-wider">No active projects</span>
         </div>
@@ -88,16 +90,16 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
                   <h3 className={`text-sm font-bold truncate ${colors.text}`}>{job.siteName}</h3>
                 </div>
                 <div className="flex items-center gap-2.5 shrink-0">
-                  <span className="text-[10px] font-black font-mono uppercase tracking-wider text-gray-500">
+                  <span className="text-[10px] font-black font-mono uppercase tracking-wider text-muted-foreground">
                     {job.jobRef.split("-").slice(0, 2).join("-")}
                   </span>
-                  <span className="flex items-center gap-1 text-[11px] font-black text-gray-400">
+                  <span className="flex items-center gap-1 text-[11px] font-black text-muted-foreground">
                     <Users className="w-3.5 h-3.5" /> {crew.length}
                   </span>
                 </div>
               </div>
 
-              <WeatherChip job={job} />
+              <WeatherChip job={job} date={date} />
 
               {crew.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -117,7 +119,7 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
               <button
                 type="button"
                 onClick={() => onAddStaff(job)}
-                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg border border-dashed border-border text-gray-500 hover:text-foreground hover:border-primary text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add Staff Member

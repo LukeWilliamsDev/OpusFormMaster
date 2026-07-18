@@ -347,7 +347,7 @@ export const AuditLogPage: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      <div className="text-[12px] text-gray-500 mt-1">
+                      <div className="text-[12px] text-muted-foreground mt-1">
                         {log.user_email || "system"} ·{" "}
                         {new Date(log.created_at).toLocaleString("en-GB")}
                       </div>

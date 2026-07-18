@@ -1,18 +1,20 @@
 import React from "react";
 import { Plus, Users } from "lucide-react";
 import { Job } from "../../types/erp";
-import { getWeatherForJob } from "../../utils/weather";
+import { useJobForecast, getWeatherOnDate } from "../../utils/weather";
 import { DaySchedule } from "../../hooks/useDaySchedule";
 import { WeekDay } from "../../utils/week";
 import { getJobColorClasses } from "./jobColors";
 import { StaffCard } from "./StaffCard";
 
-const DenseWeatherChip: React.FC<{ job: Job }> = ({ job }) => {
-  const weather = getWeatherForJob(job);
-  if (!weather || !weather.isImpactful) return null;
+const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) => {
+  const { forecast } = useJobForecast(job.postcode);
+  const weather = getWeatherOnDate(forecast, date);
+  if (!weather) return null;
 
-  const colorClass =
-    weather.riskLevel === "High"
+  const colorClass = !weather.isImpactful
+    ? "bg-[#132A1C] border-[#3E8E5C] text-[#6FCF97]"
+    : weather.riskLevel === "High"
       ? "bg-[#2B1D11] border-[#C3813B] text-[#FFB057]"
       : "bg-[#252011] border-[#9E8530] text-[#E0C043]";
 
@@ -51,24 +53,28 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
         return (
           <div
             key={day.date}
-            className="min-w-0 border border-border rounded-xl bg-card p-3 space-y-3"
+            className="min-w-0 p-3 space-y-3 border-r border-border last:border-r-0"
           >
             <div className="flex items-center justify-between gap-1.5 px-0.5">
               <div className="flex items-baseline gap-1.5 min-w-0">
                 <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
                   {day.shortName}
                 </span>
-                <span className="text-[11px] font-bold font-mono text-gray-500">
+                <span className="text-[11px] font-bold font-mono text-muted-foreground">
                   {day.date.split("-")[2]}
                 </span>
               </div>
-              <span className="text-[11px] font-black text-success shrink-0">
-                {schedule?.deployedCount ?? 0}
+              <span
+                className={`text-[11px] font-black shrink-0 ${
+                  schedule?.deployedCount ? "text-success" : "text-muted-foreground"
+                }`}
+              >
+                {schedule?.deployedCount ? schedule.deployedCount : "0 deployed"}
               </span>
             </div>
 
             {activeJobs.length === 0 ? (
-              <div className="py-4 text-center text-[10px] font-bold uppercase tracking-wider text-gray-600">
+              <div className="py-4 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                 No projects
               </div>
             ) : (
@@ -79,7 +85,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                 return (
                   <div
                     key={job.id}
-                    className={`border rounded-lg bg-muted/30 p-2 space-y-2 ${colors.border}`}
+                    className="border border-border rounded-lg bg-background/40 p-2 space-y-2"
                   >
                     <div className="flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1.5 min-w-0">
@@ -88,12 +94,12 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                           {job.siteName}
                         </h4>
                       </div>
-                      <span className="flex items-center gap-1 text-[11px] font-black text-gray-500 shrink-0">
+                      <span className="flex items-center gap-1 text-[11px] font-black text-muted-foreground shrink-0">
                         <Users className="w-3 h-3" /> {crew.length}
                       </span>
                     </div>
 
-                    <DenseWeatherChip job={job} />
+                    <DenseWeatherChip job={job} date={day.date} />
 
                     {crew.length > 0 && (
                       <div className="space-y-1.5">
@@ -115,7 +121,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                       type="button"
                       onClick={() => onAddStaff(job, day.date)}
                       aria-label={`Add staff to ${job.siteName}`}
-                      className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-gray-500 hover:text-foreground hover:border-primary text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                      className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
                     >
                       <Plus className="w-3 h-3" />
                       <span className="hidden xl:inline">Add Staff</span>

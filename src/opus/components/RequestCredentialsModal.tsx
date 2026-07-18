@@ -173,7 +173,7 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
         if (!open) onClose();
       }}
     >
-      <DialogContent className="w-full max-w-lg overflow-hidden p-0 gap-0 rounded-lg border border-border bg-card text-card-foreground flex flex-col max-h-[90vh] text-left [&>button]:hidden">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-lg overflow-hidden p-0 gap-0 rounded-lg border border-border bg-card text-card-foreground flex flex-col max-h-[calc(100dvh-2rem)] text-left [&>button]:hidden">
         {/* Header */}
         <div className="p-6 pb-4 border-b border-border flex items-start justify-between shrink-0">
           <div className="flex items-center space-x-3">
@@ -379,7 +379,7 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
             type="button"
             variant="outline"
             onClick={onClose}
-            className="flex-1 py-3 h-auto min-h-[42px] text-[12px] font-bold uppercase tracking-wider"
+            className="flex-1 py-3 h-auto min-h-[42px] text-[12px] font-bold uppercase tracking-wider whitespace-normal text-center"
           >
             {generatedLink ? "Close" : "Cancel"}
           </Button>
@@ -388,7 +388,7 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
               type="button"
               onClick={handleCreateRequest}
               disabled={loading}
-              className="flex-1 py-3 h-auto min-h-[42px] text-[12px] font-bold uppercase tracking-wider"
+              className="flex-1 py-3 h-auto min-h-[42px] text-[12px] font-bold uppercase tracking-wider whitespace-normal text-center"
             >
               {loading ? "Generating..." : "Generate Request Link"}
             </Button>

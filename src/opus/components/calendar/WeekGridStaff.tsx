@@ -9,6 +9,7 @@ import { groupWorkersByCategory } from "./roleCategories";
 interface WeekGridStaffProps {
   weekDays: WeekDay[];
   weekSchedule: Map<string, DaySchedule>;
+  searchQuery: string;
   onAssign: (worker: Worker, date: string) => void;
   onRemoveShift: (shiftId: string) => void;
 }
@@ -16,15 +17,21 @@ interface WeekGridStaffProps {
 export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
   weekDays,
   weekSchedule,
+  searchQuery,
   onAssign,
   onRemoveShift,
 }) => {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const weekKey = weekDays.map((d) => d.date).join(",");
+  const isSearching = searchQuery.trim().length > 0;
 
   useEffect(() => {
     setExpanded(new Set());
   }, [weekKey]);
+
+  useEffect(() => {
+    if (!isSearching) setExpanded(new Set());
+  }, [isSearching]);
 
   const toggle = (key: string) => {
     setExpanded((prev) => {
@@ -83,7 +90,7 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
                         key={key}
                         category={category}
                         count={items.length}
-                        isOpen={expanded.has(key)}
+                        isOpen={isSearching || expanded.has(key)}
                         onToggle={() => toggle(key)}
                       >
                         {items.map(({ worker, shift, job }) => (
@@ -120,7 +127,7 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
                         key={key}
                         category={category}
                         count={items.length}
-                        isOpen={expanded.has(key)}
+                        isOpen={isSearching || expanded.has(key)}
                         onToggle={() => toggle(key)}
                       >
                         {items.map((worker) => (

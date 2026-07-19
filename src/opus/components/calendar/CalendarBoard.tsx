@@ -128,6 +128,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
               <StaffDayList
                 schedule={schedule}
                 date={date}
+                searchQuery={searchQuery}
                 onAssign={(worker) => setAssignTarget({ mode: "pickProject", worker, date })}
                 onRemoveShift={removeShift}
               />
@@ -150,6 +151,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             <WeekGridStaff
               weekDays={weekDays}
               weekSchedule={weekSchedule}
+              searchQuery={searchQuery}
               onAssign={(worker, assignDate) =>
                 setAssignTarget({ mode: "pickProject", worker, date: assignDate })
               }

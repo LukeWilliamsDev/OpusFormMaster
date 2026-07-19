@@ -10,6 +10,7 @@ import { groupWorkersByCategory } from "./roleCategories";
 interface StaffDayListProps {
   schedule: DaySchedule;
   date: string;
+  searchQuery: string;
   onAssign: (worker: Worker) => void;
   onRemoveShift: (shiftId: string) => void;
 }
@@ -17,15 +18,21 @@ interface StaffDayListProps {
 export const StaffDayList: React.FC<StaffDayListProps> = ({
   schedule,
   date,
+  searchQuery,
   onAssign,
   onRemoveShift,
 }) => {
   const { assigned, unassigned, deployedCount } = schedule;
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const isSearching = searchQuery.trim().length > 0;
 
   useEffect(() => {
     setExpanded(new Set());
   }, [date]);
+
+  useEffect(() => {
+    if (!isSearching) setExpanded(new Set());
+  }, [isSearching]);
 
   const toggle = (key: string) => {
     setExpanded((prev) => {
@@ -73,7 +80,7 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
                       key={key}
                       category={category}
                       count={items.length}
-                      isOpen={expanded.has(key)}
+                      isOpen={isSearching || expanded.has(key)}
                       onToggle={() => toggle(key)}
                     >
                       {items.map(({ worker, shift, job }: DayAssignment) => (
@@ -110,7 +117,7 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
                       key={key}
                       category={category}
                       count={items.length}
-                      isOpen={expanded.has(key)}
+                      isOpen={isSearching || expanded.has(key)}
                       onToggle={() => toggle(key)}
                     >
                       {items.map((worker: Worker) => (

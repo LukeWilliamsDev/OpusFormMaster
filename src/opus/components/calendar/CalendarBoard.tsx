@@ -44,32 +44,19 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   onChangeDate,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRole, setSelectedRole] = useState<string>("all");
   const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
 
-  // Filter workers based on selected role
-  const filteredWorkers = useMemo(() => {
-    if (selectedRole === "all") return workers;
-    return workers.filter((w) => w.role?.toLowerCase() === selectedRole.toLowerCase());
-  }, [workers, selectedRole]);
-
-  // Extract unique roles from workers for the filter dropdown
-  const uniqueRoles = useMemo(() => {
-    const rolesSet = new Set(workers.map((w) => w.role).filter(Boolean));
-    return Array.from(rolesSet).sort();
-  }, [workers]);
-
   const weekDays = getWeekDays(toLocalISODate(getMonday(parseLocalISODate(date))));
-  const schedule = useDaySchedule(filteredWorkers, jobs, shifts, date, searchQuery);
-  const weekSchedule = useWeekSchedule(filteredWorkers, jobs, shifts, weekDays, searchQuery);
+  const schedule = useDaySchedule(workers, jobs, shifts, date, searchQuery);
+  const weekSchedule = useWeekSchedule(workers, jobs, shifts, weekDays, searchQuery);
   // Unfiltered view for the assign sheet: true crew counts and the full
   // available-staff list, regardless of what's typed in the search box. Keyed
   // off the assign target's own date since a week-grid click can target any
   // visible weekday, not just the page's currently-selected date.
   const assignSheetDate = assignTarget?.date ?? date;
-  const fullSchedule = useDaySchedule(filteredWorkers, jobs, shifts, assignSheetDate, "");
+  const fullSchedule = useDaySchedule(workers, jobs, shifts, assignSheetDate, "");
   const { assignWorker, confirmReallocate, removeShift } = useShiftActions(
-    filteredWorkers,
+    workers,
     jobs,
     shifts,
     setShifts,
@@ -111,22 +98,6 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
         </div>
 
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
-          {/* Role Filter */}
-          {group === "staff" && (
-            <select
-              value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
-              className="bg-card border border-border rounded-xl px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary transition-colors"
-            >
-              <option value="all">All Roles</option>
-              {uniqueRoles.map((role) => (
-                <option key={role} value={role}>
-                  {role}
-                </option>
-              ))}
-            </select>
-          )}
-
           <div className="relative md:w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <input

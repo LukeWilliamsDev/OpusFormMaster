@@ -104,6 +104,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
   autoOpenAddWorker = false,
 }) => {
   const { profile, role } = usePortal();
+  // Logistics coordinators/assistants handle scheduling only — the compliance/audit trail is out of scope for them.
+  const canViewAuditLog = role !== "logistics_coordinator" && role !== "logistics_assistant";
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddWorkerForm, setShowAddWorkerForm] = useState(false);
 
@@ -228,7 +230,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   };
 
   useEffect(() => {
-    if (selectedWorkerDetailsId) {
+    if (selectedWorkerDetailsId && canViewAuditLog) {
       fetchLogsAndRequests();
     } else {
       setDossierAuditLogs([]);
@@ -1098,17 +1100,19 @@ export const RosterView: React.FC<RosterViewProps> = ({
           >
             Site Assignments
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveDossierTab("audit_log")}
-            className={`pb-3 text-[11px] font-semibold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
-              activeDossierTab === "audit_log"
-                ? "border-brand-accent text-foreground"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Audit Log
-          </button>
+          {canViewAuditLog && (
+            <button
+              type="button"
+              onClick={() => setActiveDossierTab("audit_log")}
+              className={`pb-3 text-[11px] font-semibold uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                activeDossierTab === "audit_log"
+                  ? "border-brand-accent text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Audit Log
+            </button>
+          )}
         </div>
 
         {/* Tab 1: Compliance */}
@@ -1398,7 +1402,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
         )}
 
         {/* Tab 3: Audit & Requests Log */}
-        {activeDossierTab === "audit_log" && (
+        {activeDossierTab === "audit_log" && canViewAuditLog && (
           <div className="space-y-4 animate-in fade-in duration-200">
             {loadingDossierLogs && allEvents.length === 0 ? (
               <div className="text-center py-12 border border-border bg-card rounded-xl">

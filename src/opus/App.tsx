@@ -1,7 +1,14 @@
 // @ts-nocheck
 import React, { useEffect } from "react";
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
-import { PortalProvider, usePortal } from "./context/PortalContext";
+import {
+  PortalProvider,
+  usePortal,
+  AppRole,
+  ALL_ROLES,
+  MANAGEMENT_ROLES,
+  FIELD_ROLES,
+} from "./context/PortalContext";
 import { PortalLayout } from "./layouts/PortalLayout";
 import { LandingPage } from "./components/LandingPage";
 import { PortalAuthPage } from "./pages/PortalAuth";
@@ -45,7 +52,7 @@ const ProtectedRoute: React.FC = () => {
 // Role gate — restricts a subtree to a role allowlist. Blocked users go to the
 // first surface their role can see.
 const RoleGuard: React.FC<{
-  allow: Array<"admin" | "dispatcher" | "operative">;
+  allow: Array<AppRole>;
   children: React.ReactNode;
 }> = ({ allow, children }) => {
   const { role, user, authLoading } = usePortal();
@@ -58,7 +65,7 @@ const RoleGuard: React.FC<{
     return <Navigate to="/portal/audit" replace />;
   }
   if (!allow.includes(role)) {
-    const fallback = role === "operative" ? "/portal/roster?view=calendar" : "/portal/dashboard";
+    const fallback = FIELD_ROLES.includes(role) ? "/portal/roster?view=calendar" : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
@@ -71,7 +78,7 @@ const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     return <div className="min-h-screen bg-background" />;
   }
   if (role !== "admin" || user?.email !== "admin@opusform.co.uk") {
-    const fallback = role === "operative" ? "/portal/roster?view=calendar" : "/portal/dashboard";
+    const fallback = FIELD_ROLES.includes(role) ? "/portal/roster?view=calendar" : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
@@ -102,7 +109,7 @@ export default function App() {
             <Route
               path="/portal/dashboard"
               element={
-                <RoleGuard allow={["admin", "dispatcher"]}>
+                <RoleGuard allow={MANAGEMENT_ROLES}>
                   <DashboardPage />
                 </RoleGuard>
               }
@@ -110,7 +117,7 @@ export default function App() {
             <Route
               path="/portal/ledger"
               element={
-                <RoleGuard allow={["admin", "dispatcher"]}>
+                <RoleGuard allow={MANAGEMENT_ROLES}>
                   <JobLedgerPage />
                 </RoleGuard>
               }
@@ -118,7 +125,7 @@ export default function App() {
             <Route
               path="/portal/pipeline"
               element={
-                <RoleGuard allow={["admin", "dispatcher"]}>
+                <RoleGuard allow={MANAGEMENT_ROLES}>
                   <PipelinePage />
                 </RoleGuard>
               }
@@ -127,7 +134,7 @@ export default function App() {
             <Route
               path="/portal/roster"
               element={
-                <RoleGuard allow={["admin", "dispatcher", "operative"]}>
+                <RoleGuard allow={ALL_ROLES}>
                   <LaborRosterPage />
                 </RoleGuard>
               }
@@ -151,7 +158,7 @@ export default function App() {
             <Route
               path="/portal/settings"
               element={
-                <RoleGuard allow={["admin", "dispatcher", "operative"]}>
+                <RoleGuard allow={ALL_ROLES}>
                   <SettingsPage />
                 </RoleGuard>
               }
@@ -159,7 +166,7 @@ export default function App() {
             <Route
               path="/portal/terms"
               element={
-                <RoleGuard allow={["admin", "dispatcher", "operative"]}>
+                <RoleGuard allow={ALL_ROLES}>
                   <TermsOfServicePage />
                 </RoleGuard>
               }
@@ -167,7 +174,7 @@ export default function App() {
             <Route
               path="/portal/acceptable-use"
               element={
-                <RoleGuard allow={["admin", "dispatcher", "operative"]}>
+                <RoleGuard allow={ALL_ROLES}>
                   <AcceptableUsePolicyPage />
                 </RoleGuard>
               }
@@ -175,7 +182,7 @@ export default function App() {
             <Route
               path="/portal/privacy"
               element={
-                <RoleGuard allow={["admin", "dispatcher", "operative"]}>
+                <RoleGuard allow={ALL_ROLES}>
                   <PrivacyNoticePage />
                 </RoleGuard>
               }
@@ -183,7 +190,7 @@ export default function App() {
             <Route
               path="/portal/cookies"
               element={
-                <RoleGuard allow={["admin", "dispatcher", "operative"]}>
+                <RoleGuard allow={ALL_ROLES}>
                   <CookieStatementPage />
                 </RoleGuard>
               }
@@ -191,7 +198,7 @@ export default function App() {
             <Route
               path="/portal/modern-slavery"
               element={
-                <RoleGuard allow={["admin", "dispatcher", "operative"]}>
+                <RoleGuard allow={ALL_ROLES}>
                   <ModernSlaveryStatementPage />
                 </RoleGuard>
               }
@@ -214,6 +221,6 @@ const RoleAwareFallback: React.FC = () => {
   if (user?.email === "admin@opusform.co.uk") {
     return <Navigate to="/portal/audit" replace />;
   }
-  const target = role === "operative" ? "/portal/roster?view=calendar" : "/portal/dashboard";
+  const target = FIELD_ROLES.includes(role) ? "/portal/roster?view=calendar" : "/portal/dashboard";
   return <Navigate to={target} replace />;
 };

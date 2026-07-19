@@ -18,7 +18,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { usePortal } from "../context/PortalContext";
+import { usePortal, ALL_ROLES, MANAGEMENT_ROLES } from "../context/PortalContext";
 import { getAvatarPresetClass } from "../pages/Settings";
 import { NavList } from "@/components/application/app-navigation/base-components/nav-list";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
@@ -51,26 +51,26 @@ export const PortalLayout: React.FC = () => {
       name: "Dashboard",
       path: "/portal/dashboard",
       icon: LayoutDashboard,
-      roles: ["admin", "dispatcher"],
+      roles: MANAGEMENT_ROLES,
     },
-    { name: "Job Ledger", path: "/portal/ledger", icon: HardHat, roles: ["admin", "dispatcher"] },
+    { name: "Job Ledger", path: "/portal/ledger", icon: HardHat, roles: MANAGEMENT_ROLES },
     {
       name: "Calendar",
       path: "/portal/roster?view=calendar",
       icon: Calendar,
-      roles: ["admin", "dispatcher", "operative"],
+      roles: ALL_ROLES,
     },
     {
       name: "Staff",
       path: "/portal/roster?view=staff",
       icon: Users,
-      roles: ["admin", "dispatcher"],
+      roles: MANAGEMENT_ROLES,
     },
     {
       name: "Quotes",
       path: "/portal/pipeline?view=pipeline-registry",
       icon: FileText,
-      roles: ["admin", "dispatcher"],
+      roles: MANAGEMENT_ROLES,
     },
     { name: "Audit Trail", path: "/portal/audit", icon: History, roles: ["admin"] },
     { name: "Policies", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
@@ -121,7 +121,7 @@ export const PortalLayout: React.FC = () => {
         logoHref="/portal/dashboard"
         profile={{
           name: profile?.full_name || user?.email || "User",
-          role: role || "operative",
+          role: role || "labourer",
           avatarClass: getAvatarPresetClass(profile?.avatar_url),
           href: "/portal/settings",
         }}
@@ -224,7 +224,7 @@ export const PortalLayout: React.FC = () => {
                     {profile?.full_name || user?.email || "User"}
                   </span>
                   <span className="text-[11px] text-success capitalize font-medium">
-                    {role || "operative"}
+                    {(role || "labourer").replace(/_/g, " ")}
                   </span>
                 </div>
               </Link>

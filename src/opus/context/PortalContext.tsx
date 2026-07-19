@@ -65,7 +65,26 @@ const INITIAL_JOBS: Job[] = [
   },
 ];
 
-export type AppRole = "admin" | "dispatcher" | "operative";
+export type AppRole =
+  | "admin"
+  | "director"
+  | "logistics_coordinator"
+  | "logistics_assistant"
+  | "site_foreman"
+  | "labourer";
+
+export const ALL_ROLES: AppRole[] = [
+  "admin",
+  "director",
+  "logistics_coordinator",
+  "logistics_assistant",
+  "site_foreman",
+  "labourer",
+];
+// Full ops write access — mirrors private.can_write_ops() in the DB.
+export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
+// Restricted access — mirrors the old "operative" tier.
+export const FIELD_ROLES: AppRole[] = ["logistics_assistant", "site_foreman", "labourer"];
 
 // ---- Row <-> App mappers -----------------------------------------------
 export const workerToRow = (w: Worker, tenantId?: string) => ({
@@ -292,10 +311,10 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (cancelled) return;
       if (error) {
         console.error("Failed to load profile", error);
-        setRole("operative");
+        setRole("labourer");
         setProfileState({ full_name: "", phone_number: "", avatar_url: "" });
       } else {
-        setRole((data?.role as AppRole) ?? "operative");
+        setRole((data?.role as AppRole) ?? "labourer");
         setProfileState({
           full_name: data?.full_name ?? "",
           phone_number: data?.phone_number ?? "",
@@ -474,8 +493,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const handleReloadDemoData = () => {
-    if (!(role === "admin" || role === "dispatcher")) {
-      toast.error("Only admins or dispatchers can seed the demo dataset.");
+    if (!role || !MANAGEMENT_ROLES.includes(role)) {
+      toast.error("Only management roles can seed the demo dataset.");
       return;
     }
     setReloadDemoConfirmOpen(true);

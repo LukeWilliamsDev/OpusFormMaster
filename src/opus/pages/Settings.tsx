@@ -230,7 +230,9 @@ export const SettingsPage: React.FC = () => {
                   </span>
                   <div className="flex items-center gap-2 bg-background/50 border border-border/60 rounded-lg p-3 px-4 text-muted-foreground cursor-not-allowed">
                     <Shield className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span className="text-xs font-bold capitalize">{role || "operative"}</span>
+                    <span className="text-xs font-bold capitalize">
+                      {(role || "labourer").replace(/_/g, " ")}
+                    </span>
                   </div>
                 </div>
               </div>

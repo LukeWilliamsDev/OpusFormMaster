@@ -661,7 +661,8 @@ export const DashboardPage: React.FC = () => {
             {expiringTickets.map((alert) => (
               <div
                 key={alert.alertId}
-                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2.5 border-l-[3px] hover:bg-background transition-colors ${
+                onClick={() => handleUpdateAlert(alert.workerId)}
+                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2.5 border-l-[3px] hover:bg-background transition-colors cursor-pointer ${
                   alert.isExpired ? "border-l-destructive" : "border-l-warning"
                 }`}
               >
@@ -694,16 +695,13 @@ export const DashboardPage: React.FC = () => {
                 {/* Actions */}
                 <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
                   <button
-                    onClick={() => setRemindConfirmAlert(alert)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRemindConfirmAlert(alert);
+                    }}
                     className="text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded bg-secondary hover:bg-muted text-foreground/85 transition-colors cursor-pointer"
                   >
                     Remind
-                  </button>
-                  <button
-                    onClick={() => handleUpdateAlert(alert.workerId)}
-                    className="text-[11px] font-bold text-primary hover:text-foreground transition-colors flex items-center gap-1 cursor-pointer"
-                  >
-                    Update <ArrowRight className="w-3 h-3" />
                   </button>
                 </div>
               </div>

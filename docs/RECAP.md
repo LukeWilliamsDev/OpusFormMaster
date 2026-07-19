@@ -213,4 +213,9 @@
 ## 2026-07-19 (Terms & Conditions layout, verification rule)
 - Terms & Conditions items: fixed-height single-column rows to responsive 2-column grid, auto-sizing textareas (`QuoteInvoiceBuilder.tsx`).
 - No-dev-server/no-browser-verification rule codified in `CLAUDE.md` (already existed in `.agents/AGENTS.md`, restated after violation).
+
+## 2026-07-19 (Staff dossier compliance cards, mobile modal bottom-dock)
+- Compliance ticket cards (`RosterView.tsx`): single-line layout, smaller icon/text/button sizing, ref number dropped for expired items, solid destructive Remove button for light-mode contrast.
+- All mobile/tablet modals converted to bottom-dock (slide up from bottom, rounded top) with desktop centered fallback at `md+`: shared `dialog.tsx` `DialogContent`, `notice-modal.tsx`, `RequestCredentialsModal.tsx`, Add Worker modal in `RosterView.tsx`. Pattern matches existing `confirm-dialog.tsx` reference.
+- Credentials request CTA renamed "Generate Request Link" → "Send Request Email" (`RequestCredentialsModal.tsx`).
 

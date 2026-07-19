@@ -836,21 +836,21 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           <button
             type="button"
             onClick={() => setPreviewOpen(true)}
-            className="lg:hidden flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+            className="lg:hidden flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
           >
             <Eye className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">Preview</span>
           </button>
           <button
             onClick={handleSaveDraft}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
           >
             <Save className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{lastSaved ? "SAVED" : "SAVE"}</span>
           </button>
           <button
             onClick={handleDownloadPDF}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
           >
             <Download className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">PDF</span>
@@ -910,7 +910,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                     >
                       <div>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-black uppercase tracking-widest text-foreground">
+                          <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/85">
                             {q.reference}
                           </span>
                           <span className="text-[11px] text-muted-foreground">{q.date}</span>
@@ -1026,7 +1026,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               <button
                 type="button"
                 onClick={addItem}
-                className="flex items-center gap-1.5 bg-secondary border border-border rounded-lg p-1.5 px-3 text-foreground text-[11px] font-black tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+                className="flex items-center gap-1.5 bg-secondary border border-border rounded-lg p-1.5 px-3 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5 text-primary" />
                 ADD LINE
@@ -1328,7 +1328,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             className="lg:hidden fixed inset-0 z-[95] bg-black/85 backdrop-blur-sm flex flex-col"
           >
             <div className="flex items-center justify-between px-4 py-3 bg-card border-b border-border shrink-0">
-              <span className="text-[11px] font-black uppercase tracking-[0.2em] text-foreground flex items-center gap-2">
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-foreground/85 flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
                 PDF Live Preview
               </span>

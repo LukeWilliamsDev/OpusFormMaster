@@ -325,11 +325,11 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
         />
       </div>
       {/* Desktop text */}
-      <span className="hidden sm:block text-[10px] font-black uppercase tracking-widest text-foreground">
+      <span className="hidden sm:block text-[10px] font-bold uppercase tracking-widest text-foreground/85">
         Drag & Drop or Click to Upload
       </span>
       {/* Mobile text */}
-      <span className="sm:hidden text-[10px] font-black uppercase tracking-widest text-foreground">
+      <span className="sm:hidden text-[10px] font-bold uppercase tracking-widest text-foreground/85">
         Tap to Upload
       </span>
       <span className="text-[8px] text-muted-foreground uppercase tracking-widest mt-1.5">
@@ -622,7 +622,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           <div className="w-14 h-14 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto">
             <ShieldAlert className="w-6 h-6 text-red-400" />
           </div>
-          <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground">
+          <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-foreground/85">
             Access Denied
           </h3>
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-relaxed">
@@ -641,7 +641,7 @@ export const SubmitCredentialsPage: React.FC = () => {
         <div className="bg-card border border-success/20 rounded-xl p-10 max-w-md w-full text-center space-y-6">
           <AnimatedCheckmark />
           <div className="space-y-2">
-            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-foreground">
+            <h3 className="text-sm font-bold uppercase tracking-[0.2em] text-foreground/85">
               Submission Complete
             </h3>
             <p className="text-[10px] text-muted-foreground uppercase tracking-widest leading-relaxed max-w-xs mx-auto">
@@ -697,7 +697,7 @@ export const SubmitCredentialsPage: React.FC = () => {
               <AlertCircle className="w-5 h-5 text-primary" />
             </div>
             <div className="min-w-0">
-              <h4 className="text-xs font-black uppercase tracking-wider text-foreground">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-foreground/85">
                 Hi, {staffName}
               </h4>
               <p className="text-[9px] text-muted-foreground uppercase tracking-widest mt-1.5 leading-relaxed">
@@ -726,7 +726,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                   <select
                     value={activeSlot.cert}
                     onChange={(e) => updateSlot(currentStep, { cert: e.target.value })}
-                    className="flex-1 min-w-0 bg-secondary/40 border border-border hover:border-muted-foreground/50 focus:border-primary rounded-xl px-3 py-2.5 text-xs text-foreground uppercase font-black tracking-wider outline-none appearance-none transition-colors"
+                    className="flex-1 min-w-0 bg-secondary/40 border border-border hover:border-muted-foreground/50 focus:border-primary rounded-xl px-3 py-2.5 text-xs text-foreground/85 uppercase font-bold tracking-wider outline-none appearance-none transition-colors"
                   >
                     {ON_SITE_CERTIFICATIONS.map((cert) => (
                       <option key={cert} value={cert}>
@@ -739,7 +739,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                     <p className="text-[8px] text-muted-foreground uppercase tracking-widest mb-1">
                       Step {currentStep + 1} of {slots.length}
                     </p>
-                    <h4 className="text-xs font-black uppercase tracking-widest text-foreground leading-normal">
+                    <h4 className="text-xs font-bold uppercase tracking-widest text-foreground/85 leading-normal">
                       {activeSlot.cert}
                     </h4>
                   </div>
@@ -798,7 +798,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           {isReviewStep && (
             <div className="space-y-4">
               <div className="bg-card border border-border rounded-xl p-5">
-                <h4 className="text-xs font-black uppercase tracking-widest text-foreground mb-4 pb-3 border-b border-border">
+                <h4 className="text-xs font-bold uppercase tracking-widest text-foreground/85 mb-4 pb-3 border-b border-border">
                   Review Your Submissions
                 </h4>
                 <div className="space-y-3">
@@ -821,7 +821,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                       )}
                       {/* Details */}
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-wider text-foreground truncate">
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-foreground/85 truncate">
                           {slot.cert}
                         </p>
                         {slot.displayFilename && (

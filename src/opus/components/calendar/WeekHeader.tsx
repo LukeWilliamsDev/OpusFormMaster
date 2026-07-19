@@ -17,7 +17,7 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) 
     >
       <ChevronLeft className="w-4 h-4" />
     </button>
-    <span className="text-[11px] font-black text-foreground uppercase tracking-widest whitespace-nowrap">
+    <span className="text-[11px] font-bold text-foreground/85 uppercase tracking-widest whitespace-nowrap">
       {formatWeekRange(weekDays)}
     </span>
     <button

@@ -134,7 +134,7 @@ export const SettingsPage: React.FC = () => {
     <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-4xl mx-auto animate-fade-in space-y-8">
       {/* Page Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-black uppercase tracking-widest text-foreground">
+        <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-widest text-foreground/85">
           Profile Settings
         </h1>
         <p className="text-xs text-muted-foreground mt-1 uppercase font-bold tracking-wider">
@@ -191,7 +191,7 @@ export const SettingsPage: React.FC = () => {
           <div className="bg-card border border-border rounded-xl p-6 space-y-5">
             <div className="flex items-center gap-2 border-b border-border pb-3">
               <User className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/85">
                 Account Details
               </h3>
             </div>
@@ -283,7 +283,7 @@ export const SettingsPage: React.FC = () => {
           <div className="bg-card border border-border rounded-xl p-6 space-y-5">
             <div className="flex items-center gap-2 border-b border-border pb-3">
               <Key className="w-4 h-4 text-primary" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-foreground">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/85">
                 Security / Update Password
               </h3>
             </div>

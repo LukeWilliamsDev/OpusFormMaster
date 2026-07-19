@@ -533,7 +533,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               {/* Sticky Header */}
               <div className="p-6 border-b border-border bg-secondary/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground">
+                  <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-foreground/85">
                     Quote Control Center
                   </h3>
                   <span
@@ -655,7 +655,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                   <span className="text-[7.5px] font-black text-primary uppercase tracking-widest block mb-0.5">
                     Total
                   </span>
-                  <span className="text-xs font-mono font-black text-foreground">
+                  <span className="text-xs font-mono font-bold text-foreground/85">
                     £
                     {(selectedQuoteForControl.totals?.netTotal || 0).toLocaleString(undefined, {
                       minimumFractionDigits: 2,
@@ -672,7 +672,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     setSelectedQuoteForControl(null);
                     onEditQuote(selectedQuoteForControl.id);
                   }}
-                  className="flex-1 py-3 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
+                  className="flex-1 py-3 bg-secondary hover:bg-secondary/80 border border-border text-foreground/85 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all text-center focus:outline-none"
                 >
                   Edit Quote
                 </button>

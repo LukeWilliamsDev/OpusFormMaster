@@ -26,7 +26,7 @@ export const RoleAccordion: React.FC<RoleAccordionProps> = ({
         aria-expanded={isOpen}
       >
         <span className="flex items-center gap-2 min-w-0">
-          <span className="text-xs font-black uppercase tracking-widest text-foreground truncate">
+          <span className="text-xs font-bold uppercase tracking-widest text-foreground/85 truncate">
             {category}
           </span>
           <span className="text-[10px] font-bold text-muted-foreground shrink-0">({count})</span>

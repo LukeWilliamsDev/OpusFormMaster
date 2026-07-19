@@ -94,7 +94,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between border-b border-border pb-3">
-        <div className="flex items-center gap-2 text-[11px] font-black tracking-widest uppercase text-foreground font-archivo">
+        <div className="flex items-center gap-2 text-[11px] font-bold tracking-widest uppercase text-foreground/85 font-archivo">
           <AlertTriangle className="w-4 h-4 text-amber-500 animate-pulse" />
           <span>30-Day Expiry Radar</span>
         </div>

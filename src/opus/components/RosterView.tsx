@@ -81,7 +81,7 @@ export const STAFF_ROLES = [
   "General Construction Labourer",
   "Inbound Sales Representative",
   "IT",
-  "Logistics and Operations Coordinator",
+  "Logistics and Operations Assistant",
   "Material Handler",
   "Telehandler Operator",
 ];
@@ -90,7 +90,7 @@ export const OFFICE_ROLES = [
   "Director",
   "IT",
   "Inbound Sales Representative",
-  "Logistics and Operations Coordinator",
+  "Logistics and Operations Assistant",
 ];
 
 export const RosterView: React.FC<RosterViewProps> = ({
@@ -776,12 +776,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
           {/* General Info */}
           <div className="flex flex-col">
             <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
-              <div className="p-5 pb-4 border-b border-white/5 bg-secondary flex items-center space-x-3 shrink-0">
+              <div className="p-3 sm:p-4 pb-3 sm:pb-4 border-b border-white/5 bg-secondary flex items-center space-x-3 shrink-0">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
                   General Information
                 </span>
               </div>
-              <div className="p-5 space-y-4">
+              <div className="p-3 sm:p-4 space-y-4">
                 <div>
                   <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">
                     Full Name
@@ -794,26 +794,24 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">
-                      Role
-                    </label>
-                    <select
-                      value={editRole}
-                      onChange={(e) => setEditRole(e.target.value)}
-                      className="w-full bg-secondary border border-border rounded-xl px-3 py-2.5 text-[11px] font-medium text-foreground focus:outline-none focus:border-primary transition-colors uppercase font-bold"
-                    >
-                      {STAFF_ROLES.map((role) => (
-                        <option key={role} value={role}>
-                          {role}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                <div>
+                  <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">
+                    Role
+                  </label>
+                  <select
+                    value={editRole}
+                    onChange={(e) => setEditRole(e.target.value)}
+                    className="w-full bg-secondary border border-border rounded-xl px-3 py-2.5 text-[11px] font-medium text-foreground focus:outline-none focus:border-primary transition-colors uppercase font-bold"
+                  >
+                    {STAFF_ROLES.map((role) => (
+                      <option key={role} value={role}>
+                        {role}
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1.5 block">
                       Phone
@@ -844,18 +842,18 @@ export const RosterView: React.FC<RosterViewProps> = ({
           {/* Tickets Info */}
           <div className="flex flex-col">
             <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
-              <div className="p-5 pb-4 border-b border-white/5 bg-secondary flex items-center space-x-3 shrink-0">
+              <div className="p-3 sm:p-4 pb-3 sm:pb-4 border-b border-white/5 bg-secondary flex items-center space-x-3 shrink-0">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
                   Tickets & Certifications
                 </span>
               </div>
-              <div className="p-5 space-y-3">
+              <div className="p-3 sm:p-4 space-y-3">
                 {editTickets.map((ticket, index) => (
                   <div
                     key={ticket.id}
-                    className="grid grid-cols-12 gap-2 bg-secondary p-2 rounded-xl border border-border"
+                    className="flex flex-col gap-2 sm:grid sm:grid-cols-12 sm:gap-2 bg-secondary p-2 rounded-xl border border-border"
                   >
-                    <div className="col-span-5">
+                    <div className="sm:col-span-5">
                       <input
                         type="text"
                         value={ticket.type}
@@ -868,25 +866,27 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         placeholder="Ticket Type"
                       />
                     </div>
-                    <div className="col-span-5">
-                      <input
-                        type="date"
-                        value={ticket.expiryDate}
-                        onChange={(e) => {
-                          const newTickets = [...editTickets];
-                          newTickets[index].expiryDate = e.target.value;
-                          setEditTickets(newTickets);
-                        }}
-                        className="w-full bg-transparent border-none text-[10px] text-muted-foreground px-1 py-1 focus:ring-0"
-                      />
+                    <div className="flex items-center gap-2 sm:contents">
+                      <div className="flex-1 sm:col-span-5">
+                        <input
+                          type="date"
+                          value={ticket.expiryDate}
+                          onChange={(e) => {
+                            const newTickets = [...editTickets];
+                            newTickets[index].expiryDate = e.target.value;
+                            setEditTickets(newTickets);
+                          }}
+                          className="w-full bg-transparent border-none text-[10px] text-muted-foreground px-1 py-1 focus:ring-0"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditTickets(editTickets.filter((_, i) => i !== index))}
+                        className="sm:col-span-2 text-red-500 hover:text-red-400 flex items-center justify-center shrink-0"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => setEditTickets(editTickets.filter((_, i) => i !== index))}
-                      className="col-span-2 text-red-500 hover:text-red-400 flex items-center justify-center"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
                   </div>
                 ))}
                 <button
@@ -1644,7 +1644,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                           "",
                                       })
                                     }
-                                    className="px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground hover:text-warning border border-border hover:border-warning/30 text-[9px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                                    className="px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
                                   >
                                     Revert Changes
                                   </button>
@@ -1977,7 +1977,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
               <span>Back to Staff</span>
             </button>
 
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 justify-start sm:justify-end">
+            <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:justify-end">
               {!workerToEdit ? (
                 <>
                   <button
@@ -1991,24 +1991,24 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       setEditTickets([...selectedWorkerDetails.tickets]);
                       setEditError(null);
                     }}
-                    className="flex items-center gap-1.5 px-4 py-2 border border-border hover:bg-secondary rounded-xl text-xs font-bold text-foreground uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap"
+                    className="flex items-center justify-center gap-1 w-full sm:w-auto px-3 py-1.5 border border-border hover:bg-secondary rounded-lg text-[11px] font-bold text-foreground uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap"
                   >
-                    <Edit className="w-3.5 h-3.5 text-muted-foreground" />
+                    <Edit className="w-3 h-3 text-muted-foreground" />
                     <span>Edit</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setShowReminderConfirm(true)}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-primary hover:bg-primary text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer border border-primary whitespace-nowrap"
+                    className="flex items-center justify-center gap-1 w-full sm:w-auto px-3 py-1.5 bg-primary hover:bg-primary text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-primary whitespace-nowrap"
                   >
-                    <Send className="w-3.5 h-3.5" />
+                    <Send className="w-3 h-3" />
                     <span>Request Docs</span>
                   </button>
                   {selectedWorkerDetails.isArchived ? (
                     <button
                       type="button"
                       onClick={() => setSelectedWorkerToRestore(selectedWorkerDetails)}
-                      className="px-3.5 py-2 bg-success/10 hover:bg-success/20 border border-success/30 text-success text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                      className="w-full sm:w-auto px-3 py-1.5 bg-success/10 hover:bg-success/20 border border-success/30 text-success text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap"
                     >
                       Restore
                     </button>
@@ -2016,7 +2016,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setSelectedWorkerToDelete(selectedWorkerDetails)}
-                      className="px-3 py-2 bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 text-destructive text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer whitespace-nowrap"
+                      className="w-full sm:w-auto px-2.5 py-1.5 bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 text-destructive text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap"
                     >
                       Archive
                     </button>
@@ -2035,7 +2035,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           </div>
 
           {workerToEdit ? (
-            <div className="bg-card border border-border rounded-xl p-6 shadow-2xl">
+            <div className="bg-card border border-border rounded-xl p-3 sm:p-4 shadow-2xl">
               {renderEditForm()}
             </div>
           ) : (

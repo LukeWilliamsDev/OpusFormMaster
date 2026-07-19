@@ -509,7 +509,7 @@ export const DashboardPage: React.FC = () => {
                   }
                 />
               </svg>
-              <span className="absolute text-[8px] font-black text-foreground font-mono">
+              <span className="absolute text-[8px] font-bold text-foreground/85 font-mono">
                 {contractMaxPoursCountFiltered
                   ? Math.round((activePoursCountFiltered / contractMaxPoursCountFiltered) * 100)
                   : 0}
@@ -695,7 +695,7 @@ export const DashboardPage: React.FC = () => {
                 <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
                   <button
                     onClick={() => setRemindConfirmAlert(alert)}
-                    className="text-[11px] font-black uppercase tracking-widest px-2.5 py-1 rounded bg-secondary hover:bg-muted text-foreground transition-colors cursor-pointer"
+                    className="text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded bg-secondary hover:bg-muted text-foreground/85 transition-colors cursor-pointer"
                   >
                     Remind
                   </button>

@@ -1240,39 +1240,38 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 return (
                   <div
                     key={ticket.id}
-                    className={`flex flex-col sm:flex-row sm:items-center justify-between p-3.5 rounded-xl border gap-3 ${cardBg} transition-all duration-150`}
+                    className={`flex items-center justify-between p-2 rounded-lg border gap-2 ${cardBg} transition-all duration-150`}
                   >
-                    <div className="flex items-center space-x-3.5">
+                    <div className="flex items-center space-x-2 min-w-0">
                       <div
-                        className={`w-9 h-9 rounded-xl border flex items-center justify-center shrink-0 ${iconBox}`}
+                        className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 ${iconBox}`}
                       >
-                        <LeftIcon className="w-4 h-4" />
+                        <LeftIcon className="w-3 h-3" />
                       </div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h4 className="text-xs font-bold text-foreground tracking-wide">
-                            {ticket.type}
-                          </h4>
-                          <span
-                            className={`px-2 py-0.5 text-[9.5px] font-semibold rounded-xl uppercase tracking-wider border ${badgeClass}`}
-                          >
-                            {statusText}
+                      <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                        <h4 className="text-[12px] font-bold text-foreground tracking-wide truncate">
+                          {ticket.type}
+                        </h4>
+                        <span
+                          className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-md uppercase tracking-wider border ${badgeClass}`}
+                        >
+                          {statusText}
+                        </span>
+                        {!isExpired && (
+                          <span className="text-[10px] font-medium text-muted-foreground">
+                            Expires: {formattedDate}
                           </span>
-                        </div>
-                        <p className="text-[10px] font-medium text-muted-foreground mt-1">
-                          Ref: {ticket.ticketNumber || "N/A"} &bull;{" "}
-                          {isExpired ? "Expired" : "Expires"}: {formattedDate}
-                        </p>
+                        )}
                       </div>
                     </div>
 
-                    <div className="flex sm:justify-end">
+                    <div className="flex shrink-0">
                       {isExpired ? (
-                        <div className="flex gap-2 w-full sm:w-auto">
+                        <div className="flex gap-1.5">
                           <button
                             type="button"
                             onClick={() => setShowReminderConfirm(true)}
-                            className="w-full sm:w-auto px-3.5 py-1.5 bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 text-destructive rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                            className="px-2 py-0.5 bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 text-destructive rounded-md text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
                           >
                             Request Update
                           </button>
@@ -1280,7 +1279,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             <button
                               type="button"
                               onClick={() => setTicketToRemove(ticket)}
-                              className="w-full sm:w-auto px-3.5 py-1.5 border border-border hover:bg-secondary text-muted-foreground hover:text-destructive rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                              className="px-2 py-0.5 bg-destructive text-destructive-foreground hover:bg-destructive/90 rounded-md text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center shadow-sm"
                             >
                               Remove
                             </button>
@@ -1295,7 +1294,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                 ? handleViewDocument(ticket.documentUrl)
                                 : toast("No document attached")
                             }
-                            className="w-full sm:w-auto px-3.5 py-1.5 border border-border hover:bg-secondary text-foreground rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                            className="w-full sm:w-auto px-3 py-1 border border-border hover:bg-secondary text-foreground rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
                           >
                             View File
                           </button>
@@ -1306,7 +1305,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                 onClick={() =>
                                   verifyTicket(selectedWorkerDetails.id, ticket.id, true)
                                 }
-                                className="w-full sm:w-auto px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                                className="w-full sm:w-auto px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                               >
                                 Approve
                               </button>
@@ -1315,7 +1314,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                 onClick={() =>
                                   verifyTicket(selectedWorkerDetails.id, ticket.id, false)
                                 }
-                                className="w-full sm:w-auto px-3.5 py-1.5 bg-destructive/20 hover:bg-destructive/30 text-destructive border border-destructive/30 rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                                className="w-full sm:w-auto px-3 py-1 bg-destructive/20 hover:bg-destructive/30 text-destructive border border-destructive/30 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                               >
                                 Reject
                               </button>
@@ -1325,7 +1324,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             <button
                               type="button"
                               onClick={() => setTicketToRemove(ticket)}
-                              className="w-full sm:w-auto px-3.5 py-1.5 border border-border hover:bg-secondary text-muted-foreground hover:text-destructive rounded-xl text-[10.5px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                              className="w-full sm:w-auto px-3 py-1 border border-border hover:bg-secondary text-muted-foreground hover:text-destructive rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
                             >
                               Remove
                             </button>
@@ -2205,14 +2204,14 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
           {/* Add Worker Modal */}
           {showAddWorkerForm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="fixed inset-0 z-50 md:flex md:items-center md:justify-center md:p-4">
               <div
                 className="absolute inset-0 bg-black/70 backdrop-blur-sm"
                 onClick={() => setShowAddWorkerForm(false)}
               />
               <form
                 onSubmit={handleAddWorkerSubmit}
-                className="relative w-full max-w-md bg-card border border-border rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150"
+                className="fixed inset-x-0 bottom-0 z-50 w-full max-h-[88dvh] overflow-y-auto rounded-t-2xl border-t border-border bg-card shadow-2xl duration-150 animate-in slide-in-from-bottom fade-in md:relative md:inset-auto md:max-w-md md:max-h-[90vh] md:rounded-xl md:border md:zoom-in-95 md:slide-in-from-bottom-0"
               >
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                   <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-muted-foreground">

@@ -173,7 +173,7 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
         if (!open) onClose();
       }}
     >
-      <DialogContent className="w-[calc(100%-2rem)] max-w-lg overflow-hidden p-0 gap-0 rounded-lg border border-border bg-card text-card-foreground flex flex-col max-h-[calc(100dvh-2rem)] text-left [&>button]:hidden">
+      <DialogContent className="overflow-hidden p-0 gap-0 border-border bg-card text-card-foreground flex flex-col text-left [&>button]:hidden md:w-[calc(100%-2rem)] md:max-w-lg md:rounded-lg md:border md:max-h-[calc(100dvh-2rem)]">
         {/* Header */}
         <div className="p-6 pb-4 border-b border-border flex items-start justify-between shrink-0">
           <div className="flex items-center space-x-3">
@@ -390,7 +390,7 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
               disabled={loading}
               className="flex-1 py-3 h-auto min-h-[42px] text-[12px] font-bold uppercase tracking-wider whitespace-normal text-center"
             >
-              {loading ? "Generating..." : "Generate Request Link"}
+              {loading ? "Sending..." : "Send Request Email"}
             </Button>
           )}
         </div>

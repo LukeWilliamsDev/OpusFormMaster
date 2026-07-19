@@ -9,6 +9,8 @@ import { getJobColorClasses } from "./jobColors";
 import { TicketWarningBadge } from "./TicketWarningBadge";
 import { getPostcodeCoordinates, calculateDistance } from "../../utils/geo";
 import { Button } from "@/components/ui/button";
+import { RoleAccordion } from "./RoleAccordion";
+import { groupWorkersByCategory } from "./roleCategories";
 
 export type AssignTarget =
   | { mode: "pickProject"; worker: Worker; date: string }
@@ -47,11 +49,22 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
 }) => {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingReallocation | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     setError(null);
     setPending(null);
+    setExpanded(new Set());
   }, [target]);
+
+  const toggle = (key: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   const handlePick = (workerId: string, workerName: string, jobId: string) => {
     setError(null);
@@ -96,6 +109,11 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
       return a.distance - b.distance;
     });
   }, [target, schedule.unassigned]);
+
+  const unassignedGroups = useMemo(
+    () => groupWorkersByCategory(unassignedWorkersWithDistance, (item) => item.worker.role),
+    [unassignedWorkersWithDistance],
+  );
 
   return (
     <AnimatePresence>
@@ -223,30 +241,45 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                     Everyone is already deployed on this day.
                   </p>
                 ) : (
-                  unassignedWorkersWithDistance.map(({ worker, distance }) => (
-                    <button
-                      key={worker.id}
-                      type="button"
-                      onClick={() => handlePick(worker.id, worker.name, target.job.id)}
-                      className="w-full flex items-center justify-between gap-2 px-3 py-3 rounded-xl border border-border bg-card hover:border-primary text-left transition-all cursor-pointer"
-                    >
-                      <div className="min-w-0">
-                        <div className="text-xs font-bold text-foreground truncate">{worker.name}</div>
-                        <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
-                          {worker.role} {worker.postcode ? `• ${worker.postcode}` : ""}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {distance !== null && (
-                          <span className="flex items-center gap-1 text-[10px] font-mono font-bold bg-primary/10 text-primary px-1.5 py-1 rounded-md shrink-0">
-                            <MapPin className="w-3 h-3" />
-                            {distance.toFixed(1)} mi
-                          </span>
-                        )}
-                        <TicketWarningBadge worker={worker} />
-                      </div>
-                    </button>
-                  ))
+                  unassignedGroups.map(({ category, items }) => {
+                    const key = `pickWorker:${category}`;
+                    return (
+                      <RoleAccordion
+                        key={key}
+                        category={category}
+                        count={items.length}
+                        isOpen={expanded.has(key)}
+                        onToggle={() => toggle(key)}
+                      >
+                        {items.map(({ worker, distance }) => (
+                          <button
+                            key={worker.id}
+                            type="button"
+                            onClick={() => handlePick(worker.id, worker.name, target.job.id)}
+                            className="w-full flex items-center justify-between gap-2 px-2 py-2.5 rounded-lg hover:bg-secondary/30 text-left transition-all cursor-pointer"
+                          >
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-foreground truncate">
+                                {worker.name}
+                              </div>
+                              <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-0.5">
+                                {worker.role} {worker.postcode ? `• ${worker.postcode}` : ""}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {distance !== null && (
+                                <span className="flex items-center gap-1 text-[10px] font-mono font-bold bg-primary/10 text-primary px-1.5 py-1 rounded-md shrink-0">
+                                  <MapPin className="w-3 h-3" />
+                                  {distance.toFixed(1)} mi
+                                </span>
+                              )}
+                              <TicketWarningBadge worker={worker} />
+                            </div>
+                          </button>
+                        ))}
+                      </RoleAccordion>
+                    );
+                  })
                 )}
               </div>
             </div>

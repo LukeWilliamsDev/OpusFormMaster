@@ -810,7 +810,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     <div className="flex flex-col flex-1 w-full text-foreground">
       {/* --- STICKY ACTION BAR --- */}
       <div className="sticky top-16 lg:top-0 z-40 bg-background/90 backdrop-blur border-b border-border mb-4">
-        <div className="max-w-xl mx-auto px-4 py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3">
+        <div className="w-full py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
@@ -873,7 +873,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       </div>
 
       {/* --- MAIN TWO-PANEL BODY --- */}
-      <div className="flex flex-col lg:flex-row gap-5 px-4 sm:px-6 pb-10">
+      <div className="flex flex-col lg:flex-row gap-5 pb-10">
         {/* -- LEFT PANEL: Form -- */}
         <div className="flex flex-col gap-5 flex-1 min-w-0">
           {/* SAVED HISTORY (collapsed accordion) */}
@@ -1299,7 +1299,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           {/* Desktop: sticky PDF mirror. Always mounted (hidden via CSS, not unmounted) so it
               remains the single canonical .print-area target at every breakpoint. */}
           <div className="hidden lg:block sticky top-[58px]">
-            <div className="flex items-center gap-2 text-foreground/20 px-1 mb-3">
+            <div className="flex items-center gap-2 text-muted-foreground px-1 mb-3">
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               <span className="text-[11px] font-black uppercase tracking-[0.2em]">
                 PDF Live Mirror

@@ -615,6 +615,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       const matchesSearch =
         !query ||
         w.name.toLowerCase().includes(query) ||
+        w.role.toLowerCase().includes(query) ||
         (w.phone || "").toLowerCase().includes(query) ||
         (w.email || "").toLowerCase().includes(query) ||
         workerJobMatches;

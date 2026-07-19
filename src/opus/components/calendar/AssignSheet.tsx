@@ -114,9 +114,9 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 80 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed z-50 inset-x-0 bottom-0 md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-md"
+            className="fixed z-50 inset-x-0 bottom-0 sm:inset-x-auto sm:bottom-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md"
           >
-            <div className="bg-card border border-border rounded-t-2xl md:rounded-2xl max-h-[75vh] flex flex-col shadow-2xl">
+            <div className="bg-card border border-border rounded-t-2xl sm:rounded-2xl max-h-[75vh] sm:max-h-[80vh] flex flex-col shadow-2xl">
               <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-border">
                 <div className="flex items-baseline gap-2 min-w-0">
                   <h3 className="text-sm font-bold text-foreground truncate">

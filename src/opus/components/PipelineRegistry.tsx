@@ -528,10 +528,10 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-xl bg-card border-l border-white/10 shadow-2xl h-full flex flex-col z-10"
+              className="relative w-full max-w-xl bg-card border-l border-border shadow-2xl h-full flex flex-col z-10"
             >
               {/* Sticky Header */}
-              <div className="p-6 border-b border-white/5 bg-white/[0.01] flex items-center justify-between">
+              <div className="p-6 border-b border-border bg-secondary/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-foreground">
                     Quote Control Center
@@ -548,7 +548,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 </div>
                 <button
                   onClick={() => setSelectedQuoteForControl(null)}
-                  className="p-1 rounded-lg bg-secondary hover:bg-secondary/80 border border-white/10 text-muted-foreground hover:text-foreground transition-colors"
+                  className="p-1 rounded-lg bg-secondary hover:bg-secondary/80 border border-border text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -604,7 +604,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                       <span>Unit</span>
                       <span className="text-right">Rate</span>
                     </div>
-                    <div className="divide-y divide-white/5">
+                    <div className="divide-y divide-border/60">
                       {selectedQuoteForControl.items && selectedQuoteForControl.items.length > 0 ? (
                         selectedQuoteForControl.items.map((item) => {
                           const rateDisplay =
@@ -618,21 +618,21 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                               key={item.id}
                               className="p-3 text-xs sm:grid sm:grid-cols-[1fr_60px_60px_80px] sm:gap-2 sm:items-center"
                             >
-                              <span className="text-white/80 font-medium block">
+                              <span className="text-foreground font-medium block">
                                 {item.description}
                               </span>
                               <div className="flex items-center justify-between gap-2 mt-1.5 sm:hidden text-[11px]">
-                                <span className="text-white/50 font-mono">
-                                  {item.quantity} <span className="text-white/40 italic">{item.unit}</span>
+                                <span className="text-muted-foreground font-mono">
+                                  {item.quantity} <span className="text-muted-foreground italic">{item.unit}</span>
                                 </span>
                                 <span className="font-mono font-semibold text-foreground">
                                   {rateDisplay}
                                 </span>
                               </div>
-                              <span className="hidden sm:block text-right font-mono font-semibold text-white/50">
+                              <span className="hidden sm:block text-right font-mono font-semibold text-muted-foreground">
                                 {item.quantity}
                               </span>
-                              <span className="hidden sm:block text-white/40 italic">{item.unit}</span>
+                              <span className="hidden sm:block text-muted-foreground italic">{item.unit}</span>
                               <span className="hidden sm:block text-right font-mono font-semibold text-foreground">
                                 {rateDisplay}
                               </span>
@@ -640,7 +640,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                           );
                         })
                       ) : (
-                        <div className="p-4 text-center text-xs text-white/30 italic">
+                        <div className="p-4 text-center text-xs text-muted-foreground italic">
                           No billable items added
                         </div>
                       )}
@@ -648,55 +648,31 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                   </div>
                 </div>
 
-                {/* Summary Totals */}
-                <div className="bg-card border border-border p-4 rounded-xl grid grid-cols-3 gap-2 text-center">
-                  <div>
-                    <span className="text-[7.5px] font-black text-muted-foreground uppercase tracking-widest block mb-0.5">
-                      Net Subtotal
-                    </span>
-                    <span className="text-xs font-mono font-semibold text-foreground">
-                      £
-                      {(selectedQuoteForControl.totals?.netTotal || 0).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-[7.5px] font-black text-muted-foreground uppercase tracking-widest block mb-0.5">
-                      VAT ({selectedQuoteForControl.vatRate || 20}%)
-                    </span>
-                    <span className="text-xs font-mono font-semibold text-foreground">
-                      £
-                      {(selectedQuoteForControl.totals?.vatAmount || 0).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
-                  <div className="bg-secondary border border-white/10 rounded-lg p-2">
-                    <span className="text-[7.5px] font-black text-primary uppercase tracking-widest block mb-0.5">
-                      Gross Total
-                    </span>
-                    <span className="text-xs font-mono font-black text-brand-white">
-                      £
-                      {(selectedQuoteForControl.totals?.grossTotal || 0).toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
-                  </div>
+                {/* Summary Total — VAT/Gross hidden while not VAT-registered; re-enable the
+                    grid-cols-3 Net/VAT/Gross breakdown above (totals.vatAmount/grossTotal
+                    are still computed) if that changes. */}
+                <div className="bg-secondary border border-border rounded-xl p-4 text-center">
+                  <span className="text-[7.5px] font-black text-primary uppercase tracking-widest block mb-0.5">
+                    Total
+                  </span>
+                  <span className="text-xs font-mono font-black text-foreground">
+                    £
+                    {(selectedQuoteForControl.totals?.netTotal || 0).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
                 </div>
               </div>
 
               {/* Sticky Footer Actions */}
-              <div className="p-6 border-t border-white/5 bg-white/[0.01] flex items-center justify-between gap-3">
+              <div className="p-6 border-t border-border bg-secondary/30 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                 <button
                   onClick={() => {
                     setSelectedQuoteForControl(null);
                     onEditQuote(selectedQuoteForControl.id);
                   }}
-                  className="flex-1 py-3 bg-secondary hover:bg-secondary/80 border border-white/10 text-foreground rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
+                  className="flex-1 py-3 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
                 >
                   Edit Quote
                 </button>
@@ -716,7 +692,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     setSelectedQuoteForControl(null);
                     setSelectedQuoteToDelete(quote);
                   }}
-                  className="py-3 px-4 bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 text-red-400 hover:text-red-300 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none"
+                  className="w-full sm:w-auto py-3 px-4 bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 text-red-400 hover:text-red-300 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none"
                 >
                   Delete
                 </button>

@@ -28,19 +28,12 @@ export const JobUploadPortalPage: React.FC = () => {
 
   const fetchRequestDetails = async () => {
     try {
-      const { data, error } = await supabase
-        .from("job_document_requests")
-        .select("*, job:job_id(*)")
-        .eq("token", token!)
-        .single();
+      const { data, error } = await supabase.rpc("get_job_document_request_details", {
+        p_token: token!,
+      });
 
       if (error || !data) {
         throw new Error("This upload link is invalid, expired, or has already been completed.");
-      }
-
-      // Check expiry
-      if (new Date(data.expires_at) < new Date()) {
-        throw new Error("This upload link has expired.");
       }
 
       setRequestData(data);
@@ -96,10 +89,10 @@ export const JobUploadPortalPage: React.FC = () => {
       for (const file of files) {
         const fileExt = file.name.split(".").pop();
         const cleanFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
-        const filePath = `jobs/${jobData.id}/${cleanFileName}`;
+        const filePath = `requests/${token}/${cleanFileName}`;
 
-        // Upload file to storage
-        const { error: uploadError, data: uploadData } = await supabase.storage
+        // Upload file to storage (path-scoped and token-validated by storage policy)
+        const { error: uploadError } = await supabase.storage
           .from("job-attachments")
           .upload(filePath, file);
 
@@ -110,23 +103,18 @@ export const JobUploadPortalPage: React.FC = () => {
           data: { publicUrl },
         } = supabase.storage.from("job-attachments").getPublicUrl(filePath);
 
-        // Insert document log
-        const { error: insertError } = await supabase.from("job_attachments").insert({
-          job_id: jobData.id,
-          type: "document",
-          file_name: file.name,
-          file_url: publicUrl,
-          uploaded_by: "External Contributor (via Link)",
+        // Log the attachment via a token-scoped RPC (job_id/tenant_id derived server-side)
+        const { error: insertError } = await supabase.rpc("submit_job_attachment", {
+          p_token: token,
+          p_file_name: file.name,
+          p_file_url: publicUrl,
         });
 
         if (insertError) throw insertError;
       }
 
       // Mark document request as completed
-      await supabase
-        .from("job_document_requests")
-        .update({ completed_at: new Date().toISOString() })
-        .eq("id", requestData.id);
+      await supabase.rpc("complete_job_document_request", { p_token: token });
 
       setUploadSuccess(true);
     } catch (err: any) {

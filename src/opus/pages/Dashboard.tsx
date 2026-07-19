@@ -667,38 +667,27 @@ export const DashboardPage: React.FC = () => {
               >
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[12px] font-bold text-foreground leading-none">
+                  <div className="flex items-center gap-1.5 flex-wrap text-[12px]">
+                    <span className="font-bold text-foreground leading-none">
                       {alert.workerName}
                     </span>
                     {alert.workerRole && (
-                      <span className="text-[10px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded font-medium">
-                        {alert.workerRole}
-                      </span>
+                      <span className="text-muted-foreground">&bull; {alert.workerRole}</span>
                     )}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
                     <span
-                      className={`text-[10px] font-black tracking-widest px-1.5 py-0.5 rounded ${
-                        alert.isExpired
-                          ? "bg-destructive/10 text-destructive"
-                          : "bg-warning/10 text-warning"
+                      className={`font-bold ${
+                        alert.isExpired ? "text-destructive" : "text-warning"
                       }`}
                     >
                       {alert.isExpired
-                        ? `EXPIRED ${Math.abs(alert.diffDays)}d ago`
-                        : `EXPIRING ${alert.diffDays}d`}
+                        ? `Expired ${Math.abs(alert.diffDays)}d ago`
+                        : `Expiring in ${alert.diffDays}d`}
                     </span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
-                    {alert.ticketType} &bull;{" "}
-                    <span className="font-mono">
-                      {new Date(alert.expiryDate).toLocaleDateString("en-GB")}
-                    </span>
-                    {alert.ticketNumber && (
-                      <>
-                        {" "}
-                        &bull; <span className="font-mono">{alert.ticketNumber}</span>
-                      </>
-                    )}
+                    {" — "}
+                    {alert.ticketType}
+                    {alert.ticketNumber && ` (${alert.ticketNumber})`}
                   </p>
                 </div>
 

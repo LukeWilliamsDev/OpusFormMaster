@@ -3,7 +3,7 @@ import { Plus, X } from "lucide-react";
 import { Job, Worker, ScheduledShift } from "../../types/erp";
 import { getJobColorClasses } from "./jobColors";
 import { getRoleColorClasses } from "./roleColors";
-import { TicketWarningBadge } from "./TicketWarningBadge";
+import { getWorstTicketWarning } from "../../utils/workerValidation";
 
 const getInitials = (name: string) => {
   const parts = name.trim().split(/\s+/);
@@ -35,15 +35,20 @@ export const StaffCard: React.FC<StaffCardProps> = ({
   const colors = job ? getJobColorClasses(job.id) : null;
   const roleColors = getRoleColorClasses(worker.role);
   const dense = size === "dense";
+  const ticketWarning = getWorstTicketWarning(worker);
+  const blocked = ticketWarning?.status === "EXPIRED";
+  const blockedTitle = blocked
+    ? `Cannot deploy: ${ticketWarning.ticket.type} ticket expired ${new Date(ticketWarning.ticket.expiryDate).toLocaleDateString("en-GB")}`
+    : undefined;
 
   if (size === "row") {
     return (
       <div
-        onClick={!isAssigned ? onAssign : undefined}
+        onClick={!isAssigned && !blocked ? onAssign : undefined}
         className={`flex items-center gap-3 py-2.5 border-b border-border last:border-0 transition-opacity ${
           isAssigned ? "" : "opacity-75 [.light-theme_&]:opacity-90 hover:opacity-100"
         } ${
-          !isAssigned && onAssign
+          !isAssigned && onAssign && !blocked
             ? "pointer-events-none 2xl:pointer-events-auto 2xl:cursor-pointer 2xl:hover:bg-secondary/30 2xl:-mx-2 2xl:px-2 2xl:rounded-lg"
             : ""
         }`}
@@ -64,9 +69,6 @@ export const StaffCard: React.FC<StaffCardProps> = ({
             {worker.role}
           </p>
         </div>
-        <div className="pointer-events-auto">
-          <TicketWarningBadge worker={worker} compact />
-        </div>
         {isAssigned && job && colors ? (
           <span
             className={`flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-[10px] font-bold shrink-0 max-w-[40%] ${colors.border} ${colors.lightBg} ${colors.text}`}
@@ -76,7 +78,15 @@ export const StaffCard: React.FC<StaffCardProps> = ({
             <span className="truncate">{job.siteName}</span>
           </span>
         ) : (
-          onAssign && (
+          onAssign &&
+          (blocked ? (
+            <span
+              title={blockedTitle}
+              className="pointer-events-auto flex items-center px-2 py-2.5 2xl:px-1.5 2xl:py-1 -my-1 2xl:my-0 rounded-lg border border-dashed border-red-500/50 text-red-400 [.light-theme_&]:text-red-600 font-black uppercase tracking-wider text-[10px] 2xl:text-[9px] whitespace-nowrap shrink-0 cursor-not-allowed"
+            >
+              No Ticket
+            </span>
+          ) : (
             <button
               type="button"
               onClick={onAssign}
@@ -85,7 +95,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
               <Plus className="w-3 h-3" />
               Assign
             </button>
-          )
+          ))
         )}
         {onRemove && shift && (
           <button
@@ -135,7 +145,6 @@ export const StaffCard: React.FC<StaffCardProps> = ({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <TicketWarningBadge worker={worker} compact={dense} />
           {compact && shift && onRemove && (
             <button
               type="button"
@@ -200,7 +209,18 @@ export const StaffCard: React.FC<StaffCardProps> = ({
           </div>
         ))}
 
-      {!compact && !isAssigned && onAssign && (
+      {!compact && !isAssigned && onAssign && blocked && (
+        <span
+          title={blockedTitle}
+          className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-red-500/50 text-red-400 [.light-theme_&]:text-red-600 font-black uppercase tracking-wider cursor-not-allowed ${
+            dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"
+          }`}
+        >
+          No Valid Ticket
+        </span>
+      )}
+
+      {!compact && !isAssigned && onAssign && !blocked && (
         <button
           type="button"
           onClick={onAssign}

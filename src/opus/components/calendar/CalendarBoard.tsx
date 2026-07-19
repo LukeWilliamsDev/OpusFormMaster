@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Layers, LayoutGrid, Search } from "lucide-react";
+import { Layers, LayoutGrid, List, Search } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Job, Worker, ScheduledShift } from "../../types/erp";
 import {
@@ -46,6 +46,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
+  const [layout, setLayout] = useState<"list" | "grid">("list");
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
@@ -103,8 +104,8 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
           </button>
         </div>
 
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
-          <div className="relative md:w-56">
+        <div className="flex flex-row items-center gap-2">
+          <div className="relative flex-1 md:flex-none md:w-56">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
             <input
               type="text"
@@ -114,12 +115,39 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
               className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
             />
           </div>
+
+          <div className="flex items-center bg-card border border-border rounded-xl p-1 gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setLayout("list")}
+              aria-label="List view"
+              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors cursor-pointer ${
+                layout === "list"
+                  ? "bg-primary text-white"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <List className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setLayout("grid")}
+              aria-label="Grid view"
+              className={`flex items-center justify-center w-8 h-8 rounded-lg transition-colors cursor-pointer ${
+                layout === "grid"
+                  ? "bg-primary text-white"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
       <WeekHeader weekDays={weekDays} onNavigate={handleNavigateWeek} />
 
-      <div className="2xl:hidden space-y-4">
+      <div className={layout === "list" ? "space-y-4" : "hidden"}>
         <DayTabs weekDays={weekDays} selectedDate={date} onSelect={onChangeDate} />
 
         <AnimatePresence mode="wait">
@@ -151,8 +179,8 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
         </AnimatePresence>
       </div>
 
-      <div className="hidden 2xl:block pb-2">
-        <div className="grid grid-cols-[repeat(5,minmax(240px,1fr))] border border-border rounded-xl bg-card overflow-hidden">
+      <div className={layout === "grid" ? "pb-2 overflow-x-auto" : "hidden"}>
+        <div className="grid grid-cols-[repeat(5,minmax(240px,1fr))] border border-border rounded-xl bg-card overflow-hidden min-w-[1200px] 2xl:min-w-0">
           {group === "staff" ? (
             <WeekGridStaff
               weekDays={weekDays}

@@ -52,6 +52,19 @@ export const validateWorkerForDeployment = (
   return { isValid: true, reason: null };
 };
 
+/** Worst ticket across a worker: EXPIRED beats EXPIRING_SOON, null if all valid. */
+export const getWorstTicketWarning = (
+  worker: Worker,
+): { ticket: Ticket; status: "EXPIRED" | "EXPIRING_SOON" } | null => {
+  let worst: { ticket: Ticket; status: "EXPIRED" | "EXPIRING_SOON" } | null = null;
+  for (const ticket of worker.tickets ?? []) {
+    const status = getTicketStatus(ticket);
+    if (status === "EXPIRED") return { ticket, status };
+    if (status === "EXPIRING_SOON" && !worst) worst = { ticket, status };
+  }
+  return worst;
+};
+
 export const getTicketStatus = (ticket: Ticket) => {
   const anchorDate = getAnchorDate();
   const expDate = new Date(ticket.expiryDate);

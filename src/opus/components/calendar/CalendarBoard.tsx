@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Layers, LayoutGrid, Search } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Job, Worker, ScheduledShift } from "../../types/erp";
@@ -44,11 +44,17 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   onChangeDate,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
 
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
+
   const weekDays = getWeekDays(toLocalISODate(getMonday(parseLocalISODate(date))));
-  const schedule = useDaySchedule(workers, jobs, shifts, date, searchQuery);
-  const weekSchedule = useWeekSchedule(workers, jobs, shifts, weekDays, searchQuery);
+  const schedule = useDaySchedule(workers, jobs, shifts, date, debouncedSearchQuery);
+  const weekSchedule = useWeekSchedule(workers, jobs, shifts, weekDays, debouncedSearchQuery);
   // Unfiltered view for the assign sheet: true crew counts and the full
   // available-staff list, regardless of what's typed in the search box. Keyed
   // off the assign target's own date since a week-grid click can target any
@@ -128,7 +134,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
               <StaffDayList
                 schedule={schedule}
                 date={date}
-                searchQuery={searchQuery}
+                searchQuery={debouncedSearchQuery}
                 onAssign={(worker) => setAssignTarget({ mode: "pickProject", worker, date })}
                 onRemoveShift={removeShift}
               />
@@ -151,7 +157,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             <WeekGridStaff
               weekDays={weekDays}
               weekSchedule={weekSchedule}
-              searchQuery={searchQuery}
+              searchQuery={debouncedSearchQuery}
               onAssign={(worker, assignDate) =>
                 setAssignTarget({ mode: "pickProject", worker, date: assignDate })
               }

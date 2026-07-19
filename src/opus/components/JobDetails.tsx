@@ -40,9 +40,16 @@ interface JobDetailsProps {
   workers: Worker[];
   onBack: () => void;
   onUpdateJob: (updatedJob: Job) => void;
+  backLabel?: string;
 }
 
-export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, onUpdateJob }) => {
+export const JobDetails: React.FC<JobDetailsProps> = ({
+  job,
+  workers,
+  onBack,
+  onUpdateJob,
+  backLabel = "Job Ledger",
+}) => {
   const [status, setStatus] = useState<Job["status"]>(job.status);
   const [currentPours, setCurrentPours] = useState<number>(job.currentPours || 0);
   const [contractMaxPours, setContractMaxPours] = useState<number>(job.contractMaxPours || 0);
@@ -455,7 +462,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({ job, workers, onBack, on
           className="flex items-center gap-1 text-muted-foreground hover:text-foreground font-medium text-sm transition-colors cursor-pointer"
         >
           <ChevronLeft className="w-5 h-5 text-muted-foreground" />
-          <span>Job Ledger</span>
+          <span>{backLabel}</span>
         </button>
         <div className="text-xs font-semibold bg-secondary border border-border text-muted-foreground px-3 py-1 rounded-md font-mono">
           {job.jobRef.replace("-X", "")}

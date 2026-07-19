@@ -652,10 +652,10 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     grid-cols-3 Net/VAT/Gross breakdown above (totals.vatAmount/grossTotal
                     are still computed) if that changes. */}
                 <div className="bg-secondary border border-border rounded-xl p-4 text-center">
-                  <span className="text-[7.5px] font-black text-primary uppercase tracking-widest block mb-0.5">
+                  <span className="text-[10px] font-black text-primary uppercase tracking-widest block mb-1">
                     Total
                   </span>
-                  <span className="text-xs font-mono font-bold text-foreground/85">
+                  <span className="text-xl font-mono font-bold text-foreground/85">
                     £
                     {(selectedQuoteForControl.totals?.netTotal || 0).toLocaleString(undefined, {
                       minimumFractionDigits: 2,

@@ -32,14 +32,17 @@ import {
 import { Worker, Ticket, Job, STAFF_ROLES, OFFICE_ROLES } from "../types/erp";
 import { RoleAccordion } from "./calendar/RoleAccordion";
 import { groupWorkersByCategory } from "./calendar/roleCategories";
+import { getRoleColorClasses } from "./calendar/roleColors";
 import { getTicketStatus } from "../utils/workerValidation";
 import { TicketStatusBadge } from "./TicketStatusBadge";
 import { RequestCredentialsModal } from "./RequestCredentialsModal";
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../../components/ui/accordion";
 import { supabase } from "../../integrations/supabase/client";
 import { workerToRow, usePortal } from "../context/PortalContext";
 import { computeDiff } from "../utils/auditDiff";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 interface RosterViewProps {
   workers: Worker[];
@@ -50,6 +53,7 @@ interface RosterViewProps {
   selectedWorkerDetailsId?: string | null;
   setSelectedWorkerDetailsId?: (id: string | null) => void;
   autoOpenAddWorker?: boolean;
+  initialDossierTab?: "general" | "assignments" | "audit_log";
 }
 
 export const ON_SITE_CERTIFICATIONS = [
@@ -81,8 +85,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
   selectedWorkerDetailsId: propSelectedWorkerDetailsId,
   setSelectedWorkerDetailsId: propSetSelectedWorkerDetailsId,
   autoOpenAddWorker = false,
+  initialDossierTab,
 }) => {
   const { profile, role } = usePortal();
+  const navigate = useNavigate();
   // Logistics coordinators/assistants handle scheduling only — the compliance/audit trail is out of scope for them.
   const canViewAuditLog = role !== "logistics_coordinator" && role !== "logistics_assistant";
   const [searchQuery, setSearchQuery] = useState("");
@@ -159,6 +165,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
   );
   const [dossierAuditLogs, setDossierAuditLogs] = useState<any[]>([]);
   const [dossierDocRequests, setDossierDocRequests] = useState<any[]>([]);
+  const [dossierShifts, setDossierShifts] = useState<any[]>([]);
+  const [loadingDossierShifts, setLoadingDossierShifts] = useState(false);
   const [loadingDossierLogs, setLoadingDossierLogs] = useState(false);
   const [resendingRequestMap, setResendingRequestMap] = useState<Record<string, boolean>>({});
   const [auditLogPage, setAuditLogPage] = useState(1);
@@ -167,7 +175,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
   useEffect(() => {
     setShowAllHistory(false);
-    setActiveDossierTab("general");
+    setActiveDossierTab(initialDossierTab || "general");
     setAuditLogPage(1);
     setAuditSearch("");
     setAuditActionFilter("all");
@@ -227,6 +235,38 @@ export const RosterView: React.FC<RosterViewProps> = ({
       setDossierDocRequests([]);
     }
   }, [selectedWorkerDetailsId, activeDossierTab, showReminderConfirm, workerToEdit]);
+
+  // Site Assignments needs a worker's full shift history — the global `shifts` list
+  // is windowed to ±30 days for calendar/scheduling performance, so it can't show
+  // older deployments. Fetch this worker's complete, unwindowed history separately.
+  useEffect(() => {
+    if (!selectedWorkerDetailsId) {
+      setDossierShifts([]);
+      setLoadingDossierShifts(false);
+      return;
+    }
+    let cancelled = false;
+    setLoadingDossierShifts(true);
+    supabase
+      .from("shifts")
+      .select("*")
+      .eq("worker_id", selectedWorkerDetailsId)
+      .order("date", { ascending: false })
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        setLoadingDossierShifts(false);
+        if (error) {
+          console.error("Error loading worker shift history:", error);
+          return;
+        }
+        setDossierShifts(
+          (data || []).map((r: any) => ({ id: r.id, workerId: r.worker_id, jobId: r.job_id, date: r.date })),
+        );
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedWorkerDetailsId]);
 
   const handleResendRequest = async (request: any) => {
     if (resendingRequestMap[request.id]) return;
@@ -998,10 +1038,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
       return shiftDate < today || isJobCompleted;
     };
 
-    const activeWorkerShifts = (shifts || []).filter(
+    const activeWorkerShifts = (dossierShifts || []).filter(
       (s) => s.workerId === selectedWorkerDetails.id && !isShiftHistory(s),
     );
-    const historyWorkerShifts = (shifts || []).filter(
+    const historyWorkerShifts = (dossierShifts || []).filter(
       (s) => s.workerId === selectedWorkerDetails.id && isShiftHistory(s),
     );
 
@@ -1207,7 +1247,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 let LeftIcon = CheckCircle2;
 
                 if (isExpired) {
-                  cardBg = "bg-destructive/10 border-destructive/20 hover:bg-destructive/15";
+                  cardBg = "bg-card border-border hover:bg-secondary/50";
                   iconBox = "border-destructive/20 bg-destructive/15 text-destructive";
                   badgeClass = "bg-destructive/20 border-destructive/30 text-destructive";
                   statusText = "EXPIRED";
@@ -1271,7 +1311,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           <button
                             type="button"
                             onClick={() => setShowReminderConfirm(true)}
-                            className="px-2 py-0.5 bg-destructive/10 border border-destructive/30 hover:bg-destructive/20 text-destructive rounded-md text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                            className="px-2 py-0.5 border border-border hover:bg-secondary text-foreground rounded-md text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
                           >
                             Request Update
                           </button>
@@ -1349,7 +1389,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   Active Site Deployments
                 </h3>
               </div>
-              {Object.keys(groupedShifts).length > 0 ? (
+              {loadingDossierShifts ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+                </div>
+              ) : Object.keys(groupedShifts).length > 0 ? (
                 <div className="space-y-2">
                   {Object.entries(groupedShifts).map(([jobId, shiftDates]) => {
                     const job = (jobs || []).find((j) => j.id === jobId);
@@ -1357,7 +1401,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     return (
                       <div
                         key={jobId}
-                        className="p-3.5 rounded-xl border border-border bg-card/60 hover:bg-secondary hover:border-zinc-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                        onClick={() =>
+                          navigate(
+                            `/portal/ledger?jobId=${job.id}&from=staff&workerId=${selectedWorkerDetails.id}`,
+                          )
+                        }
+                        className="p-3.5 rounded-xl border border-border bg-card/60 hover:bg-secondary hover:border-zinc-700 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer"
                       >
                         <div className="space-y-1">
                           <h4 className="text-xs font-bold text-foreground tracking-wide flex items-center gap-1.5">
@@ -1381,7 +1430,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           <span
                             className={`px-2 py-0.5 rounded-xl text-[9px] font-semibold tracking-wider uppercase border ${
                               job.status === "active" || job.status === "in-progress"
-                                ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                                ? "bg-emerald-500/15 border-emerald-600/40 text-emerald-700 dark:text-emerald-400"
                                 : "bg-secondary border-border text-muted-foreground"
                             }`}
                           >
@@ -1400,14 +1449,22 @@ export const RosterView: React.FC<RosterViewProps> = ({
             </div>
 
             {/* Deployment History */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center gap-2 border-b border-border pb-2">
-                <Clock className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-xs font-bold uppercase tracking-wide text-foreground">
-                  Deployment History
-                </h3>
-              </div>
-              {Object.keys(groupedHistoryShifts).length > 0 ? (
+            <Accordion type="single" collapsible className="pt-2">
+              <AccordionItem value="history" className="border-none">
+                <AccordionTrigger className="border-b border-border pb-2 hover:no-underline">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-xs font-bold uppercase tracking-wide text-foreground">
+                      Deployment History
+                    </h3>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-0 pt-3">
+              {loadingDossierShifts ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
+                </div>
+              ) : Object.keys(groupedHistoryShifts).length > 0 ? (
                 <div className="space-y-2">
                   <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
                     {(showAllHistory
@@ -1419,7 +1476,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       return (
                         <div
                           key={jobId}
-                          className="p-3.5 rounded-xl border border-border bg-card/40 hover:bg-card/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                          onClick={() =>
+                          navigate(
+                            `/portal/ledger?jobId=${job.id}&from=staff&workerId=${selectedWorkerDetails.id}`,
+                          )
+                        }
+                          className="p-3.5 rounded-xl border border-border bg-card/40 hover:bg-card/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer"
                         >
                           <div className="space-y-1">
                             <h4 className="text-xs font-bold text-muted-foreground tracking-wide flex items-center gap-1.5">
@@ -1466,7 +1528,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   No completed or archived shifts found
                 </p>
               )}
-            </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </div>
         )}
 
@@ -2066,7 +2130,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
               {/* Profile Card */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 py-2 border-b border-border pb-5">
                 <div className="flex items-center space-x-3 min-w-0">
-                  <div className="w-10 h-10 rounded-full border border-success/30 bg-success/15 flex items-center justify-center font-bold text-xs text-success shrink-0 uppercase tracking-wider font-archivo">
+                  <div
+                    className={`w-10 h-10 rounded-full border flex items-center justify-center font-bold text-xs shrink-0 uppercase tracking-wider font-archivo ${getRoleColorClasses(selectedWorkerDetails.role).lightBg} ${getRoleColorClasses(selectedWorkerDetails.role).border} ${getRoleColorClasses(selectedWorkerDetails.role).text}`}
+                  >
                     {(() => {
                       const nameParts = selectedWorkerDetails.name.split(" ");
                       return nameParts.length > 1

@@ -6,13 +6,23 @@ import { ActiveJobLedger } from "../components/ActiveJobLedger";
 import { JobDetails } from "../components/JobDetails";
 import { Job } from "../types/erp";
 
+const ARCHIVE_AFTER_DAYS = 30;
+
+const isArchived = (job: Job) => {
+  if (job.status !== "completed" || !job.updatedAt) return false;
+  const daysSinceCompletion = (Date.now() - new Date(job.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
+  return daysSinceCompletion > ARCHIVE_AFTER_DAYS;
+};
+
 export const JobLedgerPage: React.FC = () => {
   const { jobs, setJobs, workers } = usePortal();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filterStatus, setFilterStatus] = useState<Job["status"] | "all">("all");
+  const [filterStatus, setFilterStatus] = useState<Job["status"] | "all" | "archived">("all");
   const navigate = useNavigate();
 
   const selectedJobId = searchParams.get("jobId");
+  const fromStaff = searchParams.get("from") === "staff";
+  const originWorkerId = searchParams.get("workerId");
 
   const followups = [
     { name: "Riverside P2", keyword: "Riverside", fallbackId: "1", reason: "Site Access Auth" },
@@ -23,7 +33,12 @@ export const JobLedgerPage: React.FC = () => {
   const getJobFollowup = (job: Job) =>
     followups.find((f) => job.siteName.toLowerCase().includes(f.keyword.toLowerCase())) || null;
 
-  const filteredJobs = jobs.filter((job) => filterStatus === "all" || job.status === filterStatus);
+  const filteredJobs = jobs.filter((job) => {
+    if (filterStatus === "archived") return isArchived(job);
+    if (filterStatus === "all") return job.status !== "completed" && !isArchived(job);
+    if (filterStatus === "completed") return job.status === "completed" && !isArchived(job);
+    return job.status === filterStatus;
+  });
 
   const handleUpdateJob = (updatedJob: Job) => {
     setJobs((prevJobs) => prevJobs.map((job) => (job.id === updatedJob.id ? updatedJob : job)));
@@ -44,7 +59,12 @@ export const JobLedgerPage: React.FC = () => {
         <JobDetails
           job={jobs.find((j) => j.id === selectedJobId)!}
           workers={workers}
-          onBack={() => handleSelectJob(null)}
+          onBack={() =>
+            fromStaff && originWorkerId
+              ? navigate(`/portal/roster?view=staff&workerId=${originWorkerId}&tab=assignments`)
+              : handleSelectJob(null)
+          }
+          backLabel={fromStaff && originWorkerId ? "Return to Staff Record" : "Job Ledger"}
           onUpdateJob={handleUpdateJob}
         />
       </div>

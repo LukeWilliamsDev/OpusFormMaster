@@ -26,6 +26,7 @@ import { TermsOfServicePage } from "./pages/TermsOfService";
 import { AcceptableUsePolicyPage } from "./pages/AcceptableUsePolicy";
 import { CookieStatementPage } from "./pages/CookieStatement";
 import { ModernSlaveryStatementPage } from "./pages/ModernSlaveryStatement";
+import { LegalHubPage } from "./pages/LegalHub";
 
 // Immediate recovery URL redirection for HashRouter before React Router initialises and strips the hash
 (() => {
@@ -160,6 +161,14 @@ export default function App() {
               element={
                 <RoleGuard allow={ALL_ROLES}>
                   <SettingsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/legal"
+              element={
+                <RoleGuard allow={ALL_ROLES}>
+                  <LegalHubPage />
                 </RoleGuard>
               }
             />

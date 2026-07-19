@@ -1296,7 +1296,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         {/* end left panel */}
 
         {/* -- RIGHT PANEL: Live PDF Mirror -- */}
-        <div className="w-full lg:w-[340px] xl:w-[380px] 2xl:w-[460px] shrink-0">
+        <div className="w-full lg:w-[440px] xl:w-[500px] 2xl:w-[580px] shrink-0">
           {/* Desktop: sticky PDF mirror. Always mounted (hidden via CSS, not unmounted) so it
               remains the single canonical .print-area target at every breakpoint. */}
           <div className="hidden lg:block sticky top-[58px]">

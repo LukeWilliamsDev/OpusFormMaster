@@ -113,7 +113,7 @@ export const PortalLayout: React.FC = () => {
       {/* Desktop Sidebar */}
       <SidebarNavigationSlim
         items={navItems.map((item) => ({ label: item.name, href: item.path, icon: item.icon }))}
-        footerItems={[{ label: "Legal & Privacy", href: "/portal/privacy", icon: Shield }]}
+        footerItems={[{ label: "Legal & Privacy", href: "/portal/legal", icon: Shield }]}
         isActive={(item) => checkIsActive(item.href!)}
         collapsed={isSidebarCollapsed}
         onToggleCollapse={toggleSidebar}

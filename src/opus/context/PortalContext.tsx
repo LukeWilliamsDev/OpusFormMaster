@@ -133,6 +133,7 @@ const rowToJob = (r: any): Job => ({
   contractMaxPours: r.contract_max_pours ?? 0,
   status: r.status,
   scheduleValue: Number(r.schedule_value ?? 0),
+  updatedAt: r.updated_at,
 });
 
 const shiftToRow = (s: ScheduledShift, tenantId?: string) => ({

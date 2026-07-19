@@ -12,6 +12,7 @@ export const LaborRosterPage: React.FC = () => {
 
   const currentView = searchParams.get("view") === "staff" ? "staff" : "calendar";
   const selectedWorkerId = searchParams.get("workerId");
+  const initialDossierTab = searchParams.get("tab") === "assignments" ? "assignments" : undefined;
   const autoOpenAddWorker = searchParams.get("addWorker") === "1";
   const group: CalendarGroup = searchParams.get("group") === "project" ? "project" : "staff";
   const dateParam = searchParams.get("date");
@@ -46,6 +47,7 @@ export const LaborRosterPage: React.FC = () => {
           selectedWorkerDetailsId={selectedWorkerId}
           setSelectedWorkerDetailsId={handleSelectWorker}
           autoOpenAddWorker={autoOpenAddWorker}
+          initialDossierTab={initialDossierTab}
         />
       ) : (
         <CalendarBoard

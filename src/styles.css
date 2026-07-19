@@ -63,8 +63,8 @@
   --muted-foreground: #ACA89F;    /* Warm mid-tone grey, boosted to ~7:1 (AAA) for readability */
   --accent: #B5651D;
   --accent-foreground: #EDEBE6;
-  --destructive: #C0392B;
-  --destructive-foreground: #EDEBE6;
+  --destructive: #E5484D;          /* Brighter red for dark surfaces — #C0392B read too dark/muddy at low opacity on dark backgrounds */
+  --destructive-foreground: #FDFAF5;
   --success: #2E7D52;
   --warning: #C47A28;             /* Slightly brighter warm orange for warnings */
   --border: #2E3036;

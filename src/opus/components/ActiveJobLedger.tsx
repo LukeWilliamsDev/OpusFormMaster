@@ -8,8 +8,8 @@ import { toLocalISODate } from "../utils/week";
 
 interface ActiveJobLedgerProps {
   filteredJobs: Job[];
-  filterStatus: Job["status"] | "all";
-  setFilterStatus: (status: Job["status"] | "all") => void;
+  filterStatus: Job["status"] | "all" | "archived";
+  setFilterStatus: (status: Job["status"] | "all" | "archived") => void;
   onSelectJob: (id: string) => void;
   getJobFollowup: (job: Job) => { reason: string } | null;
 }
@@ -79,7 +79,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
         </div>
         <div className="w-full sm:w-auto">
           <div className="flex flex-wrap items-center bg-card border border-border rounded-lg p-1 gap-1">
-            {(["all", "in-progress", "pending", "completed"] as const).map((status) => (
+            {(["all", "in-progress", "pending", "completed", "archived"] as const).map((status) => (
               <button
                 key={status}
                 onClick={() => setFilterStatus(status)}

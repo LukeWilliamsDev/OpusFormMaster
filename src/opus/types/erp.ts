@@ -11,6 +11,7 @@ export interface Job {
   contractMaxPours: number;
   status: "active" | "completed" | "on-hold" | "pending" | "in-progress";
   scheduleValue: number;
+  updatedAt?: string;
 }
 
 export interface Ticket {

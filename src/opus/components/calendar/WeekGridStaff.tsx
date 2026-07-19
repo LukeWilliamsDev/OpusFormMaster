@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Worker } from "../../types/erp";
 import { DaySchedule } from "../../hooks/useDaySchedule";
 import { WeekDay } from "../../utils/week";
 import { StaffCard } from "./StaffCard";
+import { RoleAccordion } from "./RoleAccordion";
+import { groupWorkersByCategory } from "./roleCategories";
 
 interface WeekGridStaffProps {
   weekDays: WeekDay[];
@@ -16,15 +18,34 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
   weekSchedule,
   onAssign,
   onRemoveShift,
-}) => (
-  <>
-    {weekDays.map((day) => {
-      const schedule = weekSchedule.get(day.date);
-      const assigned = schedule?.assigned ?? [];
-      const unassigned = schedule?.unassigned ?? [];
-      const isEmpty = assigned.length === 0 && unassigned.length === 0;
+}) => {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const weekKey = weekDays.map((d) => d.date).join(",");
 
-      return (
+  useEffect(() => {
+    setExpanded(new Set());
+  }, [weekKey]);
+
+  const toggle = (key: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  return (
+    <>
+      {weekDays.map((day) => {
+        const schedule = weekSchedule.get(day.date);
+        const assigned = schedule?.assigned ?? [];
+        const unassigned = schedule?.unassigned ?? [];
+        const isEmpty = assigned.length === 0 && unassigned.length === 0;
+        const deployedGroups = groupWorkersByCategory(assigned, (a) => a.worker.role);
+        const availableGroups = groupWorkersByCategory(unassigned, (w) => w.role);
+
+        return (
         <div
           key={day.date}
           className="min-w-0 p-3 space-y-3 border-r border-border last:border-r-0"
@@ -53,24 +74,37 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
             </div>
           ) : (
             <>
-              {assigned.length > 0 && (
-                <div className="border border-border rounded-lg bg-background/40 px-2">
-                  {assigned.map(({ worker, shift, job }) => (
-                    <StaffCard
-                      key={worker.id}
-                      worker={worker}
-                      job={job}
-                      shift={shift}
-                      onRemove={onRemoveShift}
-                      size="row"
-                    />
-                  ))}
+              {deployedGroups.length > 0 && (
+                <div className="space-y-1.5">
+                  {deployedGroups.map(({ category, items }) => {
+                    const key = `${day.date}:deployed:${category}`;
+                    return (
+                      <RoleAccordion
+                        key={key}
+                        category={category}
+                        count={items.length}
+                        isOpen={expanded.has(key)}
+                        onToggle={() => toggle(key)}
+                      >
+                        {items.map(({ worker, shift, job }) => (
+                          <StaffCard
+                            key={worker.id}
+                            worker={worker}
+                            job={job}
+                            shift={shift}
+                            onRemove={onRemoveShift}
+                            size="row"
+                          />
+                        ))}
+                      </RoleAccordion>
+                    );
+                  })}
                 </div>
               )}
 
-              {unassigned.length > 0 && (
-                <div className="space-y-2">
-                  {assigned.length > 0 && (
+              {availableGroups.length > 0 && (
+                <div className="space-y-1.5">
+                  {deployedGroups.length > 0 && (
                     <div className="flex items-center gap-2 pt-1">
                       <div className="h-px flex-1 bg-border" />
                       <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground shrink-0">
@@ -79,22 +113,34 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
                       <div className="h-px flex-1 bg-border" />
                     </div>
                   )}
-                  <div className="border border-border rounded-lg bg-background/40 px-2">
-                    {unassigned.map((worker) => (
-                      <StaffCard
-                        key={worker.id}
-                        worker={worker}
-                        onAssign={() => onAssign(worker, day.date)}
-                        size="row"
-                      />
-                    ))}
-                  </div>
+                  {availableGroups.map(({ category, items }) => {
+                    const key = `${day.date}:available:${category}`;
+                    return (
+                      <RoleAccordion
+                        key={key}
+                        category={category}
+                        count={items.length}
+                        isOpen={expanded.has(key)}
+                        onToggle={() => toggle(key)}
+                      >
+                        {items.map((worker) => (
+                          <StaffCard
+                            key={worker.id}
+                            worker={worker}
+                            onAssign={() => onAssign(worker, day.date)}
+                            size="row"
+                          />
+                        ))}
+                      </RoleAccordion>
+                    );
+                  })}
                 </div>
               )}
             </>
           )}
         </div>
-      );
-    })}
-  </>
-);
+        );
+      })}
+    </>
+  );
+};

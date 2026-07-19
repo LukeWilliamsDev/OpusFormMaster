@@ -66,11 +66,7 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
                 {day.date.split("-")[2]}
               </span>
             </div>
-            <span
-              className={`text-[11px] font-black shrink-0 ${
-                schedule?.deployedCount ? "text-success" : "text-muted-foreground"
-              }`}
-            >
+            <span className="text-[11px] font-black shrink-0 text-success">
               {schedule?.deployedCount ? schedule.deployedCount : "0 deployed"}
             </span>
           </div>

@@ -1238,11 +1238,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 <Plus className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div className="space-y-2.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
               {terms.map((term, index) => (
                 <div
                   key={index}
-                  className="flex items-start justify-between gap-3 bg-background border border-border rounded-xl p-3"
+                  className="flex items-center justify-between gap-3 bg-background border border-border rounded-xl p-3"
                 >
                   <textarea
                     value={term}
@@ -1251,13 +1251,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                       newTerms[index] = e.target.value;
                       setTerms(newTerms);
                     }}
-                    className="w-full bg-transparent border-none outline-none text-[11px] text-foreground leading-relaxed resize-none h-14 font-medium"
+                    rows={2}
+                    className="w-full bg-transparent border-none outline-none text-[11px] text-foreground leading-relaxed resize-none min-h-0 font-medium"
                     placeholder="Enter condition..."
                   />
                   <button
                     type="button"
                     onClick={() => setTerms(terms.filter((_, i) => i !== index))}
-                    className="text-muted-foreground hover:text-red-400 transition-colors p-1"
+                    className="text-muted-foreground hover:text-red-400 transition-colors p-1 shrink-0"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>

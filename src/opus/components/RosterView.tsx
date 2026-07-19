@@ -29,6 +29,8 @@ import {
   Copy,
 } from "lucide-react";
 import { Worker, Ticket, Job, STAFF_ROLES, OFFICE_ROLES } from "../types/erp";
+import { RoleAccordion } from "./calendar/RoleAccordion";
+import { groupWorkersByCategory } from "./calendar/roleCategories";
 import { getTicketStatus } from "../utils/workerValidation";
 import { TicketStatusBadge } from "./TicketStatusBadge";
 import { RequestCredentialsModal } from "./RequestCredentialsModal";
@@ -84,7 +86,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
   // Logistics coordinators/assistants handle scheduling only — the compliance/audit trail is out of scope for them.
   const canViewAuditLog = role !== "logistics_coordinator" && role !== "logistics_assistant";
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [showAddWorkerForm, setShowAddWorkerForm] = useState(false);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
+    return () => clearTimeout(timeout);
+  }, [searchQuery]);
 
   useEffect(() => {
     if (autoOpenAddWorker) setShowAddWorkerForm(true);
@@ -128,6 +136,16 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [editRole, setEditRole] = useState<string>("Concrete Operative");
 
   const [rosterMode, setRosterMode] = useState<"active" | "archived">("active");
+  const [rosterViewMode, setRosterViewMode] = useState<"grid" | "row">("grid");
+  const [expandedDepartments, setExpandedDepartments] = useState<Set<string>>(new Set());
+  const toggleDepartment = (category: string) => {
+    setExpandedDepartments((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) next.delete(category);
+      else next.add(category);
+      return next;
+    });
+  };
   const [showAllHistory, setShowAllHistory] = useState(false);
 
   const [editPhone, setEditPhone] = useState("");
@@ -581,7 +599,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
   const filteredWorkersList = workers
     .filter((w) => {
-      const query = searchQuery.toLowerCase();
+      const query = debouncedSearchQuery.toLowerCase();
 
       // Check if worker's scheduled jobs match the query
       const workerJobMatches = (shifts || [])
@@ -674,6 +692,74 @@ export const RosterView: React.FC<RosterViewProps> = ({
               {ticketCount} {ticketCount === 1 ? "ticket" : "tickets"}
             </span>
           )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderWorkerRow = (worker: Worker) => {
+    const expiredCount =
+      worker.tickets?.filter((t) => getTicketStatus(t) === "EXPIRED").length || 0;
+    const expiringCount =
+      worker.tickets?.filter((t) => getTicketStatus(t) === "EXPIRING_SOON").length || 0;
+    const ticketCount = worker.tickets?.length || 0;
+
+    let statusText = ticketCount === 0 ? "NO TICKETS" : "ALL CLEAR";
+    let badgeColorClasses =
+      ticketCount === 0
+        ? "bg-muted border border-border text-muted-foreground font-bold"
+        : "bg-success/10 border border-success/30 text-success font-bold";
+    let avatarBorderColorClasses =
+      ticketCount === 0
+        ? "border-border text-muted-foreground bg-muted"
+        : "border-success/30 text-success bg-success/5";
+    if (expiredCount > 0) {
+      statusText = `${expiredCount} EXPIRED`;
+      badgeColorClasses = "bg-destructive/10 border border-destructive/30 text-destructive font-bold";
+      avatarBorderColorClasses = "border-destructive/30 text-destructive bg-destructive/5";
+    } else if (expiringCount > 0) {
+      statusText = "EXPIRING";
+      badgeColorClasses = "bg-warning/15 border border-warning/30 text-warning font-bold";
+      avatarBorderColorClasses = "border-warning/30 text-warning bg-warning/5";
+    }
+
+    const nameParts = worker.name.split(" ");
+    const initials =
+      nameParts.length > 1 ? `${nameParts[0][0]}${nameParts[1][0]}` : `${nameParts[0][0] || ""}`;
+
+    return (
+      <div
+        key={worker.id}
+        onClick={() => setSelectedWorkerDetailsId(worker.id)}
+        className="bg-card hover:bg-secondary border border-border rounded-xl px-4 py-3 flex items-center justify-between gap-4 cursor-pointer transition-all duration-150"
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className={`w-9 h-9 rounded-full border flex items-center justify-center font-semibold text-[12px] tracking-wide shrink-0 ${avatarBorderColorClasses}`}
+          >
+            {initials.toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <h4 className="text-[14px] font-bold text-foreground tracking-wide truncate">
+              {worker.name}
+            </h4>
+            <span className="text-[11px] text-muted-foreground font-medium block truncate">
+              {worker.role}
+            </span>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          {ticketCount > 0 && ticketCount !== expiredCount && (
+            <span className="hidden sm:flex items-center gap-1 text-[10px] text-muted-foreground font-medium tracking-wide">
+              <FileText className="w-3 h-3" />
+              {ticketCount} {ticketCount === 1 ? "ticket" : "tickets"}
+            </span>
+          )}
+          <span
+            className={`px-2 py-0.5 rounded text-[9.5px] font-semibold tracking-wider uppercase whitespace-nowrap ${badgeColorClasses}`}
+          >
+            {statusText}
+          </span>
         </div>
       </div>
     );
@@ -2079,8 +2165,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
       ) : (
         <>
           {/* Search & Actions Header */}
-          <div className="flex items-center justify-between gap-3 mb-4 w-full">
-            <div className="flex-1 max-w-xl relative">
+          <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-5 w-full">
+            <div className="flex-1 min-w-0 lg:max-w-md relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground" />
               <input
                 type="text"
@@ -2090,41 +2176,70 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 className="w-full bg-background border border-border text-xs text-foreground rounded-xl pl-11 pr-4 py-2 focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground shadow-inner font-medium tracking-wide"
               />
             </div>
-            <button
-              onClick={() => setShowAddWorkerForm(!showAddWorkerForm)}
-              className="p-2 md:px-4 md:py-2 bg-primary hover:bg-primary text-primary-foreground rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-[11.5px] font-semibold tracking-wider whitespace-nowrap cursor-pointer shrink-0"
-            >
-              {showAddWorkerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-              <span className="hidden md:inline">
-                {showAddWorkerForm ? "Cancel Registration" : "Register Staff"}
-              </span>
-            </button>
-          </div>
 
-          {/* Active vs Archived Selector */}
-          <div className="flex items-center gap-3.5 mb-5 mt-2">
-            <button
-              type="button"
-              onClick={() => setRosterMode("active")}
-              className={`px-3.5 py-1.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
-                rosterMode === "active"
-                  ? "bg-primary border-primary text-primary-foreground"
-                  : "bg-card/60 border-border text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              Active
-            </button>
-            <button
-              type="button"
-              onClick={() => setRosterMode("archived")}
-              className={`px-3.5 py-1.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
-                rosterMode === "archived"
-                  ? "bg-amber-600 border-amber-600 text-white"
-                  : "bg-card/60 border-border text-muted-foreground hover:text-amber-500"
-              }`}
-            >
-              Archived
-            </button>
+            <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap lg:ml-auto">
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setRosterMode("active")}
+                  className={`px-3.5 py-1.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
+                    rosterMode === "active"
+                      ? "bg-primary border-primary text-primary-foreground"
+                      : "bg-card/60 border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  Active
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRosterMode("archived")}
+                  className={`px-3.5 py-1.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
+                    rosterMode === "archived"
+                      ? "bg-amber-600 border-amber-600 text-white"
+                      : "bg-card/60 border-border text-muted-foreground hover:text-amber-500"
+                  }`}
+                >
+                  Archived
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1 bg-card/60 border border-border rounded-xl p-0.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setRosterViewMode("grid")}
+                  aria-label="Grid view"
+                  className={`p-1.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                    rosterViewMode === "grid"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <LayoutGrid className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRosterViewMode("row")}
+                  aria-label="Row view"
+                  className={`p-1.5 rounded-lg transition-all duration-150 cursor-pointer ${
+                    rosterViewMode === "row"
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <List className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              <button
+                onClick={() => setShowAddWorkerForm(!showAddWorkerForm)}
+                className="p-2 md:px-4 md:py-2 bg-primary hover:bg-primary text-primary-foreground rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-[11.5px] font-semibold tracking-wider whitespace-nowrap cursor-pointer shrink-0 ml-auto lg:ml-0"
+              >
+                {showAddWorkerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                <span className="hidden md:inline">
+                  {showAddWorkerForm ? "Cancel Registration" : "Register Staff"}
+                </span>
+              </button>
+            </div>
           </div>
 
           {/* Add Worker Modal */}
@@ -2246,8 +2361,14 @@ export const RosterView: React.FC<RosterViewProps> = ({
             </div>
           )}
 
-          {/* Staff Roster Grid Layout */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {/* Staff Roster Layout */}
+          <div
+            className={
+              rosterViewMode === "grid"
+                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                : "flex flex-col gap-2"
+            }
+          >
             {filteredWorkersList.length === 0 ? (
               <div className="col-span-full bg-card border border-border rounded-2xl px-6 py-16 text-center">
                 <Users className="w-10 h-10 text-muted-foreground mx-auto mb-4" />
@@ -2255,8 +2376,24 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   No matching staff found
                 </div>
               </div>
-            ) : (
+            ) : rosterViewMode === "grid" ? (
               filteredWorkersList.map((worker) => renderMobileWorkerCard(worker))
+            ) : (
+              groupWorkersByCategory(filteredWorkersList, (w) => w.role).map(
+                ({ category, items }) => (
+                  <RoleAccordion
+                    key={category}
+                    category={category}
+                    count={items.length}
+                    isOpen={!!debouncedSearchQuery || expandedDepartments.has(category)}
+                    onToggle={() => toggleDepartment(category)}
+                  >
+                    <div className="flex flex-col gap-2 py-2">
+                      {items.map((worker) => renderWorkerRow(worker))}
+                    </div>
+                  </RoleAccordion>
+                ),
+              )
             )}
           </div>
         </>

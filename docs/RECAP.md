@@ -209,4 +209,8 @@
 - Converted fixed near-black status/urgency badges (job calendar chips, expiry radar, pipeline registry, audit diff table) to opacity-tinted `success`/`warning`/`destructive` tokens that adapt to both themes.
 - Fixed mojibake (`Â£`, `Â·`, `â€"`) baked into RosterView and PipelineRegistry source strings from a prior mis-encoded paste.
 - Corrected `/commit` skill's default branch from `Dev` to `dev` (actual remote branch name; old default would have failed to push).
+
+## 2026-07-19 (Terms & Conditions layout, verification rule)
+- Terms & Conditions items: fixed-height single-column rows to responsive 2-column grid, auto-sizing textareas (`QuoteInvoiceBuilder.tsx`).
+- No-dev-server/no-browser-verification rule codified in `CLAUDE.md` (already existed in `.agents/AGENTS.md`, restated after violation).
 

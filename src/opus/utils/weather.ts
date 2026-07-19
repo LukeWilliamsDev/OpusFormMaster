@@ -10,6 +10,7 @@ export interface WeatherInfo extends WeatherRisk {
 }
 
 const FORECAST_WINDOW_DAYS = 14;
+const FORECAST_AHEAD_DAYS = 16;
 
 // ---- Geocoding (Nominatim/OSM — free, keyless, resolves UK postcodes) -----
 const geoCache = new Map<string, Promise<{ lat: number; lon: number } | null>>();
@@ -41,7 +42,7 @@ const RAIN_CODES = new Set([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 
 const HEAVY_RAIN_CODES = new Set([65, 67, 82, 95, 96, 99]);
 const WIND_RISK_KMH = 30;
 
-function classifyDay(weathercode: number, tempMin: number, tempMax: number, windMax: number): WeatherInfo {
+export function classifyDay(weathercode: number, tempMin: number, tempMax: number, windMax: number): WeatherInfo {
   if (tempMin <= 2 || FROST_CODES.has(weathercode)) {
     return {
       postcode: "",
@@ -102,8 +103,9 @@ function fetchForecastForPostcode(postcode: string): Promise<Map<string, Weather
       (async () => {
         const coords = await geocodePostcode(key);
         if (!coords) return null;
-        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,windspeed_10m_max&past_days=${FORECAST_WINDOW_DAYS}&forecast_days=16&timezone=auto`;
+        const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,windspeed_10m_max&past_days=${FORECAST_WINDOW_DAYS}&forecast_days=${FORECAST_AHEAD_DAYS}&timezone=auto`;
         const res = await fetch(url);
+        if (!res.ok) return null;
         const data = await res.json();
         if (!data?.daily?.time) return null;
 
@@ -155,18 +157,18 @@ export function useJobForecast(postcode: string | undefined): {
 
 /**
  * Looks up the forecast for a specific calendar day. Returns null once that
- * date is more than 14 days in the past — outside the fetched window, so
- * there's nothing meaningful to show.
+ * date falls outside the fetched window (more than 14 days in the past, or
+ * more than 16 days ahead) — nothing meaningful to show there.
  */
 export function getWeatherOnDate(
   forecast: Map<string, WeatherInfo> | null,
   date: string,
 ): WeatherInfo | null {
   if (!forecast) return null;
-  const daysOld = Math.floor(
+  const daysFromToday = Math.floor(
     (parseLocalISODate(toLocalISODate(new Date())).getTime() - parseLocalISODate(date).getTime()) /
       (1000 * 60 * 60 * 24),
   );
-  if (daysOld > FORECAST_WINDOW_DAYS) return null;
+  if (daysFromToday > FORECAST_WINDOW_DAYS || daysFromToday < -FORECAST_AHEAD_DAYS) return null;
   return forecast.get(date) ?? null;
 }

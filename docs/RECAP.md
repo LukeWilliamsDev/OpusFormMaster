@@ -1,5 +1,11 @@
 # docs/RECAP.md
 
+## 2026-07-20
+- Compliance alert row: click-to-navigate to staff profile, removed redundant Update button, Remind stops propagation.
+- Fixed `log_anonymous_audit` missing `tenant_id` insert (not-null violation on every non-whitelisted audit call since multi-tenancy).
+- Traced compliance-reminder email failure through three shadowing `RESEND_API_KEY` sources: `smtp_config` table, Supabase Vault (`vault.secrets`), both overriding the edge function secret; removed both.
+- Relaxed opusformwebsite CLAUDE.md: dropped mandatory implementation-plan/wait-for-approval gate for a one-line intent statement.
+
 ## 2026-07-16
 - Fixed `/submit-credentials` routing token links with `/#/` to support HashRouter.
 - Redesigned `/submit-credentials` to be a premium, branded multi-step wizard.

@@ -21,10 +21,35 @@ export interface Ticket {
   isValid?: boolean;
 }
 
+export const STAFF_ROLES = [
+  "Concrete Finisher",
+  "Concrete Operative",
+  "Concrete Pour Supervisor",
+  "Concrete Pump Operator",
+  "Decking Assistant",
+  "Director",
+  "Ganger",
+  "General Construction Labourer",
+  "Inbound Sales Representative",
+  "IT",
+  "Logistics and Operations Assistant",
+  "Material Handler",
+  "Telehandler Operator",
+] as const;
+
+export type StaffRole = (typeof STAFF_ROLES)[number];
+
+export const OFFICE_ROLES: StaffRole[] = [
+  "Director",
+  "IT",
+  "Inbound Sales Representative",
+  "Logistics and Operations Assistant",
+];
+
 export interface Worker {
   id: string;
   name: string;
-  role: "Supervisor" | "Operative" | "Telehandler" | "Groundworker";
+  role: StaffRole;
   tickets: Ticket[];
   phone?: string;
   email?: string;

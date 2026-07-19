@@ -28,7 +28,7 @@ import {
   Link2,
   Copy,
 } from "lucide-react";
-import { Worker, Ticket, Job } from "../types/erp";
+import { Worker, Ticket, Job, STAFF_ROLES, OFFICE_ROLES } from "../types/erp";
 import { getTicketStatus } from "../utils/workerValidation";
 import { TicketStatusBadge } from "./TicketStatusBadge";
 import { RequestCredentialsModal } from "./RequestCredentialsModal";
@@ -68,29 +68,6 @@ export const ON_SITE_CERTIFICATIONS = [
   "Site Supervisor Safety Training Scheme",
   "Suspended Loads Endorsement",
   "Working at Heights Certification",
-];
-
-export const STAFF_ROLES = [
-  "Concrete Finisher",
-  "Concrete Operative",
-  "Concrete Pour Supervisor",
-  "Concrete Pump Operator",
-  "Decking Assistant",
-  "Director",
-  "Ganger",
-  "General Construction Labourer",
-  "Inbound Sales Representative",
-  "IT",
-  "Logistics and Operations Assistant",
-  "Material Handler",
-  "Telehandler Operator",
-];
-
-export const OFFICE_ROLES = [
-  "Director",
-  "IT",
-  "Inbound Sales Representative",
-  "Logistics and Operations Assistant",
 ];
 
 export const RosterView: React.FC<RosterViewProps> = ({

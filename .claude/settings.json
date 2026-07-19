@@ -1,0 +1,12 @@
+{
+  "on_shutdown": {
+    "run_workflow": "/end"
+  },
+  "hooks": [
+    {
+      "event": "PostToolUse",
+      "action": "npx prettier --write {{target_file}}",
+      "include": ["*.ts", "*.tsx"]
+    }
+  ]
+}

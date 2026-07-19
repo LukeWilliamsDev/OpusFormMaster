@@ -26,7 +26,8 @@ import {
   CheckCircle2,
   Clock,
   Link2,
-  Copy,
+  Eye,
+  PencilLine,
 } from "lucide-react";
 import { Worker, Ticket, Job, STAFF_ROLES, OFFICE_ROLES } from "../types/erp";
 import { RoleAccordion } from "./calendar/RoleAccordion";
@@ -37,7 +38,6 @@ import { RequestCredentialsModal } from "./RequestCredentialsModal";
 import { supabase } from "../../integrations/supabase/client";
 import { workerToRow, usePortal } from "../context/PortalContext";
 import { computeDiff } from "../utils/auditDiff";
-import { AuditDiffTable } from "./AuditDiffTable";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 
@@ -162,20 +162,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [loadingDossierLogs, setLoadingDossierLogs] = useState(false);
   const [resendingRequestMap, setResendingRequestMap] = useState<Record<string, boolean>>({});
   const [auditLogPage, setAuditLogPage] = useState(1);
-  const [copiedRequestId, setCopiedRequestId] = useState<string | null>(null);
-  const [expandedEventId, setExpandedEventId] = useState<string | null>(null);
-
-  const handleCopyLink = (url: string, id: string) => {
-    navigator.clipboard.writeText(url);
-    setCopiedRequestId(id);
-    setTimeout(() => setCopiedRequestId(null), 2000);
-  };
+  const [auditSearch, setAuditSearch] = useState("");
+  const [auditActionFilter, setAuditActionFilter] = useState("all");
 
   useEffect(() => {
     setShowAllHistory(false);
     setActiveDossierTab("general");
     setAuditLogPage(1);
-    setExpandedEventId(null);
+    setAuditSearch("");
+    setAuditActionFilter("all");
 
     // If a staff member is selected, log an INSPECT action to the audit logs
     if (selectedWorkerDetailsId) {
@@ -1132,10 +1127,22 @@ export const RosterView: React.FC<RosterViewProps> = ({
       (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
     );
 
+    const auditActionOptions = Array.from(new Set(allEvents.map((e) => e.action))).sort();
+
+    const searchLower = auditSearch.trim().toLowerCase();
+    const filteredEvents = allEvents.filter((event) => {
+      if (auditActionFilter !== "all" && event.action !== auditActionFilter) return false;
+      if (!searchLower) return true;
+      return (
+        event.actor?.toLowerCase().includes(searchLower) ||
+        event.action?.toLowerCase().includes(searchLower)
+      );
+    });
+
     const ITEMS_PER_PAGE = 10;
-    const totalPages = Math.ceil(allEvents.length / ITEMS_PER_PAGE) || 1;
+    const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE) || 1;
     const startIndex = (auditLogPage - 1) * ITEMS_PER_PAGE;
-    const paginatedEvents = allEvents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    const paginatedEvents = filteredEvents.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     return (
       <div className="space-y-4 animate-in fade-in duration-200">
@@ -1474,7 +1481,42 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   Loading history log...
                 </p>
               </div>
-            ) : allEvents.length > 0 ? (
+            ) : (
+              <>
+                {allEvents.length > 0 && (
+                  <div className="flex gap-2 px-1">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={auditSearch}
+                        onChange={(e) => {
+                          setAuditSearch(e.target.value);
+                          setAuditLogPage(1);
+                        }}
+                        placeholder="Search actor or action..."
+                        className="w-full pl-7 pr-2 py-1.5 bg-card/60 border border-border rounded-lg text-[10.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-brand-accent/50"
+                      />
+                    </div>
+                    <select
+                      value={auditActionFilter}
+                      onChange={(e) => {
+                        setAuditActionFilter(e.target.value);
+                        setAuditLogPage(1);
+                      }}
+                      className="px-2 py-1.5 bg-card/60 border border-border rounded-lg text-[10.5px] text-foreground focus:outline-none focus:border-brand-accent/50 cursor-pointer"
+                    >
+                      <option value="all">All Actions</option>
+                      {auditActionOptions.map((a) => (
+                        <option key={a} value={a}>
+                          {a}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {filteredEvents.length > 0 ? (
               <div className="divide-y divide-border px-1">
                 {paginatedEvents.map((event) => {
                   const date = new Date(event.created_at).toLocaleString("en-GB", {
@@ -1485,52 +1527,56 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     minute: "2-digit",
                   });
 
-                  const isExpanded = expandedEventId === event.id;
-
-                  // Colored severity bullets matching Audit Trail
+                  // Icon + color matching the event's action
                   let bulletColor = "bg-primary";
-                  let logTitle = "System Event";
+                  let LogIcon = FileText;
+                  let iconColorClass = "text-primary";
 
                   if (event.type === "request") {
                     const status = event.details?.status;
                     if (status === "completed") {
                       bulletColor = "bg-success";
+                      LogIcon = CheckCircle2;
+                      iconColorClass = "text-success";
                     } else if (status === "expired") {
                       bulletColor = "bg-destructive";
+                      LogIcon = Trash2;
+                      iconColorClass = "text-destructive";
                     } else {
                       bulletColor = "bg-warning"; // pending
+                      LogIcon = Send;
+                      iconColorClass = "text-warning";
                     }
-                    logTitle = "Document Request Sent";
                   } else {
                     const action = event.action;
                     if (action === "APPROVE_DOCUMENT" || action === "SUBMIT_DOCUMENTS") {
                       bulletColor = "bg-success";
+                      LogIcon = CheckCircle2;
+                      iconColorClass = "text-success";
                     } else if (action === "REJECT_DOCUMENT") {
                       bulletColor = "bg-destructive";
-                    } else if (action === "CREATE" || action === "UPDATE") {
+                      LogIcon = Trash2;
+                      iconColorClass = "text-destructive";
+                    } else if (action === "CREATE") {
                       bulletColor = "bg-primary";
+                      LogIcon = Plus;
+                      iconColorClass = "text-primary";
+                    } else if (action === "UPDATE") {
+                      bulletColor = "bg-primary";
+                      LogIcon = PencilLine;
+                      iconColorClass = "text-primary";
+                    } else if (action === "INSPECT") {
+                      bulletColor = "bg-warning";
+                      LogIcon = Eye;
+                      iconColorClass = "text-purple-400 [.light-theme_&]:text-purple-600";
                     } else {
                       bulletColor = "bg-warning";
-                    }
-
-                    if (action === "APPROVE_DOCUMENT") {
-                      logTitle = "Compliance Document Approved";
-                    } else if (action === "REJECT_DOCUMENT") {
-                      logTitle = "Compliance Document Rejected/Purged";
-                    } else if (action === "SUBMIT_DOCUMENTS") {
-                      logTitle = "Operative Documents Uploaded";
-                    } else if (action === "RESEND_DOCUMENT_REQUEST") {
-                      logTitle = "Document Request Link Resent";
-                    } else if (action === "CREATE" || action === "UPDATE") {
-                      logTitle = "Staff Profile Change";
-                    } else if (action === "INSPECT") {
-                      logTitle = "Staff Dossier Inspected";
-                    } else {
-                      logTitle = "System Action Logged";
+                      LogIcon = Send;
+                      iconColorClass = "text-warning";
                     }
                   }
 
-                  // Compute diff & summaries beforehand for the expanded panel
+                  // Compute diff & summaries
                   let summaryText = "";
                   let diff: any[] = [];
                   let badgeColor = "bg-secondary border-border text-muted-foreground";
@@ -1549,13 +1595,16 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       summaryText = `Submitted: ${submittedCerts.map((c: any) => c.type).join(", ")}`;
                     } else if (action === "RESEND_DOCUMENT_REQUEST") {
                       badgeColor = "bg-primary/5 border-primary/20 text-primary";
-                      summaryText = "Document request email renewed and dispatched to operative.";
+                      const resentCerts = event.details?.requested_certs || [];
+                      summaryText = resentCerts.length
+                        ? `Requested: ${resentCerts.join(", ")}`
+                        : "Document request email renewed and dispatched to operative.";
                     } else if (action === "CREATE" || action === "UPDATE") {
                       badgeColor = "bg-secondary border-border text-muted-foreground";
                       if (action === "CREATE") {
                         summaryText = "Initial database record created for staff member";
                       } else {
-                        summaryText = "Administrative updates applied to database record";
+                        summaryText = "Staff Details Have Been Updated";
                         diff = event.details?.old
                           ? computeDiff(event.details.old, event.details.new)
                           : [];
@@ -1564,188 +1613,90 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       badgeColor =
                         "bg-purple-500/10 border-purple-500/30 text-purple-400 [.light-theme_&]:text-purple-600";
                       summaryText = "Staff dossier profile viewed by administrator";
+                    } else if (action === "COMPLIANCE_REMINDER_SENT") {
+                      badgeColor = "bg-primary/5 border-primary/20 text-primary";
+                      summaryText = `Reminder sent: ${event.details?.ticket_type || "Certificate"}`;
                     } else {
                       summaryText =
-                        typeof event.details === "string"
-                          ? event.details
-                          : JSON.stringify(event.details || {});
+                        typeof event.details === "string" ? event.details : "";
                     }
                   }
 
+                  // Single-line badge + summary shown in the header row
+                  let headerBadgeText = event.action?.replace(/_/g, " ");
+                  let headerBadgeColor = badgeColor;
+                  let headerSummary = summaryText;
+
+                  if (event.type === "request") {
+                    const status = event.details?.status || "pending";
+                    headerBadgeText = status;
+                    headerBadgeColor =
+                      status === "completed"
+                        ? "bg-success/10 border-success/20 text-success"
+                        : status === "expired"
+                          ? "bg-red-500/10 border-red-500/30 text-red-400"
+                          : "bg-warning/15 border-warning/20 text-warning";
+                    headerSummary = `Requested: ${(event.details?.requested_certs || []).join(", ")}`;
+                  }
+
                   return (
-                    <div key={event.id} className="py-3.5 transition-all">
-                      <div
-                        onClick={() => setExpandedEventId(isExpanded ? null : event.id)}
-                        className="flex gap-4 cursor-pointer hover:bg-white/[0.02] px-2.5 py-2.5 rounded-xl transition-all"
-                      >
+                    <div key={event.id} className="py-2.5">
+                      <div className="flex items-center gap-2.5 px-2.5">
                         <div
-                          className={`w-2.5 h-2.5 rounded-full ${bulletColor} mt-1.5 shrink-0`}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <h4 className="text-[13px] font-semibold text-foreground uppercase tracking-wider leading-tight">
-                            {logTitle}
-                          </h4>
-                          <p className="text-[11px] text-muted-foreground mt-1.5 uppercase tracking-wide">
-                            {event.actor} · {date}
-                          </p>
+                          className={`w-6 h-6 rounded-full ${bulletColor}/10 flex items-center justify-center shrink-0`}
+                        >
+                          <LogIcon className={`w-3.5 h-3.5 ${iconColorClass}`} />
                         </div>
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shrink-0 ${headerBadgeColor}`}
+                        >
+                          {headerBadgeText}
+                        </span>
+                        <p className="flex-1 min-w-0 truncate text-[11px] text-foreground/90">
+                          {headerSummary}
+                        </p>
+                        {event.type === "request" && event.details?.status === "pending" && (
+                          <button
+                            type="button"
+                            onClick={() => handleResendRequest(event.rawRecord)}
+                            disabled={resendingRequestMap[event.rawRecord.id]}
+                            className="flex items-center justify-center gap-1.5 px-2.5 py-1 bg-secondary hover:bg-secondary/80 rounded text-[9px] font-bold uppercase border border-border disabled:opacity-50 cursor-pointer text-foreground shrink-0"
+                          >
+                            {resendingRequestMap[event.rawRecord.id] ? (
+                              <RefreshCw className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                            )}
+                            <span>Resend</span>
+                          </button>
+                        )}
+                        {diff.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRevertConfirmTarget({
+                                oldDetails: event.details?.old,
+                                currentDetails: {
+                                  name: selectedWorkerDetails?.name,
+                                  role: selectedWorkerDetails?.role,
+                                  phone: selectedWorkerDetails?.phone,
+                                  email: selectedWorkerDetails?.email,
+                                  postcode: selectedWorkerDetails?.postcode,
+                                },
+                                workerId:
+                                  event.rawRecord?.target_id || selectedWorkerDetailsId || "",
+                              })
+                            }
+                            className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                          >
+                            Revert
+                          </button>
+                        )}
+                        <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
+                          {date}
+                        </span>
                       </div>
 
-                      {isExpanded && (
-                        <div className="pl-[26px] pr-2.5 pt-2 pb-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                          {event.type === "request" ? (
-                            <div className="space-y-3 bg-card/60 border border-border rounded-xl p-3.5 mt-1">
-                              <div className="flex items-center justify-between">
-                                <span
-                                  className={`px-2 py-0.5 text-[8.5px] font-black uppercase rounded border tracking-widest ${
-                                    event.details?.status === "completed"
-                                      ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                                      : event.details?.status === "expired"
-                                        ? "bg-red-500/10 border-red-500/30 text-red-400"
-                                        : "bg-warning/15 border-warning/20 text-warning"
-                                  }`}
-                                >
-                                  Status: {event.details?.status}
-                                </span>
-                                <div
-                                  className={`flex items-center gap-1.5 text-[9.5px] font-bold uppercase tracking-wider ${
-                                    event.details?.status === "completed"
-                                      ? "text-emerald-400"
-                                      : event.details?.status === "expired"
-                                        ? "text-red-400"
-                                        : "text-warning"
-                                  }`}
-                                >
-                                  <Clock className="h-3.5 w-3.5" />
-                                  <span>
-                                    {event.details?.status === "pending"
-                                      ? `Expires: ${new Date(event.details?.expires_at).toLocaleString("en-GB")}`
-                                      : event.details?.status === "completed"
-                                        ? `Completed: ${new Date(event.details?.completed_at).toLocaleString("en-GB")}`
-                                        : "Link Expired"}
-                                  </span>
-                                </div>
-                              </div>
-
-                              <div>
-                                <h5 className="text-[9px] font-black text-muted-foreground uppercase tracking-widest mb-1.5">
-                                  Requested Certifications
-                                </h5>
-                                <div className="flex flex-wrap gap-1.5">
-                                  {(event.details?.requested_certs || []).map((c: string) => (
-                                    <span
-                                      key={c}
-                                      className="px-2.5 py-1 bg-secondary text-[9.5px] font-semibold text-foreground rounded border border-border"
-                                    >
-                                      {c}
-                                    </span>
-                                  ))}
-                                </div>
-                              </div>
-
-                              {event.details?.status === "pending" && (
-                                <div className="flex gap-2 pt-2 border-t border-border">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      handleCopyLink(event.details?.uploadUrl, event.id)
-                                    }
-                                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded text-[9px] font-bold uppercase border border-border cursor-pointer text-foreground"
-                                  >
-                                    {copiedRequestId === event.id ? (
-                                      <>
-                                        <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
-                                        <span>Copied</span>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                                        <span>Copy Link</span>
-                                      </>
-                                    )}
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleResendRequest(event.rawRecord)}
-                                    disabled={resendingRequestMap[event.rawRecord.id]}
-                                    className="flex items-center justify-center gap-1.5 px-3 py-1.5 bg-secondary hover:bg-secondary/80 rounded text-[9px] font-bold uppercase border border-border disabled:opacity-50 cursor-pointer text-foreground"
-                                  >
-                                    {resendingRequestMap[event.rawRecord.id] ? (
-                                      <RefreshCw className="h-3.5 w-3.5 animate-spin" />
-                                    ) : (
-                                      <RefreshCw className="h-3.5 w-3.5 text-muted-foreground" />
-                                    )}
-                                    <span>Resend Email</span>
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="space-y-3 bg-card/60 border border-border rounded-xl p-3.5 mt-1">
-                              <div className="flex items-center justify-between">
-                                <span
-                                  className={`px-2 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border ${badgeColor}`}
-                                >
-                                  Action: {event.action}
-                                </span>
-                                {event.action === "UPDATE" && diff.length > 0 && (
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      setRevertConfirmTarget({
-                                        oldDetails: event.details?.old,
-                                        currentDetails: {
-                                          name: selectedWorkerDetails?.name,
-                                          role: selectedWorkerDetails?.role,
-                                          phone: selectedWorkerDetails?.phone,
-                                          email: selectedWorkerDetails?.email,
-                                          postcode: selectedWorkerDetails?.postcode,
-                                        },
-                                        workerId:
-                                          event.rawRecord?.target_id ||
-                                          selectedWorkerDetailsId ||
-                                          "",
-                                      })
-                                    }
-                                    className="px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                                  >
-                                    Revert Changes
-                                  </button>
-                                )}
-                              </div>
-
-                              <div className="space-y-2">
-                                {event.action === "RESEND_DOCUMENT_REQUEST" &&
-                                event.details?.requested_certs ? (
-                                  <div className="space-y-2">
-                                    <p className="text-[10.5px] font-bold text-foreground font-sans leading-relaxed">
-                                      {summaryText}
-                                    </p>
-                                    <div className="flex flex-wrap gap-1.5">
-                                      {event.details.requested_certs.map((c: string) => (
-                                        <span
-                                          key={c}
-                                          className="px-2.5 py-1 bg-secondary text-[9.5px] font-semibold text-foreground rounded border border-border whitespace-nowrap"
-                                        >
-                                          {c}
-                                        </span>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ) : diff.length > 0 ? (
-                                  <div className="overflow-x-auto">
-                                    <AuditDiffTable diff={diff} />
-                                  </div>
-                                ) : summaryText ? (
-                                  <p className="text-[10.5px] font-bold text-foreground font-sans leading-relaxed">
-                                    {summaryText}
-                                  </p>
-                                ) : null}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
                     </div>
                   );
                 })}
@@ -1775,13 +1726,17 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   </div>
                 )}
               </div>
-            ) : (
-              <div className="text-center py-12 border border-dashed border-border rounded-xl bg-muted/40">
-                <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
-                <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
-                  No audit or request events logged
-                </p>
-              </div>
+                ) : (
+                  <div className="text-center py-12 border border-dashed border-border rounded-xl bg-muted/40">
+                    <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">
+                      {allEvents.length > 0
+                        ? "No events match your search or filter"
+                        : "No audit or request events logged"}
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -1902,12 +1857,16 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           <div
                             key={f.key}
                             className={`flex items-center justify-between px-4 py-2.5 ${
-                              changed ? "bg-amber-500/5 border-l-2 border-amber-500/40" : ""
+                              changed
+                                ? "bg-amber-500/5 border-l-2 border-amber-500/40 [.light-theme_&]:bg-amber-500/10 [.light-theme_&]:border-amber-600/50"
+                                : ""
                             }`}
                           >
                             <span
                               className={`font-semibold uppercase tracking-wider text-[10px] ${
-                                changed ? "text-amber-400/70" : "text-muted-foreground"
+                                changed
+                                  ? "text-amber-400/70 [.light-theme_&]:text-amber-800/80"
+                                  : "text-muted-foreground"
                               }`}
                             >
                               {f.label}
@@ -1923,7 +1882,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
                               )}
                               <span
                                 className={`font-bold ${
-                                  changed ? "text-amber-300" : "text-foreground"
+                                  changed
+                                    ? "text-amber-300 [.light-theme_&]:text-amber-800"
+                                    : "text-foreground"
                                 }`}
                               >
                                 {oldVal}

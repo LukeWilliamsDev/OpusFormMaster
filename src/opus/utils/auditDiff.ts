@@ -1,4 +1,4 @@
-const IGNORED_FIELDS = ["id", "created_at", "updated_at"];
+const IGNORED_FIELDS = ["id", "created_at", "updated_at", "tenant_id"];
 
 export function computeDiff(
   oldObj: Record<string, any> | null | undefined,

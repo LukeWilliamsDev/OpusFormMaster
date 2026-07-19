@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Users } from "lucide-react";
 import { Worker } from "../../types/erp";
 import { formatDayHeading } from "../../utils/week";
-import { DaySchedule } from "../../hooks/useDaySchedule";
+import { DayAssignment, DaySchedule } from "../../hooks/useDaySchedule";
 import { StaffCard } from "./StaffCard";
+import { RoleAccordion } from "./RoleAccordion";
+import { groupWorkersByCategory } from "./roleCategories";
 
 interface StaffDayListProps {
   schedule: DaySchedule;
@@ -19,6 +21,23 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
   onRemoveShift,
 }) => {
   const { assigned, unassigned, deployedCount } = schedule;
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    setExpanded(new Set());
+  }, [date]);
+
+  const toggle = (key: string) => {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
+
+  const deployedGroups = groupWorkersByCategory(assigned, (a) => a.worker.role);
+  const availableGroups = groupWorkersByCategory(unassigned, (w) => w.role);
 
   return (
     <div className="space-y-4">
@@ -37,39 +56,74 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
         </div>
       ) : (
         <>
-          <div className="border border-border rounded-xl bg-card px-3">
-            {assigned.map(({ worker, shift, job }) => (
-              <StaffCard
-                key={worker.id}
-                worker={worker}
-                job={job}
-                shift={shift}
-                onRemove={onRemoveShift}
-                size="row"
-              />
-            ))}
-          </div>
-
-          {unassigned.length > 0 && (
+          {deployedGroups.length > 0 && (
             <div className="space-y-2.5">
-              {assigned.length > 0 && (
-                <div className="flex items-center gap-3 pt-2">
-                  <div className="h-px flex-1 bg-border" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    Available ({unassigned.length})
-                  </span>
-                  <div className="h-px flex-1 bg-border" />
-                </div>
-              )}
-              <div className="border border-border rounded-xl bg-card px-3">
-                {unassigned.map((worker) => (
-                  <StaffCard
-                    key={worker.id}
-                    worker={worker}
-                    onAssign={() => onAssign(worker)}
-                    size="row"
-                  />
-                ))}
+              <div className="flex items-center gap-3 pt-2">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Already Deployed ({assigned.length})
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <div className="space-y-2">
+                {deployedGroups.map(({ category, items }) => {
+                  const key = `deployed:${category}`;
+                  return (
+                    <RoleAccordion
+                      key={key}
+                      category={category}
+                      count={items.length}
+                      isOpen={expanded.has(key)}
+                      onToggle={() => toggle(key)}
+                    >
+                      {items.map(({ worker, shift, job }: DayAssignment) => (
+                        <StaffCard
+                          key={worker.id}
+                          worker={worker}
+                          job={job}
+                          shift={shift}
+                          onRemove={onRemoveShift}
+                          size="row"
+                        />
+                      ))}
+                    </RoleAccordion>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {availableGroups.length > 0 && (
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-3 pt-2">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Available ({unassigned.length})
+                </span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <div className="space-y-2">
+                {availableGroups.map(({ category, items }) => {
+                  const key = `available:${category}`;
+                  return (
+                    <RoleAccordion
+                      key={key}
+                      category={category}
+                      count={items.length}
+                      isOpen={expanded.has(key)}
+                      onToggle={() => toggle(key)}
+                    >
+                      {items.map((worker: Worker) => (
+                        <StaffCard
+                          key={worker.id}
+                          worker={worker}
+                          onAssign={() => onAssign(worker)}
+                          size="row"
+                        />
+                      ))}
+                    </RoleAccordion>
+                  );
+                })}
               </div>
             </div>
           )}

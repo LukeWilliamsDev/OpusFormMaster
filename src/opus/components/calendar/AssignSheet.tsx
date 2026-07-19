@@ -256,7 +256,7 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                             key={worker.id}
                             type="button"
                             onClick={() => handlePick(worker.id, worker.name, target.job.id)}
-                            className="w-full flex items-center justify-between gap-2 px-2 py-2.5 rounded-lg hover:bg-secondary/30 text-left transition-all cursor-pointer"
+                            className="w-full flex items-center justify-between gap-2 px-2 py-2.5 border-b border-border/70 last:border-0 hover:bg-secondary/30 text-left transition-all cursor-pointer"
                           >
                             <div className="min-w-0">
                               <div className="text-xs font-bold text-foreground truncate">

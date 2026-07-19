@@ -40,7 +40,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
     return (
       <div
         onClick={!isAssigned ? onAssign : undefined}
-        className={`flex items-center gap-3 py-2 border-b border-border/70 [.light-theme_&]:border-border last:border-0 transition-opacity ${
+        className={`flex items-center gap-3 py-2.5 border-b border-border last:border-0 transition-opacity ${
           isAssigned ? "" : "opacity-75 [.light-theme_&]:opacity-90 hover:opacity-100"
         } ${
           !isAssigned && onAssign

@@ -1,5 +1,12 @@
 # docs/RECAP.md
 
+## 2026-07-21
+- Fixed invoice/emailed PDF logo not rendering: root SVGs used `width="100%" height="100%"`, unresolvable intrinsic size for html2canvas rasterization; set explicit pixel dimensions.
+- Updated banking details (Tide, sort code 04-06-05, acct 31840773), removed IBAN row.
+- Invoice footer contrast fix, billing email correction (`billing@opusform.co.uk`).
+- Loading-toast feedback added: quote send, compliance resend, compliance reminder. Quote send now returns to quote management page on success.
+- Flagged unrelated uncommitted mass-deletion of `.claude/skills/*` for user review (not committed).
+
 ## 2026-07-20 (later session)
 - Enabled dev server preview (launch.json, port 8080, autoPort fallback to already-running instance).
 - Quote control center: enlarged total figure display, widened PDF live mirror preview panel on desktop.

@@ -271,11 +271,14 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const handleResendRequest = async (request: any) => {
     if (resendingRequestMap[request.id]) return;
     setResendingRequestMap((prev) => ({ ...prev, [request.id]: true }));
+    const sendingToastId = toast.loading("SENDING REQUEST", {
+      description: "Sending compliance document request...",
+    });
 
     try {
       const worker = workers.find((w) => w.id === selectedWorkerDetailsId);
       if (!worker || !worker.email) {
-        toast.error("Worker email is missing", { description: "Cannot resend request." });
+        toast.error("Worker email is missing", { id: sendingToastId, description: "Cannot resend request." });
         return;
       }
 
@@ -347,9 +350,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
       setDossierDocRequests(updatedReqs.data || []);
       setDossierAuditLogs(updatedLogs.data || []);
+
+      if (emailSentResult) {
+        toast.success("REQUEST SENT", { id: sendingToastId, description: "Compliance request resent to worker." });
+      } else {
+        toast.error("EMAIL FAILED", { id: sendingToastId, description: emailErrorResult || "Failed to send email." });
+      }
     } catch (e: any) {
       console.error("Failed to resend request:", e);
-      toast.error("Failed to resend request", { description: e.message || String(e) });
+      toast.error("Failed to resend request", { id: sendingToastId, description: e.message || String(e) });
     } finally {
       setResendingRequestMap((prev) => ({ ...prev, [request.id]: false }));
     }

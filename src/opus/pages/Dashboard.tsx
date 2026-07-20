@@ -214,6 +214,9 @@ export const DashboardPage: React.FC = () => {
     }
 
     setIsSendingRemind(true);
+    const sendingToastId = toast.loading("SENDING REMINDER", {
+      description: `Sending compliance reminder to ${worker.name}...`,
+    });
     try {
       // 1. Create document_request row (7-day window)
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
@@ -259,10 +262,10 @@ export const DashboardPage: React.FC = () => {
         },
       });
 
-      toast.success(`Compliance reminder sent to ${worker.name}`);
+      toast.success(`Compliance reminder sent to ${worker.name}`, { id: sendingToastId });
     } catch (e: any) {
       console.error("Failed to send compliance reminder:", e);
-      toast.warning("Failed to send reminder: " + (e.message || "Unknown error"));
+      toast.warning("Failed to send reminder: " + (e.message || "Unknown error"), { id: sendingToastId });
 
       // Fire-and-forget admin failure alert
       supabase.functions
@@ -750,7 +753,7 @@ export const DashboardPage: React.FC = () => {
                 </>
               )
             }
-            confirmLabel={isSendingRemind ? "Sending..." : "Confirm Send"}
+            confirmLabel="Confirm Send"
             cancelLabel="Cancel"
             onConfirm={() => {
               handleRemindAlert(remindConfirmAlert);

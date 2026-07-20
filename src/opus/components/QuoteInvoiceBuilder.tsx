@@ -80,11 +80,10 @@ const COMMON_UNITS = ["m²", "m³", "m", "No.", "Sum"];
 
 const COMPANY_INFO = {
   companyNumber: "17228356",
-  bank: "Barclays Business Banking",
+  bank: "Tide",
   accountName: "Opus Form Ltd",
-  sortCode: "20-00-00",
-  accountNumber: "13319268",
-  iban: "GB29 NWBK 6016 1331 9268 19",
+  sortCode: "04-06-05",
+  accountNumber: "31840773",
 };
 
 const INITIAL_ITEMS: MeasuredItem[] = [];
@@ -466,6 +465,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     }
 
     setIsSendingEmail(true);
+    const sendingToastId = toast.loading("SENDING EMAIL", {
+      description: "Generating PDF and sending to client...",
+    });
 
     let tempContainer: HTMLElement | undefined;
     try {
@@ -534,10 +536,12 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       if (upsertError) throw upsertError;
 
       loadSavedQuotes();
-      toast.success("EMAIL SENT", { description: "Email sent successfully." });
+      toast.success("EMAIL SENT", { id: sendingToastId, description: "Email sent successfully." });
+      onBack();
     } catch (err) {
       console.error("Failed to send quote PDF:", err);
       toast.error("EMAIL FAILED", {
+        id: sendingToastId,
         description: "Email failed. Please get in contact with admin@opusform.co.uk",
       });
     } finally {
@@ -780,7 +784,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               { label: "Account Name", value: COMPANY_INFO.accountName },
               { label: "Sort Code", value: COMPANY_INFO.sortCode },
               { label: "Account No.", value: COMPANY_INFO.accountNumber },
-              { label: "IBAN", value: COMPANY_INFO.iban },
             ].map((field, idx, arr) => (
               <div key={field.label} className="flex items-start gap-6">
                 <div>
@@ -796,11 +799,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         </div>
       </div>
       <div className="bg-[#26262B] px-8 sm:px-12 py-3.5 flex justify-between items-center mt-auto">
-        <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">
+        <span className="text-[11px] text-[#B8B8B0] tracking-[0.1em] uppercase">
           Opus Form Ltd &middot; Company No. {COMPANY_INFO.companyNumber}
         </span>
-        <span className="text-[11px] text-[#666] tracking-[0.1em] uppercase">
-          operations@opusform.co.uk
+        <span className="text-[11px] text-[#B8B8B0] tracking-[0.1em] uppercase">
+          billing@opusform.co.uk
         </span>
       </div>
     </div>

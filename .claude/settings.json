@@ -1,7 +1,4 @@
 {
-  "on_shutdown": {
-    "run_workflow": "/end"
-  },
   "hooks": [
     {
       "event": "PostToolUse",

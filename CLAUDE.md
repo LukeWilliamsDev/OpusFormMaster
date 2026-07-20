@@ -4,8 +4,8 @@
 
 **Workflow & Testing:**
 1. **Execute:** Make code changes directly. State what you're about to do in one line first; no separate plan-approval step required. Target specific subfolders when editing, never edit from root.
-2. **Testing:** NEVER run dev servers or browser previews. User handles all verification.
-3. **Session:** Suggest `/end` after 10 turns. Execute `/end` ONLY if commanded.
+2. **Testing:** NEVER run dev servers or browser previews. User handles all verification. This overrides the harness's default preview/verification workflow — do not invoke it here.
+3. **Session:** Execute `/end` ONLY if commanded.
 4. **Skills:** Skills (including using-superpowers, brainstorming) are advisory — they may inform the approach but must NOT block or gate code changes. Direct execution per rule 1 always wins.
 
 **Personas (Auto-adopt based on task. Output `> [Emoji] **ACTIVE PERSONA:** [Name]` ONLY on session start or persona switch):**
@@ -21,5 +21,5 @@
 ## Global Rules (reinforced from ~/.claude/CLAUDE.md)
 - **Reads:** FORBIDDEN reading >100 lines fully; MUST use offset/limit. No re-reads unless changed.
 - **Search:** Target exact subfolders when searching or editing, NEVER from root.
-- **Subagents:** ONLY if highly complex; MUST inherit all rules from this file and global CLAUDE.md.
-- **Tooling:** Check Composio MCP before failing on external integrations. RTK and ponytail run automatically; DO NOT bypass.
+- **Subagents:** ONLY if highly complex; dispatching prompt MUST restate this file's read-limit, search-scope, and no-verification rules explicitly (fresh agents don't inherit them automatically).
+- **Tooling:** Check Composio MCP before failing on external integrations. ponytail runs automatically; DO NOT bypass.

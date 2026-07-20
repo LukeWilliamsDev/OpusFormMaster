@@ -376,6 +376,47 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [user]);
 
+  // Keep the roster live: anonymous submissions (e.g. the credential portal)
+  // write to `staff` outside this session's own upsert loop below, so without
+  // this the compliance tab only refreshes on next login.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`staff-changes-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "staff" },
+        (payload) => {
+          if (!hydratedRef.current) return;
+          setWorkers((prev) => {
+            const next =
+              payload.eventType === "DELETE"
+                ? prev.filter((w) => w.id !== payload.old.id)
+                : (() => {
+                    const updated = rowToWorker(payload.new);
+                    const idx = prev.findIndex((w) => w.id === updated.id);
+                    return idx === -1
+                      ? [...prev, updated]
+                      : prev.map((w, i) => (i === idx ? updated : w));
+                  })();
+
+            // Mark this state as already persisted so the auto-save effect
+            // below doesn't immediately echo it back as a redundant upsert.
+            prevWorkerIdsRef.current = new Set(next.map((w) => w.id));
+            lastSavedWorkersRef.current = JSON.stringify(
+              next.map((w) => workerToRow(w, profile?.tenant_id)),
+            );
+            return next;
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, profile?.tenant_id]);
+
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
     const rows = workers.map((w) => workerToRow(w, profile?.tenant_id));

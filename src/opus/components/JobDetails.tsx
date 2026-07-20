@@ -10,14 +10,12 @@ import {
   FileText,
   Link as LinkIcon,
   Check,
-  AlertTriangle,
   UserCheck,
   Plus,
   Loader,
   AlertCircle,
   Copy,
   MapPin,
-  ClipboardList,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Job, Worker } from "../types/erp";
@@ -62,17 +60,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [newPourVolume, setNewPourVolume] = useState("34");
   const [newPourNotes, setNewPourNotes] = useState("");
 
-  // Project Management states
-  const [diaryNotes, setDiaryNotes] = useState("");
-  const [hsChecklist, setHsChecklist] = useState({
-    ppe: false,
-    briefing: false,
-    delivery: false,
-    weather: false,
-  });
-  const [diarySaved, setDiarySaved] = useState(false);
-  const [savingDiary, setSavingDiary] = useState(false);
-
   // Attachments state
   const [attachments, setAttachments] = useState<any[]>([]);
   const [uploadingPhotoBefore, setUploadingPhotoBefore] = useState(false);
@@ -101,7 +88,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     setContractMaxPours(job.contractMaxPours || 0);
 
     // Fetch initial details
-    fetchSiteDiary();
     fetchAttachments();
     fetchStaffOnSite();
     geocodeAndFetchWeatherAndSuppliers();
@@ -210,57 +196,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       console.error("Error geocoding or fetching suppliers:", err);
     } finally {
       setLoadingSuppliers(false);
-    }
-  };
-
-  const fetchSiteDiary = async () => {
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      const { data, error } = await supabase
-        .from("job_diary")
-        .select("*")
-        .eq("job_id", job.id)
-        .eq("date", today)
-        .maybeSingle();
-
-      if (data) {
-        setDiaryNotes(data.notes || "");
-        setHsChecklist(
-          data.hs_checklist || {
-            ppe: false,
-            briefing: false,
-            delivery: false,
-            weather: false,
-          },
-        );
-        setDiarySaved(true);
-      }
-    } catch (err) {
-      console.error("Error fetching site diary:", err);
-    }
-  };
-
-  const saveSiteDiary = async () => {
-    setSavingDiary(true);
-    try {
-      const today = new Date().toISOString().split("T")[0];
-      const { error } = await supabase.from("job_diary").upsert(
-        {
-          job_id: job.id,
-          date: today,
-          notes: diaryNotes,
-          hs_checklist: hsChecklist,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: "job_id,date" },
-      );
-
-      if (error) throw error;
-      setDiarySaved(true);
-    } catch (err) {
-      console.error("Error saving site diary:", err);
-    } finally {
-      setSavingDiary(false);
     }
   };
 
@@ -443,10 +378,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const afterPhotos = attachments.filter((a) => a.type === "image_after");
   const projectDocs = attachments.filter((a) => a.type === "document");
 
-  // Check if H&S checklist is completed
-  const isHsComplete =
-    hsChecklist.ppe && hsChecklist.briefing && hsChecklist.delivery && hsChecklist.weather;
-
   // Group staff on site by role
   const groupedStaff: { [key: string]: Worker[] } = {};
   staffOnSite.forEach((w) => {
@@ -487,7 +418,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-4">
             Project Status
           </div>
-          <div className="flex bg-background p-1 rounded-lg border border-border gap-1">
+          <div className="grid grid-cols-3 bg-background p-1 rounded-lg border border-border gap-1">
             {(["in-progress", "pending", "completed"] as const).map((s) => {
               const isActive =
                 (s === "in-progress" && status === "in-progress") ||
@@ -497,7 +428,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 <button
                   key={s}
                   onClick={() => handleStatusChange(s)}
-                  className={`flex-1 text-center py-2.5 rounded-md text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all cursor-pointer ${
+                  className={`min-w-0 text-center py-2.5 px-1 rounded-md text-[9px] sm:text-[11px] font-bold uppercase tracking-tight sm:tracking-wider leading-tight whitespace-normal transition-all cursor-pointer ${
                     isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -513,8 +444,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-3">
             Pour Progress
           </div>
-          <div className="flex justify-between items-baseline mb-2">
-            <span className="text-sm font-semibold text-foreground">
+          <div className="flex justify-between items-baseline mb-2 gap-2">
+            <span className="text-sm font-semibold text-foreground truncate">
               {currentPours} of {contractMaxPours} contracted
             </span>
             <span className="text-primary text-sm font-bold">{pourPercent}%</span>
@@ -676,108 +607,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       </TabsContent>
 
       <TabsContent value="diary">
-      {/* Project Management Grid: Daily Site Diary & Checklist + Staff on Site */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Site Diary & Checklist */}
-        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-          <div className="flex items-center gap-2">
-            <ClipboardList className="w-4 h-4 text-primary" />
-            <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
-              Daily Site Diary & H&S Clearance
-            </h2>
-          </div>
-
-          <div className="space-y-3 bg-background border border-border rounded-lg p-4">
-            <div className="text-[10px] font-bold uppercase text-muted-foreground">
-              Health & Safety Checklists
-            </div>
-
-            <div className="space-y-2.5">
-              <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={hsChecklist.ppe}
-                  onChange={(e) => {
-                    setHsChecklist((prev) => ({ ...prev, ppe: e.target.checked }));
-                    setDiarySaved(false);
-                  }}
-                  className="rounded border-border text-primary focus:ring-0 bg-card w-4 h-4"
-                />
-                <span>Operatives wearing full PPE (Hard Hat, Boots, Hi-Vis)</span>
-              </label>
-
-              <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={hsChecklist.briefing}
-                  onChange={(e) => {
-                    setHsChecklist((prev) => ({ ...prev, briefing: e.target.checked }));
-                    setDiarySaved(false);
-                  }}
-                  className="rounded border-border text-primary focus:ring-0 bg-card w-4 h-4"
-                />
-                <span>Daily site safety briefing completed</span>
-              </label>
-
-              <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={hsChecklist.delivery}
-                  onChange={(e) => {
-                    setHsChecklist((prev) => ({ ...prev, delivery: e.target.checked }));
-                    setDiarySaved(false);
-                  }}
-                  className="rounded border-border text-primary focus:ring-0 bg-card w-4 h-4"
-                />
-                <span>Concrete delivery access & wash-out zone ready</span>
-              </label>
-
-              <label className="flex items-center gap-2.5 text-xs text-foreground cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={hsChecklist.weather}
-                  onChange={(e) => {
-                    setHsChecklist((prev) => ({ ...prev, weather: e.target.checked }));
-                    setDiarySaved(false);
-                  }}
-                  className="rounded border-border text-primary focus:ring-0 bg-card w-4 h-4"
-                />
-                <span>Weather risk assessed & cleared for execution</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block">
-              Daily Notes & Observations
-            </label>
-            <textarea
-              rows={3}
-              value={diaryNotes}
-              onChange={(e) => {
-                setDiaryNotes(e.target.value);
-                setDiarySaved(false);
-              }}
-              placeholder="Record any delays, materials delivered, visitors, or site concerns..."
-              className="w-full bg-background border border-border text-xs text-foreground rounded-lg p-3 outline-none focus:border-primary"
-            />
-          </div>
-
-          <div className="flex justify-between items-center pt-2">
-            <span className="text-[10px] text-muted-foreground font-mono">
-              {diarySaved ? "✓ Saved" : "● Unsaved changes"}
-            </span>
-            <button
-              onClick={saveSiteDiary}
-              disabled={savingDiary}
-              className="px-4 py-2 bg-primary hover:bg-primary text-primary-foreground font-bold rounded-lg text-xs cursor-pointer flex items-center gap-1.5 transition-all"
-            >
-              {savingDiary && <Loader className="w-3 h-3 animate-spin" />}
-              Save Site Journal
-            </button>
-          </div>
-        </div>
-
+      {/* Project Management Grid: Staff on Site */}
+      <div className="grid grid-cols-1 gap-6">
         {/* Staff on Site */}
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
           <div className="flex items-center justify-between">
@@ -1047,27 +878,16 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <h2 className="text-base font-bold text-foreground">Pour History</h2>
 
           <div className="flex items-center gap-3">
-            {!isHsComplete && (
-              <span className="text-[10px] text-warning font-bold flex items-center gap-1">
-                <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
-                <span>Clear daily checklist to log pours</span>
-              </span>
-            )}
             <button
               onClick={() => setIsAddingPour(!isAddingPour)}
-              disabled={!isHsComplete}
-              className={`px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border ${
-                isHsComplete
-                  ? "bg-card border-border hover:bg-secondary text-foreground"
-                  : "bg-secondary border-border text-muted-foreground cursor-not-allowed"
-              }`}
+              className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border bg-card border-border hover:bg-secondary text-foreground"
             >
               {isAddingPour ? "Cancel" : "+ Log Pour"}
             </button>
           </div>
         </div>
 
-        {isAddingPour && isHsComplete && (
+        {isAddingPour && (
           <form
             onSubmit={handleAddPourSubmit}
             className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4"

@@ -367,6 +367,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const handleViewDocument = async (documentUrl: string) => {
     if (!documentUrl) return;
 
+    // Open the tab synchronously, within the click's user-gesture window —
+    // opening it after the signed-URL fetch below resolves gets silently
+    // blocked by popup blockers since the async gap breaks the gesture link.
+    const newTab = window.open("", "_blank");
+
     if (documentUrl.includes("/compliance-documents/")) {
       try {
         const parts = documentUrl.split("/compliance-documents/");
@@ -378,17 +383,20 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
         if (error) throw error;
         if (data?.signedUrl) {
-          window.open(data.signedUrl, "_blank");
+          if (newTab) newTab.location.href = data.signedUrl;
+          else window.open(data.signedUrl, "_blank");
           return;
         }
       } catch (err) {
         console.error("Failed to generate signed URL:", err);
-        window.open(documentUrl, "_blank");
+        if (newTab) newTab.location.href = documentUrl;
+        else window.open(documentUrl, "_blank");
         return;
       }
     }
 
-    window.open(documentUrl, "_blank");
+    if (newTab) newTab.location.href = documentUrl;
+    else window.open(documentUrl, "_blank");
   };
 
   const executeRevertUpdate = async (oldDetails: any, workerId: string) => {
@@ -399,10 +407,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
       const phone = oldDetails.phone ?? null;
       const email = oldDetails.email ?? null;
       const postcode = oldDetails.postcode ?? null;
-      const tickets = oldDetails.tickets ?? [];
-      const uploaded_certificates = oldDetails.uploaded_certificates ?? [];
-      const is_archived = oldDetails.is_archived ?? false;
 
+      // Only restore the fields the "Revert Profile" dialog actually shows the
+      // admin. Reverting also wrote tickets/uploaded_certificates/is_archived
+      // from the old snapshot, silently undoing any compliance documents
+      // uploaded after that snapshot was taken.
       const { error } = await supabase
         .from("staff")
         .update({
@@ -411,9 +420,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
           phone,
           email,
           postcode,
-          tickets,
-          uploaded_certificates,
-          is_archived,
         })
         .eq("id", workerId);
 
@@ -429,9 +435,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 phone: phone ?? undefined,
                 email: email ?? undefined,
                 postcode: postcode ?? undefined,
-                tickets,
-                uploadedCertificates: uploaded_certificates,
-                isArchived: is_archived,
               }
             : w,
         ),
@@ -1167,7 +1170,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
         }
         if (event.action === "UPDATE") {
           const diff = event.details?.old ? computeDiff(event.details.old, event.details.new) : [];
-          return diff.length > 0;
+          if (diff.length === 0) return false;
+          // Ticket-only changes are already covered by their own
+          // SUBMIT_DOCUMENTS / APPROVE_DOCUMENT / REJECT_DOCUMENT entry —
+          // showing the generic "Staff Details Have Been Updated" too is
+          // just noise duplicating the same event.
+          if (diff.every((d) => d.field === "tickets")) return false;
+          return true;
         }
         return true;
       });

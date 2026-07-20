@@ -666,21 +666,6 @@ export const SubmitCredentialsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Keyframe animations */}
-      <style>{`
-        @keyframes scaleIn {
-          from { transform: scale(0); opacity: 0; }
-          to { transform: scale(1); opacity: 1; }
-        }
-        @keyframes drawCheck {
-          to { stroke-dashoffset: 0; }
-        }
-        @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(12px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
-
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
         {/* ─── Header / Branding ─────────────────────────────────── */}
         <div className="text-center space-y-3">

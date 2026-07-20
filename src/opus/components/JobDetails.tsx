@@ -19,6 +19,7 @@ import {
   MapPin,
   ClipboardList,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Job, Worker } from "../types/erp";
 import { supabase } from "../../integrations/supabase/client";
 import { OSMMap } from "./OSMMap";
@@ -173,30 +174,32 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       setSiteCoords({ lat, lng });
 
       setLoadingSuppliers(true);
-      // Bound the search to a box around the site (~15mi) instead of a bare
-      // text match, otherwise Nominatim returns text-relevant results from
-      // anywhere rather than genuinely nearby suppliers.
-      const boxDelta = 0.25;
-      const viewbox = [lng - boxDelta, lat + boxDelta, lng + boxDelta, lat - boxDelta].join(",");
-      const suppliersUrl = `https://nominatim.openstreetmap.org/search?format=json&q=tool+hire&viewbox=${viewbox}&bounded=1&limit=5`;
-      const supRes = await fetch(suppliersUrl, {
-        headers: { "User-Agent": "OpusForm/1.0 (admin@opusform.co.uk)" },
-      });
-      const supData = await supRes.json();
+      // Nearby-suppliers lookup goes through the nearby-suppliers edge
+      // function (Geoapify Places) instead of calling Overpass directly from
+      // the browser — the public Overpass instance rate-limits/cools down
+      // per IP and was timing out under real usage.
+      const { data: supData, error: supError } = await supabase.functions.invoke(
+        "nearby-suppliers",
+        { body: { lat, lng, radiusMiles: 5 } },
+      );
+      if (supError) throw supError;
 
-      if (supData && Array.isArray(supData)) {
-        const mapped = supData
-          .map((item: any) => {
-            const sLat = parseFloat(item.lat);
-            const sLng = parseFloat(item.lon);
-            const dist = calculateDistance(lat, lng, sLat, sLng);
+      if (supData?.suppliers && Array.isArray(supData.suppliers)) {
+        const mapped = supData.suppliers
+          .map((s: any) => {
+            const dist =
+              s.distanceMeters != null
+                ? s.distanceMeters / 1609.34
+                : calculateDistance(lat, lng, s.coords.lat, s.coords.lng);
             return {
-              id: item.place_id.toString(),
-              name: item.display_name.split(",")[0],
-              address: item.display_name.split(",").slice(1, 4).join(","),
-              phone: "0113 " + Math.floor(1000000 + Math.random() * 9000000),
+              id: s.id,
+              name: s.name,
+              address: s.address,
+              phone: s.phone,
+              website: s.website,
+              businessType: s.businessType,
               distance: `${dist.toFixed(1)} mi`,
-              coords: { lat: sLat, lng: sLng },
+              coords: s.coords,
             };
           })
           .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
@@ -494,7 +497,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 <button
                   key={s}
                   onClick={() => handleStatusChange(s)}
-                  className={`flex-1 text-center py-2.5 rounded-md text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  className={`flex-1 text-center py-2.5 rounded-md text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all cursor-pointer ${
                     isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                   }`}
                 >
@@ -567,9 +570,18 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         </div>
       </div>
 
+      {/* Secondary sections: Suppliers/Map, Diary+Staff, Attachments */}
+      <Tabs defaultValue="suppliers" className="w-full">
+        <TabsList>
+          <TabsTrigger value="suppliers">Site & Suppliers</TabsTrigger>
+          <TabsTrigger value="diary">Diary & Staff</TabsTrigger>
+          <TabsTrigger value="attachments">Attachments</TabsTrigger>
+        </TabsList>
+
+      <TabsContent value="suppliers">
       {/* Interactive Proximity Suppliers Map */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-card border border-border rounded-xl overflow-hidden flex flex-col">
+      <div className="grid grid-cols-1 lg:grid-cols-3 bg-card border border-border rounded-xl overflow-hidden">
+        <div className="lg:col-span-2 flex flex-col lg:border-r border-border">
           <div className="p-4 border-b border-border flex justify-between items-center">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-destructive" />
@@ -577,10 +589,17 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 Live Site Proximity Matrix
               </span>
             </div>
-            <span className="text-[10px] text-muted-foreground font-mono">OpenStreetMap Engine</span>
+            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-destructive" /> Job Site
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-primary" /> Supplier
+              </span>
+            </div>
           </div>
           {siteCoords ? (
-            <div className="flex-1 min-h-[300px] relative">
+            <div className="flex-1 min-h-[420px] relative">
               <OSMMap
                 center={siteCoords}
                 siteCoords={siteCoords}
@@ -599,39 +618,51 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         </div>
 
         {/* Local Suppliers List */}
-        <div className="bg-card border border-border rounded-xl p-5 flex flex-col justify-between">
-          <div className="space-y-4">
-            <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider">
-              Closest Local Suppliers
-            </div>
+        <div className="p-5 flex flex-col h-full min-h-[420px]">
+          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-4">
+            Closest Local Suppliers
+          </div>
+          <div className="flex-1 flex flex-col min-h-0">
             {loadingSuppliers ? (
               <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
                 <Loader className="w-4 h-4 animate-spin text-primary" />
                 <span>Searching local building merchants...</span>
               </div>
             ) : suppliers.length > 0 ? (
-              <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1">
+              <div className="space-y-2.5 flex-1 overflow-y-auto pr-1">
                 {suppliers.map((s) => (
-                  <button
+                  <div
                     key={s.id}
-                    onClick={() => setSelectedSupplierId(s.id)}
-                    className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer flex justify-between items-start ${
+                    role="button"
+                    tabIndex={0}
+                    onClick={() =>
+                      setSelectedSupplierId((prev) => (prev === s.id ? null : s.id))
+                    }
+                    onKeyDown={(e) =>
+                      e.key === "Enter" &&
+                      setSelectedSupplierId((prev) => (prev === s.id ? null : s.id))
+                    }
+                    className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
                       selectedSupplierId === s.id
                         ? "bg-secondary border-primary"
                         : "bg-background border-border hover:border-muted-foreground/40"
                     }`}
                   >
-                    <div className="space-y-0.5 max-w-[70%]">
-                      <div className="text-xs font-bold text-foreground truncate">{s.name}</div>
-                      <div className="text-[10px] text-muted-foreground truncate">{s.address}</div>
-                      <div className="text-[10px] text-primary font-mono">{s.phone}</div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-[10px] font-bold bg-background border border-border px-2 py-0.5 rounded text-muted-foreground">
+                    <div className="flex justify-between items-start gap-2">
+                      <div className="space-y-0.5 max-w-[70%]">
+                        <div className="text-xs font-bold text-foreground truncate">{s.name}</div>
+                        {s.businessType && (
+                          <div className="text-[9px] text-primary font-bold uppercase tracking-wider">
+                            {s.businessType}
+                          </div>
+                        )}
+                        <div className="text-[10px] text-muted-foreground truncate">{s.address}</div>
+                      </div>
+                      <span className="text-[10px] font-bold bg-background border border-border px-2 py-0.5 rounded text-muted-foreground shrink-0">
                         {s.distance}
                       </span>
                     </div>
-                  </button>
+                  </div>
                 ))}
               </div>
             ) : (
@@ -642,7 +673,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           </div>
         </div>
       </div>
+      </TabsContent>
 
+      <TabsContent value="diary">
       {/* Project Management Grid: Daily Site Diary & Checklist + Staff on Site */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Site Diary & Checklist */}
@@ -794,7 +827,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           )}
         </div>
       </div>
+      </TabsContent>
 
+      <TabsContent value="attachments">
       {/* Attachments Section: Photos and Documents */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Before & After Photo Gallery */}
@@ -1003,6 +1038,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           </div>
         </div>
       </div>
+      </TabsContent>
+      </Tabs>
 
       {/* Pour History Logs Card */}
       <div className="bg-card border border-border rounded-xl p-5">

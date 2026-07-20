@@ -149,6 +149,12 @@
 .leaflet-bar { border: 1px solid var(--border) !important; box-shadow: none !important; border-radius: 8px !important; overflow: hidden; }
 .leaflet-bar a { background-color: var(--secondary) !important; color: var(--secondary-foreground) !important; border-bottom: 1px solid var(--border) !important; }
 .leaflet-bar a:hover { background-color: var(--muted) !important; color: var(--foreground) !important; }
+.leaflet-control-attribution {
+  background: rgba(0,0,0,0.25) !important; color: var(--muted-foreground) !important;
+  font-size: 6px !important; line-height: 1.4 !important; padding: 0 3px !important;
+  border-radius: 3px 0 0 0 !important; opacity: 0.7;
+}
+.leaflet-control-attribution a { color: var(--muted-foreground) !important; }
 
 /* Custom scrollbar for horizontal calendar view */
 .custom-scrollbar::-webkit-scrollbar {

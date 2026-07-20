@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { CloudSun, AlertCircle, ChevronRight, HardHat, DollarSign } from "lucide-react";
+import { CloudSun, AlertCircle, HardHat, DollarSign } from "lucide-react";
 import { Job } from "../types/erp";
 import { useJobForecast, getWeatherOnDate } from "../utils/weather";
 import { toLocalISODate } from "../utils/week";
@@ -99,7 +99,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
       {/* Ledger list container */}
       <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl">
         {/* Table Header (hidden on mobile) */}
-        <div className="hidden md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_110px_100px] gap-4 px-5 py-3.5 border-b border-border bg-muted/40">
+        <div className="hidden md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_100px] gap-4 px-5 py-3.5 border-b border-border bg-muted/40">
           <span className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground">
             Job Ref
           </span>
@@ -109,11 +109,8 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
           <span className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground">
             Site Warnings
           </span>
-          <span className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground">
-            Pour Progress
-          </span>
-          <span className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground text-right">
-            Value
+          <span className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground text-center">
+            Progress
           </span>
           <span className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground text-right">
             Status
@@ -142,7 +139,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                     exit={{ opacity: 0 }}
                     layout
                     onClick={() => onSelectJob(job.id)}
-                    className="group flex flex-col md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_110px_100px] gap-4 px-5 py-4 md:py-0 md:min-h-[64px] items-center hover:bg-muted/30 transition-all duration-150 cursor-pointer border-b border-border bg-card relative overflow-hidden"
+                    className="group flex flex-col md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_100px] gap-4 px-5 py-4 md:py-0 md:min-h-[64px] items-center hover:bg-muted/30 active:bg-muted/30 transition-all duration-150 cursor-pointer border-b border-border border-l-[3px] border-l-primary/25 hover:border-l-primary active:border-l-primary bg-card relative overflow-hidden"
                   >
                     {/* Job Ref Column */}
                     <div className="flex justify-between items-center w-full md:w-auto md:contents">
@@ -181,17 +178,9 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                           <JobWarnings job={job} followup={followup} dense />
                         </div>
                         <div className="flex items-center justify-between text-[12px] text-foreground">
-                          <span className="font-semibold">
-                            Value:{" "}
-                            <span className="font-mono text-foreground">
-                              £{Number(job.scheduleValue || 0).toLocaleString("en-GB")}
-                            </span>
-                          </span>
-                          <span className="font-semibold">
-                            Pours:{" "}
-                            <span className="font-mono text-foreground">
-                              {job.currentPours} / {job.contractMaxPours}
-                            </span>
+                          <span className="font-semibold">Progress</span>
+                          <span className="font-mono text-foreground">
+                            {progressPercent.toFixed(0)}%
                           </span>
                         </div>
                       </div>
@@ -202,27 +191,11 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                       <JobWarnings job={job} followup={followup} />
                     </div>
 
-                    {/* Pour Progress Column */}
-                    <div className="hidden md:flex flex-col w-full space-y-1 py-1 text-left">
-                      <div className="flex justify-between text-[11px] font-bold text-muted-foreground">
-                        <span>
-                          {job.currentPours} / {job.contractMaxPours} pours
-                        </span>
-                        <span className="font-mono text-foreground">
-                          {progressPercent.toFixed(0)}%
-                        </span>
-                      </div>
-                      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full transition-all duration-300"
-                          style={{ width: `${progressPercent}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Desktop Value Column */}
-                    <div className="hidden md:block text-right text-[13px] font-mono font-bold text-foreground pr-2">
-                      £{Number(job.scheduleValue || 0).toLocaleString("en-GB")}
+                    {/* Progress Column */}
+                    <div className="hidden md:flex items-center justify-center w-full py-1 text-center">
+                      <span className="text-[13px] font-mono font-bold text-foreground">
+                        {progressPercent.toFixed(0)}%
+                      </span>
                     </div>
 
                     {/* Status Column (Desktop-only) */}

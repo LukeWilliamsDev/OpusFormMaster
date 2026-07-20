@@ -1,5 +1,16 @@
 # docs/RECAP.md
 
+## 2026-07-20 (later session)
+- Enabled dev server preview (launch.json, port 8080, autoPort fallback to already-running instance).
+- Quote control center: enlarged total figure display, widened PDF live mirror preview panel on desktop.
+- Legal & Privacy nav: replaced direct link to Staff Privacy Notice with policy-selection grid (LegalHub.tsx), route `/portal/legal`.
+- Seeded Luke Williams (fake) with active + historical job deployments for demo/testing (jobs/shifts tables, tenant `1e0c8366-be16-4734-8314-7ab7fd6afadc`).
+- Staff dossier Site Assignments: full unwindowed per-worker shift history fetch (bypasses global ±30-day load window), loading spinner state, accordion for Deployment History (collapsed by default).
+- Job cards in Site Assignments link to Job Ledger; back button reads "Return to Staff Record" and returns to the originating worker's dossier on the assignments tab when navigated from there.
+- Unified staff avatar badge color between dossier header and calendar view (role-based, `getRoleColorClasses`).
+- Reduced red overload on expired compliance rows (neutral card/button, red reserved for icon/badge/Remove); brightened `--destructive` for dark theme contrast (`#E5484D`).
+- Job Ledger: default view hides completed jobs; completed jobs auto-archive to new "Archived" tab after 30 days (client-side, `updatedAt`-based, no schema change).
+
 ## 2026-07-20
 - Compliance alert row: click-to-navigate to staff profile, removed redundant Update button, Remind stops propagation.
 - Fixed `log_anonymous_audit` missing `tenant_id` insert (not-null violation on every non-whitelisted audit call since multi-tenancy).

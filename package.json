@@ -57,7 +57,7 @@
     "html2pdf.js": "^0.14.0",
     "input-otp": "^1.4.2",
     "leaflet": "^1.9.4",
-    "lucide-react": "^0.575.0",
+    "lucide-react": "^1.25.0",
     "marked": "^18.0.6",
     "motion": "^12.42.2",
     "puppeteer": "^25.3.0",

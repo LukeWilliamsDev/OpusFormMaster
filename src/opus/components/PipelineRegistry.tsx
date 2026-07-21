@@ -118,6 +118,15 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
   useEffect(() => {
     loadQuotes();
+
+    const channel = supabase
+      .channel("quotes-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "quotes" }, loadQuotes)
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const handleDelete = async () => {

@@ -194,6 +194,22 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
   useEffect(() => {
     fetchJobAuditLogs();
+
+    // Pour entries are audit_logs rows (see logPourAudit above), so
+    // subscribing here keeps Scheduled Pours live for the same reason
+    // jobs/shifts/staff are subscribed elsewhere.
+    const channel = supabase
+      .channel(`job-audit-${job.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "audit_logs", filter: `target_id=eq.${job.id}` },
+        fetchJobAuditLogs,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job.id]);
 

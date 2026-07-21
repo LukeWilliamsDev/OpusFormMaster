@@ -15,7 +15,7 @@ const isArchived = (job: Job) => {
 };
 
 export const JobLedgerPage: React.FC = () => {
-  const { jobs, setJobs, workers } = usePortal();
+  const { jobs, setJobs, workers, shifts, setShifts } = usePortal();
   const [searchParams, setSearchParams] = useSearchParams();
   const [filterStatus, setFilterStatus] = useState<Job["status"] | "all" | "archived">("all");
   const navigate = useNavigate();
@@ -54,20 +54,24 @@ export const JobLedgerPage: React.FC = () => {
 
   // If a jobId is selected, render the Job Details in full-page mode instead of the ledger grid list.
   if (selectedJobId && jobs.find((j) => j.id === selectedJobId)) {
+    // JobDetails is self-contained (own padding, max-width, min-h-screen) —
+    // no outer wrapper here, or its padding stacks with JobDetails' own and
+    // wastes a chunk of vertical space above the header.
     return (
-      <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in">
-        <JobDetails
-          job={jobs.find((j) => j.id === selectedJobId)!}
-          workers={workers}
-          onBack={() =>
-            fromStaff && originWorkerId
-              ? navigate(`/portal/roster?view=staff&workerId=${originWorkerId}&tab=assignments`)
-              : handleSelectJob(null)
-          }
-          backLabel={fromStaff && originWorkerId ? "Return to Staff Record" : "Job Ledger"}
-          onUpdateJob={handleUpdateJob}
-        />
-      </div>
+      <JobDetails
+        job={jobs.find((j) => j.id === selectedJobId)!}
+        workers={workers}
+        allJobs={jobs}
+        shifts={shifts}
+        setShifts={setShifts}
+        onBack={() =>
+          fromStaff && originWorkerId
+            ? navigate(`/portal/roster?view=staff&workerId=${originWorkerId}&tab=assignments`)
+            : handleSelectJob(null)
+        }
+        backLabel={fromStaff && originWorkerId ? "Return to Staff Record" : "Job Ledger"}
+        onUpdateJob={handleUpdateJob}
+      />
     );
   }
 

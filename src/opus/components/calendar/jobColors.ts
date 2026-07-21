@@ -6,56 +6,64 @@ export interface JobColorClasses {
   lightBg: string;
 }
 
+// Muted/earthy palette tuned to sit alongside the brand's warm cream (light)
+// / charcoal (dark) surfaces and burnt-orange primary — desaturated hues
+// instead of stock bright Tailwind colors. Green is deliberately excluded:
+// it's reserved app-wide for "good" states (compliance received, etc.), same
+// as red/rose being reserved for warnings/errors.
 const PALETTES: JobColorClasses[] = [
   {
-    bg: "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 [.light-theme_&]:text-emerald-600 hover:bg-emerald-500/15 hover:border-emerald-500/40",
-    text: "text-emerald-400 [.light-theme_&]:text-emerald-600",
-    border: "border-emerald-500/30",
-    bullet: "bg-emerald-500",
-    lightBg: "bg-emerald-500/10",
+    // Dusty teal
+    bg: "bg-teal-600/10 border-teal-600/30 text-teal-300 [.light-theme_&]:text-teal-700 hover:bg-teal-600/15 hover:border-teal-600/40",
+    text: "text-teal-300 [.light-theme_&]:text-teal-700",
+    border: "border-teal-600/30",
+    bullet: "bg-teal-600/70",
+    lightBg: "bg-teal-600/10",
   },
   {
-    bg: "bg-rose-500/10 border-rose-500/30 text-rose-400 [.light-theme_&]:text-rose-600 hover:bg-rose-500/15 hover:border-rose-500/40",
-    text: "text-rose-400 [.light-theme_&]:text-rose-600",
-    border: "border-rose-500/30",
-    bullet: "bg-rose-500",
-    lightBg: "bg-rose-500/10",
+    // Slate blue
+    bg: "bg-slate-500/10 border-slate-500/30 text-slate-300 [.light-theme_&]:text-slate-600 hover:bg-slate-500/15 hover:border-slate-500/40",
+    text: "text-slate-300 [.light-theme_&]:text-slate-600",
+    border: "border-slate-500/30",
+    bullet: "bg-slate-500/70",
+    lightBg: "bg-slate-500/10",
   },
   {
-    bg: "bg-purple-500/10 border-purple-500/30 text-purple-400 [.light-theme_&]:text-purple-600 hover:bg-purple-500/15 hover:border-purple-500/40",
-    text: "text-purple-400 [.light-theme_&]:text-purple-600",
-    border: "border-purple-500/30",
-    bullet: "bg-purple-500",
-    lightBg: "bg-purple-500/10",
+    // Plum
+    bg: "bg-purple-600/10 border-purple-600/30 text-purple-300 [.light-theme_&]:text-purple-700 hover:bg-purple-600/15 hover:border-purple-600/40",
+    text: "text-purple-300 [.light-theme_&]:text-purple-700",
+    border: "border-purple-600/30",
+    bullet: "bg-purple-600/70",
+    lightBg: "bg-purple-600/10",
   },
   {
-    bg: "bg-teal-500/10 border-teal-500/30 text-teal-400 [.light-theme_&]:text-teal-600 hover:bg-teal-500/15 hover:border-teal-500/40",
-    text: "text-teal-400 [.light-theme_&]:text-teal-600",
-    border: "border-teal-500/30",
-    bullet: "bg-teal-500",
-    lightBg: "bg-teal-500/10",
+    // Ochre
+    bg: "bg-amber-600/10 border-amber-600/30 text-amber-300 [.light-theme_&]:text-amber-700 hover:bg-amber-600/15 hover:border-amber-600/40",
+    text: "text-amber-300 [.light-theme_&]:text-amber-700",
+    border: "border-amber-600/30",
+    bullet: "bg-amber-600/70",
+    lightBg: "bg-amber-600/10",
   },
   {
-    bg: "bg-amber-500/10 border-amber-500/30 text-amber-400 [.light-theme_&]:text-amber-600 hover:bg-amber-500/15 hover:border-amber-500/40",
-    text: "text-amber-400 [.light-theme_&]:text-amber-600",
-    border: "border-amber-500/30",
-    bullet: "bg-amber-500",
-    lightBg: "bg-amber-500/10",
+    // Warm stone
+    bg: "bg-stone-500/10 border-stone-500/30 text-stone-300 [.light-theme_&]:text-stone-600 hover:bg-stone-500/15 hover:border-stone-500/40",
+    text: "text-stone-300 [.light-theme_&]:text-stone-600",
+    border: "border-stone-500/30",
+    bullet: "bg-stone-500/70",
+    lightBg: "bg-stone-500/10",
   },
 ];
 
-/**
- * Stable palette per job id. Numeric seed ids ('1'..'5') keep their original
- * colors; arbitrary ids (e.g. 'job-x7f2k') hash into the same 5 palettes.
- */
+// Assign by first-seen order, not a hash of the id — a hash mod 5 can put two
+// different jobs in the same slot. First-seen keeps every job distinct until
+// the palette (5 colors) is actually exhausted, same convention as roleColors.ts.
+const assignedColors = new Map<string, JobColorClasses>();
+
 export const getJobColorClasses = (jobId: string): JobColorClasses => {
-  const numeric = Number(jobId);
-  if (Number.isInteger(numeric) && numeric >= 1 && numeric <= PALETTES.length) {
-    return PALETTES[numeric - 1];
+  let color = assignedColors.get(jobId);
+  if (!color) {
+    color = PALETTES[assignedColors.size % PALETTES.length];
+    assignedColors.set(jobId, color);
   }
-  let hash = 0;
-  for (let i = 0; i < jobId.length; i++) {
-    hash = (hash * 31 + jobId.charCodeAt(i)) >>> 0;
-  }
-  return PALETTES[hash % PALETTES.length];
+  return color;
 };

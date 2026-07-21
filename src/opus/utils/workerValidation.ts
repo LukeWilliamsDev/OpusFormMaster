@@ -12,41 +12,16 @@ export const validateWorkerForDeployment = (
   worker: Worker,
   roleNeeded: string,
 ): { isValid: boolean; reason: string | null } => {
-  const anchorDate = getAnchorDate();
-  // Must possess a valid CSCS safety ticket
-  const cscsTicket = worker.tickets.find((t) => t.type === "CSCS");
-  if (!cscsTicket) {
-    return { isValid: false, reason: "Missing CSCS safety ticket" };
-  }
-  if (new Date(cscsTicket.expiryDate) < anchorDate) {
-    return { isValid: false, reason: "CSCS safety ticket has expired" };
+  // Deployable as long as they hold at least one compliance ticket and none
+  // of them have expired — matches the green/amber/red status shown on the
+  // staff roster profile rather than requiring a specific ticket type name.
+  if (!worker.tickets || worker.tickets.length === 0) {
+    return { isValid: false, reason: "No compliance certificates on file" };
   }
 
-  // Role-specific machine qualifications
-  if (
-    roleNeeded?.toLowerCase().includes("telehandler") ||
-    worker.role?.toLowerCase().includes("telehandler")
-  ) {
-    const teleTicket = worker.tickets.find((t) => t.type === "Telehandler");
-    if (!teleTicket) {
-      return { isValid: false, reason: "Requires active Telehandler operator ticket" };
-    }
-    if (new Date(teleTicket.expiryDate) < anchorDate) {
-      return { isValid: false, reason: "Telehandler operator ticket has expired" };
-    }
-  }
-
-  if (
-    roleNeeded?.toLowerCase().includes("supervisor") ||
-    worker.role?.toLowerCase().includes("supervisor")
-  ) {
-    const superTicket = worker.tickets.find((t) => t.type === "Supervisor");
-    if (!superTicket) {
-      return { isValid: false, reason: "Requires active Supervisor qualification ticket" };
-    }
-    if (new Date(superTicket.expiryDate) < anchorDate) {
-      return { isValid: false, reason: "Supervisor qualification ticket has expired" };
-    }
+  const expiredTicket = worker.tickets.find((t) => getTicketStatus(t) === "EXPIRED");
+  if (expiredTicket) {
+    return { isValid: false, reason: `${expiredTicket.type} has expired` };
   }
 
   return { isValid: true, reason: null };

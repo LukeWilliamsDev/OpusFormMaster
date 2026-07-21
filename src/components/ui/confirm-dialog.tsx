@@ -47,8 +47,11 @@ export function ConfirmDialog({
         <AlertDialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
         <AlertDialogPrimitive.Content
           className={cn(
+            // Docked bottom sheet up to (and including) tablet — only true
+            // desktop widths (lg+) get the centered modal. Every ConfirmDialog
+            // in the app shares this component, so this switch is retroactive.
             "fixed inset-x-0 bottom-0 z-50 w-full max-h-[88dvh] overflow-y-auto rounded-t-2xl border-t bg-card text-card-foreground shadow-2xl duration-150 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
-            "md:inset-x-auto md:left-1/2 md:top-1/2 md:bottom-auto md:w-[calc(100%-2rem)] md:max-w-[400px] md:max-h-[calc(100dvh-2rem)] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-lg md:border md:data-[state=open]:slide-in-from-bottom-0 md:data-[state=closed]:slide-out-to-bottom-0 md:data-[state=open]:zoom-in-95 md:data-[state=closed]:zoom-out-95",
+            "lg:inset-x-auto lg:left-1/2 lg:top-1/2 lg:bottom-auto lg:w-[calc(100%-2rem)] lg:max-w-[400px] lg:max-h-[calc(100dvh-2rem)] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:rounded-lg lg:border lg:data-[state=open]:slide-in-from-bottom-0 lg:data-[state=closed]:slide-out-to-bottom-0 lg:data-[state=open]:zoom-in-95 lg:data-[state=closed]:zoom-out-95",
             toneBorder[tone],
           )}
         >

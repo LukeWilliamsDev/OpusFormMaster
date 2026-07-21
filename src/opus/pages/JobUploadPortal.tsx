@@ -4,6 +4,9 @@ import { supabase } from "../../integrations/supabase/client";
 import { FileUp, Check, AlertCircle, Loader, UploadCloud } from "lucide-react";
 import { usePortal } from "../context/PortalContext";
 
+const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_TOTAL_BYTES = 100 * 1024 * 1024;
+
 export const JobUploadPortalPage: React.FC = () => {
   const { theme } = usePortal();
   const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
@@ -11,6 +14,7 @@ export const JobUploadPortalPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [jobData, setJobData] = useState<any>(null);
   const [requestData, setRequestData] = useState<any>(null);
+  const [existingTotalBytes, setExistingTotalBytes] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -37,7 +41,10 @@ export const JobUploadPortalPage: React.FC = () => {
       }
 
       setRequestData(data);
-      setJobData(data.job);
+      // data.job is the raw jobs row (to_jsonb in the RPC) — snake_case, not
+      // the camelCase Job type used everywhere else in the app.
+      setJobData({ jobRef: data.job.job_ref, siteName: data.job.site_name });
+      setExistingTotalBytes(data.existing_total_bytes || 0);
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || "Access Denied: Invalid or expired upload link.");
@@ -56,21 +63,39 @@ export const JobUploadPortalPage: React.FC = () => {
     }
   };
 
+  // Rejects oversized files up front and caps the running total (already-
+  // stored attachments + everything queued) at the 100MB per-job limit.
+  const addFiles = (candidates: File[]) => {
+    setErrorMsg(null);
+    const oversized = candidates.filter((f) => f.size > MAX_FILE_BYTES);
+    if (oversized.length > 0) {
+      setErrorMsg(`${oversized.map((f) => f.name).join(", ")} exceeds the 10MB per-file limit.`);
+      candidates = candidates.filter((f) => f.size <= MAX_FILE_BYTES);
+    }
+    const queuedTotal = files.reduce((sum, f) => sum + f.size, 0);
+    const incomingTotal = candidates.reduce((sum, f) => sum + f.size, 0);
+    if (existingTotalBytes + queuedTotal + incomingTotal > MAX_TOTAL_BYTES) {
+      setErrorMsg((prev) =>
+        (prev ? prev + " " : "") + "This job has reached its 100MB total attachment limit.",
+      );
+      return;
+    }
+    if (candidates.length > 0) setFiles((prev) => [...prev, ...candidates]);
+  };
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const droppedFiles = Array.from(e.dataTransfer.files);
-      setFiles((prev) => [...prev, ...droppedFiles]);
+      addFiles(Array.from(e.dataTransfer.files));
     }
   };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const selectedFiles = Array.from(e.target.files);
-      setFiles((prev) => [...prev, ...selectedFiles]);
+      addFiles(Array.from(e.target.files));
     }
   };
 
@@ -108,6 +133,7 @@ export const JobUploadPortalPage: React.FC = () => {
           p_token: token,
           p_file_name: file.name,
           p_file_url: publicUrl,
+          p_file_size_bytes: file.size,
         });
 
         if (insertError) throw insertError;
@@ -171,7 +197,7 @@ export const JobUploadPortalPage: React.FC = () => {
 
         {uploadSuccess ? (
           <div className="text-center space-y-5 py-6">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-success/10 border border-success/20 text-success animate-bounce">
+            <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-success/10 border border-success/20 text-success">
               <Check className="w-8 h-8" />
             </div>
             <div className="space-y-1">
@@ -213,6 +239,7 @@ export const JobUploadPortalPage: React.FC = () => {
                     <span className="text-primary hover:underline">browse</span>
                   </p>
                   <p className="text-xs text-muted-foreground">Supports PDF, DOCX, JPEG, PNG, Excel</p>
+                  <p className="text-[10px] text-muted-foreground">10MB per file, 100MB total per job</p>
                 </div>
               </label>
             </div>

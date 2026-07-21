@@ -44,6 +44,18 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
+// Only these fields count as a real "profile change" worth surfacing a
+// generic "Staff Details Have Been Updated" entry + Revert button for.
+// Everything else (tickets, uploaded_certificates, is_archived, postcode)
+// is either covered by its own dedicated entry or too noisy to gate on.
+const REVERTIBLE_FIELDS = ["name", "role", "phone", "email"];
+const FIELD_LABELS: Record<string, string> = {
+  name: "Name",
+  role: "Job Title",
+  phone: "Phone",
+  email: "Email",
+};
+
 interface RosterViewProps {
   workers: Worker[];
   setWorkers: React.Dispatch<React.SetStateAction<Worker[]>>;
@@ -364,13 +376,31 @@ export const RosterView: React.FC<RosterViewProps> = ({
     }
   };
 
-  const handleViewDocument = async (documentUrl: string) => {
+  const handleViewDocument = async (documentUrl: string, ticket?: Ticket) => {
     if (!documentUrl) return;
 
     // Open the tab synchronously, within the click's user-gesture window —
     // opening it after the signed-URL fetch below resolves gets silently
     // blocked by popup blockers since the async gap breaks the gesture link.
     const newTab = window.open("", "_blank");
+
+    if (selectedWorkerDetailsId) {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        supabase
+          .rpc("log_anonymous_audit", {
+            p_user_email: user?.email || "admin@opusform.co.uk",
+            p_action: "VIEW_DOCUMENT",
+            p_target_type: "staff",
+            p_target_id: selectedWorkerDetailsId,
+            p_details: {
+              ticket_id: ticket?.id,
+              ticket_type: ticket?.type,
+              ticket_number: ticket?.ticketNumber,
+            },
+          })
+          .then(() => fetchLogsAndRequests());
+      });
+    }
 
     if (documentUrl.includes("/compliance-documents/")) {
       try {
@@ -1171,11 +1201,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
         if (event.action === "UPDATE") {
           const diff = event.details?.old ? computeDiff(event.details.old, event.details.new) : [];
           if (diff.length === 0) return false;
-          // Ticket-only changes are already covered by their own
-          // SUBMIT_DOCUMENTS / APPROVE_DOCUMENT / REJECT_DOCUMENT entry —
-          // showing the generic "Staff Details Have Been Updated" too is
-          // just noise duplicating the same event.
-          if (diff.every((d) => d.field === "tickets")) return false;
+          // Only show the generic "Staff Details Have Been Updated" entry
+          // when a real profile field changed — other columns (tickets,
+          // uploaded_certificates, is_archived, postcode) are either covered
+          // by their own dedicated entries or too noisy to surface here.
+          if (!diff.some((d) => REVERTIBLE_FIELDS.includes(d.field))) return false;
           return true;
         }
         return true;
@@ -1310,11 +1340,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         <h4 className="text-[12px] font-bold text-foreground tracking-wide truncate">
                           {ticket.type}
                         </h4>
-                        <span
-                          className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-md uppercase tracking-wider border ${badgeClass}`}
-                        >
-                          {statusText}
-                        </span>
+                        {statusText !== "ACTIVE" && (
+                          <span
+                            className={`px-1.5 py-0.5 text-[9px] font-semibold rounded-md uppercase tracking-wider border ${badgeClass}`}
+                          >
+                            {statusText}
+                          </span>
+                        )}
                         {!isExpired && (
                           <span className="text-[10px] font-medium text-muted-foreground">
                             Expires: {formattedDate}
@@ -1349,7 +1381,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             type="button"
                             onClick={() =>
                               ticket.documentUrl
-                                ? handleViewDocument(ticket.documentUrl)
+                                ? handleViewDocument(ticket.documentUrl, ticket)
                                 : toast("No document attached")
                             }
                             className="w-full sm:w-auto px-3 py-1 border border-border hover:bg-secondary text-foreground rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
@@ -1685,18 +1717,38 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       if (action === "CREATE") {
                         summaryText = "Initial database record created for staff member";
                       } else {
-                        summaryText = "Staff Details Have Been Updated";
                         diff = event.details?.old
                           ? computeDiff(event.details.old, event.details.new)
                           : [];
+                        const changedFields = diff
+                          .filter((d) => REVERTIBLE_FIELDS.includes(d.field))
+                          .map((d) => FIELD_LABELS[d.field] || d.field);
+                        summaryText = changedFields.length
+                          ? `Staff Details Updated: ${changedFields.join(", ")}`
+                          : "Staff Details Have Been Updated";
                       }
                     } else if (action === "INSPECT") {
                       badgeColor =
                         "bg-purple-500/10 border-purple-500/30 text-purple-400 [.light-theme_&]:text-purple-600";
                       summaryText = "Staff dossier profile viewed by administrator";
+                    } else if (action === "VIEW_DOCUMENT") {
+                      badgeColor = "bg-primary/5 border-primary/20 text-primary";
+                      const viewerFirstName = (event.actor || "").split("@")[0].split(".")[0];
+                      summaryText = `${event.details?.ticket_type || "Document"} viewed by ${
+                        viewerFirstName || "operative"
+                      }`;
                     } else if (action === "COMPLIANCE_REMINDER_SENT") {
                       badgeColor = "bg-primary/5 border-primary/20 text-primary";
                       summaryText = `Reminder sent: ${event.details?.ticket_type || "Certificate"}`;
+                    } else if (action === "ASSIGN_STAFF") {
+                      badgeColor = "bg-primary/5 border-primary/20 text-primary";
+                      summaryText = `Assigned to ${event.details?.job_name || "a job"}`;
+                    } else if (action === "REALLOCATE_STAFF") {
+                      badgeColor = "bg-warning/15 border-warning/30 text-warning";
+                      summaryText = `Reallocated to ${event.details?.job_name || "a job"}`;
+                    } else if (action === "REMOVE_STAFF") {
+                      badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
+                      summaryText = `Removed from ${event.details?.job_name || "a job"}`;
                     } else {
                       summaryText =
                         typeof event.details === "string" ? event.details : "";
@@ -1751,19 +1803,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             <span>Resend</span>
                           </button>
                         )}
-                        {diff.length > 0 && (
+                        {diff.some((d) => REVERTIBLE_FIELDS.includes(d.field)) && (
                           <button
                             type="button"
                             onClick={() =>
                               setRevertConfirmTarget({
                                 oldDetails: event.details?.old,
-                                currentDetails: {
-                                  name: selectedWorkerDetails?.name,
-                                  role: selectedWorkerDetails?.role,
-                                  phone: selectedWorkerDetails?.phone,
-                                  email: selectedWorkerDetails?.email,
-                                  postcode: selectedWorkerDetails?.postcode,
-                                },
+                                currentDetails: event.details?.new,
                                 workerId:
                                   event.rawRecord?.target_id || selectedWorkerDetailsId || "",
                               })

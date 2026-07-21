@@ -10,18 +10,13 @@ interface TicketStatusBadgeProps {
 
 export const TicketStatusBadge: React.FC<TicketStatusBadgeProps> = ({ ticket }) => {
   const status = getTicketStatus(ticket);
-  let colorClasses = "";
-  if (status === "EXPIRED") {
-    colorClasses = "bg-red-500/20 border-red-500/30 text-red-400";
-  } else if (status === "EXPIRING_SOON") {
-    colorClasses = "bg-amber-500/10 border-amber-500/20 text-amber-400 animate-pulse";
-  } else {
-    colorClasses = "bg-emerald-500/10 border-emerald-500/20 text-emerald-400";
-  }
+  if (status === "ACTIVE") return null;
 
-  let statusText = "ACTIVE";
-  if (status === "EXPIRED") statusText = "EXPIRED";
-  else if (status === "EXPIRING_SOON") statusText = "EXPIRING";
+  const colorClasses =
+    status === "EXPIRED"
+      ? "bg-red-500/20 border-red-500/30 text-red-400"
+      : "bg-amber-500/10 border-amber-500/20 text-amber-400 animate-pulse";
+  const statusText = status === "EXPIRED" ? "EXPIRED" : "EXPIRING";
 
   return (
     <span

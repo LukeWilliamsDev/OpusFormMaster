@@ -154,7 +154,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
       postcode: convertingQuote.clientInfo.postcode || "N/A",
       currentPours: 0,
       contractMaxPours: 10,
-      status: "in-progress",
+      status: "pending",
       scheduleValue: convertingQuote.totals?.grossTotal || 0,
     };
 

@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { Job, Worker, ScheduledShift } from "../types/erp";
 import { validateWorkerForDeployment } from "../utils/workerValidation";
+import { supabase } from "../../integrations/supabase/client";
 
 export type AssignResult =
   | { status: "ok" }
@@ -13,6 +14,36 @@ const createShift = (workerId: string, jobId: string, date: string): ScheduledSh
   jobId,
   date,
 });
+
+// Single choke point for assignment audit logging — every caller (staff
+// calendar, project calendar, job details staff panel) routes through
+// assignWorker/confirmReallocate/removeShift below, so logging once here
+// covers all of them instead of duplicating it per caller.
+const logAssignmentAudit = (
+  action: "ASSIGN_STAFF" | "REALLOCATE_STAFF" | "REMOVE_STAFF",
+  worker: Worker | undefined,
+  job: Job | undefined,
+  date: string,
+) => {
+  supabase.auth.getUser().then(({ data: { user } }) => {
+    const p_user_email = user?.email || "admin@opusform.co.uk";
+    const details = { worker_name: worker?.name, job_name: job?.siteName, date };
+    supabase.rpc("log_anonymous_audit", {
+      p_user_email,
+      p_action: action,
+      p_target_type: "jobs",
+      p_target_id: job?.id,
+      p_details: details,
+    });
+    supabase.rpc("log_anonymous_audit", {
+      p_user_email,
+      p_action: action,
+      p_target_type: "staff",
+      p_target_id: worker?.id,
+      p_details: details,
+    });
+  });
+};
 
 /**
  * Assignment mutations against the shifts table. Writes go through setShifts,
@@ -49,6 +80,7 @@ export const useShiftActions = (
       }
 
       setShifts((prev) => [...prev, createShift(workerId, jobId, date)]);
+      logAssignmentAudit("ASSIGN_STAFF", worker, jobs.find((j) => j.id === jobId), date);
       return { status: "ok" };
     },
     [workers, jobs, shifts, setShifts],
@@ -60,15 +92,30 @@ export const useShiftActions = (
         ...prev.filter((s) => s.id !== existingShiftId),
         createShift(workerId, jobId, date),
       ]);
+      logAssignmentAudit(
+        "REALLOCATE_STAFF",
+        workers.find((w) => w.id === workerId),
+        jobs.find((j) => j.id === jobId),
+        date,
+      );
     },
-    [setShifts],
+    [workers, jobs, setShifts],
   );
 
   const removeShift = useCallback(
     (shiftId: string) => {
+      const removed = shifts.find((s) => s.id === shiftId);
       setShifts((prev) => prev.filter((s) => s.id !== shiftId));
+      if (removed) {
+        logAssignmentAudit(
+          "REMOVE_STAFF",
+          workers.find((w) => w.id === removed.workerId),
+          jobs.find((j) => j.id === removed.jobId),
+          removed.date,
+        );
+      }
     },
-    [setShifts],
+    [workers, jobs, shifts, setShifts],
   );
 
   return { assignWorker, confirmReallocate, removeShift };

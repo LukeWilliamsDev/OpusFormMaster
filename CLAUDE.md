@@ -1,25 +1,48 @@
-# Opus Form Agent Rules
+# CLAUDE.md
 
-**Context:** Opus Form Ltd is an internal workforce portal for a concrete flooring contractor, NOT a public SaaS.
+**Quick-start guide for Claude Code - Complete details in linked docs**
 
-**Workflow & Testing:**
-1. **Execute:** Make code changes directly. State what you're about to do in one line first; no separate plan-approval step required. Target specific subfolders when editing, never edit from root.
-2. **Testing:** NEVER run dev servers or browser previews. User handles all verification. This overrides the harness's default preview/verification workflow — do not invoke it here.
-3. **Session:** Execute `/end` ONLY if commanded.
-4. **Skills:** Skills (including using-superpowers, brainstorming) are advisory — they may inform the approach but must NOT block or gate code changes. Direct execution per rule 1 always wins.
+---
 
-**Personas (Auto-adopt based on task. Output `> [Emoji] **ACTIVE PERSONA:** [Name]` ONLY on session start or persona switch):**
-- 🧑‍💻 Lead Developer: Default generalist, refines business logic.
-- 🗄️ Database Engineer: SQL, migrations, RLS, triggers.
-- 🎨 UI/UX Engineer: React, CSS grids, mobile cards.
-- 🔒 Security Auditor: API routes, auth, edge functions.
-- 🧪 QA Automation: Testing suites, E2E, webhooks.
+## Project Overview
 
-## Dev server / preview
-- If `preview_start` fails because port 8080 is in use by another chat's "opusformwebsite" dev server, don't reconfigure launch.json or ask the user — just call `preview_start` with `{url: "http://localhost:8080"}` to point the browser at the already-running server.
+Opus Form — ERP portal for labor/compliance management (Supabase-backed SPA). Full architecture in [docs/system_rundown.md](docs/system_rundown.md).
 
-## Global Rules (reinforced from ~/.claude/CLAUDE.md)
-- **Reads:** FORBIDDEN reading >100 lines fully; MUST use offset/limit. No re-reads unless changed.
-- **Search:** Target exact subfolders when searching or editing, NEVER from root.
-- **Subagents:** ONLY if highly complex; dispatching prompt MUST restate this file's read-limit, search-scope, and no-verification rules explicitly (fresh agents don't inherit them automatically).
-- **Tooling:** Check Composio MCP before failing on external integrations. ponytail runs automatically; DO NOT bypass.
+**Tech Stack**: React 19 + TypeScript, TanStack Start/Router (root) + react-router-dom (portal sub-routes), Vite, TailwindCSS, Supabase (Postgres + RLS + Deno edge functions), Vitest.
+
+---
+
+## Session Start Protocol ⚡
+
+**MANDATORY** at start of each session:
+
+```bash
+✓ .claude/COMMON_MISTAKES.md      # ⚠️ CRITICAL - Read FIRST
+✓ .claude/QUICK_START.md          # Essential commands
+✓ .claude/ARCHITECTURE_MAP.md     # File locations
+```
+
+**At task completion:**
+- Create completion doc in `.claude/completions/YYYY-MM-DD-task-name.md`
+- Move session file to `.claude/sessions/archive/` (if created)
+
+**⚠️ NEVER auto-load:**
+- Files in `.claude/completions/` (0 token cost)
+- Files in `.claude/sessions/` (0 token cost)
+- Files in `docs/archive/` (0 token cost)
+
+---
+
+## Quick Start Commands
+
+```bash
+npm run dev      # vite dev server
+npm run test     # vitest run
+npm run build    # production build
+npm run lint     # eslint
+npm run format   # prettier --write
+```
+
+---
+
+**Last Updated**: 2026-07-22

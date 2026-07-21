@@ -20,6 +20,7 @@ import { usePortal, jobToRow } from "../context/PortalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { generateQuotePdfBlob } from "../lib/quotePdf";
+import { toast } from "sonner";
 
 interface MeasuredItem {
   id: string;
@@ -68,9 +69,6 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
   const [selectedQuoteToDelete, setSelectedQuoteToDelete] = useState<Quote | null>(null);
   const [convertingQuote, setConvertingQuote] = useState<Quote | null>(null);
   const [selectedQuoteForControl, setSelectedQuoteForControl] = useState<Quote | null>(null);
-  const [showToast, setShowToast] = useState<{ message: string; type: "success" | "error" } | null>(
-    null,
-  );
   const [isLoading, setIsLoading] = useState(true);
 
   // Sort states
@@ -112,7 +110,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
       setQuotes(loadedQuotes);
     } catch (e) {
       console.error("Failed to load quotes from Supabase", e);
-      triggerToast("Failed to load quotes", "error");
+      toast.error("Failed to load quotes");
     } finally {
       setIsLoading(false);
     }
@@ -121,11 +119,6 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
   useEffect(() => {
     loadQuotes();
   }, []);
-
-  const triggerToast = (message: string, type: "success" | "error" = "success") => {
-    setShowToast({ message, type });
-    setTimeout(() => setShowToast(null), 3000);
-  };
 
   const handleDelete = async () => {
     if (!selectedQuoteToDelete) return;
@@ -136,10 +129,10 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
       setQuotes(quotes.filter((q) => q.id !== selectedQuoteToDelete.id));
       setSelectedQuoteToDelete(null);
-      triggerToast("Quote deleted successfully", "success");
+      toast.success("Quote deleted successfully");
     } catch (e) {
       console.error("Failed to delete quote", e);
-      triggerToast("Failed to delete quote", "error");
+      toast.error("Failed to delete quote");
     }
   };
 
@@ -175,7 +168,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
       setQuotes(quotes.filter((q) => q.id !== convertingQuote.id));
       setConvertingQuote(null);
-      triggerToast(`Converted ${convertingQuote.reference} to Active Job ${newJob.jobRef}`);
+      toast.success(`Converted ${convertingQuote.reference} to Active Job ${newJob.jobRef}`);
 
       try {
         const { blob, filename } = await generateQuotePdfBlob(convertingQuote);
@@ -192,7 +185,6 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
         const { error: insertError } = await supabase.from("job_attachments").insert({
           job_id: newJob.id,
-          tenant_id: profile?.tenant_id,
           type: "document",
           file_name: filename,
           file_url: publicUrl,
@@ -202,12 +194,15 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         if (insertError) throw insertError;
       } catch (pdfErr) {
         // Job conversion already succeeded; the PDF attach is a nice-to-have,
-        // so failures here are logged only and don't roll back the job.
+        // so failure doesn't roll back the job, but it must be visible —
+        // silently swallowing it left broken attachments undiagnosed.
         console.error("Failed to attach quote PDF to new job", pdfErr);
+        const reason = pdfErr?.message || pdfErr?.error_description || JSON.stringify(pdfErr);
+        toast.error(`Job created, but quote PDF failed to attach: ${reason}`);
       }
     } catch (e) {
       console.error("Failed to complete quote conversion", e);
-      triggerToast("Failed to complete conversion", "error");
+      toast.error("Failed to complete conversion");
     }
   };
 
@@ -257,16 +252,6 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
   return (
     <div className="flex flex-col flex-1 w-full text-brand-white pb-24">
-      {/* Toast Notification */}
-      {showToast && (
-        <div className="fixed top-20 right-6 z-[200] bg-brand-charcoal border-l-4 border-primary p-4 rounded shadow-2xl flex items-center space-x-3 animate-in slide-in-from-right duration-300">
-          <div className="w-2 h-2 rounded-full bg-primary animate-ping" />
-          <span className="text-[11px] font-black uppercase tracking-widest text-brand-white">
-            {showToast.message}
-          </span>
-        </div>
-      )}
-
       {/* Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
@@ -305,6 +290,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         )}
 
         {/* Desktop Table (lg and up) */}
+        {sortedQuotes.length > 0 && (
         <div className="hidden lg:block space-y-4">
           <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl">
             {/* Table Header */}
@@ -432,8 +418,10 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
             </div>
           </div>
         </div>
+        )}
 
         {/* Mobile / Tablet Card List (below lg) */}
+        {sortedQuotes.length > 0 && (
         <div className="lg:hidden space-y-3">
           {sortedQuotes.map((quote) => (
             <div
@@ -481,6 +469,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
             </div>
           ))}
         </div>
+        )}
       </main>
 
       {/* Delete Confirmation Modal */}

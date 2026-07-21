@@ -20,7 +20,7 @@ WORD_COUNT=$(find . -maxdepth 3 \
   -not -path "./.claude/sessions/*" \
   2>/dev/null | xargs wc -w 2>/dev/null | tail -1 | awk '{print $1}')
 
-APPROX_TOKENS=$(echo "$WORD_COUNT * 1.3 / 1" | bc 2>/dev/null || echo "?")
+APPROX_TOKENS=$(awk "BEGIN{printf \"%d\", ${WORD_COUNT:-0} * 1.3}" 2>/dev/null || echo "?")
 
 mkdir -p "$(dirname "$LOG_FILE")"
 

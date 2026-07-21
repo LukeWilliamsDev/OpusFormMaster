@@ -1,4 +1,4 @@
-# Session Snapshot — 2026-07-22 07:52
+# Session Snapshot — 2026-07-22 08:22
 
 ## Files Changed
 - .claude/agents/design-ui-designer.md
@@ -13,11 +13,11 @@
 - .claude/agents/security-incident-responder.md
 
 ## Recent Commits
+- 6116006 Extract PDF template and image compression to lib, add gallery/rename to job attachments, fix quote-to-job conversion
 - fee37a7 Add redux store scaffold, restructure Claude Code agents/hooks, drop legacy skills
 - eb651bb Fill in Claude Code doc scaffold with real project facts
 - 821477d Fix function-overload risk in job_attachment_size_limits migration
 - f2e1a17 Job details: staff assignment, audit coverage, attachment safety, UI polish
-- f47df0d Fix compliance portal tenant_id bug, tighten revert scope, add staff realtime sync
 
 ## Token Estimate
 ~? tokens in auto-loaded files

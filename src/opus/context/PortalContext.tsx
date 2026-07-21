@@ -417,6 +417,85 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [user, profile?.tenant_id]);
 
+  // Keep jobs live: changes made outside this session's own upsert loop
+  // (e.g. direct DB edits, another tenant session) should reflect immediately
+  // instead of only on next login.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`jobs-changes-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "jobs" },
+        (payload) => {
+          if (!hydratedRef.current) return;
+          setJobs((prev) => {
+            const next =
+              payload.eventType === "DELETE"
+                ? prev.filter((j) => j.id !== payload.old.id)
+                : (() => {
+                    const updated = rowToJob(payload.new);
+                    const idx = prev.findIndex((j) => j.id === updated.id);
+                    return idx === -1
+                      ? [...prev, updated]
+                      : prev.map((j, i) => (i === idx ? updated : j));
+                  })();
+
+            // Mark this state as already persisted so the auto-save effect
+            // below doesn't immediately echo it back as a redundant upsert.
+            prevJobIdsRef.current = new Set(next.map((j) => j.id));
+            lastSavedJobsRef.current = JSON.stringify(
+              next.map((j) => jobToRow(j, profile?.tenant_id)),
+            );
+            return next;
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, profile?.tenant_id]);
+
+  // Keep the roster's shifts live for the same reason jobs are subscribed
+  // above: other sessions/direct edits should reflect immediately.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`shifts-changes-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "shifts" },
+        (payload) => {
+          if (!hydratedRef.current) return;
+          setShifts((prev) => {
+            const next =
+              payload.eventType === "DELETE"
+                ? prev.filter((s) => s.id !== payload.old.id)
+                : (() => {
+                    const updated = rowToShift(payload.new);
+                    const idx = prev.findIndex((s) => s.id === updated.id);
+                    return idx === -1
+                      ? [...prev, updated]
+                      : prev.map((s, i) => (i === idx ? updated : s));
+                  })();
+
+            prevShiftIdsRef.current = new Set(next.map((s) => s.id));
+            lastSavedShiftsRef.current = JSON.stringify(
+              next.map((s) => shiftToRow(s, profile?.tenant_id)),
+            );
+            return next;
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, profile?.tenant_id]);
+
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
     const rows = workers.map((w) => workerToRow(w, profile?.tenant_id));

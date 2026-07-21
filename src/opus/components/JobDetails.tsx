@@ -2,6 +2,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   ChevronLeft,
+  ChevronRight,
+  Download,
   CloudRain,
   CloudSun,
   Snowflake,
@@ -29,6 +31,8 @@ import {
   Layers,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { Job, Worker, ScheduledShift } from "../types/erp";
 import { supabase } from "../../integrations/supabase/client";
 import { OSMMap } from "./OSMMap";
@@ -38,7 +42,7 @@ import { computeDiff } from "../utils/auditDiff";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { useShiftActions } from "../hooks/useShiftActions";
+import { compressImageFile } from "../lib/compressImage";
 
 // Only these job columns count as a real "job detail change" worth surfacing
 // an audit entry + Revert button for — same convention as the staff dossier.
@@ -91,12 +95,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   onUpdateJob,
   backLabel = "Job Ledger",
 }) => {
-  const { assignWorker, confirmReallocate, removeShift } = useShiftActions(
-    workers,
-    allJobs,
-    shifts,
-    setShifts,
-  );
   const [status, setStatus] = useState<Job["status"]>(job.status);
   const [currentPours, setCurrentPours] = useState<number>(job.currentPours || 0);
   const [contractMaxPours, setContractMaxPours] = useState<number>(job.contractMaxPours || 0);
@@ -119,6 +117,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [viewDocTarget, setViewDocTarget] = useState<any>(null);
   const [deleteAttachmentTarget, setDeleteAttachmentTarget] = useState<any>(null);
+  const [gallery, setGallery] = useState<{ photos: any[]; index: number } | null>(null);
+  const [renameTarget, setRenameTarget] = useState<any>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   // Weather & Suppliers state
   const { forecast, loading: loadingWeather } = useJobForecast(job.postcode);
@@ -134,15 +135,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     const workerIds = new Set(shifts.filter((s) => s.jobId === job.id).map((s) => s.workerId));
     return workers.filter((w) => workerIds.has(w.id));
   }, [shifts, workers, job.id]);
-  const [isAddingStaff, setIsAddingStaff] = useState(false);
-  const [addStaffWorkerId, setAddStaffWorkerId] = useState("");
-  const [assignBlockedReason, setAssignBlockedReason] = useState<string | null>(null);
-  const [reallocateTarget, setReallocateTarget] = useState<{
-    workerId: string;
-    currentJobName: string;
-    existingShiftId: string;
-  } | null>(null);
-  const [removeStaffTarget, setRemoveStaffTarget] = useState<Worker | null>(null);
 
   // Edit Job Details state
   const [isEditingJob, setIsEditingJob] = useState(false);
@@ -447,6 +439,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     else setUploadingDoc(true);
 
     try {
+      const uploadFile = await compressImageFile(file);
       const fileExt = file.name.split(".").pop();
       const cleanFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
       const filePath = `jobs/${job.id}/${cleanFileName}`;
@@ -454,7 +447,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       // Upload file to Supabase storage
       const { error: uploadError } = await supabase.storage
         .from("job-attachments")
-        .upload(filePath, file);
+        .upload(filePath, uploadFile);
 
       if (uploadError) throw uploadError;
 
@@ -469,7 +462,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         type,
         file_name: file.name,
         file_url: publicUrl,
-        file_size_bytes: file.size,
+        file_size_bytes: uploadFile.size,
         uploaded_by: "Supervisor",
       });
 
@@ -518,6 +511,29 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     }
   };
 
+  const executeRenameAttachment = async () => {
+    if (!renameTarget || !renameValue.trim()) return;
+    try {
+      const { error } = await supabase
+        .from("job_attachments")
+        .update({ file_name: renameValue.trim() })
+        .eq("id", renameTarget.id);
+      if (error) throw error;
+      logAttachmentAudit("RENAME_ATTACHMENT", {
+        attachment_type: renameTarget.type,
+        old_file_name: renameTarget.file_name,
+        file_name: renameValue.trim(),
+      });
+      await fetchAttachments();
+      toast.success("File renamed");
+    } catch (err) {
+      console.error("Error renaming attachment:", err);
+      toast.error("Failed to rename file");
+    } finally {
+      setRenameTarget(null);
+    }
+  };
+
   const generateUploadLink = async () => {
     setGeneratingLink(true);
     try {
@@ -553,47 +569,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   };
 
   const todayISO = () => new Date().toISOString().split("T")[0];
-
-  const handleAddStaff = () => {
-    if (!addStaffWorkerId) return;
-    const result = assignWorker(addStaffWorkerId, job.id, todayISO());
-    if (result.status === "ok") {
-      setIsAddingStaff(false);
-      setAddStaffWorkerId("");
-      toast.success("Staff member assigned to job");
-    } else if (result.status === "blocked") {
-      setAssignBlockedReason(result.reason);
-    } else if (result.status === "needsReallocation") {
-      setReallocateTarget({
-        workerId: addStaffWorkerId,
-        currentJobName: result.currentJobName,
-        existingShiftId: result.existingShiftId,
-      });
-    }
-  };
-
-  const executeReallocate = () => {
-    if (!reallocateTarget) return;
-    confirmReallocate(reallocateTarget.workerId, job.id, todayISO(), reallocateTarget.existingShiftId);
-    setReallocateTarget(null);
-    setIsAddingStaff(false);
-    setAddStaffWorkerId("");
-    toast.success("Staff member reallocated to this job");
-  };
-
-  const executeRemoveStaff = () => {
-    if (!removeStaffTarget) return;
-    // A worker can appear via multiple dated shifts on this job — remove all of them.
-    shifts
-      .filter((s) => s.jobId === job.id && s.workerId === removeStaffTarget.id)
-      .forEach((s) => removeShift(s.id));
-    setRemoveStaffTarget(null);
-    toast.success("Staff member removed from job");
-  };
-
-  const availableWorkersToAdd = workers.filter(
-    (w) => !w.isArchived && !staffOnSite.some((s) => s.id === w.id),
-  );
 
   const [pendingStatus, setPendingStatus] = useState<Job["status"] | null>(null);
 
@@ -776,13 +751,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         message={
           <div className="space-y-3 text-left">
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <label className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
                 Site Name
               </label>
               <Input value={editSiteName} onChange={(e) => setEditSiteName(e.target.value)} />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <label className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
                 Main Contractor
               </label>
               <Input
@@ -791,13 +766,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <label className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
                 Postcode
               </label>
               <Input value={editPostcode} onChange={(e) => setEditPostcode(e.target.value)} />
             </div>
             <div>
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+              <label className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
                 Contract Max Pours
               </label>
               <Input
@@ -826,12 +801,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             <div className="bg-muted/40 border border-border rounded-lg divide-y divide-border text-[12px] mt-2">
               {editedJobFields.map((f) => (
                 <div key={f.label} className="flex items-center justify-between px-4 py-2.5">
-                  <span className="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground">
+                  <span className="font-semibold uppercase tracking-wider text-[12px] text-muted-foreground">
                     {f.label}
                   </span>
                   <div className="flex items-center gap-2 text-right">
-                    <span className="line-through text-muted-foreground text-[11px]">{f.before}</span>
-                    <span className="text-muted-foreground text-[10px]">→</span>
+                    <span className="line-through text-muted-foreground text-[13px]">{f.before}</span>
+                    <span className="text-muted-foreground text-[12px]">→</span>
                     <span className="font-bold text-foreground">{f.after}</span>
                   </div>
                 </div>
@@ -884,7 +859,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 <div className="text-lg font-bold text-foreground flex items-center gap-2">
                   <span>{weatherData.temperature}°C</span>
                   <span
-                    className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                    className={`text-[12px] px-2 py-0.5 rounded-full font-bold uppercase ${
                       weatherData.isImpactful
                         ? "bg-destructive/15 text-destructive border border-destructive/20"
                         : "bg-success/15 text-success border border-success/20"
@@ -917,7 +892,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               <div className="text-lg font-bold text-foreground flex items-center gap-2">
                 <span>{pourPercent}%</span>
                 <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                  className={`text-[12px] px-2 py-0.5 rounded-full font-bold uppercase ${
                     pourPercent >= 100
                       ? "bg-success/15 text-success border border-success/20"
                       : "bg-primary/15 text-primary border border-primary/20"
@@ -965,7 +940,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         }
       />
 
-      {/* Scheduled Pours: dated pour plan, always visible above the tabs regardless of which one is active */}
+      {/* Scheduled Pours + Staff: dated pour plan and on-site staff, side by side on wide screens, always visible above the tabs regardless of which one is active */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <div className="bg-card border border-border rounded-xl p-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-base font-bold text-foreground">Scheduled Pours</h2>
@@ -987,7 +963,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           >
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
                   Expected Date
                 </label>
                 <input
@@ -999,7 +975,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 />
               </div>
               <div>
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
                   Mix Type
                 </label>
                 <select
@@ -1013,7 +989,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 </select>
               </div>
               <div>
-                <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
                   Volume (m³)
                 </label>
                 <input
@@ -1028,7 +1004,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             </div>
 
             <div>
-              <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+              <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
                 Pour Notes
               </label>
               <input
@@ -1080,7 +1056,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                     <div className="text-sm font-bold text-foreground">
                       Pour #{log.pourNumber}
                       {!isCompleted && (
-                        <span className="ml-2 text-[9px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
+                        <span className="ml-2 text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
                           Scheduled
                         </span>
                       )}
@@ -1089,7 +1065,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                       {log.mixType} · {log.volumeM3}m³
                     </div>
                     {log.notes && (
-                      <div className="text-[11px] text-muted-foreground/80 italic truncate max-w-[280px]">
+                      <div className="text-[13px] text-muted-foreground/80 italic truncate max-w-[280px]">
                         {log.notes}
                       </div>
                     )}
@@ -1130,29 +1106,24 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           )}
         </div>
 
-        {/* Staff Scheduled On Site — combined into the same card as Scheduled
-            Pours rather than a separate one, and never scrolls: the list just
-            extends the page instead of clipping to a fixed height. */}
-        <div className="mt-6 pt-6 border-t border-border">
+      </div>
+
+      {/* Staff Scheduled On Site — its own card, side by side with Scheduled
+          Pours on wide screens, and never scrolls: the list just extends the
+          page instead of clipping to a fixed height. */}
+      <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-primary" />
               <h2 className="text-base font-bold text-foreground">Staff Scheduled On Site</h2>
             </div>
-            <button
-              type="button"
-              onClick={() => setIsAddingStaff(true)}
-              className="flex items-center gap-1 text-[10px] bg-primary/10 border border-primary/20 text-primary px-2 py-0.5 rounded font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors cursor-pointer"
-            >
-              <Plus className="w-3 h-3" /> Add Staff
-            </button>
           </div>
 
           {Object.keys(groupedStaff).length > 0 ? (
             <div className="space-y-4">
               {Object.keys(groupedStaff).map((roleName) => (
                 <div key={roleName} className="space-y-1.5">
-                  <div className="text-[10px] text-primary font-bold uppercase tracking-wider border-b border-border pb-1">
+                  <div className="text-[12px] text-primary font-bold uppercase tracking-wider border-b border-border pb-1">
                     {roleName} ({groupedStaff[roleName].length})
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1166,20 +1137,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                           {w.phone && (
                             <a
                               href={`tel:${w.phone}`}
-                              className="text-[9px] text-primary hover:underline font-mono flex items-center gap-1 mt-0.5"
+                              className="text-[11px] text-primary hover:underline font-mono flex items-center gap-1 mt-0.5"
                             >
                               <Phone className="w-2.5 h-2.5" /> {w.phone}
                             </a>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setRemoveStaffTarget(w)}
-                          className="shrink-0 p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                          aria-label={`Remove ${w.name} from job`}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
                       </div>
                     ))}
                   </div>
@@ -1191,7 +1154,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               No staff members scheduled to this job site.
             </div>
           )}
-        </div>
+      </div>
       </div>
 
       {/* Remove Pour Confirmation */}
@@ -1290,7 +1253,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 Live Site Proximity Matrix
               </span>
             </div>
-            <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+            <div className="flex items-center gap-3 text-[12px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-destructive" /> Job Site
               </span>
@@ -1320,7 +1283,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
         {/* Local Suppliers List */}
         <div className="p-4 flex flex-col h-full min-h-[420px]">
-          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider mb-4">
+          <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider mb-4">
             Closest Local Suppliers
           </div>
           <div className="flex-1 flex flex-col min-h-0">
@@ -1353,13 +1316,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                       <div className="space-y-0.5 max-w-[70%]">
                         <div className="text-xs font-bold text-foreground truncate">{s.name}</div>
                         {s.businessType && (
-                          <div className="text-[9px] text-primary font-bold uppercase tracking-wider">
+                          <div className="text-[11px] text-primary font-bold uppercase tracking-wider">
                             {s.businessType}
                           </div>
                         )}
-                        <div className="text-[10px] text-muted-foreground truncate">{s.address}</div>
+                        <div className="text-[12px] text-muted-foreground truncate">{s.address}</div>
                       </div>
-                      <span className="text-[10px] font-bold bg-background border border-border px-2 py-0.5 rounded text-muted-foreground shrink-0">
+                      <span className="text-[12px] font-bold bg-background border border-border px-2 py-0.5 rounded text-muted-foreground shrink-0">
                         {s.distance}
                       </span>
                     </div>
@@ -1369,7 +1332,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                       {s.phone && (
                         <a
                           href={`tel:${s.phone}`}
-                          className="flex items-center gap-1.5 text-[10px] font-bold text-foreground border border-border px-2 py-1 rounded-md hover:bg-secondary transition-colors"
+                          className="flex items-center gap-1.5 text-[12px] font-bold text-foreground border border-border px-2 py-1 rounded-md hover:bg-secondary transition-colors"
                         >
                           <Phone className="w-3 h-3" /> Call
                         </a>
@@ -1378,7 +1341,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                         href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}`}
                         target="_blank"
                         rel="noreferrer"
-                        className="flex items-center gap-1.5 text-[10px] font-bold text-foreground border border-border px-2 py-1 rounded-md hover:bg-secondary transition-colors"
+                        className="flex items-center gap-1.5 text-[12px] font-bold text-foreground border border-border px-2 py-1 rounded-md hover:bg-secondary transition-colors"
                       >
                         <Navigation className="w-3 h-3" /> Directions
                       </a>
@@ -1399,7 +1362,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       <TabsContent value="overview">
       <div className="space-y-6">
       {/* Attachments Section: Photos and Documents */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         {/* Before & After Photo Gallery */}
         <div className="bg-card border border-border rounded-xl p-4 space-y-4">
           <div className="flex justify-between items-center border-b border-border pb-3">
@@ -1411,12 +1374,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             {/* Before Section */}
             <div className="space-y-2">
-              <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
-                <span>Before Pours</span>
-                <label className="text-[10px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
+              <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
+                <span>Before</span>
+                <label className="text-[12px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
                   {uploadingPhotoBefore ? (
                     <Loader className="w-3 h-3 animate-spin" />
                   ) : (
@@ -1438,19 +1401,23 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
                 {beforePhotos.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2 w-full">
-                    {beforePhotos.map((p) => (
+                    {beforePhotos.map((p, i) => (
                       <div
                         key={p.id}
-                        className="relative group rounded-lg overflow-hidden border border-border"
+                        onClick={() => setGallery({ photos: beforePhotos, index: i })}
+                        className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
                       >
                         <img src={p.file_url} alt="before" className="w-full h-24 object-cover" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-muted-foreground">
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
                           <span className="text-white font-bold truncate">{p.uploaded_by}</span>
                           <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
                         </div>
                         <button
                           type="button"
-                          onClick={() => setDeleteAttachmentTarget(p)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteAttachmentTarget(p);
+                          }}
                           aria-label="Delete photo"
                           className="absolute top-1 right-1 p-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
                         >
@@ -1460,7 +1427,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
+                  <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
                     No Media
                   </span>
                 )}
@@ -1469,9 +1436,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
             {/* After Section */}
             <div className="space-y-2">
-              <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
-                <span>After Pours</span>
-                <label className="text-[10px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
+              <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
+                <span>After</span>
+                <label className="text-[12px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
                   {uploadingPhotoAfter ? (
                     <Loader className="w-3 h-3 animate-spin" />
                   ) : (
@@ -1493,19 +1460,23 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
                 {afterPhotos.length > 0 ? (
                   <div className="grid grid-cols-2 gap-2 w-full">
-                    {afterPhotos.map((p) => (
+                    {afterPhotos.map((p, i) => (
                       <div
                         key={p.id}
-                        className="relative group rounded-lg overflow-hidden border border-border"
+                        onClick={() => setGallery({ photos: afterPhotos, index: i })}
+                        className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
                       >
                         <img src={p.file_url} alt="after" className="w-full h-24 object-cover" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[8px] text-muted-foreground">
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
                           <span className="text-white font-bold truncate">{p.uploaded_by}</span>
                           <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
                         </div>
                         <button
                           type="button"
-                          onClick={() => setDeleteAttachmentTarget(p)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteAttachmentTarget(p);
+                          }}
                           aria-label="Delete photo"
                           className="absolute top-1 right-1 p-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
                         >
@@ -1515,7 +1486,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                     ))}
                   </div>
                 ) : (
-                  <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-semibold">
+                  <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
                     No Media
                   </span>
                 )}
@@ -1536,7 +1507,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             <button
               onClick={generateUploadLink}
               disabled={generatingLink}
-              className="text-[10px] text-primary hover:text-primary font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+              className="text-[12px] text-primary hover:text-primary font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
             >
               {generatingLink ? (
                 <Loader className="w-3 h-3 animate-spin" />
@@ -1552,14 +1523,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           {generatedLink && (
             <div className="bg-secondary border border-border rounded-xl p-3.5 flex items-center justify-between gap-3 animate-fade-in">
               <div className="space-y-0.5 max-w-[75%]">
-                <div className="text-[10px] font-bold text-foreground uppercase tracking-wider">
+                <div className="text-[12px] font-bold text-foreground uppercase tracking-wider">
                   Secure Upload Link Generated
                 </div>
-                <div className="text-[11px] text-muted-foreground truncate font-mono">{generatedLink}</div>
+                <div className="text-[13px] text-muted-foreground truncate font-mono">{generatedLink}</div>
               </div>
               <button
                 onClick={copyToClipboard}
-                className="px-3 py-1.5 bg-card border border-border text-foreground hover:bg-secondary rounded-lg text-[10px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                className="px-3 py-1.5 bg-card border border-border text-foreground hover:bg-secondary rounded-lg text-[12px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
               >
                 {copiedLink ? (
                   <Check className="w-3.5 h-3.5 text-success" />
@@ -1586,8 +1557,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               <div className="text-xs font-bold text-foreground">
                 {uploadingDoc ? "Uploading..." : "Drop files here or click to upload"}
               </div>
-              <div className="text-[10px] text-muted-foreground">PDF, Excel, Word, or CAD Drawings</div>
-              <div className="text-[9px] text-muted-foreground">10MB per file, 100MB total per job</div>
+              <div className="text-[12px] text-muted-foreground">PDF, Excel, Word, or CAD Drawings</div>
+              <div className="text-[11px] text-muted-foreground">10MB per file, 100MB total per job</div>
             </div>
           </div>
 
@@ -1609,7 +1580,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                   </span>
                 </button>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[9px] text-muted-foreground font-medium">
+                  <span className="text-[11px] text-muted-foreground font-medium">
                     {new Date(d.uploaded_at).toLocaleDateString("en-GB")}
                   </span>
                   <button
@@ -1625,7 +1596,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             ))}
 
             {projectDocs.length === 0 && (
-              <div className="text-center py-6 text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+              <div className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold">
                 No documents uploaded yet
               </div>
             )}
@@ -1675,7 +1646,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                   <span>Loading audit log...</span>
                 </div>
               ) : events.length === 0 ? (
-                <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
+                <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[13px] font-bold uppercase tracking-wider">
                   No audit history for this job
                 </div>
               ) : (
@@ -1764,7 +1735,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                         >
                           {event.action?.replace(/_/g, " ")}
                         </span>
-                        <p className="flex-1 min-w-0 truncate text-[11px] text-foreground/90">
+                        <p className="flex-1 min-w-0 truncate text-[13px] text-foreground/90">
                           {summaryText}
                         </p>
                         {canRevert && (
@@ -1776,12 +1747,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                                 newDetails: event.details?.new,
                               })
                             }
-                            className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                            className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
                           >
                             Revert
                           </button>
                         )}
-                        <span className="text-[10px] text-muted-foreground shrink-0">
+                        <span className="text-[12px] text-muted-foreground shrink-0">
                           {new Date(event.created_at).toLocaleString("en-GB", {
                             day: "2-digit",
                             month: "short",
@@ -1800,83 +1771,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         })()}
       </TabsContent>
       </Tabs>
-
-      {/* Add Staff to Job */}
-      <ConfirmDialog
-        open={isAddingStaff}
-        onOpenChange={(open) => {
-          setIsAddingStaff(open);
-          if (!open) setAddStaffWorkerId("");
-        }}
-        tone="neutral"
-        title="Add Staff to Job"
-        confirmLabel="Assign"
-        onConfirm={handleAddStaff}
-        message={
-          <div className="space-y-2">
-            <p>Select a staff member to assign to this job site.</p>
-            <select
-              value={addStaffWorkerId}
-              onChange={(e) => setAddStaffWorkerId(e.target.value)}
-              className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-foreground"
-            >
-              <option value="">Choose staff member...</option>
-              {availableWorkersToAdd.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name} — {w.role}
-                </option>
-              ))}
-            </select>
-          </div>
-        }
-      />
-
-      {/* Compliance block notice */}
-      <ConfirmDialog
-        open={!!assignBlockedReason}
-        onOpenChange={(open) => {
-          if (!open) setAssignBlockedReason(null);
-        }}
-        tone="destructive"
-        tag="Compliance check failed"
-        title="Cannot Assign Staff Member"
-        confirmLabel="Understood"
-        cancelLabel="Close"
-        onConfirm={() => setAssignBlockedReason(null)}
-        message={assignBlockedReason}
-      />
-
-      {/* Reallocation conflict warning */}
-      <ConfirmDialog
-        open={!!reallocateTarget}
-        onOpenChange={(open) => {
-          if (!open) setReallocateTarget(null);
-        }}
-        tone="destructive"
-        tag="Scheduling conflict"
-        title="Reallocate Staff Member?"
-        confirmLabel="Reallocate"
-        onConfirm={executeReallocate}
-        message={
-          reallocateTarget &&
-          `This staff member is already assigned to ${reallocateTarget.currentJobName} today. Reallocating will remove them from that job and assign them here instead.`
-        }
-      />
-
-      {/* Remove staff confirmation */}
-      <ConfirmDialog
-        open={!!removeStaffTarget}
-        onOpenChange={(open) => {
-          if (!open) setRemoveStaffTarget(null);
-        }}
-        tone="destructive"
-        title="Remove Staff Member?"
-        confirmLabel="Remove"
-        onConfirm={executeRemoveStaff}
-        message={
-          removeStaffTarget && `Remove ${removeStaffTarget.name} from this job site's schedule?`
-        }
-      />
 
       {/* View document warning */}
       <ConfirmDialog
@@ -1911,6 +1805,119 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         }
       />
 
+      {/* Before/After photo gallery */}
+      <Dialog open={!!gallery} onOpenChange={(open) => !open && setGallery(null)}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-black">
+          {gallery && (
+            <div className="relative flex flex-col items-center">
+              <img
+                src={gallery.photos[gallery.index].file_url}
+                alt=""
+                className="max-h-[70vh] w-full object-contain bg-black"
+              />
+
+              {gallery.photos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Previous photo"
+                    onClick={() =>
+                      setGallery({
+                        photos: gallery.photos,
+                        index: (gallery.index - 1 + gallery.photos.length) % gallery.photos.length,
+                      })
+                    }
+                    className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next photo"
+                    onClick={() =>
+                      setGallery({
+                        photos: gallery.photos,
+                        index: (gallery.index + 1) % gallery.photos.length,
+                      })
+                    }
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors cursor-pointer"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
+
+              <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-card">
+                <div className="min-w-0 text-[12px] text-muted-foreground truncate">
+                  {gallery.photos[gallery.index].uploaded_by} ·{" "}
+                  {new Date(gallery.photos[gallery.index].uploaded_at).toLocaleDateString("en-GB")}
+                  {gallery.photos.length > 1 && ` · ${gallery.index + 1}/${gallery.photos.length}`}
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = gallery.photos[gallery.index];
+                      setRenameValue(target.file_name || "");
+                      setRenameTarget(target);
+                    }}
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 bg-card border border-border text-foreground hover:bg-secondary font-bold rounded-lg text-[12px] cursor-pointer"
+                  >
+                    <PencilLine className="w-3.5 h-3.5" /> Rename
+                  </button>
+                  <a
+                    href={gallery.photos[gallery.index].file_url}
+                    download={gallery.photos[gallery.index].file_name}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 bg-primary text-primary-foreground font-bold rounded-lg text-[12px] cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Download
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename attachment warning */}
+      <Dialog open={!!renameTarget} onOpenChange={(open) => !open && setRenameTarget(null)}>
+        <DialogContent className="max-w-[400px]">
+          <div className="flex items-center gap-[9px] text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+            <span>Rename file</span>
+          </div>
+          <div>
+            <h2 className="mb-2 text-[15px] font-semibold uppercase tracking-[0.02em]">
+              Rename This Photo?
+            </h2>
+            <p className="mb-3 text-[13.5px] text-muted-foreground">
+              This changes the file name shown across the job. This action is recorded in the job's
+              audit log.
+            </p>
+            <Input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              placeholder="File name"
+              autoFocus
+            />
+          </div>
+          <div className="flex gap-2.5">
+            <Button variant="outline" className="flex-1" onClick={() => setRenameTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              className="flex-1"
+              disabled={!renameValue.trim()}
+              onClick={executeRenameAttachment}
+            >
+              Rename
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Revert Job Changes Confirmation Modal */}
       <ConfirmDialog
         open={!!revertConfirmTarget}
@@ -1944,7 +1951,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                       }`}
                     >
                       <span
-                        className={`font-semibold uppercase tracking-wider text-[10px] ${
+                        className={`font-semibold uppercase tracking-wider text-[12px] ${
                           changed
                             ? "text-amber-400/70 [.light-theme_&]:text-amber-800/80"
                             : "text-muted-foreground"
@@ -1954,12 +1961,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                       </span>
                       <div className="flex items-center gap-2 text-right">
                         {changed && newVal != null && (
-                          <span className="line-through text-muted-foreground text-[11px]">
+                          <span className="line-through text-muted-foreground text-[13px]">
                             {newVal}
                           </span>
                         )}
                         {changed && newVal != null && (
-                          <span className="text-muted-foreground text-[10px]">→</span>
+                          <span className="text-muted-foreground text-[12px]">→</span>
                         )}
                         <span
                           className={`font-bold ${

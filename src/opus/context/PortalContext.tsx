@@ -111,7 +111,7 @@ const rowToWorker = (r: any): Worker => ({
   uploadedCertificates: r.uploaded_certificates ?? [],
 });
 
-const jobToRow = (j: Job, tenantId?: string) => ({
+export const jobToRow = (j: Job, tenantId?: string) => ({
   id: j.id,
   job_ref: j.jobRef,
   site_name: j.siteName,

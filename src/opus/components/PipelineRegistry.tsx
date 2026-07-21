@@ -16,9 +16,10 @@ import {
   Plus,
 } from "lucide-react";
 import { Job } from "../types/erp";
-import { usePortal } from "../context/PortalContext";
+import { usePortal, jobToRow } from "../context/PortalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { generateQuotePdfBlob } from "../lib/quotePdf";
 
 interface MeasuredItem {
   id: string;
@@ -61,7 +62,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
   onNewQuote,
   onBack,
 }) => {
-  const { jobs, setJobs } = usePortal();
+  const { jobs, setJobs, profile } = usePortal();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQuoteToDelete, setSelectedQuoteToDelete] = useState<Quote | null>(null);
@@ -162,15 +163,50 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
     setJobs((prev) => [newJob, ...prev]);
 
     try {
-      const { error } = await supabase.from("quotes").delete().eq("id", convertingQuote.id);
+      // Upsert the job row directly (don't wait on the portal's debounced sync
+      // effect) so the FK exists before we attach the quote PDF to it below.
+      const { error: jobError } = await supabase
+        .from("jobs")
+        .upsert(jobToRow(newJob, profile?.tenant_id));
+      if (jobError) throw jobError;
 
+      const { error } = await supabase.from("quotes").delete().eq("id", convertingQuote.id);
       if (error) throw error;
 
       setQuotes(quotes.filter((q) => q.id !== convertingQuote.id));
       setConvertingQuote(null);
       triggerToast(`Converted ${convertingQuote.reference} to Active Job ${newJob.jobRef}`);
+
+      try {
+        const { blob, filename } = await generateQuotePdfBlob(convertingQuote);
+        const filePath = `jobs/${newJob.id}/${Date.now()}-${filename}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from("job-attachments")
+          .upload(filePath, blob, { contentType: "application/pdf" });
+        if (uploadError) throw uploadError;
+
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from("job-attachments").getPublicUrl(filePath);
+
+        const { error: insertError } = await supabase.from("job_attachments").insert({
+          job_id: newJob.id,
+          tenant_id: profile?.tenant_id,
+          type: "document",
+          file_name: filename,
+          file_url: publicUrl,
+          file_size_bytes: blob.size,
+          uploaded_by: "System (Quote Conversion)",
+        });
+        if (insertError) throw insertError;
+      } catch (pdfErr) {
+        // Job conversion already succeeded; the PDF attach is a nice-to-have,
+        // so failures here are logged only and don't roll back the job.
+        console.error("Failed to attach quote PDF to new job", pdfErr);
+      }
     } catch (e) {
-      console.error("Failed to remove converted quote from database", e);
+      console.error("Failed to complete quote conversion", e);
       triggerToast("Failed to complete conversion", "error");
     }
   };

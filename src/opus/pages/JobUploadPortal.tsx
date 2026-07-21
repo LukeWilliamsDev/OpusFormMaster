@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { supabase } from "../../integrations/supabase/client";
 import { FileUp, Check, AlertCircle, Loader, UploadCloud } from "lucide-react";
 import { usePortal } from "../context/PortalContext";
+import { compressImageFile } from "../lib/compressImage";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 100 * 1024 * 1024;
@@ -112,6 +113,7 @@ export const JobUploadPortalPage: React.FC = () => {
 
     try {
       for (const file of files) {
+        const uploadFile = await compressImageFile(file);
         const fileExt = file.name.split(".").pop();
         const cleanFileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
         const filePath = `requests/${token}/${cleanFileName}`;
@@ -119,7 +121,7 @@ export const JobUploadPortalPage: React.FC = () => {
         // Upload file to storage (path-scoped and token-validated by storage policy)
         const { error: uploadError } = await supabase.storage
           .from("job-attachments")
-          .upload(filePath, file);
+          .upload(filePath, uploadFile);
 
         if (uploadError) throw uploadError;
 
@@ -133,7 +135,7 @@ export const JobUploadPortalPage: React.FC = () => {
           p_token: token,
           p_file_name: file.name,
           p_file_url: publicUrl,
-          p_file_size_bytes: file.size,
+          p_file_size_bytes: uploadFile.size,
         });
 
         if (insertError) throw insertError;

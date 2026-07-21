@@ -3,6 +3,12 @@
 -- running total against what's already stored for a job.
 ALTER TABLE public.job_attachments ADD COLUMN IF NOT EXISTS file_size_bytes bigint NOT NULL DEFAULT 0;
 
+-- Adding a 4th parameter to submit_job_attachment doesn't replace the existing
+-- 3-arg function — Postgres treats differing arg counts as distinct overloads,
+-- which would leave both versions live and make RPC calls ambiguous. Drop the
+-- old signature explicitly before creating the new one.
+DROP FUNCTION IF EXISTS public.submit_job_attachment(text, text, text);
+
 CREATE OR REPLACE FUNCTION public.submit_job_attachment(
   p_token text,
   p_file_name text,

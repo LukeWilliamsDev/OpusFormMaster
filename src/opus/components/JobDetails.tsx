@@ -767,59 +767,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         </div>
       </div>
 
-      {/* Project Status Selector + Persistent Header, side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-      <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-center">
-        <div className="flex flex-col items-stretch gap-0.5">
-          {(
-            [
-              {
-                key: "pending",
-                label: "Pending",
-                Icon: Circle,
-                activeClasses: "bg-warning/15 text-warning border-warning/30",
-              },
-              {
-                key: "in-progress",
-                label: "In Progress",
-                Icon: Clock,
-                activeClasses: "bg-primary/15 text-primary border-primary/30",
-              },
-              {
-                key: "completed",
-                label: "Completed",
-                Icon: Check,
-                activeClasses: "bg-success/15 text-success border-success/30",
-              },
-            ] as const
-          ).map(({ key: s, label, Icon, activeClasses }) => {
-            const isActive = status === s;
-            return (
-              <button
-                key={s}
-                onClick={() => !isActive && setPendingStatus(s)}
-                aria-pressed={isActive}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                  isActive
-                    ? activeClasses
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <PersistentJobHeader
-        weatherData={weatherData}
-        loadingWeather={loadingWeather}
-        groupedStaff={groupedStaff}
-      />
-      </div>
-
       {/* Edit Job Details Dialog */}
       <ConfirmDialog
         open={isEditingJob}
@@ -1038,6 +985,58 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+            <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-center">
+              <div className="flex flex-col items-stretch gap-0.5">
+                {(
+                  [
+                    {
+                      key: "pending",
+                      label: "Pending",
+                      Icon: Circle,
+                      activeClasses: "bg-warning/15 text-warning border-warning/30",
+                    },
+                    {
+                      key: "in-progress",
+                      label: "In Progress",
+                      Icon: Clock,
+                      activeClasses: "bg-primary/15 text-primary border-primary/30",
+                    },
+                    {
+                      key: "completed",
+                      label: "Completed",
+                      Icon: Check,
+                      activeClasses: "bg-success/15 text-success border-success/30",
+                    },
+                  ] as const
+                ).map(({ key: s, label, Icon, activeClasses }) => {
+                  const isActive = status === s;
+                  return (
+                    <button
+                      key={s}
+                      onClick={() => !isActive && setPendingStatus(s)}
+                      aria-pressed={isActive}
+                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                        isActive
+                          ? activeClasses
+                          : "border-transparent text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 shrink-0" />
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <PersistentJobHeader
+              weatherData={weatherData}
+              loadingWeather={loadingWeather}
+              groupedStaff={groupedStaff}
+            />
+          </div>
+
           <div className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-bold text-foreground">Scheduled Pours</h2>

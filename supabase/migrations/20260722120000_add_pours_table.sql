@@ -1,7 +1,7 @@
 -- supabase/migrations/20260722120000_add_pours_table.sql
 CREATE TABLE public.pours (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  job_id uuid NOT NULL REFERENCES public.jobs(id) ON DELETE CASCADE,
+  job_id text NOT NULL REFERENCES public.jobs(id) ON DELETE CASCADE,
   pour_number int NOT NULL,
   date date,
   mix_type text NOT NULL DEFAULT 'TBC',

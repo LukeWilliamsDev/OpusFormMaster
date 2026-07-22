@@ -9,7 +9,7 @@ CREATE TABLE public.pours (
   status text NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'completed')),
   notes text,
   created_at timestamptz NOT NULL DEFAULT now(),
-  tenant_id uuid
+  tenant_id uuid NOT NULL DEFAULT private.current_tenant_id()
 );
 
 CREATE INDEX pours_job_id_idx ON public.pours(job_id);
@@ -17,12 +17,12 @@ CREATE INDEX pours_job_id_idx ON public.pours(job_id);
 ALTER TABLE public.pours ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY pours_select_ops ON public.pours FOR SELECT TO authenticated
-  USING (private.can_write_ops(auth.uid()));
+  USING (private.can_write_ops(auth.uid()) AND tenant_id = private.current_tenant_id());
 CREATE POLICY pours_insert_ops ON public.pours FOR INSERT TO authenticated
-  WITH CHECK (private.can_write_ops(auth.uid()));
+  WITH CHECK (private.can_write_ops(auth.uid()) AND tenant_id = private.current_tenant_id());
 CREATE POLICY pours_update_ops ON public.pours FOR UPDATE TO authenticated
-  USING (private.can_write_ops(auth.uid())) WITH CHECK (private.can_write_ops(auth.uid()));
+  USING (private.can_write_ops(auth.uid()) AND tenant_id = private.current_tenant_id()) WITH CHECK (private.can_write_ops(auth.uid()) AND tenant_id = private.current_tenant_id());
 CREATE POLICY pours_delete_ops ON public.pours FOR DELETE TO authenticated
-  USING (private.can_write_ops(auth.uid()));
+  USING (private.can_write_ops(auth.uid()) AND tenant_id = private.current_tenant_id());
 
 ALTER PUBLICATION supabase_realtime ADD TABLE public.pours;

@@ -4,13 +4,13 @@ import {
   ChevronLeft,
   Check,
   AlertCircle,
-  MapPin,
-  Users,
   Paperclip,
   History,
   PencilLine,
   Trash2,
   Layers,
+  LayoutGrid,
+  MessageSquare,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { compressImageFile } from "../lib/compressImage";
 import { getSignedJobAttachmentUrl } from "../lib/attachmentUrl";
 import { HistoryTab, JOB_REVERTIBLE_FIELDS, JOB_FIELD_LABELS } from "./HistoryTab";
+import { FeedTab } from "./FeedTab";
 import { MediaTab } from "./MediaTab";
 import { JobOverviewTab } from "./JobOverviewTab";
 import { PersistentJobHeader } from "./PersistentJobHeader";
@@ -1161,29 +1162,22 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Secondary sections: Suppliers/Map, Diary+Staff, Attachments */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full h-auto">
-          <TabsTrigger
-            value="overview"
-            className="flex-1 flex items-center justify-center gap-2 px-2 py-2 sm:px-3"
-          >
-            <Users className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Overview</span>
+        <TabsList className="w-full grid grid-cols-4">
+          <TabsTrigger value="overview" aria-label="Overview" className="flex items-center gap-1.5">
+            <LayoutGrid className="w-4 h-4" /> <span className="hidden sm:inline">Overview</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="suppliers"
-            className="flex-1 flex items-center justify-center gap-2 px-2 py-2 sm:px-3"
-          >
-            <MapPin className="w-3.5 h-3.5 shrink-0" />{" "}
-            <span className="truncate">Local Suppliers</span>
+          <TabsTrigger value="media" aria-label="Media" className="flex items-center gap-1.5">
+            <Paperclip className="w-4 h-4" /> <span className="hidden sm:inline">Media</span>
           </TabsTrigger>
-          <TabsTrigger
-            value="audit_log"
-            className="flex-1 flex items-center justify-center gap-2 px-2 py-2 sm:px-3"
-          >
-            <History className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Audit Log</span>
+          <TabsTrigger value="feed" aria-label="Feed" className="flex items-center gap-1.5">
+            <MessageSquare className="w-4 h-4" /> <span className="hidden sm:inline">Feed</span>
+          </TabsTrigger>
+          <TabsTrigger value="history" aria-label="History" className="flex items-center gap-1.5">
+            <History className="w-4 h-4" /> <span className="hidden sm:inline">History</span>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="suppliers">
+        <TabsContent value="overview">
           <JobOverviewTab
             job={job}
             status={status}
@@ -1196,7 +1190,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           />
         </TabsContent>
 
-        <TabsContent value="overview">
+        <TabsContent value="media">
           <MediaTab
             beforePhotos={beforePhotos}
             afterPhotos={afterPhotos}
@@ -1226,7 +1220,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           />
         </TabsContent>
 
-        <TabsContent value="audit_log">
+        <TabsContent value="feed">
+          <FeedTab jobId={job.id} />
+        </TabsContent>
+
+        <TabsContent value="history">
           <HistoryTab
             jobAuditLogs={jobAuditLogs}
             loadingJobAuditLogs={loadingJobAuditLogs}

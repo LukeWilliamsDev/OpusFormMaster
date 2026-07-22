@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React from "react";
-import { MapPin, Navigation, Phone, Loader } from "lucide-react";
+import { MapPin, Phone, Loader } from "lucide-react";
 import { OSMMap } from "./OSMMap";
 import { Job } from "../types/erp";
 
@@ -99,9 +99,6 @@ export function JobOverviewTab({
                             {s.businessType}
                           </div>
                         )}
-                        <div className="text-[12px] text-muted-foreground truncate">
-                          {s.address}
-                        </div>
                       </div>
                       <span className="text-[12px] font-bold bg-background border border-border px-2 py-0.5 rounded text-muted-foreground shrink-0">
                         {s.distance}
@@ -109,24 +106,16 @@ export function JobOverviewTab({
                     </div>
 
                     {/* Actions always visible, not hover-dependent */}
-                    <div className="flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      {s.phone && (
+                    {s.phone && (
+                      <div className="flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
                         <a
                           href={`tel:${s.phone}`}
                           className="flex items-center gap-1.5 text-[12px] font-bold text-foreground border border-border px-2 py-1 rounded-md hover:bg-secondary transition-colors"
                         >
                           <Phone className="w-3 h-3" /> Call
                         </a>
-                      )}
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-1.5 text-[12px] font-bold text-foreground border border-border px-2 py-1 rounded-md hover:bg-secondary transition-colors"
-                      >
-                        <Navigation className="w-3 h-3" /> Directions
-                      </a>
-                    </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -78,7 +78,7 @@ interface PourLog {
   mixType: string;
   volumeM3: number;
   status: "completed" | "scheduled";
-  notes: string;
+  notes?: string;
 }
 
 interface JobDetailsProps {
@@ -303,47 +303,44 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     };
   }, [job.id]);
 
-  // Seed mock pour logs for this job once on load — must NOT re-run when
-  // currentPours changes, since checking/unchecking/adding/removing a pour
-  // all update currentPours via onUpdateJob, and re-running this would wipe
-  // out those edits with a freshly regenerated mock list.
-  useEffect(() => {
-    const list: PourLog[] = [];
-    const count = job.currentPours || 0;
-    for (let i = 1; i <= count; i++) {
-      let mixType = "C32/40";
-      let volumeM3 = 30;
-      let dateStr = "";
+  const rowToPourLog = (r: any): PourLog => ({
+    id: r.id,
+    pourNumber: r.pour_number,
+    date: r.date || "",
+    mixType: r.mix_type,
+    volumeM3: Number(r.volume_m3),
+    status: r.status,
+    notes: r.notes || undefined,
+  });
 
-      if (i === 5) {
-        mixType = "C35/45";
-        volumeM3 = 34;
-        dateStr = "2026-07-09";
-      } else if (i === 4) {
-        mixType = "C32/40";
-        volumeM3 = 28;
-        dateStr = "2026-07-06";
-      } else {
-        mixType = i % 2 === 0 ? "C32/40" : "C28/35";
-        volumeM3 = 20 + i * 2;
-        const dayOffset = (count - i) * 3 + 1;
-        const d = new Date();
-        d.setDate(d.getDate() - dayOffset);
-        dateStr = d.toISOString().split("T")[0];
-      }
-
-      list.push({
-        id: `${job.id}-pour-${i}`,
-        pourNumber: i,
-        date: dateStr,
-        mixType,
-        volumeM3,
-        status: "completed",
-        notes: `Structural slab pour #${i} completed successfully.`,
-      });
+  const fetchPourLogs = async () => {
+    const { data, error } = await supabase
+      .from("pours")
+      .select("*")
+      .eq("job_id", job.id)
+      .order("pour_number", { ascending: false });
+    if (error) {
+      console.error("Failed to load pours", error);
+      return;
     }
-    setPourLogs(list.reverse());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setPourLogs((data || []).map(rowToPourLog));
+  };
+
+  useEffect(() => {
+    fetchPourLogs();
+
+    const channel = supabase
+      .channel(`job-pours-${job.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "pours", filter: `job_id=eq.${job.id}` },
+        fetchPourLogs,
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [job.id]);
 
   // Haversine Distance helper
@@ -613,19 +610,32 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     setPendingStatus(null);
   };
 
-  const handleAddPourSubmit = (e: React.FormEvent) => {
+  const handleAddPourSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const nextPourNumber = pourLogs.reduce((max, l) => Math.max(max, l.pourNumber), 0) + 1;
-    const newLog: PourLog = {
-      id: `${job.id}-pour-${Date.now()}`,
-      pourNumber: nextPourNumber,
-      date: newPourDate,
-      mixType: newPourMix,
-      volumeM3: Number(newPourVolume),
-      status: "scheduled",
-      notes: newPourNotes || `Scheduled pour #${nextPourNumber}`,
-    };
+    const notes = newPourNotes || `Scheduled pour #${nextPourNumber}`;
 
+    const { data, error } = await supabase
+      .from("pours")
+      .insert({
+        job_id: job.id,
+        pour_number: nextPourNumber,
+        date: newPourDate,
+        mix_type: newPourMix,
+        volume_m3: Number(newPourVolume),
+        status: "scheduled",
+        notes,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Failed to schedule pour", error);
+      toast.error("Failed to schedule pour");
+      return;
+    }
+
+    const newLog = rowToPourLog(data);
     setPourLogs([newLog, ...pourLogs]);
     setIsAddingPour(false);
     setNewPourNotes("");
@@ -636,21 +646,22 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
   const [pourToggleTarget, setPourToggleTarget] = useState<PourLog | null>(null);
 
-  const executeTogglePourComplete = () => {
+  const executeTogglePourComplete = async () => {
     if (!pourToggleTarget) return;
     const log = pourToggleTarget;
     const wasCompleted = log.status === "completed";
+    const nextStatus = wasCompleted ? "scheduled" : "completed";
+
+    const { error } = await supabase.from("pours").update({ status: nextStatus }).eq("id", log.id);
+    if (error) {
+      console.error("Failed to toggle pour status", error);
+      toast.error("Failed to update pour");
+      setPourToggleTarget(null);
+      return;
+    }
 
     setPourLogs((prev) =>
-      prev.map((l) =>
-        l.id === log.id
-          ? {
-              ...l,
-              status: wasCompleted ? "scheduled" : "completed",
-              date: wasCompleted ? l.date : new Date().toISOString().split("T")[0],
-            }
-          : l,
-      ),
+      prev.map((l) => (l.id === log.id ? { ...l, status: nextStatus } : l)),
     );
 
     const nextPourCount = Math.max(0, currentPours + (wasCompleted ? -1 : 1));
@@ -668,8 +679,16 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
   const [pourToRemove, setPourToRemove] = useState<PourLog | null>(null);
 
-  const executeRemovePour = () => {
+  const executeRemovePour = async () => {
     if (!pourToRemove) return;
+
+    const { error } = await supabase.from("pours").delete().eq("id", pourToRemove.id);
+    if (error) {
+      console.error("Failed to remove pour", error);
+      toast.error("Failed to remove pour");
+      return;
+    }
+
     const updatedLogs = pourLogs.filter((l) => l.id !== pourToRemove.id);
     setPourLogs(updatedLogs);
 

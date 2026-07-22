@@ -2,7 +2,7 @@
 import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Globe, Navigation } from "lucide-react";
+import { Phone, Globe, Navigation } from "lucide-react";
 import { usePortal } from "../context/PortalContext";
 
 interface Supplier {
@@ -249,11 +249,19 @@ export const OSMMap: React.FC<OSMMapProps> = ({
           <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
             {selectedSupplier.address}
           </p>
-          {/* Full-height tap targets (not inline text links) — website/
+          {/* Full-height tap targets (not inline text links) — call/website/
               directions are the actions staff need mid-task on a tablet/
               phone, so they get real button sizing and share the row evenly
-              whichever of the two actually exist for this supplier. */}
+              whichever of the three actually exist for this supplier. */}
           <div className="flex gap-2 mt-3">
+            {selectedSupplier.phone && (
+              <a
+                href={`tel:${selectedSupplier.phone.replace(/\s+/g, "")}`}
+                className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-destructive/15 border border-destructive/30 text-destructive font-bold text-xs active:scale-95 transition-transform"
+              >
+                <Phone className="w-4 h-4" /> Call
+              </a>
+            )}
             {selectedSupplier.website && (
               <a
                 href={selectedSupplier.website}

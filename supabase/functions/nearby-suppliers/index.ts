@@ -1,98 +1,34 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
-// Approved supplier list — results are restricted to these brands only.
-// Grouped for the businessType label; group membership is cosmetic, the
-// flat name match below is what actually gates inclusion.
-const APPROVED_SUPPLIERS: [string, string][] = [
-  ["Travis Perkins", "National Builders' Merchants"],
-  ["Jewson", "National Builders' Merchants"],
-  ["Selco Builders Warehouse", "National Builders' Merchants"],
-  ["MKM Building Supplies", "National Builders' Merchants"],
-  ["Buildbase", "National Builders' Merchants"],
-  ["Huws Gray", "National Builders' Merchants"],
-  ["Bradfords Building Supplies", "National Builders' Merchants"],
-  ["Haldane Fisher", "National Builders' Merchants"],
-  ["Ridgeons", "National Builders' Merchants"],
-  ["LBS Builders Merchants", "National Builders' Merchants"],
-  ["EH Smith", "National Builders' Merchants"],
-  ["Gibbs & Dandy", "National Builders' Merchants"],
-  ["Grant & Stone", "National Builders' Merchants"],
-  ["Covers Timber & Builders Merchants", "National Builders' Merchants"],
-  ["Sydenhams", "National Builders' Merchants"],
-  ["RGB Building Supplies", "National Builders' Merchants"],
-  ["Lawsons", "National Builders' Merchants"],
-  ["Murdock Builders Merchants", "National Builders' Merchants"],
-  ["JT Dove", "National Builders' Merchants"],
-  ["Cowal Building & Plumbing Supplies", "National Builders' Merchants"],
-  ["DTW Tools & Machinery", "Concrete & Groundwork Tools"],
-  ["Multicrete Products", "Concrete & Groundwork Tools"],
-  ["Red Band UK", "Concrete & Groundwork Tools"],
-  ["SB Tools UK", "Concrete & Groundwork Tools"],
-  ["Rhino Build", "Concrete & Groundwork Tools"],
-  ["Designer Concrete Supplies", "Concrete & Groundwork Tools"],
-  ["Speedy Services", "Concrete & Groundwork Tools"],
-  ["Proworx Concrete Tools", "Concrete & Groundwork Tools"],
-  ["Paragon Diamond Tools", "Concrete & Groundwork Tools"],
-  ["Lesmac", "Concrete & Groundwork Tools"],
-  ["Beton Tools UK", "Concrete & Groundwork Tools"],
-  ["Concrete Tool Importers", "Concrete & Groundwork Tools"],
-  ["Interpart", "Concrete & Groundwork Tools"],
-  ["Hire Station", "Concrete & Groundwork Tools"],
-  ["Brandon Hire Station", "Concrete & Groundwork Tools"],
-  ["Apex Concrete Tools", "Concrete & Groundwork Tools"],
-  ["Fairport Construction Equipment", "Concrete & Groundwork Tools"],
-  ["Altrad Belle", "Concrete & Groundwork Tools"],
-  ["Makinex UK", "Concrete & Groundwork Tools"],
-  ["Crucial Concrete Supplies", "Concrete & Groundwork Tools"],
-  ["Arco", "PPE & Site Safety"],
-  ["Enfield Safety", "PPE & Site Safety"],
-  ["Howcroft Industrial Supplies", "PPE & Site Safety"],
-  ["Capfix", "PPE & Site Safety"],
-  ["Site King", "PPE & Site Safety"],
-  ["Thorncliffe Workwear", "PPE & Site Safety"],
-  ["Ashbrook PPE", "PPE & Site Safety"],
-  ["Greenham", "PPE & Site Safety"],
-  ["Protec Direct", "PPE & Site Safety"],
-  ["Lyreco Safety", "PPE & Site Safety"],
-  ["Bunzl Safety", "PPE & Site Safety"],
-  ["PK Safety", "PPE & Site Safety"],
-  ["Anchor Safety", "PPE & Site Safety"],
-  ["SMI Workwear", "PPE & Site Safety"],
-  ["Knighton Janitorial & Safety", "PPE & Site Safety"],
-  ["J&K Ross", "PPE & Site Safety"],
-  ["Clad Safety", "PPE & Site Safety"],
-  ["Ultimate Industrial", "PPE & Site Safety"],
-  ["Bodyguard Workwear", "PPE & Site Safety"],
-  ["Supertouch", "PPE & Site Safety"],
-  ["Screwfix", "Big-Box Retailer"],
-  ["Toolstation", "Big-Box Retailer"],
-  ["TradePoint", "Big-Box Retailer"],
-  ["Wickes", "Big-Box Retailer"],
-  ["B&Q", "Big-Box Retailer"],
-  ["Homebase", "Big-Box Retailer"],
-  ["Robert Dyas", "Big-Box Retailer"],
-  ["Machine Mart", "Big-Box Retailer"],
-  ["Tooled-Up", "Big-Box Retailer"],
-  ["FFX Tools", "Big-Box Retailer"],
+// Category groups to search — each group is OR'd internally (Geoapify's
+// categories param takes comma-separated values as OR), and all groups are
+// combined into one query. Order matters for labeling: first group whose
+// categories appear in a place's own tags wins the businessType label.
+const CATEGORY_GROUPS: [string, string[]][] = [
+  [
+    "National Builders Merchants",
+    ["commercial.building_materials", "construction.builders_merchant"],
+  ],
+  [
+    "Concrete Finishing & Groundwork Specialists",
+    ["commercial.tools_machinery", "industrial.machinery"],
+  ],
+  [
+    "Construction PPE & Site Safety Specialists",
+    ["industrial.safety_equipment", "commercial.workwear"],
+  ],
+  ["DIY & Trade Hardware Chains", ["commercial.hardware", "commercial.diy"]],
 ];
 
-const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+const ALL_CATEGORIES = CATEGORY_GROUPS.flatMap(([, cats]) => cats).join(",");
 
-// Matches "Travis Perkins - Openshaw" or "Travis Perkins Trading Co" against
-// the "Travis Perkins" whitelist entry — either side containing the other,
-// on normalized (lowercased, punctuation-stripped) text.
-function matchApprovedSupplier(name: string): string | null {
-  const n = normalize(name);
-  for (const [brand] of APPROVED_SUPPLIERS) {
-    const b = normalize(brand);
-    if (n.includes(b) || b.includes(n)) return brand;
+function deriveBusinessType(categories: string[] | undefined): string {
+  if (!categories) return "Trade Supplier";
+  for (const [label, groupCats] of CATEGORY_GROUPS) {
+    if (groupCats.some((c) => categories.includes(c))) return label;
   }
-  return null;
-}
-
-function approvedGroupFor(brand: string): string {
-  return APPROVED_SUPPLIERS.find(([b]) => b === brand)?.[1] || "Approved Supplier";
+  return "Trade Supplier";
 }
 
 // Geoapify Places — reliable hosted lookup (3000 free req/day, no shared
@@ -106,7 +42,7 @@ function mapFeature(f: any) {
     address: p.address_line2 || p.formatted || "Address unavailable",
     phone: p.contact?.phone || null,
     website: p.website || p.contact?.website || null,
-    businessType: "Approved Supplier",
+    businessType: deriveBusinessType(p.categories),
     distanceMeters: p.distance ?? null,
     coords: { lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0] },
   };
@@ -137,34 +73,19 @@ serve(async (req) => {
     const radiusM = Math.round(radiusMiles * 1609.34);
     const filterAndBias = `&filter=circle:${lng},${lat},${radiusM}&bias=proximity:${lng},${lat}`;
 
-    // Search by name per approved brand rather than by category — several
-    // approved suppliers (PPE/workwear, specialist tool/plant hire) aren't
-    // reliably tagged under Geoapify's hardware/DIY categories, so a
-    // category-only search would silently miss them. "commercial" is
-    // required alongside `name` by Geoapify's API.
-    const brandSearches = APPROVED_SUPPLIERS.map(([brand]) => ({
-      brand,
-      url: `https://api.geoapify.com/v2/places?categories=commercial&name=${encodeURIComponent(brand)}${filterAndBias}&limit=10&apiKey=${apiKey}`,
-    }));
+    // limit=50: the circle filter already bounds results to the radius —
+    // this just needs to be high enough not to truncate a genuinely full
+    // list of everything within it (Geoapify's own cap is 500 for places).
+    const url = `https://api.geoapify.com/v2/places?categories=${ALL_CATEGORIES}${filterAndBias}&limit=50&apiKey=${apiKey}`;
 
-    const brandResults = await Promise.all(
-      brandSearches.map((s) => fetch(s.url).then((r) => (r.ok ? r.json() : null))),
-    );
+    const res = await fetch(url);
+    const data = res.ok ? await res.json() : null;
 
     const merged = new Map<string, ReturnType<typeof mapFeature>>();
-    brandResults.forEach((geoData) => {
-      for (const f of geoData?.features || []) {
-        const mapped = mapFeature(f);
-        // Safety net: Geoapify's `name` search is fuzzy and can return
-        // near-matches — only keep results that actually match an approved
-        // brand, and label with the matched brand's group.
-        const matchedBrand = matchApprovedSupplier(mapped.name);
-        if (!matchedBrand) continue;
-        if (!merged.has(mapped.id)) {
-          merged.set(mapped.id, { ...mapped, businessType: approvedGroupFor(matchedBrand) });
-        }
-      }
-    });
+    for (const f of data?.features || []) {
+      const mapped = mapFeature(f);
+      if (!merged.has(mapped.id)) merged.set(mapped.id, mapped);
+    }
 
     return new Response(JSON.stringify({ suppliers: Array.from(merged.values()) }), {
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },

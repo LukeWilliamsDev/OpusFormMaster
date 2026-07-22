@@ -43,10 +43,17 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { compressImageFile } from "../lib/compressImage";
+import { getSignedJobAttachmentUrl } from "../lib/attachmentUrl";
 
 // Only these job columns count as a real "job detail change" worth surfacing
 // an audit entry + Revert button for — same convention as the staff dossier.
-const JOB_REVERTIBLE_FIELDS = ["site_name", "main_contractor", "postcode", "contract_max_pours", "status"];
+const JOB_REVERTIBLE_FIELDS = [
+  "site_name",
+  "main_contractor",
+  "postcode",
+  "contract_max_pours",
+  "status",
+];
 const JOB_FIELD_LABELS: Record<string, string> = {
   site_name: "Site Name",
   main_contractor: "Main Contractor",
@@ -141,15 +148,18 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [editSiteName, setEditSiteName] = useState(job.siteName);
   const [editMainContractor, setEditMainContractor] = useState(job.mainContractor);
   const [editPostcode, setEditPostcode] = useState(job.postcode);
-  const [editContractMaxPours, setEditContractMaxPours] = useState(String(job.contractMaxPours || 0));
+  const [editContractMaxPours, setEditContractMaxPours] = useState(
+    String(job.contractMaxPours || 0),
+  );
 
   // Audit Log state
   const [jobAuditLogs, setJobAuditLogs] = useState<any[]>([]);
   const [loadingJobAuditLogs, setLoadingJobAuditLogs] = useState(false);
   const [auditSearch, setAuditSearch] = useState("");
-  const [revertConfirmTarget, setRevertConfirmTarget] = useState<{ oldDetails: any; newDetails: any } | null>(
-    null,
-  );
+  const [revertConfirmTarget, setRevertConfirmTarget] = useState<{
+    oldDetails: any;
+    newDetails: any;
+  } | null>(null);
 
   const fetchJobAuditLogs = async () => {
     setLoadingJobAuditLogs(true);
@@ -429,7 +439,15 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         .order("uploaded_at", { ascending: false });
 
       if (data) {
-        setAttachments(data);
+        // job-attachments is a private bucket; the stored file_url is a
+        // legacy public-URL-shaped path carrier that needs signing to load.
+        const signed = await Promise.all(
+          data.map(async (a) => ({
+            ...a,
+            file_url: (await getSignedJobAttachmentUrl(a.file_url)) ?? a.file_url,
+          })),
+        );
+        setAttachments(signed);
       }
     } catch (err) {
       console.error("Error fetching attachments:", err);
@@ -641,7 +659,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
     setPourToggleTarget(null);
     toast.success(
-      wasCompleted ? `Pour #${log.pourNumber} marked as scheduled` : `Pour #${log.pourNumber} marked complete`,
+      wasCompleted
+        ? `Pour #${log.pourNumber} marked as scheduled`
+        : `Pour #${log.pourNumber} marked complete`,
     );
     logPourAudit(wasCompleted ? "REVERT_POUR" : "COMPLETE_POUR", log);
   };
@@ -729,7 +749,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             <span>{backLabel}</span>
           </button>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-foreground tracking-tight">{job.siteName}</h1>
+            <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
+              {job.siteName}
+            </h1>
             <button
               aria-label="Edit job details"
               onClick={() => {
@@ -821,7 +843,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                     {f.label}
                   </span>
                   <div className="flex items-center gap-2 text-right">
-                    <span className="line-through text-muted-foreground text-[13px]">{f.before}</span>
+                    <span className="line-through text-muted-foreground text-[13px]">
+                      {f.before}
+                    </span>
                     <span className="text-muted-foreground text-[12px]">→</span>
                     <span className="font-bold text-foreground">{f.after}</span>
                   </div>
@@ -839,9 +863,24 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <div className="flex flex-col items-stretch gap-0.5">
             {(
               [
-                { key: "in-progress", label: "In Progress", Icon: Clock, activeClasses: "bg-primary/15 text-primary border-primary/30" },
-                { key: "pending", label: "Pending", Icon: Circle, activeClasses: "bg-warning/15 text-warning border-warning/30" },
-                { key: "completed", label: "Completed", Icon: Check, activeClasses: "bg-success/15 text-success border-success/30" },
+                {
+                  key: "in-progress",
+                  label: "In Progress",
+                  Icon: Clock,
+                  activeClasses: "bg-primary/15 text-primary border-primary/30",
+                },
+                {
+                  key: "pending",
+                  label: "Pending",
+                  Icon: Circle,
+                  activeClasses: "bg-warning/15 text-warning border-warning/30",
+                },
+                {
+                  key: "completed",
+                  label: "Completed",
+                  Icon: Check,
+                  activeClasses: "bg-success/15 text-success border-success/30",
+                },
               ] as const
             ).map(({ key: s, label, Icon, activeClasses }) => {
               const isActive = status === s;
@@ -851,7 +890,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                   onClick={() => !isActive && setPendingStatus(s)}
                   aria-pressed={isActive}
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                    isActive ? activeClasses : "border-transparent text-muted-foreground hover:text-foreground"
+                    isActive
+                      ? activeClasses
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                   }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
@@ -949,8 +990,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         message={
           pendingStatus && (
             <>
-              Change project status from <strong className="text-foreground">{STATUS_LABELS[status]}</strong>{" "}
-              to <strong className="text-foreground">{STATUS_LABELS[pendingStatus]}</strong>?
+              Change project status from{" "}
+              <strong className="text-foreground">{STATUS_LABELS[status]}</strong> to{" "}
+              <strong className="text-foreground">{STATUS_LABELS[pendingStatus]}</strong>?
             </>
           )
         }
@@ -958,176 +1000,181 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Scheduled Pours + Staff: dated pour plan and on-site staff, side by side on wide screens, always visible above the tabs regardless of which one is active */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div className="bg-card border border-border rounded-xl p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-foreground">Scheduled Pours</h2>
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-bold text-foreground">Scheduled Pours</h2>
 
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsAddingPour(!isAddingPour)}
-              className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border bg-card border-border hover:bg-secondary text-foreground"
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsAddingPour(!isAddingPour)}
+                className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border bg-card border-border hover:bg-secondary text-foreground"
+              >
+                {isAddingPour ? "Cancel" : "+ Schedule Pour"}
+              </button>
+            </div>
+          </div>
+
+          {isAddingPour && (
+            <form
+              onSubmit={handleAddPourSubmit}
+              className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4"
             >
-              {isAddingPour ? "Cancel" : "+ Schedule Pour"}
-            </button>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                    Expected Date
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={newPourDate}
+                    onChange={(e) => setNewPourDate(e.target.value)}
+                    className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                    Mix Type
+                  </label>
+                  <select
+                    value={newPourMix}
+                    onChange={(e) => setNewPourMix(e.target.value)}
+                    className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none cursor-pointer"
+                  >
+                    <option value="C28/35">C28/35</option>
+                    <option value="C32/40">C32/40</option>
+                    <option value="C35/45">C35/45</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                    Volume (m³)
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={newPourVolume}
+                    onChange={(e) => setNewPourVolume(e.target.value)}
+                    className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                  Pour Notes
+                </label>
+                <input
+                  type="text"
+                  placeholder="Notes..."
+                  value={newPourNotes}
+                  onChange={(e) => setNewPourNotes(e.target.value)}
+                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none"
+                />
+              </div>
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg text-xs cursor-pointer"
+                >
+                  Schedule Pour
+                </button>
+              </div>
+            </form>
+          )}
+
+          <div className="space-y-2.5">
+            {pourLogs.map((log) => {
+              const isCompleted = log.status === "completed";
+              return (
+                <div
+                  key={log.id}
+                  className={`flex justify-between items-center p-4 border rounded-xl transition-all ${
+                    isCompleted
+                      ? "bg-card border-border hover:bg-secondary"
+                      : "bg-warning/5 border-warning/20 hover:bg-warning/10"
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      aria-label={
+                        isCompleted
+                          ? `Mark pour ${log.pourNumber} as scheduled`
+                          : `Mark pour ${log.pourNumber} complete`
+                      }
+                      onClick={() => setPourToggleTarget(log)}
+                      className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                        isCompleted
+                          ? "bg-success/15 border-success/30 text-success hover:bg-success/25"
+                          : "border-border text-transparent hover:border-primary hover:bg-primary/10"
+                      }`}
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                    </button>
+                    <div className="space-y-1">
+                      <div className="text-sm font-bold text-foreground">
+                        Pour #{log.pourNumber}
+                        {!isCompleted && (
+                          <span className="ml-2 text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
+                            Scheduled
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {log.mixType} · {log.volumeM3}m³
+                      </div>
+                      {log.notes && (
+                        <div className="text-[13px] text-muted-foreground/80 italic truncate max-w-[280px]">
+                          {log.notes}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="text-xs text-muted-foreground font-semibold">
+                      {isCompleted
+                        ? formatPourDate(log.date)
+                        : `Expected ${formatPourDate(log.date)}`}
+                    </div>
+                    <button
+                      type="button"
+                      aria-label={`Edit notes for pour ${log.pourNumber}`}
+                      onClick={() => {
+                        setEditNoteText(log.notes || "");
+                        setPourNoteTarget(log);
+                      }}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                    >
+                      <PencilLine className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={`Remove pour ${log.pourNumber}`}
+                      onClick={() => setPourToRemove(log)}
+                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+
+            {pourLogs.length === 0 && (
+              <div className="py-8 text-center text-xs text-muted-foreground uppercase tracking-wider">
+                No pours logged yet
+              </div>
+            )}
           </div>
         </div>
 
-        {isAddingPour && (
-          <form
-            onSubmit={handleAddPourSubmit}
-            className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Expected Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={newPourDate}
-                  onChange={(e) => setNewPourDate(e.target.value)}
-                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Mix Type
-                </label>
-                <select
-                  value={newPourMix}
-                  onChange={(e) => setNewPourMix(e.target.value)}
-                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none cursor-pointer"
-                >
-                  <option value="C28/35">C28/35</option>
-                  <option value="C32/40">C32/40</option>
-                  <option value="C35/45">C35/45</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Volume (m³)
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  value={newPourVolume}
-                  onChange={(e) => setNewPourVolume(e.target.value)}
-                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                Pour Notes
-              </label>
-              <input
-                type="text"
-                placeholder="Notes..."
-                value={newPourNotes}
-                onChange={(e) => setNewPourNotes(e.target.value)}
-                className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none"
-              />
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg text-xs cursor-pointer"
-              >
-                Schedule Pour
-              </button>
-            </div>
-          </form>
-        )}
-
-        <div className="space-y-2.5">
-          {pourLogs.map((log) => {
-            const isCompleted = log.status === "completed";
-            return (
-              <div
-                key={log.id}
-                className={`flex justify-between items-center p-4 border rounded-xl transition-all ${
-                  isCompleted
-                    ? "bg-card border-border hover:bg-secondary"
-                    : "bg-warning/5 border-warning/20 hover:bg-warning/10"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    aria-label={isCompleted ? `Mark pour ${log.pourNumber} as scheduled` : `Mark pour ${log.pourNumber} complete`}
-                    onClick={() => setPourToggleTarget(log)}
-                    className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
-                      isCompleted
-                        ? "bg-success/15 border-success/30 text-success hover:bg-success/25"
-                        : "border-border text-transparent hover:border-primary hover:bg-primary/10"
-                    }`}
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="space-y-1">
-                    <div className="text-sm font-bold text-foreground">
-                      Pour #{log.pourNumber}
-                      {!isCompleted && (
-                        <span className="ml-2 text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
-                          Scheduled
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {log.mixType} · {log.volumeM3}m³
-                    </div>
-                    {log.notes && (
-                      <div className="text-[13px] text-muted-foreground/80 italic truncate max-w-[280px]">
-                        {log.notes}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="text-xs text-muted-foreground font-semibold">
-                    {isCompleted ? formatPourDate(log.date) : `Expected ${formatPourDate(log.date)}`}
-                  </div>
-                  <button
-                    type="button"
-                    aria-label={`Edit notes for pour ${log.pourNumber}`}
-                    onClick={() => {
-                      setEditNoteText(log.notes || "");
-                      setPourNoteTarget(log);
-                    }}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
-                  >
-                    <PencilLine className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Remove pour ${log.pourNumber}`}
-                    onClick={() => setPourToRemove(log)}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-
-          {pourLogs.length === 0 && (
-            <div className="py-8 text-center text-xs text-muted-foreground uppercase tracking-wider">
-              No pours logged yet
-            </div>
-          )}
-        </div>
-
-      </div>
-
-      {/* Staff Scheduled On Site — its own card, side by side with Scheduled
+        {/* Staff Scheduled On Site — its own card, side by side with Scheduled
           Pours on wide screens, and never scrolls: the list just extends the
           page instead of clipping to a fixed height. */}
-      <div className="bg-card border border-border rounded-xl p-4">
+        <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <UserCheck className="w-4 h-4 text-primary" />
@@ -1170,7 +1217,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               No staff members scheduled to this job site.
             </div>
           )}
-      </div>
+        </div>
       </div>
 
       {/* Remove Pour Confirmation */}
@@ -1204,20 +1251,26 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           if (!open) setPourToggleTarget(null);
         }}
         tone="neutral"
-        title={pourToggleTarget?.status === "completed" ? "Mark Pour as Scheduled?" : "Mark Pour Complete?"}
-        confirmLabel={pourToggleTarget?.status === "completed" ? "Mark as Scheduled" : "Mark Complete"}
+        title={
+          pourToggleTarget?.status === "completed"
+            ? "Mark Pour as Scheduled?"
+            : "Mark Pour Complete?"
+        }
+        confirmLabel={
+          pourToggleTarget?.status === "completed" ? "Mark as Scheduled" : "Mark Complete"
+        }
         onConfirm={executeTogglePourComplete}
         message={
           pourToggleTarget &&
           (pourToggleTarget.status === "completed" ? (
             <>
-              This will revert Pour #{pourToggleTarget.pourNumber} back to scheduled and reduce the contract
-              pour count by 1.
+              This will revert Pour #{pourToggleTarget.pourNumber} back to scheduled and reduce the
+              contract pour count by 1.
             </>
           ) : (
             <>
-              This will mark Pour #{pourToggleTarget.pourNumber} as complete and increase the contract pour
-              count by 1.
+              This will mark Pour #{pourToggleTarget.pourNumber} as complete and increase the
+              contract pour count by 1.
             </>
           ))
         }
@@ -1247,545 +1300,582 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       {/* Secondary sections: Suppliers/Map, Diary+Staff, Attachments */}
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="w-full h-auto">
-          <TabsTrigger value="overview" className="flex-1 flex items-center justify-center gap-1.5 px-1.5 sm:px-3">
+          <TabsTrigger
+            value="overview"
+            className="flex-1 flex items-center justify-center gap-1.5 px-1.5 sm:px-3"
+          >
             <Users className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Overview</span>
           </TabsTrigger>
-          <TabsTrigger value="suppliers" className="flex-1 flex items-center justify-center gap-1.5 px-1.5 sm:px-3">
-            <MapPin className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Local Suppliers</span>
+          <TabsTrigger
+            value="suppliers"
+            className="flex-1 flex items-center justify-center gap-1.5 px-1.5 sm:px-3"
+          >
+            <MapPin className="w-3.5 h-3.5 shrink-0" />{" "}
+            <span className="truncate">Local Suppliers</span>
           </TabsTrigger>
-          <TabsTrigger value="audit_log" className="flex-1 flex items-center justify-center gap-1.5 px-1.5 sm:px-3">
+          <TabsTrigger
+            value="audit_log"
+            className="flex-1 flex items-center justify-center gap-1.5 px-1.5 sm:px-3"
+          >
             <History className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Audit Log</span>
           </TabsTrigger>
         </TabsList>
 
-      <TabsContent value="suppliers">
-      {/* Interactive Proximity Suppliers Map */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 bg-card border border-border rounded-xl overflow-hidden">
-        <div className="lg:col-span-2 flex flex-col lg:border-r border-border">
-          <div className="p-4 border-b border-border flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-destructive" />
-              <span className="text-xs font-bold uppercase tracking-wider text-foreground">
-                Live Site Proximity Matrix
-              </span>
-            </div>
-            <div className="flex items-center gap-3 text-[12px] text-muted-foreground">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-destructive" /> Job Site
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-primary" /> Supplier
-              </span>
-            </div>
-          </div>
-          {siteCoords ? (
-            <div className="flex-1 min-h-[420px] relative">
-              <OSMMap
-                center={siteCoords}
-                siteCoords={siteCoords}
-                siteName={job.siteName}
-                postcode={job.postcode}
-                suppliers={suppliers}
-                selectedSupplierId={selectedSupplierId}
-                onSelectSupplier={setSelectedSupplierId}
-              />
-            </div>
-          ) : (
-            <div className="p-8 text-center text-xs text-muted-foreground py-16">
-              Geocoding site coordinates...
-            </div>
-          )}
-        </div>
-
-        {/* Local Suppliers List */}
-        <div className="p-4 flex flex-col h-full min-h-[420px]">
-          <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider mb-4">
-            Closest Local Suppliers
-          </div>
-          <div className="flex-1 flex flex-col min-h-0">
-            {loadingSuppliers ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
-                <Loader className="w-4 h-4 animate-spin text-primary" />
-                <span>Searching local building merchants...</span>
-              </div>
-            ) : suppliers.length > 0 ? (
-              <div className="space-y-2.5 flex-1 overflow-y-auto pr-1">
-                {suppliers.map((s) => (
-                  <div
-                    key={s.id}
-                    role="button"
-                    tabIndex={0}
-                    onClick={() =>
-                      setSelectedSupplierId((prev) => (prev === s.id ? null : s.id))
-                    }
-                    onKeyDown={(e) =>
-                      e.key === "Enter" &&
-                      setSelectedSupplierId((prev) => (prev === s.id ? null : s.id))
-                    }
-                    className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
-                      selectedSupplierId === s.id
-                        ? "bg-secondary border-primary"
-                        : "bg-background border-border hover:border-muted-foreground/40"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start gap-2 mb-2">
-                      <div className="space-y-0.5 max-w-[70%]">
-                        <div className="text-xs font-bold text-foreground truncate">{s.name}</div>
-                        {s.businessType && (
-                          <div className="text-[11px] text-primary font-bold uppercase tracking-wider">
-                            {s.businessType}
-                          </div>
-                        )}
-                        <div className="text-[12px] text-muted-foreground truncate">{s.address}</div>
-                      </div>
-                      <span className="text-[12px] font-bold bg-background border border-border px-2 py-0.5 rounded text-muted-foreground shrink-0">
-                        {s.distance}
-                      </span>
-                    </div>
-
-                    {/* Actions always visible, not hover-dependent */}
-                    <div className="flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
-                      {s.phone && (
-                        <a
-                          href={`tel:${s.phone}`}
-                          className="flex items-center gap-1.5 text-[12px] font-bold text-foreground border border-border px-2 py-1 rounded-md hover:bg-secondary transition-colors"
-                        >
-                          <Phone className="w-3 h-3" /> Call
-                        </a>
-                      )}
-                      <a
-                        href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="flex items-center gap-1.5 text-[12px] font-bold text-foreground border border-border px-2 py-1 rounded-md hover:bg-secondary transition-colors"
-                      >
-                        <Navigation className="w-3 h-3" /> Directions
-                      </a>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-xs text-muted-foreground py-4">
-                No local tool hire or building merchants found.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      </TabsContent>
-
-      <TabsContent value="overview">
-      <div className="space-y-6">
-      {/* Attachments Section: Photos and Documents */}
-      <div className="grid grid-cols-1 gap-6">
-        {/* Before & After Photo Gallery */}
-        <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-          <div className="flex justify-between items-center border-b border-border pb-3">
-            <div className="flex items-center gap-2">
-              <Camera className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                Before & After Site Media
-              </h2>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4">
-            {/* Before Section */}
-            <div className="space-y-2">
-              <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
-                <span>Before</span>
-                <label className="text-[12px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
-                  {uploadingPhotoBefore ? (
-                    <Loader className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <>
-                      <Plus className="w-3 h-3" /> Add Photo
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) =>
-                      e.target.files?.[0] && uploadAttachment(e.target.files[0], "image_before")
-                    }
-                    className="hidden"
-                    disabled={uploadingPhotoBefore}
-                  />
-                </label>
-              </div>
-              <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
-                {beforePhotos.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 w-full">
-                    {beforePhotos.map((p, i) => (
-                      <div
-                        key={p.id}
-                        onClick={() => setGallery({ photos: beforePhotos, index: i })}
-                        className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
-                      >
-                        <img src={p.file_url} alt="before" className="w-full h-24 object-cover" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
-                          <span className="text-white font-bold truncate">{p.uploaded_by}</span>
-                          <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteAttachmentTarget(p);
-                          }}
-                          aria-label="Delete photo"
-                          className="absolute top-1 right-1 p-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
-                    No Media
+        <TabsContent value="suppliers">
+          {/* Interactive Proximity Suppliers Map */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 bg-card border border-border rounded-xl overflow-hidden">
+            <div className="lg:col-span-2 flex flex-col lg:border-r border-border">
+              <div className="p-4 border-b border-border flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-destructive" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-foreground">
+                    Live Site Proximity Matrix
                   </span>
-                )}
-              </div>
-            </div>
-
-            {/* After Section */}
-            <div className="space-y-2">
-              <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
-                <span>After</span>
-                <label className="text-[12px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
-                  {uploadingPhotoAfter ? (
-                    <Loader className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <>
-                      <Plus className="w-3 h-3" /> Add Photo
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) =>
-                      e.target.files?.[0] && uploadAttachment(e.target.files[0], "image_after")
-                    }
-                    className="hidden"
-                    disabled={uploadingPhotoAfter}
-                  />
-                </label>
-              </div>
-              <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
-                {afterPhotos.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-2 w-full">
-                    {afterPhotos.map((p, i) => (
-                      <div
-                        key={p.id}
-                        onClick={() => setGallery({ photos: afterPhotos, index: i })}
-                        className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
-                      >
-                        <img src={p.file_url} alt="after" className="w-full h-24 object-cover" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
-                          <span className="text-white font-bold truncate">{p.uploaded_by}</span>
-                          <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteAttachmentTarget(p);
-                          }}
-                          aria-label="Delete photo"
-                          className="absolute top-1 right-1 p-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
-                    No Media
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Project Documents & Drag-and-Drop */}
-        <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-          <div className="flex justify-between items-center border-b border-border pb-3">
-            <div className="flex items-center gap-2">
-              <FileText className="w-4 h-4 text-primary" />
-              <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                Project Documents
-              </h2>
-            </div>
-            <button
-              onClick={generateUploadLink}
-              disabled={generatingLink}
-              className="text-[12px] text-primary hover:text-primary font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
-            >
-              {generatingLink ? (
-                <Loader className="w-3 h-3 animate-spin" />
-              ) : (
-                <>
-                  <LinkIcon className="w-3 h-3" /> Request Link
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Generated request link alert */}
-          {generatedLink && (
-            <div className="bg-secondary border border-border rounded-xl p-3.5 flex items-center justify-between gap-3 animate-fade-in">
-              <div className="space-y-0.5 max-w-[75%]">
-                <div className="text-[12px] font-bold text-foreground uppercase tracking-wider">
-                  Secure Upload Link Generated
                 </div>
-                <div className="text-[13px] text-muted-foreground truncate font-mono">{generatedLink}</div>
+                <div className="flex items-center gap-3 text-[12px] text-muted-foreground">
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-destructive" /> Job Site
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-primary" /> Supplier
+                  </span>
+                </div>
               </div>
-              <button
-                onClick={copyToClipboard}
-                className="px-3 py-1.5 bg-card border border-border text-foreground hover:bg-secondary rounded-lg text-[12px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-              >
-                {copiedLink ? (
-                  <Check className="w-3.5 h-3.5 text-success" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5" />
-                )}
-                <span>{copiedLink ? "Copied" : "Copy"}</span>
-              </button>
+              {siteCoords ? (
+                <div className="flex-1 min-h-[420px] relative">
+                  <OSMMap
+                    center={siteCoords}
+                    siteCoords={siteCoords}
+                    siteName={job.siteName}
+                    postcode={job.postcode}
+                    suppliers={suppliers}
+                    selectedSupplierId={selectedSupplierId}
+                    onSelectSupplier={setSelectedSupplierId}
+                  />
+                </div>
+              ) : (
+                <div className="p-8 text-center text-xs text-muted-foreground py-16">
+                  Geocoding site coordinates...
+                </div>
+              )}
             </div>
-          )}
 
-          {/* Drag and drop zone */}
-          <div className="border border-dashed border-border hover:border-muted-foreground/40 rounded-xl p-6 bg-background text-center relative transition-all">
-            <input
-              type="file"
-              onChange={(e) =>
-                e.target.files?.[0] && uploadAttachment(e.target.files[0], "document")
-              }
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-              disabled={uploadingDoc}
-            />
-            <div className="flex flex-col items-center gap-2">
-              <FileText className="w-8 h-8 text-muted-foreground" />
-              <div className="text-xs font-bold text-foreground">
-                {uploadingDoc ? "Uploading..." : "Drop files here or click to upload"}
+            {/* Local Suppliers List */}
+            <div className="p-4 flex flex-col h-full min-h-[420px]">
+              <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider mb-4">
+                Closest Local Suppliers
               </div>
-              <div className="text-[12px] text-muted-foreground">PDF, Excel, Word, or CAD Drawings</div>
-              <div className="text-[11px] text-muted-foreground">10MB per file, 100MB total per job</div>
+              <div className="flex-1 flex flex-col min-h-0">
+                {loadingSuppliers ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
+                    <Loader className="w-4 h-4 animate-spin text-primary" />
+                    <span>Searching local building merchants...</span>
+                  </div>
+                ) : suppliers.length > 0 ? (
+                  <div className="space-y-2.5 flex-1 overflow-y-auto pr-1">
+                    {suppliers.map((s) => (
+                      <div
+                        key={s.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() =>
+                          setSelectedSupplierId((prev) => (prev === s.id ? null : s.id))
+                        }
+                        onKeyDown={(e) =>
+                          e.key === "Enter" &&
+                          setSelectedSupplierId((prev) => (prev === s.id ? null : s.id))
+                        }
+                        className={`w-full text-left p-3 rounded-lg border transition-all cursor-pointer ${
+                          selectedSupplierId === s.id
+                            ? "bg-secondary border-primary"
+                            : "bg-background border-border hover:border-muted-foreground/40"
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-2 mb-2">
+                          <div className="space-y-0.5 max-w-[70%]">
+                            <div className="text-xs font-bold text-foreground truncate">
+                              {s.name}
+                            </div>
+                            {s.businessType && (
+                              <div className="text-[11px] text-primary font-bold uppercase tracking-wider">
+                                {s.businessType}
+                              </div>
+                            )}
+                            <div className="text-[12px] text-muted-foreground truncate">
+                              {s.address}
+                            </div>
+                          </div>
+                          <span className="text-[12px] font-bold bg-background border border-border px-2 py-0.5 rounded text-muted-foreground shrink-0">
+                            {s.distance}
+                          </span>
+                        </div>
+
+                        {/* Actions always visible, not hover-dependent */}
+                        <div
+                          className="flex flex-wrap gap-1.5"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {s.phone && (
+                            <a
+                              href={`tel:${s.phone}`}
+                              className="flex items-center gap-1.5 text-[12px] font-bold text-foreground border border-border px-2 py-1 rounded-md hover:bg-secondary transition-colors"
+                            >
+                              <Phone className="w-3 h-3" /> Call
+                            </a>
+                          )}
+                          <a
+                            href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(s.address)}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center gap-1.5 text-[12px] font-bold text-foreground border border-border px-2 py-1 rounded-md hover:bg-secondary transition-colors"
+                          >
+                            <Navigation className="w-3 h-3" /> Directions
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-muted-foreground py-4">
+                    No local tool hire or building merchants found.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
+        </TabsContent>
 
-          {/* Documents List */}
-          <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
-            {projectDocs.map((d) => (
-              <div
-                key={d.id}
-                className="flex justify-between items-center p-2.5 bg-background border border-border rounded-lg hover:border-muted-foreground/40 transition-all"
-              >
-                <button
-                  type="button"
-                  onClick={() => setViewDocTarget(d)}
-                  className="flex items-center gap-2 truncate max-w-[70%] cursor-pointer"
-                >
-                  <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <span className="text-xs text-foreground hover:text-primary truncate font-mono">
-                    {d.file_name}
-                  </span>
-                </button>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="text-[11px] text-muted-foreground font-medium">
-                    {new Date(d.uploaded_at).toLocaleDateString("en-GB")}
-                  </span>
+        <TabsContent value="overview">
+          <div className="space-y-6">
+            {/* Attachments Section: Photos and Documents */}
+            <div className="grid grid-cols-1 gap-6">
+              {/* Before & After Photo Gallery */}
+              <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+                <div className="flex justify-between items-center border-b border-border pb-3">
+                  <div className="flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-primary" />
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
+                      Before & After Site Media
+                    </h2>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {/* Before Section */}
+                  <div className="space-y-2">
+                    <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
+                      <span>Before</span>
+                      <label className="text-[12px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
+                        {uploadingPhotoBefore ? (
+                          <Loader className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Plus className="w-3 h-3" /> Add Photo
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            e.target.files?.[0] &&
+                            uploadAttachment(e.target.files[0], "image_before")
+                          }
+                          className="hidden"
+                          disabled={uploadingPhotoBefore}
+                        />
+                      </label>
+                    </div>
+                    <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
+                      {beforePhotos.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                          {beforePhotos.map((p, i) => (
+                            <div
+                              key={p.id}
+                              onClick={() => setGallery({ photos: beforePhotos, index: i })}
+                              className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
+                            >
+                              <img
+                                src={p.file_url}
+                                alt="before"
+                                className="w-full h-24 object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
+                                <span className="text-white font-bold truncate">
+                                  {p.uploaded_by}
+                                </span>
+                                <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteAttachmentTarget(p);
+                                }}
+                                aria-label="Delete photo"
+                                className="absolute top-1 right-1 p-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
+                          No Media
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* After Section */}
+                  <div className="space-y-2">
+                    <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
+                      <span>After</span>
+                      <label className="text-[12px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
+                        {uploadingPhotoAfter ? (
+                          <Loader className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Plus className="w-3 h-3" /> Add Photo
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            e.target.files?.[0] &&
+                            uploadAttachment(e.target.files[0], "image_after")
+                          }
+                          className="hidden"
+                          disabled={uploadingPhotoAfter}
+                        />
+                      </label>
+                    </div>
+                    <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
+                      {afterPhotos.length > 0 ? (
+                        <div className="grid grid-cols-2 gap-2 w-full">
+                          {afterPhotos.map((p, i) => (
+                            <div
+                              key={p.id}
+                              onClick={() => setGallery({ photos: afterPhotos, index: i })}
+                              className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
+                            >
+                              <img
+                                src={p.file_url}
+                                alt="after"
+                                className="w-full h-24 object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
+                                <span className="text-white font-bold truncate">
+                                  {p.uploaded_by}
+                                </span>
+                                <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteAttachmentTarget(p);
+                                }}
+                                aria-label="Delete photo"
+                                className="absolute top-1 right-1 p-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
+                          No Media
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Project Documents & Drag-and-Drop */}
+              <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+                <div className="flex justify-between items-center border-b border-border pb-3">
+                  <div className="flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary" />
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
+                      Project Documents
+                    </h2>
+                  </div>
                   <button
-                    type="button"
-                    onClick={() => setDeleteAttachmentTarget(d)}
-                    className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                    aria-label={`Delete ${d.file_name}`}
+                    onClick={generateUploadLink}
+                    disabled={generatingLink}
+                    className="text-[12px] text-primary hover:text-primary font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    {generatingLink ? (
+                      <Loader className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <>
+                        <LinkIcon className="w-3 h-3" /> Request Link
+                      </>
+                    )}
                   </button>
                 </div>
-              </div>
-            ))}
 
-            {projectDocs.length === 0 && (
-              <div className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold">
-                No documents uploaded yet
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-      </div>
-      </TabsContent>
-
-      <TabsContent value="audit_log">
-        {(() => {
-          const events = jobAuditLogs
-            .map((l) => {
-              const diff =
-                l.action === "UPDATE" && l.details?.old
-                  ? computeDiff(l.details.old, l.details.new)
-                  : [];
-              return { ...l, diff };
-            })
-            .filter((event) => {
-              if (event.action === "UPDATE") {
-                return event.diff.some((d: any) => JOB_REVERTIBLE_FIELDS.includes(d.field));
-              }
-              return true;
-            })
-            .filter((event) => {
-              const searchLower = auditSearch.trim().toLowerCase();
-              if (!searchLower) return true;
-              return (event.user_email || "").toLowerCase().includes(searchLower);
-            });
-
-          return (
-            <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                <Input
-                  value={auditSearch}
-                  onChange={(e) => setAuditSearch(e.target.value)}
-                  placeholder="Search actor..."
-                  className="pl-8"
-                />
-              </div>
-
-              {loadingJobAuditLogs ? (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
-                  <Loader className="w-4 h-4 animate-spin text-primary" />
-                  <span>Loading audit log...</span>
-                </div>
-              ) : events.length === 0 ? (
-                <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[13px] font-bold uppercase tracking-wider">
-                  No audit history for this job
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {events.map((event) => {
-                    const changedFields = event.diff
-                      .filter((d: any) => JOB_REVERTIBLE_FIELDS.includes(d.field))
-                      .map((d: any) => JOB_FIELD_LABELS[d.field] || d.field);
-
-                    const pourLabel = event.details?.pour_number
-                      ? `Pour #${event.details.pour_number} (${event.details.mix_type}, ${event.details.volume_m3}m³)`
-                      : "";
-
-                    let badgeColor = "bg-secondary border-border text-muted-foreground";
-                    let summaryText = "";
-                    if (event.action === "CREATE") {
-                      badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                      summaryText = "Job record created";
-                    } else if (event.action === "UPDATE") {
-                      summaryText = changedFields.length
-                        ? `Job Details Updated: ${changedFields.join(", ")}`
-                        : "Job Details Have Been Updated";
-                    } else if (event.action === "SCHEDULE_POUR") {
-                      badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                      summaryText = `Scheduled ${pourLabel}, expected ${formatPourDate(event.details.date)}`;
-                    } else if (event.action === "COMPLETE_POUR") {
-                      badgeColor = "bg-success/10 border-success/20 text-success";
-                      summaryText = `Marked ${pourLabel} complete`;
-                    } else if (event.action === "REVERT_POUR") {
-                      badgeColor = "bg-warning/10 border-warning/20 text-warning";
-                      summaryText = `Reverted ${pourLabel} back to scheduled`;
-                    } else if (event.action === "REMOVE_POUR") {
-                      badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                      summaryText = `Removed ${pourLabel} from the log`;
-                    } else if (event.action === "UPDATE_POUR_NOTES") {
-                      badgeColor = "bg-secondary border-border text-muted-foreground";
-                      summaryText = `Updated notes on ${pourLabel}`;
-                    } else if (event.action === "ASSIGN_STAFF") {
-                      badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                      summaryText = `${event.details?.worker_name || "Staff member"} assigned to site`;
-                    } else if (event.action === "REALLOCATE_STAFF") {
-                      badgeColor = "bg-warning/10 border-warning/20 text-warning";
-                      summaryText = `${event.details?.worker_name || "Staff member"} reallocated to this job`;
-                    } else if (event.action === "REMOVE_STAFF") {
-                      badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                      summaryText = `${event.details?.worker_name || "Staff member"} removed from site`;
-                    } else if (event.action === "UPLOAD_ATTACHMENT") {
-                      badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                      const attachmentLabel =
-                        event.details?.attachment_type === "document"
-                          ? "Document"
-                          : event.details?.attachment_type === "image_after"
-                            ? "After photo"
-                            : "Before photo";
-                      summaryText = `${attachmentLabel} uploaded: ${event.details?.file_name || ""}`;
-                    } else if (event.action === "GENERATE_UPLOAD_LINK") {
-                      badgeColor = "bg-secondary border-border text-muted-foreground";
-                      summaryText = "External upload link generated";
-                    } else if (event.action === "EXTERNAL_UPLOAD") {
-                      badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                      summaryText = `Document submitted via external link: ${event.details?.file_name || ""}`;
-                    } else if (event.action === "VIEW_ATTACHMENT") {
-                      badgeColor = "bg-secondary border-border text-muted-foreground";
-                      summaryText = `Accessed: ${event.details?.file_name || "attachment"}`;
-                    } else if (event.action === "DELETE_ATTACHMENT") {
-                      badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                      summaryText = `Deleted: ${event.details?.file_name || "attachment"}`;
-                    } else {
-                      summaryText = event.action?.replace(/_/g, " ");
-                    }
-
-                    const canRevert = event.action === "UPDATE" && changedFields.length > 0;
-                    const isPourEvent = pourLabel !== "";
-
-                    return (
-                      <div key={event.id} className="py-2.5 flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                          {isPourEvent ? (
-                            <Layers className="w-3.5 h-3.5 text-primary" />
-                          ) : (
-                            <PencilLine className="w-3.5 h-3.5 text-primary" />
-                          )}
-                        </div>
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shrink-0 ${badgeColor}`}
-                        >
-                          {event.action?.replace(/_/g, " ")}
-                        </span>
-                        <p className="flex-1 min-w-0 truncate text-[13px] text-foreground/90">
-                          {summaryText}
-                        </p>
-                        {canRevert && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setRevertConfirmTarget({
-                                oldDetails: event.details?.old,
-                                newDetails: event.details?.new,
-                              })
-                            }
-                            className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                          >
-                            Revert
-                          </button>
-                        )}
-                        <span className="text-[12px] text-muted-foreground shrink-0">
-                          {new Date(event.created_at).toLocaleString("en-GB", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
+                {/* Generated request link alert */}
+                {generatedLink && (
+                  <div className="bg-secondary border border-border rounded-xl p-3.5 flex items-center justify-between gap-3 animate-fade-in">
+                    <div className="space-y-0.5 max-w-[75%]">
+                      <div className="text-[12px] font-bold text-foreground uppercase tracking-wider">
+                        Secure Upload Link Generated
                       </div>
-                    );
-                  })}
+                      <div className="text-[13px] text-muted-foreground truncate font-mono">
+                        {generatedLink}
+                      </div>
+                    </div>
+                    <button
+                      onClick={copyToClipboard}
+                      className="px-3 py-1.5 bg-card border border-border text-foreground hover:bg-secondary rounded-lg text-[12px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      {copiedLink ? (
+                        <Check className="w-3.5 h-3.5 text-success" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
+                      <span>{copiedLink ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                )}
+
+                {/* Drag and drop zone */}
+                <div className="border border-dashed border-border hover:border-muted-foreground/40 rounded-xl p-6 bg-background text-center relative transition-all">
+                  <input
+                    type="file"
+                    onChange={(e) =>
+                      e.target.files?.[0] && uploadAttachment(e.target.files[0], "document")
+                    }
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={uploadingDoc}
+                  />
+                  <div className="flex flex-col items-center gap-2">
+                    <FileText className="w-8 h-8 text-muted-foreground" />
+                    <div className="text-xs font-bold text-foreground">
+                      {uploadingDoc ? "Uploading..." : "Drop files here or click to upload"}
+                    </div>
+                    <div className="text-[12px] text-muted-foreground">
+                      PDF, Excel, Word, or CAD Drawings
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      10MB per file, 100MB total per job
+                    </div>
+                  </div>
                 </div>
-              )}
+
+                {/* Documents List */}
+                <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+                  {projectDocs.map((d) => (
+                    <div
+                      key={d.id}
+                      className="flex justify-between items-center p-2.5 bg-background border border-border rounded-lg hover:border-muted-foreground/40 transition-all"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setViewDocTarget(d)}
+                        className="flex items-center gap-2 truncate max-w-[70%] cursor-pointer"
+                      >
+                        <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span className="text-xs text-foreground hover:text-primary truncate font-mono">
+                          {d.file_name}
+                        </span>
+                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[11px] text-muted-foreground font-medium">
+                          {new Date(d.uploaded_at).toLocaleDateString("en-GB")}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteAttachmentTarget(d)}
+                          className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                          aria-label={`Delete ${d.file_name}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {projectDocs.length === 0 && (
+                    <div className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold">
+                      No documents uploaded yet
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-          );
-        })()}
-      </TabsContent>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="audit_log">
+          {(() => {
+            const events = jobAuditLogs
+              .map((l) => {
+                const diff =
+                  l.action === "UPDATE" && l.details?.old
+                    ? computeDiff(l.details.old, l.details.new)
+                    : [];
+                return { ...l, diff };
+              })
+              .filter((event) => {
+                if (event.action === "UPDATE") {
+                  return event.diff.some((d: any) => JOB_REVERTIBLE_FIELDS.includes(d.field));
+                }
+                return true;
+              })
+              .filter((event) => {
+                const searchLower = auditSearch.trim().toLowerCase();
+                if (!searchLower) return true;
+                return (event.user_email || "").toLowerCase().includes(searchLower);
+              });
+
+            return (
+              <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+                  <Input
+                    value={auditSearch}
+                    onChange={(e) => setAuditSearch(e.target.value)}
+                    placeholder="Search actor..."
+                    className="pl-8"
+                  />
+                </div>
+
+                {loadingJobAuditLogs ? (
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
+                    <Loader className="w-4 h-4 animate-spin text-primary" />
+                    <span>Loading audit log...</span>
+                  </div>
+                ) : events.length === 0 ? (
+                  <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[13px] font-bold uppercase tracking-wider">
+                    No audit history for this job
+                  </div>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {events.map((event) => {
+                      const changedFields = event.diff
+                        .filter((d: any) => JOB_REVERTIBLE_FIELDS.includes(d.field))
+                        .map((d: any) => JOB_FIELD_LABELS[d.field] || d.field);
+
+                      const pourLabel = event.details?.pour_number
+                        ? `Pour #${event.details.pour_number} (${event.details.mix_type}, ${event.details.volume_m3}m³)`
+                        : "";
+
+                      let badgeColor = "bg-secondary border-border text-muted-foreground";
+                      let summaryText = "";
+                      if (event.action === "CREATE") {
+                        badgeColor = "bg-primary/10 border-primary/20 text-primary";
+                        summaryText = "Job record created";
+                      } else if (event.action === "UPDATE") {
+                        summaryText = changedFields.length
+                          ? `Job Details Updated: ${changedFields.join(", ")}`
+                          : "Job Details Have Been Updated";
+                      } else if (event.action === "SCHEDULE_POUR") {
+                        badgeColor = "bg-primary/10 border-primary/20 text-primary";
+                        summaryText = `Scheduled ${pourLabel}, expected ${formatPourDate(event.details.date)}`;
+                      } else if (event.action === "COMPLETE_POUR") {
+                        badgeColor = "bg-success/10 border-success/20 text-success";
+                        summaryText = `Marked ${pourLabel} complete`;
+                      } else if (event.action === "REVERT_POUR") {
+                        badgeColor = "bg-warning/10 border-warning/20 text-warning";
+                        summaryText = `Reverted ${pourLabel} back to scheduled`;
+                      } else if (event.action === "REMOVE_POUR") {
+                        badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
+                        summaryText = `Removed ${pourLabel} from the log`;
+                      } else if (event.action === "UPDATE_POUR_NOTES") {
+                        badgeColor = "bg-secondary border-border text-muted-foreground";
+                        summaryText = `Updated notes on ${pourLabel}`;
+                      } else if (event.action === "ASSIGN_STAFF") {
+                        badgeColor = "bg-primary/10 border-primary/20 text-primary";
+                        summaryText = `${event.details?.worker_name || "Staff member"} assigned to site`;
+                      } else if (event.action === "REALLOCATE_STAFF") {
+                        badgeColor = "bg-warning/10 border-warning/20 text-warning";
+                        summaryText = `${event.details?.worker_name || "Staff member"} reallocated to this job`;
+                      } else if (event.action === "REMOVE_STAFF") {
+                        badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
+                        summaryText = `${event.details?.worker_name || "Staff member"} removed from site`;
+                      } else if (event.action === "UPLOAD_ATTACHMENT") {
+                        badgeColor = "bg-primary/10 border-primary/20 text-primary";
+                        const attachmentLabel =
+                          event.details?.attachment_type === "document"
+                            ? "Document"
+                            : event.details?.attachment_type === "image_after"
+                              ? "After photo"
+                              : "Before photo";
+                        summaryText = `${attachmentLabel} uploaded: ${event.details?.file_name || ""}`;
+                      } else if (event.action === "GENERATE_UPLOAD_LINK") {
+                        badgeColor = "bg-secondary border-border text-muted-foreground";
+                        summaryText = "External upload link generated";
+                      } else if (event.action === "EXTERNAL_UPLOAD") {
+                        badgeColor = "bg-primary/10 border-primary/20 text-primary";
+                        summaryText = `Document submitted via external link: ${event.details?.file_name || ""}`;
+                      } else if (event.action === "VIEW_ATTACHMENT") {
+                        badgeColor = "bg-secondary border-border text-muted-foreground";
+                        summaryText = `Accessed: ${event.details?.file_name || "attachment"}`;
+                      } else if (event.action === "DELETE_ATTACHMENT") {
+                        badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
+                        summaryText = `Deleted: ${event.details?.file_name || "attachment"}`;
+                      } else {
+                        summaryText = event.action?.replace(/_/g, " ");
+                      }
+
+                      const canRevert = event.action === "UPDATE" && changedFields.length > 0;
+                      const isPourEvent = pourLabel !== "";
+
+                      return (
+                        <div key={event.id} className="py-2.5 flex items-center gap-2.5">
+                          <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            {isPourEvent ? (
+                              <Layers className="w-3.5 h-3.5 text-primary" />
+                            ) : (
+                              <PencilLine className="w-3.5 h-3.5 text-primary" />
+                            )}
+                          </div>
+                          <span
+                            className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shrink-0 ${badgeColor}`}
+                          >
+                            {event.action?.replace(/_/g, " ")}
+                          </span>
+                          <p className="flex-1 min-w-0 truncate text-[13px] text-foreground/90">
+                            {summaryText}
+                          </p>
+                          {canRevert && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setRevertConfirmTarget({
+                                  oldDetails: event.details?.old,
+                                  newDetails: event.details?.new,
+                                })
+                              }
+                              className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                            >
+                              Revert
+                            </button>
+                          )}
+                          <span className="text-[12px] text-muted-foreground shrink-0">
+                            {new Date(event.created_at).toLocaleString("en-GB", {
+                              day: "2-digit",
+                              month: "short",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </TabsContent>
       </Tabs>
 
       {/* View document warning */}
@@ -1986,7 +2076,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                         )}
                         <span
                           className={`font-bold ${
-                            changed ? "text-amber-300 [.light-theme_&]:text-amber-800" : "text-foreground"
+                            changed
+                              ? "text-amber-300 [.light-theme_&]:text-amber-800"
+                              : "text-foreground"
                           }`}
                         >
                           {oldVal}
@@ -2000,7 +2092,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           )
         }
       />
-
     </div>
   );
 };

@@ -1,8 +1,6 @@
-# Session Snapshot — 2026-07-22 09:43
+# Session Snapshot — 2026-07-22 09:56
 
 ## Files Changed
-- .claude/ARCHITECTURE_MAP.md
-- .claude/COMMON_MISTAKES.md
 - .claude/agents/design-ui-designer.md
 - .claude/agents/engineering-backend-architect.md
 - .claude/agents/engineering-frontend-developer.md
@@ -11,13 +9,15 @@
 - .claude/agents/security-architect.md
 - .claude/agents/security-blockchain-security-auditor.md
 - .claude/agents/security-cloud-security-architect.md
+- .claude/agents/security-compliance-auditor.md
+- .claude/agents/security-incident-responder.md
 
 ## Recent Commits
-- 1d5b3e7 Extend realtime subscriptions to quotes and job audit logs (pours)
-- e3b9413 Fix quote-conversion attachment insert, enable realtime for jobs/shifts
-- 6116006 Extract PDF template and image compression to lib, add gallery/rename to job attachments, fix quote-to-job conversion
-- fee37a7 Add redux store scaffold, restructure Claude Code agents/hooks, drop legacy skills
-- eb651bb Fill in Claude Code doc scaffold with real project facts
+- 6ae249e Fix stale test assertions, skip Telehandler test pending a real decision
+- 412b1b5 Regenerate stale Supabase types, fix resulting typecheck errors
+- 7a70716 Scope edge function CORS to opusform.co.uk instead of wildcard
+- db0cc3c Verify job attachment file size server-side instead of trusting client
+- ae46b5e Make job-attachments bucket private, serve via signed URLs
 
 ## Token Estimate
 ~? tokens in auto-loaded files

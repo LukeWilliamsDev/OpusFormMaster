@@ -61,9 +61,9 @@ export function JobOverviewTab({
           )}
         </div>
 
-        {/* Local Suppliers List — capped so it scrolls internally instead of
-            pushing the page down past where the map naturally ends */}
-        <div className="p-4 flex flex-col max-h-[420px]">
+        {/* Local Suppliers List — stretches to match the map column's
+            height, scrolling internally instead of pushing the page down */}
+        <div className="p-4 flex flex-col h-full lg:min-h-[420px] max-h-[70vh]">
           <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider mb-4">
             Closest Local Suppliers
           </div>

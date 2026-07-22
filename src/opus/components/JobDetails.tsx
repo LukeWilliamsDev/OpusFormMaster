@@ -1,4 +1,4 @@
-﻿// @ts-nocheck
+// @ts-nocheck
 import React, { useState, useEffect, useRef } from "react";
 import {
   ChevronLeft,
@@ -46,7 +46,7 @@ import { compressImageFile } from "../lib/compressImage";
 import { getSignedJobAttachmentUrl } from "../lib/attachmentUrl";
 
 // Only these job columns count as a real "job detail change" worth surfacing
-// an audit entry + Revert button for â€” same convention as the staff dossier.
+// an audit entry + Revert button for — same convention as the staff dossier.
 const JOB_REVERTIBLE_FIELDS = [
   "site_name",
   "main_contractor",
@@ -136,7 +136,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
 
-  // Staff on site â€” derived directly from shared shifts state so assign/
+  // Staff on site — derived directly from shared shifts state so assign/
   // remove reflect instantly with no separate fetch or refetch race.
   const staffOnSite = React.useMemo(() => {
     const workerIds = new Set(shifts.filter((s) => s.jobId === job.id).map((s) => s.workerId));
@@ -284,7 +284,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   }, [job]);
 
   // External contributors submit documents via a separate tab/device (the
-  // job-upload link) with no realtime push back to this page â€” refetch
+  // job-upload link) with no realtime push back to this page — refetch
   // attachments and the audit log when the tab regains focus so a submission
   // made elsewhere shows up without needing a manual navigate-away-and-back.
   useEffect(() => {
@@ -373,7 +373,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       setLoadingSuppliers(true);
       // Nearby-suppliers lookup goes through the nearby-suppliers edge
       // function (Geoapify Places) instead of calling Overpass directly from
-      // the browser â€” the public Overpass instance rate-limits/cools down
+      // the browser — the public Overpass instance rate-limits/cools down
       // per IP and was timing out under real usage.
       const { data: supData, error: supError } = await supabase.functions.invoke(
         "nearby-suppliers",
@@ -412,7 +412,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
   // job_attachments/job_document_requests have no DB audit trigger (only
   // quotes/jobs/staff/shifts do), so uploads and link generation are logged
-  // manually here â€” same convention as logPourAudit above.
+  // manually here — same convention as logPourAudit above.
   const logAttachmentAudit = (action: string, details: Record<string, unknown>) => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       supabase
@@ -786,7 +786,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             </button>
           </div>
           <p className="text-sm text-muted-foreground">
-            {job.mainContractor} Â· <span className="font-mono">{job.postcode}</span>
+            {job.mainContractor} · <span className="font-mono">{job.postcode}</span>
           </p>
         </div>
         <div className="text-xs font-semibold bg-secondary border border-border text-muted-foreground px-3 py-1 rounded-md font-mono shrink-0">
@@ -842,7 +842,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         }
       />
 
-      {/* Confirm Save â€” Job Details Changes */}
+      {/* Confirm Save — Job Details Changes */}
       <ConfirmDialog
         open={isConfirmingJobSave}
         onOpenChange={(open) => {
@@ -865,7 +865,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                     <span className="line-through text-muted-foreground text-[13px]">
                       {f.before}
                     </span>
-                    <span className="text-muted-foreground text-[12px]">â†’</span>
+                    <span className="text-muted-foreground text-[12px]">→</span>
                     <span className="font-bold text-foreground">{f.after}</span>
                   </div>
                 </div>
@@ -933,7 +933,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <div className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <span>{weatherData.temperature}Â°C</span>
+                  <span>{weatherData.temperature}°C</span>
                   <span
                     className={`text-[12px] px-2 py-0.5 rounded-full font-bold uppercase ${
                       weatherData.isImpactful
@@ -1067,7 +1067,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 </div>
                 <div>
                   <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                    Volume (mÂ³)
+                    Volume (m³)
                   </label>
                   <input
                     type="number"
@@ -1143,7 +1143,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {log.mixType} Â· {log.volumeM3}mÂ³
+                        {log.mixType} · {log.volumeM3}m³
                       </div>
                       {log.notes && (
                         <div className="text-[13px] text-muted-foreground/80 italic truncate max-w-[280px]">
@@ -1190,7 +1190,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           </div>
         </div>
 
-        {/* Staff Scheduled On Site â€” its own card, side by side with Scheduled
+        {/* Staff Scheduled On Site — its own card, side by side with Scheduled
           Pours on wide screens, and never scrolls: the list just extends the
           page instead of clipping to a fixed height. */}
         <div className="bg-card border border-border rounded-xl p-4">
@@ -1253,7 +1253,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           pourToRemove && (
             <>
               This will permanently remove Pour #{pourToRemove.pourNumber} ({pourToRemove.mixType},{" "}
-              {pourToRemove.volumeM3}mÂ³, {formatPourDate(pourToRemove.date)})
+              {pourToRemove.volumeM3}m³, {formatPourDate(pourToRemove.date)})
               {pourToRemove.status === "completed"
                 ? " and reduce the contract pour count by 1."
                 : " from the schedule."}{" "}
@@ -1782,7 +1782,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                         .map((d: any) => JOB_FIELD_LABELS[d.field] || d.field);
 
                       const pourLabel = event.details?.pour_number
-                        ? `Pour #${event.details.pour_number} (${event.details.mix_type}, ${event.details.volume_m3}mÂ³)`
+                        ? `Pour #${event.details.pour_number} (${event.details.mix_type}, ${event.details.volume_m3}m³)`
                         : "";
 
                       let badgeColor = "bg-secondary border-border text-muted-foreground";
@@ -1974,9 +1974,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
               <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-card">
                 <div className="min-w-0 text-[12px] text-muted-foreground truncate">
-                  {gallery.photos[gallery.index].uploaded_by} Â·{" "}
+                  {gallery.photos[gallery.index].uploaded_by} ·{" "}
                   {new Date(gallery.photos[gallery.index].uploaded_at).toLocaleDateString("en-GB")}
-                  {gallery.photos.length > 1 && ` Â· ${gallery.index + 1}/${gallery.photos.length}`}
+                  {gallery.photos.length > 1 && ` · ${gallery.index + 1}/${gallery.photos.length}`}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -2091,7 +2091,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                           </span>
                         )}
                         {changed && newVal != null && (
-                          <span className="text-muted-foreground text-[12px]">â†’</span>
+                          <span className="text-muted-foreground text-[12px]">→</span>
                         )}
                         <span
                           className={`font-bold ${
@@ -2114,4 +2114,3 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     </div>
   );
 };
-

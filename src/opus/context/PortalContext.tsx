@@ -123,10 +123,13 @@ export const jobToRow = (j: Job, tenantId?: string) => ({
   schedule_value: j.scheduleValue ?? 0,
   ...(tenantId ? { tenant_id: tenantId } : {}),
 });
+const toTitleCase = (s: string) =>
+  s.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+
 const rowToJob = (r: any): Job => ({
   id: r.id,
   jobRef: r.job_ref,
-  siteName: r.site_name,
+  siteName: r.site_name ? toTitleCase(r.site_name) : r.site_name,
   mainContractor: r.main_contractor ?? "",
   postcode: r.postcode ?? "",
   currentPours: r.current_pours ?? 0,

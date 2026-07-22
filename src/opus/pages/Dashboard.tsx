@@ -9,7 +9,6 @@ import {
   TrendingUp,
   Search,
   AlertTriangle,
-  ArrowRight,
   UserPlus,
   Calculator,
   CheckCircle,
@@ -17,11 +16,82 @@ import {
   X,
   MapPin,
   Briefcase,
+  CloudRain,
+  CalendarDays,
 } from "lucide-react";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
+import { useJobForecast, getWeatherOnDate } from "../utils/weather";
+import { toLocalISODate } from "../utils/week";
+
+const TIMEFRAME_DAYS = { daily: 1, weekly: 7, monthly: 30 };
+
+function formatUKDate(isoDate) {
+  const [y, m, d] = isoDate.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function formatDayCount(days) {
+  if (days < 60) return `${days}d`;
+  if (days < 730) return `${Math.round(days / 30)}mo`;
+  return `${Math.round(days / 365)}y`;
+}
+
+const JobWeatherRow: React.FC<{
+  job: any;
+  timeframe: string;
+  onStatusChange: (id: string, atRisk: boolean) => void;
+  onSelectDate: (date: string) => void;
+}> = ({ job, timeframe, onStatusChange, onSelectDate }) => {
+  const { forecast } = useJobForecast(job.postcode);
+
+  const worst = useMemo(() => {
+    if (!forecast) return null;
+    const days = TIMEFRAME_DAYS[timeframe] || 7;
+    const today = new Date();
+    let best = null;
+    for (let i = 0; i < days; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dateStr = toLocalISODate(d);
+      const info = getWeatherOnDate(forecast, dateStr);
+      if (info?.isImpactful && (!best || (info.riskLevel === "High" && best.riskLevel !== "High"))) {
+        best = { ...info, date: dateStr };
+      }
+    }
+    return best;
+  }, [forecast, timeframe]);
+
+  useEffect(() => {
+    onStatusChange(job.id, !!worst);
+  }, [worst, job.id]);
+
+  if (!worst) return null;
+
+  return (
+    <div
+      onClick={() => onSelectDate(worst.date)}
+      className="flex items-center justify-between gap-2 px-2 py-2.5 hover:bg-secondary/60 transition-colors cursor-pointer"
+    >
+      <div className="flex-1 min-w-0 flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[12px]">
+        <span className="font-bold text-foreground">{job.siteName}</span>
+        <span className="text-muted-foreground">&bull; {job.postcode}</span>
+        <span className="text-muted-foreground">&bull; {worst.condition} forecast on {formatUKDate(worst.date)}</span>
+      </div>
+      <span
+        className={`text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded shrink-0 ${
+          worst.riskLevel === "High"
+            ? "bg-destructive/10 text-destructive"
+            : "bg-warning/10 text-warning"
+        }`}
+      >
+        {worst.riskLevel} Risk
+      </span>
+    </div>
+  );
+};
 
 export const DashboardPage: React.FC = () => {
   const { workers, jobs, shifts, profile } = usePortal();
@@ -34,6 +104,13 @@ export const DashboardPage: React.FC = () => {
   const [snoozedAlertIds, setSnoozedAlertIds] = useState(new Set());
   const [remindConfirmAlert, setRemindConfirmAlert] = useState(null);
   const [isSendingRemind, setIsSendingRemind] = useState(false);
+  const [weatherRiskByJob, setWeatherRiskByJob] = useState({});
+  const handleWeatherStatusChange = React.useCallback((jobId, atRisk) => {
+    setWeatherRiskByJob((prev) => {
+      if (prev[jobId] === atRisk) return prev;
+      return { ...prev, [jobId]: atRisk };
+    });
+  }, []);
 
   // Load quotes on mount to support global search
   useEffect(() => {
@@ -77,16 +154,13 @@ export const DashboardPage: React.FC = () => {
     );
   }, [jobs, shifts, timeframe]);
 
-  const activePoursCountFiltered = useMemo(
-    () => activeJobsFiltered.reduce((sum, j) => sum + (j.currentPours || 0), 0),
-    [activeJobsFiltered],
-  );
-  const contractMaxPoursCountFiltered = useMemo(
-    () => activeJobsFiltered.reduce((sum, j) => sum + (j.contractMaxPours || 0), 0),
-    [activeJobsFiltered],
+  const weatherWarningCount = useMemo(
+    () => activeJobsFiltered.filter((j) => weatherRiskByJob[j.id]).length,
+    [activeJobsFiltered, weatherRiskByJob],
   );
 
-  const scheduledWorkersCountFiltered = useMemo(() => {
+
+  const crewPerSiteFiltered = useMemo(() => {
     const today = new Date();
     const dates = [];
     let limit = 1;
@@ -99,17 +173,24 @@ export const DashboardPage: React.FC = () => {
       dates.push(d.toISOString().split("T")[0]);
     }
     const filteredShifts = shifts.filter((s) => dates.includes(s.date));
-    return new Set(filteredShifts.map((s) => s.workerId)).size;
-  }, [shifts, timeframe]);
 
-  const pipelineValueFiltered = useMemo(() => {
-    const fullValue = jobs
-      .filter((j) => j.status === "in-progress" || j.status === "active")
-      .reduce((sum, j) => sum + (Number(j.scheduleValue) || 0), 0);
-    if (timeframe === "daily") return Math.round(fullValue / 30);
-    if (timeframe === "weekly") return Math.round(fullValue / 4);
-    return fullValue;
-  }, [jobs, timeframe]);
+    return activeJobsFiltered.map((job) => {
+      const jobShifts = filteredShifts.filter((s) => s.jobId === job.id);
+      const jobShiftDates = new Set(jobShifts.map((s) => s.date));
+      return {
+        jobId: job.id,
+        siteName: job.siteName,
+        crewCount: new Set(jobShifts.map((s) => s.workerId)).size,
+        workerIds: jobShifts.map((s) => s.workerId),
+        nextDate: dates.find((d) => jobShiftDates.has(d)) || dates[0],
+      };
+    });
+  }, [shifts, timeframe, activeJobsFiltered]);
+
+  const scheduledWorkersOnActiveSites = useMemo(
+    () => new Set(crewPerSiteFiltered.flatMap((site) => site.workerIds)).size,
+    [crewPerSiteFiltered],
+  );
 
   // Compute expiring tickets
   const expiringTickets = useMemo(() => {
@@ -451,370 +532,308 @@ export const DashboardPage: React.FC = () => {
           </AnimatePresence>
         </div>
 
-        {/* Timeframe selector */}
-        <div className="flex items-center justify-between pt-3 border-t border-border">
-          <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-            Operations Summary
-          </h2>
-          <div className="flex items-center gap-1">
-            {(["daily", "weekly", "monthly"] as const).map((t) => (
-              <button
-                key={t}
-                onClick={() => setTimeframe(t)}
-                className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
-                  timeframe === t
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                {t}
-              </button>
-            ))}
+        <div className="border-t border-border" />
+      </div>
+
+      {/* Quick Operations */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3.5">
+        <button
+          onClick={() => navigate("/portal/roster?view=staff")}
+          className="p-4 rounded-xl bg-card border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
+        >
+          <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
+            <UserCheck className="w-4 h-4" />
           </div>
+          <span className="text-[12px] font-bold text-foreground text-left">Staff</span>
+        </button>
+
+        <button
+          onClick={() => navigate("/portal/roster?view=staff&addWorker=1")}
+          className="p-4 rounded-xl bg-card border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
+        >
+          <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
+            <UserPlus className="w-4 h-4" />
+          </div>
+          <span className="text-[12px] font-bold text-foreground text-left">Add New Staff</span>
+        </button>
+
+        <button
+          onClick={() => navigate("/portal/ledger")}
+          className="p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
+        >
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all shrink-0">
+            <Briefcase className="w-4 h-4" />
+          </div>
+          <span className="text-[12px] font-bold text-foreground text-left">Job Ledger</span>
+        </button>
+
+        <button
+          onClick={() => navigate("/portal/roster")}
+          className="p-4 rounded-xl bg-card border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
+        >
+          <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
+            <CalendarDays className="w-4 h-4" />
+          </div>
+          <span className="text-[12px] font-bold text-foreground text-left">Calendar</span>
+        </button>
+
+        <button
+          onClick={() => navigate("/portal/pipeline?view=pipeline-registry")}
+          className="p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
+        >
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all shrink-0">
+            <FileText className="w-4 h-4" />
+          </div>
+          <span className="text-[12px] font-bold text-foreground text-left">Manage Quotes</span>
+        </button>
+
+        <button
+          onClick={() => navigate("/portal/pipeline?view=quote-builder")}
+          className="p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
+        >
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all shrink-0">
+            <Calculator className="w-4 h-4" />
+          </div>
+          <span className="text-[12px] font-bold text-foreground text-left">Create Quote</span>
+        </button>
+      </div>
+
+      {/* Timeframe selector */}
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground truncate min-w-0">
+          Operations Summary
+        </h2>
+        <div className="flex items-center gap-1 shrink-0">
+          {(["daily", "weekly", "monthly"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTimeframe(t)}
+              className={`px-2 py-1 text-[9px] sm:px-2.5 sm:text-[10px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
+                timeframe === t
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* 3 Metric Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        {/* Metric 1 */}
-        <div className="bg-card border border-border hover:border-primary/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                Active Job Sites
-              </span>
-              <div className="text-3xl font-bold text-foreground mt-1 font-mono tracking-tight">
-                {activeJobsFiltered.length}
-              </div>
-            </div>
-
-            {/* SVG Circular Gauge */}
-            <div className="relative w-11 h-11 flex items-center justify-center shrink-0">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle
-                  cx="22"
-                  cy="22"
-                  r="18"
-                  stroke="var(--border)"
-                  strokeWidth="2.5"
-                  fill="transparent"
-                />
-                <circle
-                  cx="22"
-                  cy="22"
-                  r="18"
-                  stroke="var(--primary)"
-                  strokeWidth="2.5"
-                  fill="transparent"
-                  strokeDasharray={2 * Math.PI * 18}
-                  strokeDashoffset={
-                    2 *
-                    Math.PI *
-                    18 *
-                    (1 -
-                      (contractMaxPoursCountFiltered
-                        ? activePoursCountFiltered / contractMaxPoursCountFiltered
-                        : 0))
-                  }
-                />
-              </svg>
-              <span className="absolute text-[8px] font-bold text-foreground/85 font-mono">
-                {contractMaxPoursCountFiltered
-                  ? Math.round((activePoursCountFiltered / contractMaxPoursCountFiltered) * 100)
-                  : 0}
-                %
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-border flex flex-col gap-2">
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="font-medium">Pours progress</span>
-              <span className="font-mono text-foreground font-bold">
-                {activePoursCountFiltered} / {contractMaxPoursCountFiltered} Pours
-              </span>
-            </div>
-            <button
-              onClick={() => navigate("/portal/ledger")}
-              className="text-[10px] font-black uppercase tracking-wider text-primary hover:text-foreground transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
-            >
-              Log Pour / Inspect Ledger &rarr;
-            </button>
-          </div>
-        </div>
-
-        {/* Metric 2 */}
-        <div className="bg-card border border-border hover:border-primary/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                Scheduled Crew
-              </span>
-              <div className="text-3xl font-bold text-foreground mt-1 font-mono tracking-tight">
-                {scheduledWorkersCountFiltered}
-              </div>
-            </div>
-            <UserCheck className="w-5 h-5 text-success opacity-80" />
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-border flex flex-col gap-2">
-            {/* Progress bar */}
-            <div className="space-y-1">
-              <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-                <span>Crew active:</span>
-                <span className="font-mono text-foreground font-bold">
-                  {workers.length
-                    ? Math.round((scheduledWorkersCountFiltered / workers.length) * 100)
-                    : 0}
-                  %
+      {/* Operations Summary panel — one shell, internal hairlines instead of stacked cards */}
+      <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
+        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-border sm:divide-y-0 sm:divide-x sm:divide-border">
+            {/* Active Job Sites */}
+            <div className="p-6 space-y-4 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <MapPin className="w-4 h-4 text-primary shrink-0" />
+                  <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                    Active Job Sites
+                  </h2>
+                </div>
+                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
+                  {activeJobsFiltered.length}
                 </span>
               </div>
-              <div className="w-full bg-secondary h-1 rounded-full overflow-hidden">
-                <div
-                  className="bg-success h-full rounded-full transition-all duration-500"
-                  style={{
-                    width: `${workers.length ? (scheduledWorkersCountFiltered / workers.length) * 100 : 0}%`,
-                  }}
-                />
-              </div>
-            </div>
-            <button
-              onClick={() => navigate("/portal/roster")}
-              className="text-[10px] font-black uppercase tracking-wider text-success hover:text-foreground transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
-            >
-              Manage Shift Dispatch &rarr;
-            </button>
-          </div>
-        </div>
 
-        {/* Metric 3 */}
-        <div className="bg-card border border-border hover:border-primary/40 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 relative overflow-hidden group">
-          <div className="flex justify-between items-start">
-            <div>
-              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                Pipeline Run-Rate
-              </span>
-              <div className="text-3xl font-bold text-primary mt-1 font-mono tracking-tight">
-                £{pipelineValueFiltered.toLocaleString("en-GB")}
-              </div>
-            </div>
-
-            {/* Sparkline mini-graph */}
-            <div className="w-14 h-7 shrink-0">
-              <svg className="w-full h-full" viewBox="0 0 100 40">
-                <path
-                  d={
-                    timeframe === "daily"
-                      ? "M 0 35 Q 25 30 50 15 T 100 10"
-                      : timeframe === "weekly"
-                        ? "M 0 30 Q 25 25 50 20 T 100 5"
-                        : "M 0 25 Q 25 20 50 18 T 100 2"
-                  }
-                  fill="none"
-                  stroke="var(--primary)"
-                  strokeWidth="2.5"
-                />
-                <path
-                  d={
-                    timeframe === "daily"
-                      ? "M 0 35 Q 25 30 50 15 T 100 10 L 100 40 L 0 40 Z"
-                      : timeframe === "weekly"
-                        ? "M 0 30 Q 25 25 50 20 T 100 5 L 100 40 L 0 40 Z"
-                        : "M 0 25 Q 25 20 50 18 T 100 2 L 100 40 L 0 40 Z"
-                  }
-                  fill="url(#sparkline-grad)"
-                  opacity="0.15"
-                />
-                <defs>
-                  <linearGradient id="sparkline-grad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="var(--primary)" />
-                    <stop offset="100%" stopColor="var(--primary)" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-              </svg>
-            </div>
-          </div>
-
-          <div className="mt-4 pt-3 border-t border-border flex flex-col gap-2">
-            <div className="flex items-center justify-between text-[11px] text-muted-foreground">
-              <span className="font-medium">Contracts ledger</span>
-              <span className="font-mono text-foreground font-bold">Excludes VAT</span>
-            </div>
-            <button
-              onClick={() => navigate("/portal/pipeline")}
-              className="text-[10px] font-black uppercase tracking-wider text-primary hover:text-foreground transition-colors text-left flex items-center gap-1 mt-1 cursor-pointer"
-            >
-              Open Quotes & Billing Board &rarr;
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Grid: Compliance Alerts and Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Compliance Alerts (2/3 width) */}
-        <div className="lg:col-span-2 bg-card border border-border rounded-xl p-6 flex flex-col space-y-6">
-          <div className="flex items-center justify-between border-b border-border pb-4">
-            <div className="flex items-center space-x-2.5">
-              <AlertTriangle className="w-5 h-5 text-warning" />
-              <h2 className="text-base font-bold text-foreground font-archivo uppercase tracking-wide">
-                Compliance Warnings
-              </h2>
-            </div>
-            <span className="text-[12px] bg-destructive/10 text-destructive px-2.5 py-1 rounded-md font-bold font-mono">
-              {expiringTickets.length} Action Required
-            </span>
-          </div>
-
-          <div className="divide-y divide-border flex-1 overflow-y-auto max-h-[360px]">
-            {expiringTickets.map((alert) => (
-              <div
-                key={alert.alertId}
-                onClick={() => handleUpdateAlert(alert.workerId)}
-                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 py-2.5 border-l-[3px] hover:bg-background transition-colors cursor-pointer ${
-                  alert.isExpired ? "border-l-destructive" : "border-l-warning"
-                }`}
-              >
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 flex-wrap text-[12px]">
-                    <span className="font-bold text-foreground leading-none">
-                      {alert.workerName}
+              <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
+                {activeJobsFiltered.map((job) => (
+                  <div
+                    key={job.id}
+                    onClick={() => navigate(`/portal/ledger?jobId=${job.id}`)}
+                    className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-[13px] font-bold text-foreground truncate">{job.siteName}</div>
+                      <div className="text-[11px] text-muted-foreground">{job.postcode}</div>
+                    </div>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary px-2 py-0.5 rounded shrink-0">
+                      {job.status}
                     </span>
-                    {alert.workerRole && (
-                      <span className="text-muted-foreground">&bull; {alert.workerRole}</span>
-                    )}
                   </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                ))}
+
+                {activeJobsFiltered.length === 0 && (
+                  <p className="text-[12px] text-muted-foreground py-4 text-center">
+                    No active job sites for the selected timeframe.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Scheduled Crew per site */}
+            <div className="p-6 space-y-4 min-w-0">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <UserCheck className="w-4 h-4 text-success shrink-0" />
+                  <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                    Scheduled Crew
+                  </h2>
+                </div>
+                {scheduledWorkersOnActiveSites > 0 && (
+                  <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5 rounded-full shrink-0">
+                    {scheduledWorkersOnActiveSites}
+                  </span>
+                )}
+              </div>
+
+              <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
+                {crewPerSiteFiltered.map((site) => (
+                  <div
+                    key={site.jobId}
+                    onClick={() =>
+                      navigate(`/portal/roster?view=calendar&group=project&date=${site.nextDate}`)
+                    }
+                    className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
+                  >
+                    <span className="text-[13px] font-bold text-foreground truncate">{site.siteName}</span>
+                    <span className="text-[12px] font-mono text-muted-foreground font-bold shrink-0">
+                      {site.crewCount} crew
+                    </span>
+                  </div>
+                ))}
+
+                {crewPerSiteFiltered.length === 0 && (
+                  <p className="text-[12px] text-muted-foreground py-4 text-center">
+                    No active job sites for the selected timeframe.
+                  </p>
+                )}
+              </div>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-border sm:divide-y-0 sm:divide-x sm:divide-border">
+            {/* Compliance Alerts */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
+                  <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">Compliance</h2>
+                </div>
+                <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full shrink-0">
+                  {expiringTickets.length}
+                </span>
+              </div>
+
+              <div className="divide-y divide-border flex-1 overflow-y-auto max-h-[280px]">
+                {expiringTickets.map((alert) => (
+                  <div
+                    key={alert.alertId}
+                    onClick={() => handleUpdateAlert(alert.workerId)}
+                    className="flex flex-col gap-1 px-2 py-2.5 hover:bg-secondary/60 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[12px] font-bold text-foreground truncate">{alert.workerName}</span>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setRemindConfirmAlert(alert);
+                        }}
+                        className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-secondary hover:bg-muted text-foreground/85 transition-colors cursor-pointer shrink-0"
+                      >
+                        Remind
+                      </button>
+                    </div>
                     <span
-                      className={`font-bold ${
-                        alert.isExpired ? "text-destructive" : "text-warning"
-                      }`}
+                      className={`text-[11px] font-bold ${alert.isExpired ? "text-destructive" : "text-warning"}`}
                     >
                       {alert.isExpired
-                        ? `Expired ${Math.abs(alert.diffDays)}d ago`
-                        : `Expiring in ${alert.diffDays}d`}
+                        ? `Expired ${formatDayCount(Math.abs(alert.diffDays))} ago`
+                        : `Expiring in ${formatDayCount(alert.diffDays)}`}
+                      {" — "}
+                      {alert.ticketType}
                     </span>
-                    {" — "}
-                    {alert.ticketType}
-                    {alert.ticketNumber && ` (${alert.ticketNumber})`}
-                  </p>
-                </div>
+                  </div>
+                ))}
 
-                {/* Actions */}
-                <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setRemindConfirmAlert(alert);
-                    }}
-                    className="text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded bg-secondary hover:bg-muted text-foreground/85 transition-colors cursor-pointer"
-                  >
-                    Remind
-                  </button>
-                </div>
+                {expiringTickets.length === 0 && (
+                  <div className="flex flex-col items-center justify-center py-8 text-center space-y-2">
+                    <CheckCircle className="w-8 h-8 text-success/80" />
+                    <p className="text-[11px] text-muted-foreground">Roster fully compliant.</p>
+                  </div>
+                )}
               </div>
-            ))}
 
-            {expiringTickets.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-12 text-center space-y-3">
-                <CheckCircle className="w-12 h-12 text-success/80" />
-                <div>
-                  <h4 className="text-[12px] font-bold text-foreground">Roster Fully Compliant</h4>
-                  <p className="text-[12px] text-muted-foreground mt-1">
-                    All active operatives have up-to-date qualifications.
-                  </p>
+              {/* Remind Confirmation Modal */}
+              <ConfirmDialog
+                open={!!remindConfirmAlert}
+                onOpenChange={(open) => {
+                  if (!open) setRemindConfirmAlert(null);
+                }}
+                tone="neutral"
+                tag="Send Compliance Reminder"
+                title="Send Compliance Reminder"
+                message={
+                  remindConfirmAlert && (
+                    <>
+                      Send a compliance reminder email to{" "}
+                      <span className="text-foreground font-bold">{remindConfirmAlert.workerName}</span>{" "}
+                      requesting they update their{" "}
+                      <span className="text-foreground font-bold">{remindConfirmAlert.ticketType}</span>{" "}
+                      credential which{" "}
+                      {remindConfirmAlert.isExpired ? (
+                        <span className="text-destructive font-bold">
+                          expired {Math.abs(remindConfirmAlert.diffDays)} days ago
+                        </span>
+                      ) : (
+                        <span className="text-warning font-bold">
+                          expires in {remindConfirmAlert.diffDays} days
+                        </span>
+                      )}
+                      .
+                    </>
+                  )
+                }
+                confirmLabel="Confirm Send"
+                cancelLabel="Cancel"
+                onConfirm={() => {
+                  handleRemindAlert(remindConfirmAlert);
+                  setRemindConfirmAlert(null);
+                }}
+              />
+            </div>
+
+            {/* Weather Warnings */}
+            <div className="p-6 space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <CloudRain className="w-4 h-4 text-warning shrink-0" />
+                  <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">Weather</h2>
                 </div>
+                <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full shrink-0">
+                  {weatherWarningCount}
+                </span>
               </div>
-            )}
-          </div>
 
-          {/* Remind Confirmation Modal */}
-          <ConfirmDialog
-            open={!!remindConfirmAlert}
-            onOpenChange={(open) => {
-              if (!open) setRemindConfirmAlert(null);
-            }}
-            tone="neutral"
-            tag="Send Compliance Reminder"
-            title="Send Compliance Reminder"
-            message={
-              remindConfirmAlert && (
-                <>
-                  Send a compliance reminder email to{" "}
-                  <span className="text-foreground font-bold">{remindConfirmAlert.workerName}</span>{" "}
-                  requesting they update their{" "}
-                  <span className="text-foreground font-bold">{remindConfirmAlert.ticketType}</span>{" "}
-                  credential which{" "}
-                  {remindConfirmAlert.isExpired ? (
-                    <span className="text-destructive font-bold">
-                      expired {Math.abs(remindConfirmAlert.diffDays)} days ago
-                    </span>
-                  ) : (
-                    <span className="text-warning font-bold">
-                      expires in {remindConfirmAlert.diffDays} days
-                    </span>
-                  )}
-                  .
-                </>
-              )
-            }
-            confirmLabel="Confirm Send"
-            cancelLabel="Cancel"
-            onConfirm={() => {
-              handleRemindAlert(remindConfirmAlert);
-              setRemindConfirmAlert(null);
-            }}
-          />
-        </div>
+              <div className="divide-y divide-border flex-1 overflow-y-auto max-h-[280px]">
+                {activeJobsFiltered.map((job) => (
+                  <JobWeatherRow
+                    key={job.id}
+                    job={job}
+                    timeframe={timeframe}
+                    onStatusChange={handleWeatherStatusChange}
+                    onSelectDate={(date) =>
+                      navigate(`/portal/roster?view=calendar&group=project&date=${date}`)
+                    }
+                  />
+                ))}
 
-        {/* Right Column: Quick Actions Panel (1/3 width) */}
-        <div className="bg-card border border-border rounded-xl p-6 flex flex-col space-y-6">
-          <div className="border-b border-border pb-4">
-            <h2 className="text-base font-bold text-foreground font-archivo uppercase tracking-wide">
-              Quick Operations
-            </h2>
-          </div>
+                {activeJobsFiltered.length > 0 && weatherWarningCount === 0 && (
+                  <div className="flex items-center gap-2 py-3 px-1">
+                    <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
+                    <p className="text-[11px] text-muted-foreground">No weather risks for active sites.</p>
+                  </div>
+                )}
 
-          <div className="grid grid-cols-1 gap-3.5">
-            {/* Add Staff */}
-            <button
-              onClick={() => navigate("/portal/roster?view=staff&addWorker=1")}
-              className="w-full text-left p-4 rounded-xl bg-background border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all">
-                  <UserPlus className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-[12px] font-bold text-foreground">Add New Staff</h3>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Register a worker and upload safety certifications
-                  </p>
-                </div>
+                {activeJobsFiltered.length === 0 && (
+                  <div className="flex items-center gap-2 py-3 px-1">
+                    <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
+                    <p className="text-[11px] text-muted-foreground">No active job sites to check.</p>
+                  </div>
+                )}
               </div>
-              <ArrowRight className="w-4 h-4 text-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
-            </button>
-
-            {/* Create Quote */}
-            <button
-              onClick={() => navigate("/portal/pipeline?view=quote-builder")}
-              className="w-full text-left p-4 rounded-xl bg-background border border-border hover:border-primary/40 hover:bg-secondary transition-all group flex items-center justify-between cursor-pointer min-h-[44px]"
-            >
-              <div className="flex items-center space-x-3.5">
-                <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all">
-                  <Calculator className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="text-[12px] font-bold text-foreground">Create Quote</h3>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Build a client invoice with custom VAT/CIS settings
-                  </p>
-                </div>
-              </div>
-              <ArrowRight className="w-4 h-4 text-foreground/30 group-hover:text-foreground group-hover:translate-x-1 transition-all" />
-            </button>
-          </div>
+            </div>
         </div>
       </div>
     </div>

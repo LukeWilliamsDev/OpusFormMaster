@@ -139,6 +139,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
       setQuotes(quotes.filter((q) => q.id !== selectedQuoteToDelete.id));
       setSelectedQuoteToDelete(null);
+      setSelectedQuoteForControl(null);
       toast.success("Quote deleted successfully");
     } catch (e) {
       console.error("Failed to delete quote", e);
@@ -202,6 +203,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
       setQuotes(quotes.filter((q) => q.id !== convertingQuote.id));
       setConvertingQuote(null);
+      setSelectedQuoteForControl(null);
       toast.success(`Converted ${convertingQuote.reference} to Active Job ${newJob.jobRef}`);
 
       try {
@@ -320,7 +322,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
       <main className="mt-0 pb-8 space-y-6">
         {!isLoading && sortedQuotes.length === 0 && (
           <div className="bg-card border border-border rounded-xl px-4 py-12 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            No matching pipeline estimates found
+            No Quotes
           </div>
         )}
 
@@ -513,7 +515,10 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
       <ConfirmDialog
         open={!!selectedQuoteToDelete}
         onOpenChange={(open) => {
-          if (!open) setSelectedQuoteToDelete(null);
+          if (!open) {
+            setSelectedQuoteToDelete(null);
+            setSelectedQuoteForControl(null);
+          }
         }}
         tone="destructive"
         tag="This Cannot Be Undone"
@@ -540,7 +545,10 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
       <ConfirmDialog
         open={!!convertingQuote}
         onOpenChange={(open) => {
-          if (!open) setConvertingQuote(null);
+          if (!open) {
+            setConvertingQuote(null);
+            setSelectedQuoteForControl(null);
+          }
         }}
         tone="neutral"
         tag="Create a Job From This Quote"
@@ -743,21 +751,13 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                   Edit Quote
                 </button>
                 <button
-                  onClick={() => {
-                    const quote = selectedQuoteForControl;
-                    setSelectedQuoteForControl(null);
-                    setConvertingQuote(quote);
-                  }}
+                  onClick={() => setConvertingQuote(selectedQuoteForControl)}
                   className="flex-1 py-3 bg-primary hover:brightness-110 text-primary-foreground rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
                 >
                   Convert to Job
                 </button>
                 <button
-                  onClick={() => {
-                    const quote = selectedQuoteForControl;
-                    setSelectedQuoteForControl(null);
-                    setSelectedQuoteToDelete(quote);
-                  }}
+                  onClick={() => setSelectedQuoteToDelete(selectedQuoteForControl)}
                   className="w-full sm:w-auto py-3 px-4 bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 text-red-400 hover:text-red-300 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none"
                 >
                   Delete

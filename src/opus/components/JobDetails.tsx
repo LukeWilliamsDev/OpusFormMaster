@@ -720,8 +720,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   };
 
   const formatPourDate = (dateStr: string) => {
+    if (!dateStr) return "TBC";
     try {
       const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "TBC";
       const day = String(d.getDate()).padStart(2, "0");
       const months = [
         "Jan",
@@ -1114,13 +1116,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               return (
                 <div
                   key={log.id}
-                  className={`flex justify-between items-center p-4 border rounded-xl transition-all ${
+                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-xl transition-all ${
                     isCompleted
                       ? "bg-card border-border hover:bg-secondary"
                       : "bg-warning/5 border-warning/20 hover:bg-warning/10"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     <button
                       type="button"
                       aria-label={
@@ -1137,11 +1139,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                     >
                       <Check className="w-3.5 h-3.5" />
                     </button>
-                    <div className="space-y-1">
-                      <div className="text-sm font-bold text-foreground">
+                    <div className="space-y-1 min-w-0">
+                      <div className="text-sm font-bold text-foreground flex items-center flex-wrap gap-x-2 gap-y-1">
                         Pour #{log.pourNumber}
                         {!isCompleted && (
-                          <span className="ml-2 text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
+                          <span className="text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
                             Scheduled
                           </span>
                         )}
@@ -1156,12 +1158,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-xs text-muted-foreground font-semibold">
-                      {isCompleted
-                        ? formatPourDate(log.date)
-                        : `Expected ${formatPourDate(log.date)}`}
-                    </div>
+                  <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+                    {isCompleted && (
+                      <div className="text-xs text-muted-foreground font-semibold">
+                        {formatPourDate(log.date)}
+                      </div>
+                    )}
                     <button
                       type="button"
                       aria-label={`Edit notes for pour ${log.pourNumber}`}
@@ -1325,20 +1327,20 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         <TabsList className="w-full h-auto">
           <TabsTrigger
             value="overview"
-            className="flex-1 flex items-center justify-center gap-1.5 px-1.5 sm:px-3"
+            className="flex-1 flex items-center justify-center gap-2 px-2 py-2 sm:px-3"
           >
             <Users className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Overview</span>
           </TabsTrigger>
           <TabsTrigger
             value="suppliers"
-            className="flex-1 flex items-center justify-center gap-1.5 px-1.5 sm:px-3"
+            className="flex-1 flex items-center justify-center gap-2 px-2 py-2 sm:px-3"
           >
             <MapPin className="w-3.5 h-3.5 shrink-0" />{" "}
             <span className="truncate">Local Suppliers</span>
           </TabsTrigger>
           <TabsTrigger
             value="audit_log"
-            className="flex-1 flex items-center justify-center gap-1.5 px-1.5 sm:px-3"
+            className="flex-1 flex items-center justify-center gap-2 px-2 py-2 sm:px-3"
           >
             <History className="w-3.5 h-3.5 shrink-0" /> <span className="truncate">Audit Log</span>
           </TabsTrigger>

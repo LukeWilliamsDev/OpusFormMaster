@@ -76,7 +76,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
           </h2>
         </div>
         <div className="w-full sm:w-auto">
-          <div className="flex flex-wrap items-center bg-card border border-border rounded-lg p-1 gap-1">
+          <div className="flex flex-nowrap items-center bg-card border border-border rounded-lg p-1 gap-1 overflow-x-auto">
             {(["all", "in-progress", "pending", "completed", "archived"] as const).map((status) => (
               <button
                 key={status}
@@ -95,7 +95,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
       </div>
 
       {/* Ledger list container */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl">
+      <div className="md:bg-card md:border md:border-border rounded-xl md:overflow-hidden md:shadow-2xl">
         {/* Table Header (hidden on mobile) */}
         <div className="hidden md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_100px] gap-4 px-5 py-3.5 border-b border-border bg-muted/40">
           <span className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground">
@@ -115,7 +115,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
           </span>
         </div>
 
-        <div className="divide-y divide-border">
+        <div className="flex flex-col gap-3 md:gap-0 md:divide-y md:divide-border">
           <AnimatePresence mode="popLayout">
             {filteredJobs.length === 0 ? (
               <div className="px-5 py-16 text-center text-[13px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -137,7 +137,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                     exit={{ opacity: 0 }}
                     layout
                     onClick={() => onSelectJob(job.id)}
-                    className="group flex flex-col md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_100px] gap-4 px-5 py-4 md:py-0 md:min-h-[64px] items-center hover:bg-muted/30 active:bg-muted/30 transition-all duration-150 cursor-pointer border-b border-border border-l-[3px] border-l-primary/25 hover:border-l-primary active:border-l-primary bg-card relative overflow-hidden"
+                    className="group flex flex-col md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_100px] gap-4 px-5 py-5 md:py-0 md:min-h-[64px] items-center hover:bg-muted/30 active:bg-muted/30 transition-all duration-150 cursor-pointer border border-border md:border-0 md:border-b rounded-xl md:rounded-none shadow-lg md:shadow-none border-l-[3px] border-l-primary/25 hover:border-l-primary active:border-l-primary bg-card relative overflow-hidden"
                   >
                     {/* Job Ref Column */}
                     <div className="flex justify-between items-center w-full md:w-auto md:contents">

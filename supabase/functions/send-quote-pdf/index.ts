@@ -1,15 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { emailShell, logoSvg } from "../_shared/email-theme.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 // NOTE: This Edge Function MUST be deployed with `verify_jwt: false`
 // to allow email clients (Gmail, Outlook, etc.) to fetch the corporate SVG logo
 // via the GET endpoint without Supabase authorization headers.
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
 
 function escapeHtml(value: string): string {
   return String(value)
@@ -43,7 +39,7 @@ serve(async (req) => {
       headers: {
         "Content-Type": "image/svg+xml",
         "Cache-Control": "public, max-age=86400",
-        ...corsHeaders,
+        ...corsHeaders(req),
       },
       status: 200,
     });
@@ -51,7 +47,7 @@ serve(async (req) => {
 
   // Handle CORS pre-flight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(req) });
   }
 
   try {
@@ -63,7 +59,7 @@ serve(async (req) => {
         JSON.stringify({ error: "Unauthorized: Missing Authorization header." }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -81,7 +77,7 @@ serve(async (req) => {
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized: Invalid token." }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -98,7 +94,7 @@ serve(async (req) => {
         }),
         {
           status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -121,7 +117,7 @@ serve(async (req) => {
     if (!toEmail) {
       return new Response(JSON.stringify({ error: "Recipient email (toEmail) is required." }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -135,7 +131,7 @@ serve(async (req) => {
         JSON.stringify({ error: "Failed to load config from database.", detail: configError }),
         {
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -160,7 +156,7 @@ serve(async (req) => {
         }),
         {
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -178,7 +174,7 @@ serve(async (req) => {
       } catch {
         return new Response(JSON.stringify({ error: "Invalid pdfUrl." }), {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
         });
       }
       const allowedHost = new URL(supabaseUrl).host;
@@ -187,7 +183,7 @@ serve(async (req) => {
           JSON.stringify({ error: "pdfUrl must point to this project's Supabase Storage." }),
           {
             status: 400,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            headers: { ...corsHeaders(req), "Content-Type": "application/json" },
           },
         );
       }
@@ -212,7 +208,7 @@ serve(async (req) => {
         JSON.stringify({ error: "No PDF attachment provided (pdfBase64 or pdfUrl is required)." }),
         {
           status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -232,7 +228,8 @@ serve(async (req) => {
     bodyHtml += "      <!-- Summary Table -->";
     bodyHtml +=
       '      <table class="border-theme" style="width: 100%; border-collapse: collapse; margin-bottom: 32px; border: 1px solid #D9D3C7; border-radius: 8px; overflow: hidden;">';
-    bodyHtml += '        <tr class="bg-page border-theme" style="border-bottom: 1px solid #D9D3C7;">';
+    bodyHtml +=
+      '        <tr class="bg-page border-theme" style="border-bottom: 1px solid #D9D3C7;">';
     bodyHtml +=
       '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">Net Subtotal</td>';
     bodyHtml +=
@@ -303,13 +300,13 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ success: true, data: resendData }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error sending email via Resend:", error);
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 500,
     });
   }

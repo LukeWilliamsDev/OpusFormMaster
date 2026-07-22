@@ -1,11 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { EMAIL_COLORS, emailShell } from "../_shared/email-theme.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from "../_shared/cors.ts";
 
 interface RequestPayload {
   toEmail: string;
@@ -27,7 +23,7 @@ function escapeHtml(value: string): string {
 serve(async (req) => {
   // Handle CORS pre-flight
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(req) });
   }
 
   try {
@@ -38,7 +34,7 @@ serve(async (req) => {
         JSON.stringify({ error: "Unauthorized: Missing Authorization header." }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -58,7 +54,7 @@ serve(async (req) => {
         JSON.stringify({ error: "Unauthorized: Invalid token.", details: userError }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -77,7 +73,7 @@ serve(async (req) => {
         }),
         {
           status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -88,7 +84,7 @@ serve(async (req) => {
     if (!toEmail) {
       return new Response(JSON.stringify({ error: "Recipient email (toEmail) is required." }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -102,7 +98,7 @@ serve(async (req) => {
         JSON.stringify({ error: "Failed to load config from database.", detail: configError }),
         {
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -120,7 +116,7 @@ serve(async (req) => {
         }),
         {
           status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
         },
       );
     }
@@ -142,8 +138,7 @@ serve(async (req) => {
     if (requestedCerts && requestedCerts.length > 0) {
       bodyHtml +=
         '      <div class="bg-page border-theme" style="border: 1px solid #D9D3C7; border-radius: 8px; padding: 20px; margin-bottom: 32px;">';
-      bodyHtml +=
-        `        <p style="margin: 0 0 12px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: ${EMAIL_COLORS.accent};">Required Certifications:</p>`;
+      bodyHtml += `        <p style="margin: 0 0 12px; font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: ${EMAIL_COLORS.accent};">Required Certifications:</p>`;
       bodyHtml += '        <ul class="text-title" style="margin: 0; padding-left: 20px;">';
       for (const cert of requestedCerts) {
         bodyHtml +=
@@ -201,13 +196,13 @@ serve(async (req) => {
     }
 
     return new Response(JSON.stringify({ success: true, data: resendData }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error sending email via Resend:", error);
     return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 500,
     });
   }

@@ -1,9 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+import { corsHeaders } from "../_shared/cors.ts";
 
 // Geoapify Places — reliable hosted lookup (3000 free req/day, no shared
 // public-instance rate limiting) instead of calling Overpass directly from
@@ -62,7 +58,7 @@ function mapFeature(f: any) {
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders(req) });
   }
 
   try {
@@ -70,7 +66,7 @@ serve(async (req) => {
     if (typeof lat !== "number" || typeof lng !== "number") {
       return new Response(JSON.stringify({ error: "lat and lng are required numbers" }), {
         status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -78,7 +74,7 @@ serve(async (req) => {
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "GEOAPIFY_API_KEY not configured" }), {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       });
     }
 
@@ -88,8 +84,7 @@ serve(async (req) => {
     // limit=50: the circle filter already bounds results to the radius —
     // this just needs to be high enough not to truncate a genuinely full
     // list of everything within it (Geoapify's own cap is 500 for places).
-    const categoryUrl =
-      `https://api.geoapify.com/v2/places?categories=${CATEGORIES}${filterAndBias}&limit=50&apiKey=${apiKey}`;
+    const categoryUrl = `https://api.geoapify.com/v2/places?categories=${CATEGORIES}${filterAndBias}&limit=50&apiKey=${apiKey}`;
 
     const nameSearches = NAME_SEARCH_TERMS.map(([term, label]) => ({
       label,
@@ -127,12 +122,12 @@ serve(async (req) => {
     });
 
     return new Response(JSON.stringify({ suppliers: Array.from(merged.values()) }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: String(err) }), {
       status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
     });
   }
 });

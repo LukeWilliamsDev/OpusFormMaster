@@ -2,8 +2,8 @@ import React from "react";
 
 interface DiffItem {
   field: string;
-  before: any;
-  after: any;
+  before: unknown;
+  after: unknown;
 }
 
 interface AuditDiffTableProps {
@@ -19,7 +19,7 @@ export const AuditDiffTable: React.FC<AuditDiffTableProps> = ({ diff }) => {
     );
   }
 
-  const renderValue = (val: any) => {
+  const renderValue = (val: unknown) => {
     if (val === undefined || val === null) {
       return (
         <span className="text-muted-foreground font-mono italic text-[10px]">&lt;empty&gt;</span>

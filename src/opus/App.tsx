@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect } from "react";
 import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import {
@@ -234,6 +233,7 @@ const RoleAwareFallback: React.FC = () => {
   if (user?.email === "admin@opusform.co.uk") {
     return <Navigate to="/portal/audit" replace />;
   }
-  const target = FIELD_ROLES.includes(role) ? "/portal/roster?view=calendar" : "/portal/dashboard";
+  const target =
+    role && FIELD_ROLES.includes(role) ? "/portal/roster?view=calendar" : "/portal/dashboard";
   return <Navigate to={target} replace />;
 };

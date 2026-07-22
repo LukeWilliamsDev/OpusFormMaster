@@ -57,7 +57,10 @@ const JobWeatherRow: React.FC<{
       d.setDate(today.getDate() + i);
       const dateStr = toLocalISODate(d);
       const info = getWeatherOnDate(forecast, dateStr);
-      if (info?.isImpactful && (!best || (info.riskLevel === "High" && best.riskLevel !== "High"))) {
+      if (
+        info?.isImpactful &&
+        (!best || (info.riskLevel === "High" && best.riskLevel !== "High"))
+      ) {
         best = { ...info, date: dateStr };
       }
     }
@@ -78,7 +81,9 @@ const JobWeatherRow: React.FC<{
       <div className="flex-1 min-w-0 flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[12px]">
         <span className="font-bold text-foreground">{job.siteName}</span>
         <span className="text-muted-foreground">&bull; {job.postcode}</span>
-        <span className="text-muted-foreground">&bull; {worst.condition} forecast on {formatUKDate(worst.date)}</span>
+        <span className="text-muted-foreground">
+          &bull; {worst.condition} forecast on {formatUKDate(worst.date)}
+        </span>
       </div>
       <span
         className={`text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded shrink-0 ${
@@ -158,7 +163,6 @@ export const DashboardPage: React.FC = () => {
     () => activeJobsFiltered.filter((j) => weatherRiskByJob[j.id]).length,
     [activeJobsFiltered, weatherRiskByJob],
   );
-
 
   const crewPerSiteFiltered = useMemo(() => {
     const today = new Date();
@@ -623,217 +627,233 @@ export const DashboardPage: React.FC = () => {
       {/* Operations Summary panel — one shell, internal hairlines instead of stacked cards */}
       <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-border sm:divide-y-0 sm:divide-x sm:divide-border">
-            {/* Active Job Sites */}
-            <div className="p-6 space-y-4 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <MapPin className="w-4 h-4 text-primary shrink-0" />
-                  <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                    Active Job Sites
-                  </h2>
-                </div>
-                <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
-                  {activeJobsFiltered.length}
-                </span>
+          {/* Active Job Sites */}
+          <div className="p-6 space-y-4 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <MapPin className="w-4 h-4 text-primary shrink-0" />
+                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                  Active Job Sites
+                </h2>
               </div>
+              <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
+                {activeJobsFiltered.length}
+              </span>
+            </div>
 
-              <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
-                {activeJobsFiltered.map((job) => (
-                  <div
-                    key={job.id}
-                    onClick={() => navigate(`/portal/ledger?jobId=${job.id}`)}
-                    className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-[13px] font-bold text-foreground truncate">{job.siteName}</div>
-                      <div className="text-[11px] text-muted-foreground">{job.postcode}</div>
+            <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
+              {activeJobsFiltered.map((job) => (
+                <div
+                  key={job.id}
+                  onClick={() => navigate(`/portal/ledger?jobId=${job.id}`)}
+                  className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
+                >
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-bold text-foreground truncate">
+                      {job.siteName}
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary px-2 py-0.5 rounded shrink-0">
-                      {job.status}
-                    </span>
+                    <div className="text-[11px] text-muted-foreground">{job.postcode}</div>
                   </div>
-                ))}
-
-                {activeJobsFiltered.length === 0 && (
-                  <p className="text-[12px] text-muted-foreground py-4 text-center">
-                    No active job sites for the selected timeframe.
-                  </p>
-                )}
-              </div>
-            </div>
-
-            {/* Scheduled Crew per site */}
-            <div className="p-6 space-y-4 min-w-0">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <UserCheck className="w-4 h-4 text-success shrink-0" />
-                  <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                    Scheduled Crew
-                  </h2>
-                </div>
-                {scheduledWorkersOnActiveSites > 0 && (
-                  <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5 rounded-full shrink-0">
-                    {scheduledWorkersOnActiveSites}
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary px-2 py-0.5 rounded shrink-0">
+                    {job.status}
                   </span>
-                )}
-              </div>
+                </div>
+              ))}
 
-              <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
-                {crewPerSiteFiltered.map((site) => (
-                  <div
-                    key={site.jobId}
-                    onClick={() =>
-                      navigate(`/portal/roster?view=calendar&group=project&date=${site.nextDate}`)
-                    }
-                    className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
-                  >
-                    <span className="text-[13px] font-bold text-foreground truncate">{site.siteName}</span>
-                    <span className="text-[12px] font-mono text-muted-foreground font-bold shrink-0">
-                      {site.crewCount} crew
-                    </span>
-                  </div>
-                ))}
-
-                {crewPerSiteFiltered.length === 0 && (
-                  <p className="text-[12px] text-muted-foreground py-4 text-center">
-                    No active job sites for the selected timeframe.
-                  </p>
-                )}
-              </div>
+              {activeJobsFiltered.length === 0 && (
+                <p className="text-[12px] text-muted-foreground py-4 text-center">
+                  No active job sites for the selected timeframe.
+                </p>
+              )}
             </div>
+          </div>
+
+          {/* Scheduled Crew per site */}
+          <div className="p-6 space-y-4 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <UserCheck className="w-4 h-4 text-success shrink-0" />
+                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                  Scheduled Crew
+                </h2>
+              </div>
+              {scheduledWorkersOnActiveSites > 0 && (
+                <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5 rounded-full shrink-0">
+                  {scheduledWorkersOnActiveSites}
+                </span>
+              )}
+            </div>
+
+            <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
+              {crewPerSiteFiltered.map((site) => (
+                <div
+                  key={site.jobId}
+                  onClick={() =>
+                    navigate(`/portal/roster?view=calendar&group=project&date=${site.nextDate}`)
+                  }
+                  className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
+                >
+                  <span className="text-[13px] font-bold text-foreground truncate">
+                    {site.siteName}
+                  </span>
+                  <span className="text-[12px] font-mono text-muted-foreground font-bold shrink-0">
+                    {site.crewCount} crew
+                  </span>
+                </div>
+              ))}
+
+              {crewPerSiteFiltered.length === 0 && (
+                <p className="text-[12px] text-muted-foreground py-4 text-center">
+                  No active job sites for the selected timeframe.
+                </p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-border sm:divide-y-0 sm:divide-x sm:divide-border">
-            {/* Compliance Alerts */}
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
-                  <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">Compliance</h2>
-                </div>
-                <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full shrink-0">
-                  {expiringTickets.length}
-                </span>
+          {/* Compliance Alerts */}
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
+                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                  Compliance
+                </h2>
               </div>
+              <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full shrink-0">
+                {expiringTickets.length}
+              </span>
+            </div>
 
-              <div className="divide-y divide-border flex-1 overflow-y-auto max-h-[280px]">
-                {expiringTickets.map((alert) => (
-                  <div
-                    key={alert.alertId}
-                    onClick={() => handleUpdateAlert(alert.workerId)}
-                    className="flex flex-col gap-1 px-2 py-2.5 hover:bg-secondary/60 transition-colors cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-[12px] font-bold text-foreground truncate">{alert.workerName}</span>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setRemindConfirmAlert(alert);
-                        }}
-                        className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-secondary hover:bg-muted text-foreground/85 transition-colors cursor-pointer shrink-0"
-                      >
-                        Remind
-                      </button>
-                    </div>
-                    <span
-                      className={`text-[11px] font-bold ${alert.isExpired ? "text-destructive" : "text-warning"}`}
-                    >
-                      {alert.isExpired
-                        ? `Expired ${formatDayCount(Math.abs(alert.diffDays))} ago`
-                        : `Expiring in ${formatDayCount(alert.diffDays)}`}
-                      {" — "}
-                      {alert.ticketType}
+            <div className="divide-y divide-border flex-1 overflow-y-auto max-h-[280px]">
+              {expiringTickets.map((alert) => (
+                <div
+                  key={alert.alertId}
+                  onClick={() => handleUpdateAlert(alert.workerId)}
+                  className="flex flex-col gap-1 px-2 py-2.5 hover:bg-secondary/60 transition-colors cursor-pointer"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[12px] font-bold text-foreground truncate">
+                      {alert.workerName}
                     </span>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRemindConfirmAlert(alert);
+                      }}
+                      className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-secondary hover:bg-muted text-foreground/85 transition-colors cursor-pointer shrink-0"
+                    >
+                      Remind
+                    </button>
                   </div>
-                ))}
-
-                {expiringTickets.length === 0 && (
-                  <div className="flex flex-col items-center justify-center py-8 text-center space-y-2">
-                    <CheckCircle className="w-8 h-8 text-success/80" />
-                    <p className="text-[11px] text-muted-foreground">Roster fully compliant.</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Remind Confirmation Modal */}
-              <ConfirmDialog
-                open={!!remindConfirmAlert}
-                onOpenChange={(open) => {
-                  if (!open) setRemindConfirmAlert(null);
-                }}
-                tone="neutral"
-                tag="Send Compliance Reminder"
-                title="Send Compliance Reminder"
-                message={
-                  remindConfirmAlert && (
-                    <>
-                      Send a compliance reminder email to{" "}
-                      <span className="text-foreground font-bold">{remindConfirmAlert.workerName}</span>{" "}
-                      requesting they update their{" "}
-                      <span className="text-foreground font-bold">{remindConfirmAlert.ticketType}</span>{" "}
-                      credential which{" "}
-                      {remindConfirmAlert.isExpired ? (
-                        <span className="text-destructive font-bold">
-                          expired {Math.abs(remindConfirmAlert.diffDays)} days ago
-                        </span>
-                      ) : (
-                        <span className="text-warning font-bold">
-                          expires in {remindConfirmAlert.diffDays} days
-                        </span>
-                      )}
-                      .
-                    </>
-                  )
-                }
-                confirmLabel="Confirm Send"
-                cancelLabel="Cancel"
-                onConfirm={() => {
-                  handleRemindAlert(remindConfirmAlert);
-                  setRemindConfirmAlert(null);
-                }}
-              />
-            </div>
-
-            {/* Weather Warnings */}
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <CloudRain className="w-4 h-4 text-warning shrink-0" />
-                  <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">Weather</h2>
+                  <span
+                    className={`text-[11px] font-bold ${alert.isExpired ? "text-destructive" : "text-warning"}`}
+                  >
+                    {alert.isExpired
+                      ? `Expired ${formatDayCount(Math.abs(alert.diffDays))} ago`
+                      : `Expiring in ${formatDayCount(alert.diffDays)}`}
+                    {" — "}
+                    {alert.ticketType}
+                  </span>
                 </div>
-                <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full shrink-0">
-                  {weatherWarningCount}
-                </span>
-              </div>
+              ))}
 
-              <div className="divide-y divide-border flex-1 overflow-y-auto max-h-[280px]">
-                {activeJobsFiltered.map((job) => (
-                  <JobWeatherRow
-                    key={job.id}
-                    job={job}
-                    timeframe={timeframe}
-                    onStatusChange={handleWeatherStatusChange}
-                    onSelectDate={(date) =>
-                      navigate(`/portal/roster?view=calendar&group=project&date=${date}`)
-                    }
-                  />
-                ))}
-
-                {activeJobsFiltered.length > 0 && weatherWarningCount === 0 && (
-                  <div className="flex items-center gap-2 py-3 px-1">
-                    <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                    <p className="text-[11px] text-muted-foreground">No weather risks for active sites.</p>
-                  </div>
-                )}
-
-                {activeJobsFiltered.length === 0 && (
-                  <div className="flex items-center gap-2 py-3 px-1">
-                    <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                    <p className="text-[11px] text-muted-foreground">No active job sites to check.</p>
-                  </div>
-                )}
-              </div>
+              {expiringTickets.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-8 text-center space-y-2">
+                  <CheckCircle className="w-8 h-8 text-success/80" />
+                  <p className="text-[11px] text-muted-foreground">Roster fully compliant.</p>
+                </div>
+              )}
             </div>
+
+            {/* Remind Confirmation Modal */}
+            <ConfirmDialog
+              open={!!remindConfirmAlert}
+              onOpenChange={(open) => {
+                if (!open) setRemindConfirmAlert(null);
+              }}
+              tone="neutral"
+              tag="Send Compliance Reminder"
+              title="Send Compliance Reminder"
+              message={
+                remindConfirmAlert && (
+                  <>
+                    Send a compliance reminder email to{" "}
+                    <span className="text-foreground font-bold">
+                      {remindConfirmAlert.workerName}
+                    </span>{" "}
+                    requesting they update their{" "}
+                    <span className="text-foreground font-bold">
+                      {remindConfirmAlert.ticketType}
+                    </span>{" "}
+                    credential which{" "}
+                    {remindConfirmAlert.isExpired ? (
+                      <span className="text-destructive font-bold">
+                        expired {Math.abs(remindConfirmAlert.diffDays)} days ago
+                      </span>
+                    ) : (
+                      <span className="text-warning font-bold">
+                        expires in {remindConfirmAlert.diffDays} days
+                      </span>
+                    )}
+                    .
+                  </>
+                )
+              }
+              confirmLabel="Confirm Send"
+              cancelLabel="Cancel"
+              onConfirm={() => {
+                handleRemindAlert(remindConfirmAlert);
+                setRemindConfirmAlert(null);
+              }}
+            />
+          </div>
+
+          {/* Weather Warnings */}
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <CloudRain className="w-4 h-4 text-warning shrink-0" />
+                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                  Weather
+                </h2>
+              </div>
+              <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full shrink-0">
+                {weatherWarningCount}
+              </span>
+            </div>
+
+            <div className="divide-y divide-border flex-1 overflow-y-auto max-h-[280px]">
+              {activeJobsFiltered.map((job) => (
+                <JobWeatherRow
+                  key={job.id}
+                  job={job}
+                  timeframe={timeframe}
+                  onStatusChange={handleWeatherStatusChange}
+                  onSelectDate={(date) =>
+                    navigate(`/portal/roster?view=calendar&group=project&date=${date}`)
+                  }
+                />
+              ))}
+
+              {activeJobsFiltered.length > 0 && weatherWarningCount === 0 && (
+                <div className="flex items-center gap-2 py-3 px-1">
+                  <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
+                  <p className="text-[11px] text-muted-foreground">
+                    No weather risks for active sites.
+                  </p>
+                </div>
+              )}
+
+              {activeJobsFiltered.length === 0 && (
+                <div className="flex items-center gap-2 py-3 px-1">
+                  <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
+                  <p className="text-[11px] text-muted-foreground">No active job sites to check.</p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -30,6 +30,10 @@ coverage/
 # Supabase CLI local cache
 supabase/.temp/
 
+# Claude session tracking (local, noisy, not project state)
+.claude/sessions/token-log.md
+.claude/sessions/write-log.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

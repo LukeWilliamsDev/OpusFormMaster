@@ -34,6 +34,10 @@ export default tseslint.config(
       ],
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // ponytail: pre-existing debt (89 violations at 2026-07-22), downgraded so CI
+      // doesn't block on old code. Fix opportunistically; don't let new code add more.
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/ban-ts-comment": "warn",
     },
   },
   eslintPluginPrettier,

@@ -21,6 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { generateQuotePdfBlob } from "../lib/quotePdf";
 import { toast } from "sonner";
+import { derivePoursFromQuote } from "../utils/pourDerivation";
 
 interface MeasuredItem {
   id: string;
@@ -148,6 +149,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
   const handleConvertToJob = async () => {
     if (!convertingQuote) return;
 
+    const derivedPours = derivePoursFromQuote(convertingQuote.items || []);
+
     // Create a new active Job object
     const newJob: Job = {
       id: Math.random().toString(36).substr(2, 9),
@@ -156,7 +159,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
       mainContractor: convertingQuote.clientInfo.entity || "Contractor",
       postcode: convertingQuote.clientInfo.postcode || "N/A",
       currentPours: 0,
-      contractMaxPours: 10,
+      contractMaxPours: derivedPours.length > 0 ? derivedPours.length : 10,
       status: "pending",
       scheduleValue: convertingQuote.totals?.grossTotal || 0,
     };
@@ -171,6 +174,28 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         .from("jobs")
         .upsert(jobToRow(newJob, profile?.tenant_id));
       if (jobError) throw jobError;
+
+      if (derivedPours.length > 0) {
+        const { error: poursError } = await supabase.from("pours").insert(
+          derivedPours.map((pour) => ({
+            job_id: newJob.id,
+            pour_number: pour.pourNumber,
+            date: null,
+            mix_type: pour.mixType,
+            volume_m3: pour.volumeM3,
+            status: "scheduled",
+            notes: pour.notes,
+            tenant_id: profile?.tenant_id,
+          })),
+        );
+        if (poursError) {
+          // Job conversion already succeeded; scheduled pours are a nice-to-have
+          // derived from the BoQ, so failure here doesn't roll back the job —
+          // same tolerance tier as the quote-PDF attach below.
+          console.error("Failed to insert derived pours", poursError);
+          toast.error(`Job created, but scheduled pours failed to save: ${poursError.message}`);
+        }
+      }
 
       const { error } = await supabase.from("quotes").delete().eq("id", convertingQuote.id);
       if (error) throw error;

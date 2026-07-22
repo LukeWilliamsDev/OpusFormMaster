@@ -651,8 +651,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     const log = pourToggleTarget;
     const wasCompleted = log.status === "completed";
     const nextStatus = wasCompleted ? "scheduled" : "completed";
+    const nextDate = wasCompleted ? log.date : new Date().toISOString().split("T")[0];
 
-    const { error } = await supabase.from("pours").update({ status: nextStatus }).eq("id", log.id);
+    const { error } = await supabase
+      .from("pours")
+      .update({ status: nextStatus, date: nextDate })
+      .eq("id", log.id);
     if (error) {
       console.error("Failed to toggle pour status", error);
       toast.error("Failed to update pour");
@@ -661,7 +665,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     }
 
     setPourLogs((prev) =>
-      prev.map((l) => (l.id === log.id ? { ...l, status: nextStatus } : l)),
+      prev.map((l) => (l.id === log.id ? { ...l, status: nextStatus, date: nextDate } : l)),
     );
 
     const nextPourCount = Math.max(0, currentPours + (wasCompleted ? -1 : 1));

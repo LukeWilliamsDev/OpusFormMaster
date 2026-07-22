@@ -1153,7 +1153,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       />
 
       <PersistentJobHeader
-        job={job}
         pourLogs={pourLogs}
         weatherData={weatherData}
         loadingWeather={loadingWeather}
@@ -1163,17 +1162,37 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       {/* Secondary sections: Suppliers/Map, Diary+Staff, Attachments */}
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="w-full grid grid-cols-4">
-          <TabsTrigger value="overview" aria-label="Overview" className="flex items-center gap-1.5">
-            <LayoutGrid className="w-4 h-4" /> <span className="hidden sm:inline">Overview</span>
+          <TabsTrigger
+            value="overview"
+            aria-label="Overview"
+            className="flex items-center justify-center gap-1 px-1.5"
+          >
+            <LayoutGrid className="w-3.5 h-3.5 shrink-0" />{" "}
+            <span className="text-[11px]">Overview</span>
           </TabsTrigger>
-          <TabsTrigger value="media" aria-label="Media" className="flex items-center gap-1.5">
-            <Paperclip className="w-4 h-4" /> <span className="hidden sm:inline">Media</span>
+          <TabsTrigger
+            value="media"
+            aria-label="Media"
+            className="flex items-center justify-center gap-1 px-1.5"
+          >
+            <Paperclip className="w-3.5 h-3.5 shrink-0" />{" "}
+            <span className="text-[11px]">Media</span>
           </TabsTrigger>
-          <TabsTrigger value="feed" aria-label="Feed" className="flex items-center gap-1.5">
-            <MessageSquare className="w-4 h-4" /> <span className="hidden sm:inline">Feed</span>
+          <TabsTrigger
+            value="feed"
+            aria-label="Feed"
+            className="flex items-center justify-center gap-1 px-1.5"
+          >
+            <MessageSquare className="w-3.5 h-3.5 shrink-0" />{" "}
+            <span className="text-[11px]">Feed</span>
           </TabsTrigger>
-          <TabsTrigger value="history" aria-label="History" className="flex items-center gap-1.5">
-            <History className="w-4 h-4" /> <span className="hidden sm:inline">History</span>
+          <TabsTrigger
+            value="history"
+            aria-label="History"
+            className="flex items-center justify-center gap-1 px-1.5"
+          >
+            <History className="w-3.5 h-3.5 shrink-0" />{" "}
+            <span className="text-[11px]">History</span>
           </TabsTrigger>
         </TabsList>
 

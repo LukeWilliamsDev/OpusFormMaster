@@ -11,7 +11,7 @@ import {
   ChevronUp,
   HardHat,
 } from "lucide-react";
-import { Job, Worker } from "../types/erp";
+import { Worker } from "../types/erp";
 
 interface PourLog {
   id: string;
@@ -37,7 +37,6 @@ function formatPourDate(dateStr: string): string {
 }
 
 interface PersistentJobHeaderProps {
-  job: Job;
   pourLogs: PourLog[];
   weatherData: {
     temperature: number;

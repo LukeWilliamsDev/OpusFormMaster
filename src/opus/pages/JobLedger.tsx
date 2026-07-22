@@ -36,7 +36,7 @@ export const JobLedgerPage: React.FC = () => {
 
   const filteredJobs = jobs.filter((job) => {
     if (filterStatus === "archived") return isArchived(job);
-    if (filterStatus === "all") return job.status !== "completed" && !isArchived(job);
+    if (filterStatus === "all") return !isArchived(job);
     if (filterStatus === "completed") return job.status === "completed" && !isArchived(job);
     return job.status === filterStatus;
   });

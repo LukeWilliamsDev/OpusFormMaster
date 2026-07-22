@@ -211,6 +211,47 @@ export type Database = {
           },
         ];
       };
+      job_notes: {
+        Row: {
+          body: string;
+          created_at: string;
+          id: string;
+          job_id: string;
+          reminder_at: string | null;
+          tenant_id: string;
+          user_email: string | null;
+          user_id: string | null;
+        };
+        Insert: {
+          body: string;
+          created_at?: string;
+          id?: string;
+          job_id: string;
+          reminder_at?: string | null;
+          tenant_id?: string;
+          user_email?: string | null;
+          user_id?: string | null;
+        };
+        Update: {
+          body?: string;
+          created_at?: string;
+          id?: string;
+          job_id?: string;
+          reminder_at?: string | null;
+          tenant_id?: string;
+          user_email?: string | null;
+          user_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "job_notes_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       jobs: {
         Row: {
           contract_max_pours: number;

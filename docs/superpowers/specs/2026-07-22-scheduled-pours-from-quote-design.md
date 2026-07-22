@@ -8,6 +8,7 @@
 Today, converting a quote to a job (`PipelineRegistry.tsx` `handleConvertToJob`) hardcodes `contractMaxPours: 10` regardless of what the quote actually contains, and creates zero pour records. Separately, `JobDetails.tsx` doesn't persist pours to Supabase at all — it seeds a mock list from `job.currentPours` on mount and tracks everything else in local component state, only visible via a manually-written audit-log trail (`logPourAudit`). A page reload wipes any scheduled-but-not-yet-completed pour that wasn't the mock seed.
 
 This work does two things:
+
 1. Gives pours a real table so scheduled/completed pour data survives reloads and is queryable.
 2. On quote conversion, auto-derives scheduled pour rows from the quote's Bill of Quantities (BoQ) instead of a flat guess of 10.
 
@@ -15,18 +16,18 @@ This work does two things:
 
 New table `public.pours`:
 
-| column | type | notes |
-|---|---|---|
-| `id` | uuid, PK, default `gen_random_uuid()` | |
-| `job_id` | uuid, FK → `public.jobs(id)` on delete cascade | |
-| `pour_number` | int | sequential per job, starting at 1 |
-| `date` | date, nullable | null = not yet scheduled to a specific day |
-| `mix_type` | text | e.g. `"C32/40"`, `"TBC"` if ungraded |
-| `volume_m3` | numeric | |
-| `status` | text | `"scheduled" \| "completed"` |
-| `notes` | text, nullable | |
-| `created_at` | timestamptz, default `now()` | |
-| `tenant_id` | uuid | matches `jobs.tenant_id`, set the same way `jobToRow` does |
+| column        | type                                           | notes                                                      |
+| ------------- | ---------------------------------------------- | ---------------------------------------------------------- |
+| `id`          | uuid, PK, default `gen_random_uuid()`          |                                                            |
+| `job_id`      | uuid, FK → `public.jobs(id)` on delete cascade |                                                            |
+| `pour_number` | int                                            | sequential per job, starting at 1                          |
+| `date`        | date, nullable                                 | null = not yet scheduled to a specific day                 |
+| `mix_type`    | text                                           | e.g. `"C32/40"`, `"TBC"` if ungraded                       |
+| `volume_m3`   | numeric                                        |                                                            |
+| `status`      | text                                           | `"scheduled" \| "completed"`                               |
+| `notes`       | text, nullable                                 |                                                            |
+| `created_at`  | timestamptz, default `now()`                   |                                                            |
+| `tenant_id`   | uuid                                           | matches `jobs.tenant_id`, set the same way `jobToRow` does |
 
 RLS: same shape as `job_attachments` — `pours_select_ops` / `pours_insert_ops` / `pours_update_ops` / `pours_delete_ops`, all `TO authenticated` gated on `private.can_write_ops(auth.uid())`.
 
@@ -49,6 +50,7 @@ In `handleConvertToJob` (`PipelineRegistry.tsx`), before building `newJob`:
 ## JobDetails.tsx changes
 
 Replace the mock-seeding `useEffect` (currently regenerating `pourLogs` from `job.currentPours` on `job.id` change) with:
+
 - Initial fetch: `supabase.from("pours").select("*").eq("job_id", job.id).order("pour_number")`
 - Realtime subscription on `pours` filtered by `job_id`, mirroring the existing `job-audit-${job.id}` channel setup
 - `handleAddPourSubmit`, `executeTogglePourComplete`, `executeRemovePour` switch from local `setPourLogs` mutation to real `insert` / `update` / `delete` calls against `public.pours`, keeping the existing `logPourAudit` calls as-is (audit trail stays independent of the pours table, same as today)

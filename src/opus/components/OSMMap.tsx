@@ -2,7 +2,7 @@
 import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Phone, Globe, Navigation } from "lucide-react";
+import { Globe, Navigation } from "lucide-react";
 import { usePortal } from "../context/PortalContext";
 
 interface Supplier {
@@ -232,53 +232,45 @@ export const OSMMap: React.FC<OSMMapProps> = ({
         style={{ minHeight: "420px", zIndex: 1 }}
       />
       {selectedSupplier && (
-        <div className="absolute bottom-3 left-3 right-3 z-[400] bg-card border border-border rounded-lg p-3 shadow-lg">
+        <div className="absolute bottom-3 left-3 right-3 z-[400] bg-card border border-border rounded-lg p-3.5 shadow-lg">
           <div className="flex justify-between items-start gap-2">
-            <h4 className="text-xs font-extrabold uppercase tracking-wide text-foreground truncate">
+            <h4 className="text-sm font-extrabold uppercase tracking-wide text-foreground truncate">
               {selectedSupplier.name}
             </h4>
-            <span className="text-[10px] font-bold text-primary whitespace-nowrap shrink-0">
+            <span className="text-[11px] font-bold text-primary whitespace-nowrap shrink-0">
               {selectedSupplier.distance} from site
             </span>
           </div>
           {selectedSupplier.businessType && (
-            <p className="text-[9px] text-primary font-bold uppercase tracking-wider mt-1">
+            <p className="text-[11px] text-primary font-bold uppercase tracking-wider mt-1.5">
               {selectedSupplier.businessType}
             </p>
           )}
-          <p className="text-[10px] text-muted-foreground mt-1 leading-snug">
+          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
             {selectedSupplier.address}
           </p>
-          {/* Full-height tap targets (not inline text links) — call/website/
+          {/* Full-height tap targets (not inline text links) — website/
               directions are the actions staff need mid-task on a tablet/
               phone, so they get real button sizing and share the row evenly
-              whichever of the three actually exist for this supplier. */}
-          <div className="flex gap-2 mt-2">
-            {selectedSupplier.phone && (
-              <a
-                href={`tel:${selectedSupplier.phone.replace(/\s+/g, "")}`}
-                className="flex-1 flex items-center justify-center gap-1 min-h-[30px] rounded-md bg-destructive/15 border border-destructive/30 text-destructive font-bold text-xs active:scale-95 transition-transform"
-              >
-                <Phone className="w-3.5 h-3.5" /> Call
-              </a>
-            )}
+              whichever of the two actually exist for this supplier. */}
+          <div className="flex gap-2 mt-3">
             {selectedSupplier.website && (
               <a
                 href={selectedSupplier.website}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 flex items-center justify-center gap-1 min-h-[30px] rounded-md bg-muted border border-border text-muted-foreground font-bold text-xs active:scale-95 transition-transform"
+                className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-muted border border-border text-muted-foreground font-bold text-xs active:scale-95 transition-transform"
               >
-                <Globe className="w-3.5 h-3.5" /> Website
+                <Globe className="w-4 h-4" /> Website
               </a>
             )}
             <a
               href={`https://www.google.com/maps/dir/?api=1&destination=${selectedSupplier.coords.lat},${selectedSupplier.coords.lng}`}
               target="_blank"
               rel="noreferrer"
-              className="flex-1 flex items-center justify-center gap-1 min-h-[30px] rounded-md bg-primary/15 border border-primary/30 text-primary font-bold text-xs active:scale-95 transition-transform"
+              className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-primary/15 border border-primary/30 text-primary font-bold text-xs active:scale-95 transition-transform"
             >
-              <Navigation className="w-3.5 h-3.5" /> Directions
+              <Navigation className="w-4 h-4" /> Directions
             </a>
           </div>
         </div>

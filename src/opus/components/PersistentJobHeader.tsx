@@ -71,7 +71,9 @@ export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({
                 ) : (
                   <CloudSun className="w-5 h-5 text-muted-foreground shrink-0" />
                 )}
-                <span className="text-sm font-bold text-foreground">{weatherData.temperature}°C</span>
+                <span className="text-sm font-bold text-foreground">
+                  {weatherData.temperature}°C
+                </span>
                 <span className="text-xs text-muted-foreground truncate">
                   {weatherData.condition}
                 </span>

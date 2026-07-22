@@ -848,7 +848,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         }
       />
 
-
       {/* Change Project Status Confirmation */}
       <ConfirmDialog
         open={!!pendingStatus}

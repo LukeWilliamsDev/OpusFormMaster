@@ -37,6 +37,7 @@ suffices) so each is independently readable.
 ## Persistent header
 
 `PersistentJobHeader` renders three compact rows (not cards stacked full-height):
+
 1. Scheduled pour: date/time + status pill (existing pour log data, most recent
    upcoming entry).
 2. Weather warning: existing weather warning component/logic from
@@ -55,11 +56,13 @@ Bar uses icon + label pairs (not icon-only) per dyslexia/quick-scan requirement.
 (underline + background tint, not color alone, for colorblind/contrast safety).
 
 ### Overview
+
 Status, client, location, urgent tags in a scannable list (label left, value
 right, generous line-height). `OSMMap` supplier-locator block retained as-is,
 moved from current inline position.
 
 ### Media
+
 - Grid gallery of image attachments (before/after photos) + flat list of
   document attachments, each with view/download actions.
 - Existing camera-capture/file-upload flow (`compressImageFile`,
@@ -72,6 +75,7 @@ moved from current inline position.
   no full-page blocking spinner.
 
 ### Feed
+
 - Time-stamped list of `job_notes` rows, newest first, grouped by day.
 - Compose box: text input + optional "Remind me" toggle that reveals a
   date/time picker, writing `reminder_at`.
@@ -82,6 +86,7 @@ moved from current inline position.
   for `pours`.
 
 ### History
+
 `AuditDiffTable` moved here verbatim, no behavior change — kept out of the
 default (Overview) tab so daily field use doesn't surface admin trail.
 

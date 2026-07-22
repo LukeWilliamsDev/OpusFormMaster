@@ -23,6 +23,7 @@
 ## Existing code reference (do not re-derive — copy from here)
 
 `src/opus/components/JobDetails.tsx` current structure (line numbers as of this plan):
+
 - Imports: lines 1-46
 - `PourLog` interface: lines 74-82
 - `JobDetailsProps` interface: lines 84-93
@@ -47,9 +48,11 @@ Note: line numbers will drift as tasks land. Each task below re-locates by conte
 ### Task 1: `job_notes` database migration
 
 **Files:**
+
 - Create: `supabase/migrations/20260723120000_add_job_notes_table.sql`
 
 **Interfaces:**
+
 - Produces: table `public.job_notes(id uuid, job_id text, tenant_id uuid, user_id uuid, user_email text, body text, reminder_at timestamptz nullable, created_at timestamptz)`, realtime-enabled, RLS-scoped like `pours`.
 
 - [ ] **Step 1: Write the migration**
@@ -103,10 +106,12 @@ git commit -m "feat: add job_notes table for job feed and reminders"
 ### Task 2: `FeedTab.tsx` — new self-contained feed/notes/reminders component
 
 **Files:**
+
 - Create: `src/opus/components/FeedTab.tsx`
 - Test: `src/opus/components/__tests__/FeedTab.test.tsx` (check `src/opus/**/__tests__` or co-located `*.test.tsx` convention first — grep for an existing test file next to a component of similar size before picking the path)
 
 **Interfaces:**
+
 - Consumes: `jobId: string` prop only. Internally calls `supabase.from("job_notes")`, `supabase.auth.getUser()`, `supabase.channel(...)`.
 - Produces: default-exportless named export `FeedTab: React.FC<{ jobId: string }>`, for `JobDetails.tsx` to render as `<FeedTab jobId={job.id} />`.
 
@@ -120,9 +125,27 @@ import { groupNotesByDay, sortUpcomingReminders } from "../FeedTab";
 describe("groupNotesByDay", () => {
   it("groups notes under their created_at calendar day, newest day first", () => {
     const notes = [
-      { id: "1", created_at: "2026-07-20T09:00:00Z", body: "a", reminder_at: null, user_email: "x@y.com" },
-      { id: "2", created_at: "2026-07-21T09:00:00Z", body: "b", reminder_at: null, user_email: "x@y.com" },
-      { id: "3", created_at: "2026-07-21T15:00:00Z", body: "c", reminder_at: null, user_email: "x@y.com" },
+      {
+        id: "1",
+        created_at: "2026-07-20T09:00:00Z",
+        body: "a",
+        reminder_at: null,
+        user_email: "x@y.com",
+      },
+      {
+        id: "2",
+        created_at: "2026-07-21T09:00:00Z",
+        body: "b",
+        reminder_at: null,
+        user_email: "x@y.com",
+      },
+      {
+        id: "3",
+        created_at: "2026-07-21T15:00:00Z",
+        body: "c",
+        reminder_at: null,
+        user_email: "x@y.com",
+      },
     ];
     const grouped = groupNotesByDay(notes);
     expect(grouped.map((g) => g.day)).toEqual(["2026-07-21", "2026-07-20"]);
@@ -133,9 +156,27 @@ describe("groupNotesByDay", () => {
 describe("sortUpcomingReminders", () => {
   it("returns only future reminder_at notes, soonest first", () => {
     const notes = [
-      { id: "1", created_at: "2026-07-20T09:00:00Z", body: "a", reminder_at: "2026-08-01T09:00:00Z", user_email: "x@y.com" },
-      { id: "2", created_at: "2026-07-20T09:00:00Z", body: "b", reminder_at: null, user_email: "x@y.com" },
-      { id: "3", created_at: "2026-07-20T09:00:00Z", body: "c", reminder_at: "2026-07-25T09:00:00Z", user_email: "x@y.com" },
+      {
+        id: "1",
+        created_at: "2026-07-20T09:00:00Z",
+        body: "a",
+        reminder_at: "2026-08-01T09:00:00Z",
+        user_email: "x@y.com",
+      },
+      {
+        id: "2",
+        created_at: "2026-07-20T09:00:00Z",
+        body: "b",
+        reminder_at: null,
+        user_email: "x@y.com",
+      },
+      {
+        id: "3",
+        created_at: "2026-07-20T09:00:00Z",
+        body: "c",
+        reminder_at: "2026-07-25T09:00:00Z",
+        user_email: "x@y.com",
+      },
     ];
     const upcoming = sortUpcomingReminders(notes, new Date("2026-07-23T00:00:00Z"));
     expect(upcoming.map((n) => n.id)).toEqual(["3", "1"]);
@@ -143,7 +184,13 @@ describe("sortUpcomingReminders", () => {
 
   it("excludes reminders in the past", () => {
     const notes = [
-      { id: "1", created_at: "2026-07-20T09:00:00Z", body: "a", reminder_at: "2026-07-01T09:00:00Z", user_email: "x@y.com" },
+      {
+        id: "1",
+        created_at: "2026-07-20T09:00:00Z",
+        body: "a",
+        reminder_at: "2026-07-01T09:00:00Z",
+        user_email: "x@y.com",
+      },
     ];
     expect(sortUpcomingReminders(notes, new Date("2026-07-23T00:00:00Z"))).toEqual([]);
   });
@@ -202,7 +249,12 @@ function formatDayHeading(day: string): string {
 function formatReminderTime(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "TBC";
-  return d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
@@ -278,7 +330,10 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
   return (
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-        <label htmlFor="job-note-body" className="text-xs font-bold uppercase tracking-wider text-foreground">
+        <label
+          htmlFor="job-note-body"
+          className="text-xs font-bold uppercase tracking-wider text-foreground"
+        >
           Add a note
         </label>
         <textarea
@@ -311,7 +366,11 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
             disabled={posting || !body.trim()}
             className="ml-auto flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-bold bg-primary text-primary-foreground disabled:opacity-50 cursor-pointer"
           >
-            {posting ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            {posting ? (
+              <Loader className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Send className="w-3.5 h-3.5" />
+            )}
             Post
           </button>
         </div>
@@ -323,9 +382,14 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
             <Bell className="w-4 h-4 text-warning" /> Upcoming reminders
           </div>
           {upcoming.map((n) => (
-            <div key={n.id} className="text-sm text-foreground flex items-center justify-between gap-2">
+            <div
+              key={n.id}
+              className="text-sm text-foreground flex items-center justify-between gap-2"
+            >
               <span className="truncate">{n.body}</span>
-              <span className="text-xs text-muted-foreground shrink-0">{formatReminderTime(n.reminder_at!)}</span>
+              <span className="text-xs text-muted-foreground shrink-0">
+                {formatReminderTime(n.reminder_at!)}
+              </span>
             </div>
           ))}
         </div>
@@ -380,10 +444,12 @@ git commit -m "feat: add FeedTab component for job notes and reminders"
 ### Task 3: `HistoryTab.tsx` — extract audit log tab verbatim
 
 **Files:**
+
 - Create: `src/opus/components/HistoryTab.tsx`
 - Modify: `src/opus/components/JobDetails.tsx` — remove the inline audit-log `TabsContent` block (search for `<TabsContent value="audit_log">` through its matching close), remove now-unused `computeDiff`/`JOB_REVERTIBLE_FIELDS`/`JOB_FIELD_LABELS` if no longer referenced elsewhere in the file after the move (grep the file after removal to confirm), add `import { HistoryTab } from "./HistoryTab";`, render `<HistoryTab jobAuditLogs={jobAuditLogs} loadingJobAuditLogs={loadingJobAuditLogs} auditSearch={auditSearch} setAuditSearch={setAuditSearch} formatPourDate={formatPourDate} setRevertConfirmTarget={setRevertConfirmTarget} />` in its place.
 
 **Interfaces:**
+
 - Consumes (from `JobDetails.tsx`, unchanged shapes): `jobAuditLogs: any[]`, `loadingJobAuditLogs: boolean`, `auditSearch: string`, `setAuditSearch: (v: string) => void`, `formatPourDate: (dateStr: string) => string`, `setRevertConfirmTarget: (t: { oldDetails: any; newDetails: any } | null) => void`.
 - Produces: `HistoryTab: React.FC<HistoryTabProps>`.
 
@@ -488,16 +554,19 @@ git commit -m "refactor: extract audit log tab into HistoryTab component"
 ### Task 4: `MediaTab.tsx` — extract attachments/upload/share-link tab verbatim
 
 **Files:**
+
 - Create: `src/opus/components/MediaTab.tsx`
 - Modify: `src/opus/components/JobDetails.tsx` — remove the `<TabsContent value="overview">` block containing photos+documents (the one whose content is photo grids, document list, and the upload-link generator, currently ~lines 1473-1738), plus its four related modals (photo gallery `Dialog` ~1940-2013, rename `Dialog` ~2016-2050, view-document `ConfirmDialog` ~1907-1921, delete-attachment `ConfirmDialog` ~1924-1937) — move all of these into `MediaTab.tsx` since they're only triggered from within this tab. Add import and render `<MediaTab .../>`.
 
 **Interfaces:**
+
 - Consumes: `attachments`, `uploadingPhotoBefore`, `uploadingPhotoAfter`, `uploadingDoc`, `generatedLink`, `generatingLink`, `copiedLink`, `viewDocTarget`, `setViewDocTarget`, `deleteAttachmentTarget`, `setDeleteAttachmentTarget`, `gallery`, `setGallery`, `renameTarget`, `setRenameTarget`, `renameValue`, `setRenameValue`, `beforePhotos`, `afterPhotos`, `projectDocs`, `uploadAttachment`, `generateUploadLink`, `copyToClipboard`, `executeViewDocument`, `executeDeleteAttachment`, `executeRenameAttachment` — all unchanged types from `JobDetails.tsx`.
 - Produces: `MediaTab: React.FC<MediaTabProps>`.
 
 - [ ] **Step 1: Locate the exact blocks to move**
 
 In `JobDetails.tsx`, find (by content search, not line number — numbers shifted after Task 3):
+
 - The `<TabsContent value="overview">` block containing the photo grids, `generateUploadLink`/`generatedLink` JSX (Section 9/10 of the extraction reference above), and the documents list.
 - The photo gallery `<Dialog>` block (search for `gallery &&` or the dialog rendering `gallery.photos[gallery.index]`).
 - The rename `<Dialog>` block (search for `renameTarget &&`).
@@ -509,7 +578,16 @@ In `JobDetails.tsx`, find (by content search, not line number — numbers shifte
 ```tsx
 // src/opus/components/MediaTab.tsx
 import React from "react";
-import { Camera, FileText, Link as LinkIcon, Check, Loader, Copy, Download, Trash2 } from "lucide-react";
+import {
+  Camera,
+  FileText,
+  Link as LinkIcon,
+  Check,
+  Loader,
+  Copy,
+  Download,
+  Trash2,
+} from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 // import any other icons used in the moved JSX — check the exact set against the moved blocks
@@ -529,7 +607,10 @@ interface MediaTabProps {
   uploadingPhotoBefore: boolean;
   uploadingPhotoAfter: boolean;
   uploadingDoc: boolean;
-  uploadAttachment: (file: File, type: "image_before" | "image_after" | "document") => Promise<void>;
+  uploadAttachment: (
+    file: File,
+    type: "image_before" | "image_after" | "document",
+  ) => Promise<void>;
   generatedLink: string | null;
   generatingLink: boolean;
   copiedLink: boolean;
@@ -617,10 +698,12 @@ git commit -m "refactor: extract attachments/upload/share-link tab into MediaTab
 ### Task 5: `JobOverviewTab.tsx` — extract suppliers/map tab + move status summary in
 
 **Files:**
+
 - Create: `src/opus/components/JobOverviewTab.tsx`
 - Modify: `src/opus/components/JobDetails.tsx` — remove the `<TabsContent value="suppliers">` block (OSMMap + supplier list, ~lines 1349-1471 pre-Task-3/4 shift), rename/repurpose it as the new "Overview" tab content alongside a compact status/client/location/tags summary pulled from the existing "Main strip" status card (the `<div>` at old lines 886-930, the "Status selector" section — copy its JSX, do not delete the original status-change `ConfirmDialog` which stays in `JobDetails.tsx`).
 
 **Interfaces:**
+
 - Consumes: `job: Job`, `status: Job["status"]`, `setPendingStatus: (s: Job["status"] | null) => void` (existing status-change trigger), `siteCoords`, `suppliers`, `selectedSupplierId`, `setSelectedSupplierId`, `loadingSuppliers`.
 - Produces: `JobOverviewTab: React.FC<JobOverviewTabProps>`.
 
@@ -729,10 +812,12 @@ git commit -m "refactor: extract overview tab (status summary + supplier map) in
 ### Task 6: `PersistentJobHeader.tsx` — pour schedule + weather + active staff
 
 **Files:**
+
 - Create: `src/opus/components/PersistentJobHeader.tsx`
 - Modify: `src/opus/components/JobDetails.tsx` — remove the weather JSX (old lines 931-968), the "Pour Progress" strip (old lines 970-1002), the now-empty "Main strip" wrapping `<div>` (old lines 884-1003), and the "Staff Scheduled On Site" card (old lines 1199-1245, now inside the pours/staff grid at old lines 1026-1246 — keep the "Scheduled Pours" card with its add/list/edit functionality in `JobDetails.tsx` unchanged, only remove the Staff card half of that grid). Render `<PersistentJobHeader />` above the `<Tabs>` block.
 
 **Interfaces:**
+
 - Consumes: `job: Job`, `pourLogs: PourLog[]`, `weatherData: ReturnType<typeof getWeatherOnDate>`, `loadingWeather: boolean`, `groupedStaff: { [key: string]: Worker[] }`.
 - Produces: `PersistentJobHeader: React.FC<PersistentJobHeaderProps>`.
 
@@ -746,16 +831,44 @@ import { getNextScheduledPour } from "../PersistentJobHeader";
 describe("getNextScheduledPour", () => {
   it("returns the soonest scheduled pour by date", () => {
     const pours = [
-      { id: "1", pourNumber: 2, date: "2026-08-05", mixType: "C35", volumeM3: 10, status: "scheduled" as const },
-      { id: "2", pourNumber: 1, date: "2026-07-30", mixType: "C35", volumeM3: 8, status: "scheduled" as const },
-      { id: "3", pourNumber: 3, date: "2026-07-20", mixType: "C35", volumeM3: 12, status: "completed" as const },
+      {
+        id: "1",
+        pourNumber: 2,
+        date: "2026-08-05",
+        mixType: "C35",
+        volumeM3: 10,
+        status: "scheduled" as const,
+      },
+      {
+        id: "2",
+        pourNumber: 1,
+        date: "2026-07-30",
+        mixType: "C35",
+        volumeM3: 8,
+        status: "scheduled" as const,
+      },
+      {
+        id: "3",
+        pourNumber: 3,
+        date: "2026-07-20",
+        mixType: "C35",
+        volumeM3: 12,
+        status: "completed" as const,
+      },
     ];
     expect(getNextScheduledPour(pours)?.id).toBe("2");
   });
 
   it("returns null when there are no scheduled pours", () => {
     const pours = [
-      { id: "1", pourNumber: 1, date: "2026-07-20", mixType: "C35", volumeM3: 8, status: "completed" as const },
+      {
+        id: "1",
+        pourNumber: 1,
+        date: "2026-07-20",
+        mixType: "C35",
+        volumeM3: 8,
+        status: "completed" as const,
+      },
     ];
     expect(getNextScheduledPour(pours)).toBeNull();
   });
@@ -777,7 +890,18 @@ Expected: FAIL — module/export not found.
 ```tsx
 // src/opus/components/PersistentJobHeader.tsx
 import React, { useState } from "react";
-import { CloudRain, CloudSun, Snowflake, Wind, Loader, UserCheck, Phone, ChevronDown, ChevronUp, HardHat } from "lucide-react";
+import {
+  CloudRain,
+  CloudSun,
+  Snowflake,
+  Wind,
+  Loader,
+  UserCheck,
+  Phone,
+  ChevronDown,
+  ChevronUp,
+  HardHat,
+} from "lucide-react";
 import { Job, Worker } from "../types/erp";
 
 interface PourLog {
@@ -863,7 +987,9 @@ export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({
                 <CloudSun className="w-5 h-5 text-muted-foreground shrink-0" />
               )}
               <span className="text-sm font-bold text-foreground">{weatherData.temperature}°C</span>
-              <span className="text-xs text-muted-foreground truncate">{weatherData.condition}</span>
+              <span className="text-xs text-muted-foreground truncate">
+                {weatherData.condition}
+              </span>
             </div>
             <span
               className={`text-[11px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${
@@ -986,9 +1112,11 @@ git commit -m "refactor: extract weather and staff widgets into PersistentJobHea
 ### Task 7: Wire up 4-tab structure and icon+label tab bar in `JobDetails.tsx`
 
 **Files:**
+
 - Modify: `src/opus/components/JobDetails.tsx`
 
 **Interfaces:**
+
 - Consumes: `TabsList`, `TabsTrigger` from `@/components/ui/tabs` (already imported, `JobDetails.tsx:33`).
 - Produces: final `<Tabs>` block with 4 triggers: Overview, Media, Feed, History.
 
@@ -1017,7 +1145,7 @@ Add `LayoutGrid` and `MessageSquare` to the `lucide-react` import list at the to
 
 Note: labels use `hidden sm:inline` (icon-only below `sm` breakpoint, icon+label at `sm` and above) to fit 4 tabs on a narrow mobile viewport without wrapping — every trigger still has an accessible label via each icon's implicit context; if this reads as violating the "icon must pair with visible text label" constraint on the smallest viewports, add `aria-label` matching the tab name to each `TabsTrigger` so screen readers always get the label even when visually hidden:
 
-```tsx
+````tsx
 <TabsTrigger value="overview" aria-label="Overview" className="flex items-center gap-1.5">
 ```//apply the same aria-label pattern to the other three triggers.
 
@@ -1029,7 +1157,7 @@ Directly after the `<TabsContent value="media">` block from Task 4 (or in whatev
 <TabsContent value="feed">
   <FeedTab jobId={job.id} />
 </TabsContent>
-```
+````
 
 Add the import:
 

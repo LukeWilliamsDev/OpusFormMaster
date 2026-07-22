@@ -41,7 +41,12 @@ function formatDayHeading(day: string): string {
 function formatReminderTime(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "TBC";
-  return d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+  return d.toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
@@ -117,7 +122,10 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
   return (
     <div className="space-y-4">
       <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-        <label htmlFor="job-note-body" className="text-xs font-bold uppercase tracking-wider text-foreground">
+        <label
+          htmlFor="job-note-body"
+          className="text-xs font-bold uppercase tracking-wider text-foreground"
+        >
           Add a note
         </label>
         <textarea
@@ -150,7 +158,11 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
             disabled={posting || !body.trim()}
             className="ml-auto flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-bold bg-primary text-primary-foreground disabled:opacity-50 cursor-pointer"
           >
-            {posting ? <Loader className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            {posting ? (
+              <Loader className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Send className="w-3.5 h-3.5" />
+            )}
             Post
           </button>
         </div>
@@ -162,9 +174,14 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
             <Bell className="w-4 h-4 text-warning" /> Upcoming reminders
           </div>
           {upcoming.map((n) => (
-            <div key={n.id} className="text-sm text-foreground flex items-center justify-between gap-2">
+            <div
+              key={n.id}
+              className="text-sm text-foreground flex items-center justify-between gap-2"
+            >
               <span className="truncate">{n.body}</span>
-              <span className="text-xs text-muted-foreground shrink-0">{formatReminderTime(n.reminder_at!)}</span>
+              <span className="text-xs text-muted-foreground shrink-0">
+                {formatReminderTime(n.reminder_at!)}
+              </span>
             </div>
           ))}
         </div>

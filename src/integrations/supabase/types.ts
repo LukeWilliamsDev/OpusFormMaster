@@ -100,6 +100,7 @@ export type Database = {
       job_attachments: {
         Row: {
           file_name: string;
+          file_size_bytes: number;
           file_url: string;
           id: string;
           job_id: string;
@@ -109,6 +110,7 @@ export type Database = {
         };
         Insert: {
           file_name: string;
+          file_size_bytes?: number;
           file_url: string;
           id?: string;
           job_id: string;
@@ -118,6 +120,7 @@ export type Database = {
         };
         Update: {
           file_name?: string;
+          file_size_bytes?: number;
           file_url?: string;
           id?: string;
           job_id?: string;
@@ -506,6 +509,22 @@ export type Database = {
     };
     Functions: {
       check_email_registered: { Args: { _email: string }; Returns: boolean };
+      complete_job_document_request: {
+        Args: { p_token: string };
+        Returns: undefined;
+      };
+      get_document_request_details: {
+        Args: { p_request_id: string };
+        Returns: Json;
+      };
+      get_job_document_request_details: {
+        Args: { p_token: string };
+        Returns: Json;
+      };
+      is_valid_job_document_token: {
+        Args: { p_token: string };
+        Returns: boolean;
+      };
       log_anonymous_audit: {
         Args: {
           p_action: string;
@@ -516,13 +535,28 @@ export type Database = {
         };
         Returns: undefined;
       };
+      submit_job_attachment: {
+        Args: {
+          p_file_name: string;
+          p_file_size_bytes?: number;
+          p_file_url: string;
+          p_token: string;
+        };
+        Returns: undefined;
+      };
       submit_worker_documents: {
         Args: { p_new_tickets: Json; p_request_id: string };
         Returns: undefined;
       };
     };
     Enums: {
-      app_role: "admin" | "dispatcher" | "operative";
+      app_role:
+        | "admin"
+        | "director"
+        | "logistics_coordinator"
+        | "logistics_assistant"
+        | "site_foreman"
+        | "labourer";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -644,7 +678,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "dispatcher", "operative"],
+      app_role: [
+        "admin",
+        "director",
+        "logistics_coordinator",
+        "logistics_assistant",
+        "site_foreman",
+        "labourer",
+      ],
     },
   },
 } as const;

@@ -32,14 +32,14 @@ const logAssignmentAudit = (
       p_user_email,
       p_action: action,
       p_target_type: "jobs",
-      p_target_id: job?.id,
+      p_target_id: job?.id ?? "",
       p_details: details,
     });
     supabase.rpc("log_anonymous_audit", {
       p_user_email,
       p_action: action,
       p_target_type: "staff",
-      p_target_id: worker?.id,
+      p_target_id: worker?.id ?? "",
       p_details: details,
     });
   });
@@ -80,7 +80,12 @@ export const useShiftActions = (
       }
 
       setShifts((prev) => [...prev, createShift(workerId, jobId, date)]);
-      logAssignmentAudit("ASSIGN_STAFF", worker, jobs.find((j) => j.id === jobId), date);
+      logAssignmentAudit(
+        "ASSIGN_STAFF",
+        worker,
+        jobs.find((j) => j.id === jobId),
+        date,
+      );
       return { status: "ok" };
     },
     [workers, jobs, shifts, setShifts],

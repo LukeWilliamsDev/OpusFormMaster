@@ -84,10 +84,7 @@ const readAsDataUrl = (file: File): Promise<string> =>
 
 /* ─── Circular Progress Ring ────────────────────────────────────── */
 
-const ProgressRing: React.FC<{ progress: number; size?: number }> = ({
-  progress,
-  size = 64,
-}) => {
+const ProgressRing: React.FC<{ progress: number; size?: number }> = ({ progress, size = 64 }) => {
   const strokeWidth = 4;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -270,7 +267,10 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
               </span>
             </div>
             {slot.displayFilename && (
-              <p className="text-[10px] font-mono text-muted-foreground truncate" title={slot.displayFilename}>
+              <p
+                className="text-[10px] font-mono text-muted-foreground truncate"
+                title={slot.displayFilename}
+              >
                 {slot.displayFilename}
               </p>
             )}
@@ -350,7 +350,8 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
 
 export const SubmitCredentialsPage: React.FC = () => {
   const { theme } = usePortal();
-  const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
+  const logoSrc =
+    theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
@@ -392,9 +393,11 @@ export const SubmitCredentialsPage: React.FC = () => {
       let reqData: any = null;
 
       if (!rpcError && rpcData) {
-        // RPC succeeded — use its result
+        // RPC succeeded — use its result. get_document_request_details returns
+        // jsonb, so the generated type is the generic Json union; the actual
+        // shape includes worker_name from its staff join.
         reqData = rpcData;
-        setStaffName(rpcData.worker_name || "Staff Member");
+        setStaffName((rpcData as { worker_name?: string }).worker_name || "Staff Member");
       } else {
         // Fallback: direct table query (worker name may be null due to RLS)
         const { data: fallback, error: fallbackError } = await supabase
@@ -534,10 +537,10 @@ export const SubmitCredentialsPage: React.FC = () => {
       // Upload each file one by one
       for (let i = 0; i < slots.length; i++) {
         const slot = slots[i];
-        
+
         // If it was already uploaded, we can skip it, but since we defer, upload now:
         updateSlot(i, { uploading: true, progress: 10 });
-        
+
         const fileExt = slot.file!.name.split(".").pop() || "pdf";
         const slug = certSlug(slot.cert);
         const initials = getInitials(staffName) || "XX";
@@ -698,10 +701,7 @@ export const SubmitCredentialsPage: React.FC = () => {
         <Stepper steps={stepLabels} currentStep={currentStep} />
 
         {/* ─── Step Content ──────────────────────────────────────── */}
-        <div
-          key={currentStep}
-          className="animate-[fadeSlideUp_0.3s_ease-out]"
-        >
+        <div key={currentStep} className="animate-[fadeSlideUp_0.3s_ease-out]">
           {/* ─── PER-CERT STEP ─────────────────────────────────── */}
           {!isReviewStep && activeSlot && (
             <div className="bg-card border border-border rounded-xl p-6 space-y-5">

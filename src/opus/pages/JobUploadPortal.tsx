@@ -10,7 +10,8 @@ const MAX_TOTAL_BYTES = 100 * 1024 * 1024;
 
 export const JobUploadPortalPage: React.FC = () => {
   const { theme } = usePortal();
-  const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
+  const logoSrc =
+    theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const { token } = useParams<{ token: string }>();
   const [loading, setLoading] = useState(true);
   const [jobData, setJobData] = useState<any>(null);
@@ -43,9 +44,15 @@ export const JobUploadPortalPage: React.FC = () => {
 
       setRequestData(data);
       // data.job is the raw jobs row (to_jsonb in the RPC) — snake_case, not
-      // the camelCase Job type used everywhere else in the app.
-      setJobData({ jobRef: data.job.job_ref, siteName: data.job.site_name });
-      setExistingTotalBytes(data.existing_total_bytes || 0);
+      // the camelCase Job type used everywhere else in the app. RPC returns
+      // jsonb, so the generated type is the generic Json union; the actual
+      // shape here comes from get_job_document_request_details's jsonb_build_object.
+      const details = data as {
+        job: { job_ref: string; site_name: string };
+        existing_total_bytes: number;
+      };
+      setJobData({ jobRef: details.job.job_ref, siteName: details.job.site_name });
+      setExistingTotalBytes(details.existing_total_bytes || 0);
     } catch (err: any) {
       console.error(err);
       setErrorMsg(err.message || "Access Denied: Invalid or expired upload link.");
@@ -76,8 +83,9 @@ export const JobUploadPortalPage: React.FC = () => {
     const queuedTotal = files.reduce((sum, f) => sum + f.size, 0);
     const incomingTotal = candidates.reduce((sum, f) => sum + f.size, 0);
     if (existingTotalBytes + queuedTotal + incomingTotal > MAX_TOTAL_BYTES) {
-      setErrorMsg((prev) =>
-        (prev ? prev + " " : "") + "This job has reached its 100MB total attachment limit.",
+      setErrorMsg(
+        (prev) =>
+          (prev ? prev + " " : "") + "This job has reached its 100MB total attachment limit.",
       );
       return;
     }
@@ -132,7 +140,7 @@ export const JobUploadPortalPage: React.FC = () => {
 
         // Log the attachment via a token-scoped RPC (job_id/tenant_id derived server-side)
         const { error: insertError } = await supabase.rpc("submit_job_attachment", {
-          p_token: token,
+          p_token: token!,
           p_file_name: file.name,
           p_file_url: publicUrl,
           p_file_size_bytes: uploadFile.size,
@@ -142,7 +150,7 @@ export const JobUploadPortalPage: React.FC = () => {
       }
 
       // Mark document request as completed
-      await supabase.rpc("complete_job_document_request", { p_token: token });
+      await supabase.rpc("complete_job_document_request", { p_token: token! });
 
       setUploadSuccess(true);
     } catch (err: any) {
@@ -175,7 +183,9 @@ export const JobUploadPortalPage: React.FC = () => {
           <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 border border-primary/20 text-primary">
             <AlertCircle className="w-6 h-6" />
           </div>
-          <h2 className="text-lg font-bold text-foreground uppercase tracking-wider">Access Denied</h2>
+          <h2 className="text-lg font-bold text-foreground uppercase tracking-wider">
+            Access Denied
+          </h2>
           <p className="text-sm text-muted-foreground">{errorMsg}</p>
         </div>
       </div>
@@ -191,7 +201,9 @@ export const JobUploadPortalPage: React.FC = () => {
           <div className="inline-flex px-3 py-1 bg-secondary border border-border rounded-full text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-mono">
             {jobData.jobRef.replace("-X", "")}
           </div>
-          <h1 className="text-2xl font-extrabold text-foreground tracking-tight">Job Document Portal</h1>
+          <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
+            Job Document Portal
+          </h1>
           <p className="text-sm text-muted-foreground">
             Uploading documents for <strong className="text-foreground">{jobData.siteName}</strong>
           </p>
@@ -240,8 +252,12 @@ export const JobUploadPortalPage: React.FC = () => {
                     Drag and drop files here, or{" "}
                     <span className="text-primary hover:underline">browse</span>
                   </p>
-                  <p className="text-xs text-muted-foreground">Supports PDF, DOCX, JPEG, PNG, Excel</p>
-                  <p className="text-[10px] text-muted-foreground">10MB per file, 100MB total per job</p>
+                  <p className="text-xs text-muted-foreground">
+                    Supports PDF, DOCX, JPEG, PNG, Excel
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    10MB per file, 100MB total per job
+                  </p>
                 </div>
               </label>
             </div>
@@ -258,7 +274,9 @@ export const JobUploadPortalPage: React.FC = () => {
                       key={idx}
                       className="flex justify-between items-center bg-background border border-border rounded-lg px-3 py-2 text-xs"
                     >
-                      <span className="truncate max-w-[80%] text-foreground font-mono">{file.name}</span>
+                      <span className="truncate max-w-[80%] text-foreground font-mono">
+                        {file.name}
+                      </span>
                       <button
                         type="button"
                         onClick={() => handleRemoveFile(idx)}

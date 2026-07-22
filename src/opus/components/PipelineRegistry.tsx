@@ -237,7 +237,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         aVal = (a.clientInfo?.entity || "").toLowerCase();
         bVal = (b.clientInfo?.entity || "").toLowerCase();
         return sortDirection === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      case "date":
+      case "date": {
         const parseDate = (dStr: string) => {
           if (!dStr || dStr.toLowerCase() === "pending") return 0;
           const parsed = Date.parse(dStr);
@@ -246,6 +246,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         aVal = parseDate(a.date);
         bVal = parseDate(b.date);
         return sortDirection === "asc" ? aVal - bVal : bVal - aVal;
+      }
       case "value":
         aVal = a.totals?.grossTotal || 0;
         bVal = b.totals?.grossTotal || 0;
@@ -300,184 +301,186 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
         {/* Desktop Table (lg and up) */}
         {sortedQuotes.length > 0 && (
-        <div className="hidden lg:block space-y-4">
-          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl">
-            {/* Table Header */}
-            <div className="grid grid-cols-[110px_1.6fr_1fr_120px_110px] gap-4 px-5 py-3 border-b border-border bg-background">
-              <button
-                onClick={() => handleSort("ref")}
-                className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-left"
-              >
-                Ref
-                {sortField === "ref" &&
-                  (sortDirection === "asc" ? (
-                    <ChevronUp className="w-3 h-3" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3" />
-                  ))}
-              </button>
-              <button
-                onClick={() => handleSort("client")}
-                className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-left"
-              >
-                Client / Site
-                {sortField === "client" &&
-                  (sortDirection === "asc" ? (
-                    <ChevronUp className="w-3 h-3" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3" />
-                  ))}
-              </button>
-              <button
-                onClick={() => handleSort("date")}
-                className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-left"
-              >
-                Date
-                {sortField === "date" &&
-                  (sortDirection === "asc" ? (
-                    <ChevronUp className="w-3 h-3" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3" />
-                  ))}
-              </button>
-              <button
-                onClick={() => handleSort("value")}
-                className="flex items-center justify-end gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-right w-full"
-              >
-                Value
-                {sortField === "value" &&
-                  (sortDirection === "asc" ? (
-                    <ChevronUp className="w-3 h-3" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3" />
-                  ))}
-              </button>
-              <button
-                onClick={() => handleSort("status")}
-                className="flex items-center justify-end gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-right w-full"
-              >
-                Status
-                {sortField === "status" &&
-                  (sortDirection === "asc" ? (
-                    <ChevronUp className="w-3 h-3" />
-                  ) : (
-                    <ChevronDown className="w-3 h-3" />
-                  ))}
-              </button>
-            </div>
+          <div className="hidden lg:block space-y-4">
+            <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl">
+              {/* Table Header */}
+              <div className="grid grid-cols-[110px_1.6fr_1fr_120px_110px] gap-4 px-5 py-3 border-b border-border bg-background">
+                <button
+                  onClick={() => handleSort("ref")}
+                  className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-left"
+                >
+                  Ref
+                  {sortField === "ref" &&
+                    (sortDirection === "asc" ? (
+                      <ChevronUp className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    ))}
+                </button>
+                <button
+                  onClick={() => handleSort("client")}
+                  className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-left"
+                >
+                  Client / Site
+                  {sortField === "client" &&
+                    (sortDirection === "asc" ? (
+                      <ChevronUp className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    ))}
+                </button>
+                <button
+                  onClick={() => handleSort("date")}
+                  className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-left"
+                >
+                  Date
+                  {sortField === "date" &&
+                    (sortDirection === "asc" ? (
+                      <ChevronUp className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    ))}
+                </button>
+                <button
+                  onClick={() => handleSort("value")}
+                  className="flex items-center justify-end gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-right w-full"
+                >
+                  Value
+                  {sortField === "value" &&
+                    (sortDirection === "asc" ? (
+                      <ChevronUp className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    ))}
+                </button>
+                <button
+                  onClick={() => handleSort("status")}
+                  className="flex items-center justify-end gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-right w-full"
+                >
+                  Status
+                  {sortField === "status" &&
+                    (sortDirection === "asc" ? (
+                      <ChevronUp className="w-3 h-3" />
+                    ) : (
+                      <ChevronDown className="w-3 h-3" />
+                    ))}
+                </button>
+              </div>
 
-            <div className="divide-y divide-border">
-              <AnimatePresence mode="popLayout">
-                {sortedQuotes.map((quote) => (
-                  <motion.div
-                    key={quote.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    layout
-                    className="grid grid-cols-[110px_1.6fr_1fr_120px_110px] gap-4 px-5 py-4 items-center hover:bg-secondary/50 transition-colors duration-150 cursor-pointer"
-                    onClick={() => setSelectedQuoteForControl(quote)}
-                  >
-                    {/* Quote Ref */}
-                    <div className="font-mono text-[13px] font-semibold text-primary">
-                      {quote.reference || `QTE-${quote.id.substring(0, 4).toUpperCase()}`}
-                    </div>
-
-                    {/* Site / Contractor */}
-                    <div className="space-y-0.5">
-                      <div className="text-sm font-semibold text-foreground">
-                        {quote.clientInfo?.entity || "No Contractor Data"}
+              <div className="divide-y divide-border">
+                <AnimatePresence mode="popLayout">
+                  {sortedQuotes.map((quote) => (
+                    <motion.div
+                      key={quote.id}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      layout
+                      className="grid grid-cols-[110px_1.6fr_1fr_120px_110px] gap-4 px-5 py-4 items-center hover:bg-secondary/50 transition-colors duration-150 cursor-pointer"
+                      onClick={() => setSelectedQuoteForControl(quote)}
+                    >
+                      {/* Quote Ref */}
+                      <div className="font-mono text-[13px] font-semibold text-primary">
+                        {quote.reference || `QTE-${quote.id.substring(0, 4).toUpperCase()}`}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {quote.clientInfo?.site || "No site info"}
+
+                      {/* Site / Contractor */}
+                      <div className="space-y-0.5">
+                        <div className="text-sm font-semibold text-foreground">
+                          {quote.clientInfo?.entity || "No Contractor Data"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {quote.clientInfo?.site || "No site info"}
+                        </div>
                       </div>
-                    </div>
 
-                    {/* Date */}
-                    <div className="text-xs text-muted-foreground font-medium">
-                      {quote.date || "Pending"}
-                    </div>
+                      {/* Date */}
+                      <div className="text-xs text-muted-foreground font-medium">
+                        {quote.date || "Pending"}
+                      </div>
 
-                    {/* Estimated Value */}
-                    <div className="text-right">
-                      <span className="text-[14px] font-mono font-bold text-foreground tracking-wide">
-                        £
-                        {(quote.totals?.grossTotal || 0).toLocaleString(undefined, {
-                          minimumFractionDigits: 0,
-                          maximumFractionDigits: 0,
-                        })}
-                      </span>
-                    </div>
+                      {/* Estimated Value */}
+                      <div className="text-right">
+                        <span className="text-[14px] font-mono font-bold text-foreground tracking-wide">
+                          £
+                          {(quote.totals?.grossTotal || 0).toLocaleString(undefined, {
+                            minimumFractionDigits: 0,
+                            maximumFractionDigits: 0,
+                          })}
+                        </span>
+                      </div>
 
-                    {/* Status */}
-                    <div className="text-right">
-                      <span
-                        className={`px-2 py-1 rounded text-[11px] font-bold ${
-                          quote.isSent
-                            ? "bg-primary/10 border border-primary/20 text-primary"
-                            : "bg-warning/10 border border-warning/20 text-warning"
-                        }`}
-                      >
-                        {quote.isSent ? "Sent" : "Draft"}
-                      </span>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+                      {/* Status */}
+                      <div className="text-right">
+                        <span
+                          className={`px-2 py-1 rounded text-[11px] font-bold ${
+                            quote.isSent
+                              ? "bg-primary/10 border border-primary/20 text-primary"
+                              : "bg-warning/10 border border-warning/20 text-warning"
+                          }`}
+                        >
+                          {quote.isSent ? "Sent" : "Draft"}
+                        </span>
+                      </div>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
             </div>
           </div>
-        </div>
         )}
 
         {/* Mobile / Tablet Card List (below lg) */}
         {sortedQuotes.length > 0 && (
-        <div className="lg:hidden space-y-3">
-          {sortedQuotes.map((quote) => (
-            <div
-              key={quote.id}
-              className="bg-card border border-border rounded-xl p-4 space-y-3 cursor-pointer active:bg-secondary/50 transition-colors"
-              onClick={() => setSelectedQuoteForControl(quote)}
-            >
-              {/* Ref + Status */}
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[13px] font-semibold text-primary">
-                  {quote.reference || `QTE-${quote.id.substring(0, 4).toUpperCase()}`}
-                </span>
-                <span
-                  className={`px-2 py-1 rounded text-[11px] font-bold ${
-                    quote.isSent
-                      ? "bg-primary/10 border border-primary/20 text-primary"
-                      : "bg-warning/10 border border-warning/20 text-warning"
-                  }`}
-                >
-                  {quote.isSent ? "Sent" : "Draft"}
-                </span>
-              </div>
-
-              {/* Contractor / Site */}
-              <div className="space-y-0.5">
-                <div className="text-sm font-semibold text-foreground">
-                  {quote.clientInfo?.entity || "No Contractor Data"}
+          <div className="lg:hidden space-y-3">
+            {sortedQuotes.map((quote) => (
+              <div
+                key={quote.id}
+                className="bg-card border border-border rounded-xl p-4 space-y-3 cursor-pointer active:bg-secondary/50 transition-colors"
+                onClick={() => setSelectedQuoteForControl(quote)}
+              >
+                {/* Ref + Status */}
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[13px] font-semibold text-primary">
+                    {quote.reference || `QTE-${quote.id.substring(0, 4).toUpperCase()}`}
+                  </span>
+                  <span
+                    className={`px-2 py-1 rounded text-[11px] font-bold ${
+                      quote.isSent
+                        ? "bg-primary/10 border border-primary/20 text-primary"
+                        : "bg-warning/10 border border-warning/20 text-warning"
+                    }`}
+                  >
+                    {quote.isSent ? "Sent" : "Draft"}
+                  </span>
                 </div>
-                <div className="text-xs text-muted-foreground">
-                  {quote.clientInfo?.site || "No site info"}
+
+                {/* Contractor / Site */}
+                <div className="space-y-0.5">
+                  <div className="text-sm font-semibold text-foreground">
+                    {quote.clientInfo?.entity || "No Contractor Data"}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {quote.clientInfo?.site || "No site info"}
+                  </div>
+                </div>
+
+                {/* Date + Value */}
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground font-medium">
+                    {quote.date || "Pending"}
+                  </span>
+                  <span className="text-[14px] font-mono font-bold text-foreground tracking-wide">
+                    £
+                    {(quote.totals?.grossTotal || 0).toLocaleString(undefined, {
+                      minimumFractionDigits: 0,
+                      maximumFractionDigits: 0,
+                    })}
+                  </span>
                 </div>
               </div>
-
-              {/* Date + Value */}
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground font-medium">{quote.date || "Pending"}</span>
-                <span className="text-[14px] font-mono font-bold text-foreground tracking-wide">
-                  £
-                  {(quote.totals?.grossTotal || 0).toLocaleString(undefined, {
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
-                  })}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
         )}
       </main>
 
@@ -493,7 +496,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         message={
           <>
             Are you sure you want to delete the quote{" "}
-            <span className="font-bold text-foreground">{selectedQuoteToDelete?.reference}</span> for{" "}
+            <span className="font-bold text-foreground">{selectedQuoteToDelete?.reference}</span>{" "}
+            for{" "}
             <span className="font-bold text-foreground">
               {selectedQuoteToDelete?.clientInfo?.entity}
             </span>
@@ -657,7 +661,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                               </span>
                               <div className="flex items-center justify-between gap-2 mt-1.5 sm:hidden text-[11px]">
                                 <span className="text-muted-foreground font-mono">
-                                  {item.quantity} <span className="text-muted-foreground italic">{item.unit}</span>
+                                  {item.quantity}{" "}
+                                  <span className="text-muted-foreground italic">{item.unit}</span>
                                 </span>
                                 <span className="font-mono font-semibold text-foreground">
                                   {rateDisplay}
@@ -666,7 +671,9 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                               <span className="hidden sm:block text-right font-mono font-semibold text-muted-foreground">
                                 {item.quantity}
                               </span>
-                              <span className="hidden sm:block text-muted-foreground italic">{item.unit}</span>
+                              <span className="hidden sm:block text-muted-foreground italic">
+                                {item.unit}
+                              </span>
                               <span className="hidden sm:block text-right font-mono font-semibold text-foreground">
                                 {rateDisplay}
                               </span>

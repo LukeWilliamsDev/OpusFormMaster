@@ -2,18 +2,11 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   ChevronLeft,
-  CloudRain,
-  CloudSun,
-  Snowflake,
-  Wind,
   Check,
-  UserCheck,
-  Loader,
   AlertCircle,
   MapPin,
   Users,
   Paperclip,
-  Phone,
   History,
   PencilLine,
   Trash2,
@@ -33,6 +26,7 @@ import { getSignedJobAttachmentUrl } from "../lib/attachmentUrl";
 import { HistoryTab, JOB_REVERTIBLE_FIELDS, JOB_FIELD_LABELS } from "./HistoryTab";
 import { MediaTab } from "./MediaTab";
 import { JobOverviewTab } from "./JobOverviewTab";
+import { PersistentJobHeader } from "./PersistentJobHeader";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 100 * 1024 * 1024;
@@ -853,79 +847,37 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         }
       />
 
-      {/* Main strip: Status, Progress, and Live Weather as one unified card */}
-      <div className="bg-card border border-border rounded-xl grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border">
-        {/* Live Weather */}
-        <div className="p-4 flex flex-col justify-center">
-          {loadingWeather ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
-              <Loader className="w-4 h-4 animate-spin text-primary" />
-              <span>Fetching Weather...</span>
+      {/* Pour Progress */}
+      <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-center">
+        <div className="flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="text-lg font-bold text-foreground flex items-center gap-2">
+              <span>{pourPercent}%</span>
+              <span
+                className={`text-[12px] px-2 py-0.5 rounded-full font-bold uppercase ${
+                  pourPercent >= 100
+                    ? "bg-success/15 text-success border border-success/20"
+                    : "bg-primary/15 text-primary border border-primary/20"
+                }`}
+              >
+                {currentPours} of {contractMaxPours}
+              </span>
             </div>
-          ) : weatherData ? (
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <div className="text-lg font-bold text-foreground flex items-center gap-2">
-                  <span>{weatherData.temperature}°C</span>
-                  <span
-                    className={`text-[12px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                      weatherData.isImpactful
-                        ? "bg-destructive/15 text-destructive border border-destructive/20"
-                        : "bg-success/15 text-success border border-success/20"
-                    }`}
-                  >
-                    {weatherData.riskLevel} Risk
-                  </span>
-                </div>
-                <p className="text-xs text-muted-foreground">{weatherData.condition}</p>
-              </div>
-              {weatherData.condition === "Rain" ? (
-                <CloudRain className="w-8 h-8 text-muted-foreground" />
-              ) : weatherData.condition === "Frost" ? (
-                <Snowflake className="w-8 h-8 text-muted-foreground" />
-              ) : weatherData.condition === "Wind" ? (
-                <Wind className="w-8 h-8 text-muted-foreground" />
-              ) : (
-                <CloudSun className="w-8 h-8 text-muted-foreground" />
-              )}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">Weather details unavailable.</p>
-          )}
+            <p className="text-xs text-muted-foreground">
+              {contractMaxPours - currentPours > 0
+                ? `${contractMaxPours - currentPours} pours remaining`
+                : "Contract fully poured"}
+            </p>
+          </div>
+          <Layers className="w-8 h-8 text-muted-foreground shrink-0" />
         </div>
-
-        {/* Pour Progress */}
-        <div className="p-4 flex flex-col justify-center">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <div className="text-lg font-bold text-foreground flex items-center gap-2">
-                <span>{pourPercent}%</span>
-                <span
-                  className={`text-[12px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                    pourPercent >= 100
-                      ? "bg-success/15 text-success border border-success/20"
-                      : "bg-primary/15 text-primary border border-primary/20"
-                  }`}
-                >
-                  {currentPours} of {contractMaxPours}
-                </span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {contractMaxPours - currentPours > 0
-                  ? `${contractMaxPours - currentPours} pours remaining`
-                  : "Contract fully poured"}
-              </p>
-            </div>
-            <Layers className="w-8 h-8 text-muted-foreground shrink-0" />
-          </div>
-          <div className="h-2 bg-secondary rounded-full overflow-hidden mt-3">
-            <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                pourPercent >= 100 ? "bg-success" : "bg-primary"
-              }`}
-              style={{ width: `${Math.min(100, pourPercent)}%` }}
-            />
-          </div>
+        <div className="h-2 bg-secondary rounded-full overflow-hidden mt-3">
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${
+              pourPercent >= 100 ? "bg-success" : "bg-primary"
+            }`}
+            style={{ width: `${Math.min(100, pourPercent)}%` }}
+          />
         </div>
       </div>
 
@@ -950,223 +902,173 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         }
       />
 
-      {/* Scheduled Pours + Staff: dated pour plan and on-site staff, side by side on wide screens, always visible above the tabs regardless of which one is active */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-card border border-border rounded-xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-bold text-foreground">Scheduled Pours</h2>
+      {/* Scheduled Pours: dated pour plan, always visible above the tabs regardless of which one is active */}
+      <div className="bg-card border border-border rounded-xl p-4">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-base font-bold text-foreground">Scheduled Pours</h2>
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setIsAddingPour(!isAddingPour)}
-                className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border bg-card border-border hover:bg-secondary text-foreground"
-              >
-                {isAddingPour ? "Cancel" : "+ Schedule Pour"}
-              </button>
-            </div>
-          </div>
-
-          {isAddingPour && (
-            <form
-              onSubmit={handleAddPourSubmit}
-              className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4"
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsAddingPour(!isAddingPour)}
+              className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border bg-card border-border hover:bg-secondary text-foreground"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                    Expected Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={newPourDate}
-                    onChange={(e) => setNewPourDate(e.target.value)}
-                    className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
-                  />
-                </div>
-                <div>
-                  <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                    Mix Type
-                  </label>
-                  <select
-                    value={newPourMix}
-                    onChange={(e) => setNewPourMix(e.target.value)}
-                    className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none cursor-pointer"
-                  >
-                    <option value="C28/35">C28/35</option>
-                    <option value="C32/40">C32/40</option>
-                    <option value="C35/45">C35/45</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                    Volume (m³)
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="1"
-                    value={newPourVolume}
-                    onChange={(e) => setNewPourVolume(e.target.value)}
-                    className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Pour Notes
-                </label>
-                <input
-                  type="text"
-                  placeholder="Notes..."
-                  value={newPourNotes}
-                  onChange={(e) => setNewPourNotes(e.target.value)}
-                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none"
-                />
-              </div>
-
-              <div className="flex justify-end">
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg text-xs cursor-pointer"
-                >
-                  Schedule Pour
-                </button>
-              </div>
-            </form>
-          )}
-
-          <div className="space-y-2.5">
-            {pourLogs.map((log) => {
-              const isCompleted = log.status === "completed";
-              return (
-                <div
-                  key={log.id}
-                  className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-xl transition-all ${
-                    isCompleted
-                      ? "bg-card border-border hover:bg-secondary"
-                      : "bg-warning/5 border-warning/20 hover:bg-warning/10"
-                  }`}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
-                    <button
-                      type="button"
-                      aria-label={
-                        isCompleted
-                          ? `Mark pour ${log.pourNumber} as scheduled`
-                          : `Mark pour ${log.pourNumber} complete`
-                      }
-                      onClick={() => setPourToggleTarget(log)}
-                      className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
-                        isCompleted
-                          ? "bg-success/15 border-success/30 text-success hover:bg-success/25"
-                          : "border-border text-transparent hover:border-primary hover:bg-primary/10"
-                      }`}
-                    >
-                      <Check className="w-3.5 h-3.5" />
-                    </button>
-                    <div className="space-y-1 min-w-0">
-                      <div className="text-sm font-bold text-foreground flex items-center flex-wrap gap-x-2 gap-y-1">
-                        Pour #{log.pourNumber}
-                        {!isCompleted && (
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
-                            Scheduled
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {log.mixType} · {log.volumeM3}m³
-                      </div>
-                      {log.notes && (
-                        <div className="text-[13px] text-muted-foreground/80 italic truncate max-w-[280px]">
-                          {log.notes}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-                    {isCompleted && (
-                      <div className="text-xs text-muted-foreground font-semibold">
-                        {formatPourDate(log.date)}
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      aria-label={`Edit notes for pour ${log.pourNumber}`}
-                      onClick={() => {
-                        setEditNoteText(log.notes || "");
-                        setPourNoteTarget(log);
-                      }}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
-                    >
-                      <PencilLine className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      aria-label={`Remove pour ${log.pourNumber}`}
-                      onClick={() => setPourToRemove(log)}
-                      className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-
-            {pourLogs.length === 0 && (
-              <div className="py-8 text-center text-xs text-muted-foreground uppercase tracking-wider">
-                No pours logged yet
-              </div>
-            )}
+              {isAddingPour ? "Cancel" : "+ Schedule Pour"}
+            </button>
           </div>
         </div>
 
-        {/* Staff Scheduled On Site — its own card, side by side with Scheduled
-          Pours on wide screens, and never scrolls: the list just extends the
-          page instead of clipping to a fixed height. */}
-        <div className="bg-card border border-border rounded-xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <UserCheck className="w-4 h-4 text-primary" />
-              <h2 className="text-base font-bold text-foreground">Staff Scheduled On Site</h2>
+        {isAddingPour && (
+          <form
+            onSubmit={handleAddPourSubmit}
+            className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4"
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                  Expected Date
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={newPourDate}
+                  onChange={(e) => setNewPourDate(e.target.value)}
+                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
+                />
+              </div>
+              <div>
+                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                  Mix Type
+                </label>
+                <select
+                  value={newPourMix}
+                  onChange={(e) => setNewPourMix(e.target.value)}
+                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none cursor-pointer"
+                >
+                  <option value="C28/35">C28/35</option>
+                  <option value="C32/40">C32/40</option>
+                  <option value="C35/45">C35/45</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                  Volume (m³)
+                </label>
+                <input
+                  type="number"
+                  required
+                  min="1"
+                  value={newPourVolume}
+                  onChange={(e) => setNewPourVolume(e.target.value)}
+                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
+                />
+              </div>
             </div>
-          </div>
 
-          {Object.keys(groupedStaff).length > 0 ? (
-            <div className="space-y-4">
-              {Object.keys(groupedStaff).map((roleName) => (
-                <div key={roleName} className="space-y-1.5">
-                  <div className="text-[12px] text-primary font-bold uppercase tracking-wider border-b border-border pb-1">
-                    {roleName} ({groupedStaff[roleName].length})
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    {groupedStaff[roleName].map((w) => (
-                      <div
-                        key={w.id}
-                        className="bg-background border border-border rounded-lg p-2.5 flex items-center justify-between gap-2"
-                      >
-                        <div className="min-w-0">
-                          <div className="text-xs font-bold text-foreground truncate">{w.name}</div>
-                          {w.phone && (
-                            <a
-                              href={`tel:${w.phone}`}
-                              className="text-[11px] text-primary hover:underline font-mono flex items-center gap-1 mt-0.5"
-                            >
-                              <Phone className="w-2.5 h-2.5" /> {w.phone}
-                            </a>
-                          )}
-                        </div>
+            <div>
+              <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                Pour Notes
+              </label>
+              <input
+                type="text"
+                placeholder="Notes..."
+                value={newPourNotes}
+                onChange={(e) => setNewPourNotes(e.target.value)}
+                className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none"
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg text-xs cursor-pointer"
+              >
+                Schedule Pour
+              </button>
+            </div>
+          </form>
+        )}
+
+        <div className="space-y-2.5">
+          {pourLogs.map((log) => {
+            const isCompleted = log.status === "completed";
+            return (
+              <div
+                key={log.id}
+                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-xl transition-all ${
+                  isCompleted
+                    ? "bg-card border-border hover:bg-secondary"
+                    : "bg-warning/5 border-warning/20 hover:bg-warning/10"
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <button
+                    type="button"
+                    aria-label={
+                      isCompleted
+                        ? `Mark pour ${log.pourNumber} as scheduled`
+                        : `Mark pour ${log.pourNumber} complete`
+                    }
+                    onClick={() => setPourToggleTarget(log)}
+                    className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                      isCompleted
+                        ? "bg-success/15 border-success/30 text-success hover:bg-success/25"
+                        : "border-border text-transparent hover:border-primary hover:bg-primary/10"
+                    }`}
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <div className="space-y-1 min-w-0">
+                    <div className="text-sm font-bold text-foreground flex items-center flex-wrap gap-x-2 gap-y-1">
+                      Pour #{log.pourNumber}
+                      {!isCompleted && (
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
+                          Scheduled
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {log.mixType} · {log.volumeM3}m³
+                    </div>
+                    {log.notes && (
+                      <div className="text-[13px] text-muted-foreground/80 italic truncate max-w-[280px]">
+                        {log.notes}
                       </div>
-                    ))}
+                    )}
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-xs text-muted-foreground py-8 text-center uppercase tracking-wider">
-              No staff members scheduled to this job site.
+                <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+                  {isCompleted && (
+                    <div className="text-xs text-muted-foreground font-semibold">
+                      {formatPourDate(log.date)}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    aria-label={`Edit notes for pour ${log.pourNumber}`}
+                    onClick={() => {
+                      setEditNoteText(log.notes || "");
+                      setPourNoteTarget(log);
+                    }}
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                  >
+                    <PencilLine className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={`Remove pour ${log.pourNumber}`}
+                    onClick={() => setPourToRemove(log)}
+                    className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+
+          {pourLogs.length === 0 && (
+            <div className="py-8 text-center text-xs text-muted-foreground uppercase tracking-wider">
+              No pours logged yet
             </div>
           )}
         </div>
@@ -1247,6 +1149,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             className="w-full bg-background border border-border text-sm text-foreground rounded-lg px-3 py-2 outline-none resize-none"
           />
         }
+      />
+
+      <PersistentJobHeader
+        job={job}
+        pourLogs={pourLogs}
+        weatherData={weatherData}
+        loadingWeather={loadingWeather}
+        groupedStaff={groupedStaff}
       />
 
       {/* Secondary sections: Suppliers/Map, Diary+Staff, Attachments */}

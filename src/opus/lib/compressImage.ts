@@ -13,9 +13,7 @@ export async function compressImageFile(file: File): Promise<File> {
     ctx.drawImage(bitmap, 0, 0);
 
     const outType = file.type === "image/png" ? "image/png" : "image/jpeg";
-    const blob: Blob | null = await new Promise((resolve) =>
-      canvas.toBlob(resolve, outType, 0.82),
-    );
+    const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, outType, 0.82));
     if (!blob || blob.size >= file.size) return file;
 
     return new File([blob], file.name, { type: outType });

@@ -42,7 +42,12 @@ const RAIN_CODES = new Set([51, 53, 55, 56, 57, 61, 63, 65, 66, 67, 80, 81, 82, 
 const HEAVY_RAIN_CODES = new Set([65, 67, 82, 95, 96, 99]);
 const WIND_RISK_KMH = 30;
 
-export function classifyDay(weathercode: number, tempMin: number, tempMax: number, windMax: number): WeatherInfo {
+export function classifyDay(
+  weathercode: number,
+  tempMin: number,
+  tempMax: number,
+  windMax: number,
+): WeatherInfo {
   if (tempMin <= 2 || FROST_CODES.has(weathercode)) {
     return {
       postcode: "",
@@ -133,9 +138,10 @@ export function useJobForecast(postcode: string | undefined): {
   loading: boolean;
   forecast: Map<string, WeatherInfo> | null;
 } {
-  const [state, setState] = useState<{ loading: boolean; forecast: Map<string, WeatherInfo> | null }>(
-    { loading: Boolean(postcode), forecast: null },
-  );
+  const [state, setState] = useState<{
+    loading: boolean;
+    forecast: Map<string, WeatherInfo> | null;
+  }>({ loading: Boolean(postcode), forecast: null });
 
   useEffect(() => {
     if (!postcode) {

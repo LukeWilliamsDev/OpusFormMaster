@@ -13,17 +13,18 @@ const COMPANY_INFO = {
   accountNumber: "31840773",
 };
 
-export const buildDefaultTerms = (entity) => [
-  "Assumed total pours up to 1, additional pours shall be charged minimum of £3,500",
-  "Cancelled pours with less than 24hrs notice shall be charged",
-  "Day rate per operative is £240 per day and Supervisor rate is £280 per day",
-  "All the materials, telehandler and pump to be provided by Client",
-  "Rate includes provision of licenced Telehandler/Forklift Operative",
-].map((t) =>
-  t.includes("to be provided by")
-    ? `All the materials, telehandler and pump to be provided by ${entity || "Client"}`
-    : t,
-);
+export const buildDefaultTerms = (entity) =>
+  [
+    "Assumed total pours up to 1, additional pours shall be charged minimum of £3,500",
+    "Cancelled pours with less than 24hrs notice shall be charged",
+    "Day rate per operative is £240 per day and Supervisor rate is £280 per day",
+    "All the materials, telehandler and pump to be provided by Client",
+    "Rate includes provision of licenced Telehandler/Forklift Operative",
+  ].map((t) =>
+    t.includes("to be provided by")
+      ? `All the materials, telehandler and pump to be provided by ${entity || "Client"}`
+      : t,
+  );
 
 const isIncludedRate = (rate) =>
   typeof rate === "string" && ["INCLUDED", "INCL"].includes(rate.toUpperCase());

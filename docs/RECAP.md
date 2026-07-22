@@ -1,6 +1,7 @@
 # docs/RECAP.md
 
 ## 2026-07-21
+
 - Fixed invoice/emailed PDF logo not rendering: root SVGs used `width="100%" height="100%"`, unresolvable intrinsic size for html2canvas rasterization; set explicit pixel dimensions.
 - Updated banking details (Tide, sort code 04-06-05, acct 31840773), removed IBAN row.
 - Invoice footer contrast fix, billing email correction (`billing@opusform.co.uk`).
@@ -8,6 +9,7 @@
 - Flagged unrelated uncommitted mass-deletion of `.claude/skills/*` for user review (not committed).
 
 ## 2026-07-20 (later session)
+
 - Enabled dev server preview (launch.json, port 8080, autoPort fallback to already-running instance).
 - Quote control center: enlarged total figure display, widened PDF live mirror preview panel on desktop.
 - Legal & Privacy nav: replaced direct link to Staff Privacy Notice with policy-selection grid (LegalHub.tsx), route `/portal/legal`.
@@ -19,12 +21,14 @@
 - Job Ledger: default view hides completed jobs; completed jobs auto-archive to new "Archived" tab after 30 days (client-side, `updatedAt`-based, no schema change).
 
 ## 2026-07-20
+
 - Compliance alert row: click-to-navigate to staff profile, removed redundant Update button, Remind stops propagation.
 - Fixed `log_anonymous_audit` missing `tenant_id` insert (not-null violation on every non-whitelisted audit call since multi-tenancy).
 - Traced compliance-reminder email failure through three shadowing `RESEND_API_KEY` sources: `smtp_config` table, Supabase Vault (`vault.secrets`), both overriding the edge function secret; removed both.
 - Relaxed opusformwebsite CLAUDE.md: dropped mandatory implementation-plan/wait-for-approval gate for a one-line intent statement.
 
 ## 2026-07-16
+
 - Fixed `/submit-credentials` routing token links with `/#/` to support HashRouter.
 - Redesigned `/submit-credentials` to be a premium, branded multi-step wizard.
 - Deferred file uploading to final submission step to prevent RLS conflicts.
@@ -32,6 +36,7 @@
 - Optimized landing page footer text to wrap responsively on small screen viewports.
 
 ## 2026-07-12
+
 - Documented competitor accreditations.
 - Relocated codebase to `opus-form-builder/`.
 - Consolidated artifacts to `assets/`.
@@ -59,6 +64,7 @@
 - Fixed state-sync auto-save loop.
 
 ## 2026-07-13
+
 - Moved memory/docs to `docs/`.
 - Removed Lovable and 3D orchestrator dependencies (-138MB).
 - Built generic error reporting.
@@ -77,6 +83,7 @@
 - Hardened storage RLS and edge function security.
 
 ## 2026-07-14
+
 - Restored staff dossier edit fields.
 - Integrated compliance tickets module (CSCS, expiry).
 - Passed all TS/Vitest checks.
@@ -97,6 +104,7 @@
 - Added friendly Event Type column to System Audit Trail table.
 
 ## 2026-07-15
+
 - Scaffolded 5 Claude Code subagents in `.claude/agents/`: lead-developer, database-engineer, ui-ux-engineer, security-auditor, qa-automation.
 - Wired all 16 skills across agents (job_scheduler → database-engineer; finance_validator + resend_mailer → ui-ux-engineer; commit + cloudflare_pages_deployer → qa-automation; core_engineering + data_reporting + end → lead-developer).
 - Added Cowork persona switching table to `AGENTS.md`.
@@ -130,6 +138,7 @@
 - Aligned dossier header action buttons ("Edit" and "Request Docs") to share identical border, padding, and height dimensions.
 
 ## 2026-07-15
+
 - Codified mandatory implementation plan + user approval rule in `.agents/AGENTS.md`.
 - Enforced manual-verification-only rule; removed automated localhost/browser preview triggers from `.agents/AGENTS.md`.
 - Color-coded audit log status badges (green=completed, red=expired, yellow=pending).
@@ -142,6 +151,7 @@
 - Revert modal highlights differing fields amber with current value struck-through and restored value shown alongside.
 
 ## 2026-07-15 13:19
+
 - Removed leftover old layout remnants from QuoteInvoiceBuilder component to fix adjacent JSX elements parse error.
 - Redesigned Dashboard compliance warnings block to use compact table-style rows with coloured left-border severity indicators.
 - Removed snooze warnings button; updated reminder flow to open inline confirmation modal before execution.
@@ -155,21 +165,25 @@
 - Removed redundant Edit/Convert shortcut buttons from Quote Management list (desktop Actions column and mobile card row); row/card click now solely opens the drawer for Edit/Convert/Delete.
 
 ## 2026-07-15 13:30
+
 - Diagnosis of missing host Node.js/npm dependencies blocking local server and GitHub MCP server execution.
 - Migration of GitHub MCP configuration from Docker to local npx runner in global mcp_config.json.
 
 ## 2026-07-15 23:53
+
 - Removal of redundant dummy navigation menu icon from staff roster sub-header.
 - Refactoring of staff roster sub-header actions into search bar inline responsive button (icon-only on mobile, full text on desktop/tablet).
 - Simplification of staff audit log cards into timeline dot and text list with interactive inline expand/collapse details.
 - Integration of edit profile form, compliance tickets, and deployment history views with rounded-xl borders, bold/semibold font weights, and scaled typography.
 
 ## 2026-07-15 23:58
+
 - Applied Supabase migration `20260716090000_drop_assigned_workers.sql` dropping `jobs.assigned_workers` and `shifts.is_removed` columns.
 - Recorded migration `20260716090000` in the `supabase_migrations.schema_migrations` table.
 - Verified schema updates via Supabase MCP tool ensuring legacy columns are dropped.
 
 ## 2026-07-16
+
 - Added week-grid (5-day-column) desktop/tablet layout to the Labor Roster scheduling calendar (`WeekGridStaff`, `WeekGridProject`); mobile keeps the single-day tab view unchanged.
 - Removed the `max-w-3xl` width cap on `CalendarBoard` at `md`+ so it fills the page's full container width on tablet/desktop.
 - Extracted `computeDaySchedule` from `useDaySchedule` and added `useWeekSchedule` to derive all 5 weekdays' schedules at once.
@@ -178,6 +192,7 @@
 - Updated `.agents/AGENTS.md` ui-ux-engineer and qa-automation persona descriptions to reflect the shipped week-grid design and clarify drag-and-drop is not yet implemented.
 
 ## 2026-07-16 (Session Upgrade)
+
 - Created public.job_attachments, public.job_diary, and public.job_document_requests database tables on Supabase.
 - Provisioned job-attachments storage bucket with RLS policies allowing authenticated uploads and anonymous uploads via link.
 - Integrated live weather fetching via OpenWeatherMap using API key 39b85af056be30c05f01ac45aa9249e1.
@@ -195,6 +210,7 @@
 - Overhauled WeekGridStaff layout style classes to use theme CSS variables dynamically.
 
 ## 2026-07-16 (Compliance & Personalisation)
+
 - Created UK GDPR compliance pages (PrivacyNotice, TermsOfService, AcceptableUsePolicy, CookieStatement) using LegalPageLayout.
 - Personalized documents and footer with official Companies House data for Opus Form Ltd (Company No. 17228356).
 - Gated internal policy pages (/portal/terms and /portal/acceptable-use) behind authentication.
@@ -219,6 +235,7 @@
 - Hardcoded static policy names in `AdminPolicies.tsx` to securely bypass RLS `list()` restrictions and eliminate backend API overhead.
 
 ## 2026-07-18
+
 - Redesigned calendar week grid: unified single-bordered grid replacing five separate day cards, role-based color-coded initials badges (first-seen palette assignment, no red/green), site-wide `text-muted-foreground` token adoption replacing raw Tailwind grays.
 - Restructured toolbar (Staff/Project toggle, role filter, search) to a shared `lg` breakpoint for consistent mobile/tablet stacking.
 - Made unassigned staff rows clickable to assign on desktop only (CSS `pointer-events` gated), hiding the redundant Assign button at `2xl`.
@@ -229,17 +246,19 @@
 - Migrated behavioral agent rules (token conservation, spawn-task usage, terse responses, Composio availability) from per-project memory to global `~/.claude/CLAUDE.md`; added UI/UX skill-check requirement and scoped rules to subagents.
 
 ## 2026-07-19
+
 - Fixed light-theme contrast: hardcoded dark-only text/border colors (`gray-300`, `zinc-*`, `neutral-*`, inline `#hex`) replaced with theme tokens across quote builder, staff roster, audit log, legal pages, and map popups.
 - Converted fixed near-black status/urgency badges (job calendar chips, expiry radar, pipeline registry, audit diff table) to opacity-tinted `success`/`warning`/`destructive` tokens that adapt to both themes.
 - Fixed mojibake (`Â£`, `Â·`, `â€"`) baked into RosterView and PipelineRegistry source strings from a prior mis-encoded paste.
 - Corrected `/commit` skill's default branch from `Dev` to `dev` (actual remote branch name; old default would have failed to push).
 
 ## 2026-07-19 (Terms & Conditions layout, verification rule)
+
 - Terms & Conditions items: fixed-height single-column rows to responsive 2-column grid, auto-sizing textareas (`QuoteInvoiceBuilder.tsx`).
 - No-dev-server/no-browser-verification rule codified in `CLAUDE.md` (already existed in `.agents/AGENTS.md`, restated after violation).
 
 ## 2026-07-19 (Staff dossier compliance cards, mobile modal bottom-dock)
+
 - Compliance ticket cards (`RosterView.tsx`): single-line layout, smaller icon/text/button sizing, ref number dropped for expired items, solid destructive Remove button for light-mode contrast.
 - All mobile/tablet modals converted to bottom-dock (slide up from bottom, rounded top) with desktop centered fallback at `md+`: shared `dialog.tsx` `DialogContent`, `notice-modal.tsx`, `RequestCredentialsModal.tsx`, Add Worker modal in `RosterView.tsx`. Pattern matches existing `confirm-dialog.tsx` reference.
 - Credentials request CTA renamed "Generate Request Link" → "Send Request Email" (`RequestCredentialsModal.tsx`).
-

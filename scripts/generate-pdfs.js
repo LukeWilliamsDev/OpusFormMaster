@@ -3,46 +3,76 @@
 // block, numbered sections, running footer with page numbers, and a sign-off block.
 // Usage: node generate-pdfs.js
 
-import fs from 'node:fs';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { marked } from 'marked';
-import puppeteer from 'puppeteer';
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { marked } from "marked";
+import puppeteer from "puppeteer";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const SOURCE_DIR =
-  'C:\\Users\\Luke\\.gemini\\antigravity-ide\\brain\\b941d7a6-eee2-48ac-aee3-9dda6fa1c3c9';
+  "C:\\Users\\Luke\\.gemini\\antigravity-ide\\brain\\b941d7a6-eee2-48ac-aee3-9dda6fa1c3c9";
 
-const LOGO_SVG_PATH = path.join(__dirname, '..', 'public', 'opus-form-primary-light.svg');
+const LOGO_SVG_PATH = path.join(__dirname, "..", "public", "opus-form-primary-light.svg");
 
 // Only the final, terminology-aligned suite of 6 policies (per walkthrough.md).
 // Deliberately hardcoded rather than globbed so bundle/scratch files in the
 // source folder (opus_form_policies.md, task.md, walkthrough.md, etc.) are never picked up.
 // `reference` is a stable document-control code; `kind` is the eyebrow label above the title.
 const POLICIES = [
-  { source: 'Anti_Bribery_Policy.md', outputName: 'Anti-Bribery-Policy', reference: 'OF-POL-01', kind: 'Company Policy' },
-  { source: 'Health_and_Safety_Policy.md', outputName: 'Health-and-Safety-Policy', reference: 'OF-POL-02', kind: 'Company Policy' },
-  { source: 'Modern_Slavery_Statement.md', outputName: 'Modern-Slavery-Statement', reference: 'OF-POL-03', kind: 'Statutory & Voluntary Disclosure' },
-  { source: 'Quality_Management_Policy.md', outputName: 'Quality-Management-Policy', reference: 'OF-POL-04', kind: 'Company Policy' },
-  { source: 'Responsible_Sourcing_Policy.md', outputName: 'Responsible-Sourcing-Policy', reference: 'OF-POL-05', kind: 'Company Policy' },
-  { source: 'Sustainability_Policy.md', outputName: 'Sustainability-Policy', reference: 'OF-POL-06', kind: 'Company Policy' },
+  {
+    source: "Anti_Bribery_Policy.md",
+    outputName: "Anti-Bribery-Policy",
+    reference: "OF-POL-01",
+    kind: "Company Policy",
+  },
+  {
+    source: "Health_and_Safety_Policy.md",
+    outputName: "Health-and-Safety-Policy",
+    reference: "OF-POL-02",
+    kind: "Company Policy",
+  },
+  {
+    source: "Modern_Slavery_Statement.md",
+    outputName: "Modern-Slavery-Statement",
+    reference: "OF-POL-03",
+    kind: "Statutory & Voluntary Disclosure",
+  },
+  {
+    source: "Quality_Management_Policy.md",
+    outputName: "Quality-Management-Policy",
+    reference: "OF-POL-04",
+    kind: "Company Policy",
+  },
+  {
+    source: "Responsible_Sourcing_Policy.md",
+    outputName: "Responsible-Sourcing-Policy",
+    reference: "OF-POL-05",
+    kind: "Company Policy",
+  },
+  {
+    source: "Sustainability_Policy.md",
+    outputName: "Sustainability-Policy",
+    reference: "OF-POL-06",
+    kind: "Company Policy",
+  },
 ];
 
-const OUTPUT_DIR = path.join(__dirname, '..', 'policies');
+const OUTPUT_DIR = path.join(__dirname, "..", "policies");
 
-const COMPANY_NAME = 'Opus Form Ltd';
-const COMPANY_NUMBER = '17228356';
+const COMPANY_NAME = "Opus Form Ltd";
+const COMPANY_NUMBER = "17228356";
 
 // Dark Industrial brand palette (see src/styles.css) — warm cream/charcoal, burnt-orange accent.
-const INK = '#2B2F33';
-const BODY_TEXT = '#4A4640';
-const MUTED = '#7A756C';
-const MUTED_2 = '#9B958A';
-const ACCENT = '#B5651D';
-const ACCENT_DEEP = '#8F4F16';
-const LINE = '#D9D3C7';
-const WASH = '#EAE5DC';
+const INK = "#2B2F33";
+const BODY_TEXT = "#4A4640";
+const MUTED = "#7A756C";
+const MUTED_2 = "#9B958A";
+const ACCENT = "#B5651D";
+const ACCENT_DEEP = "#8F4F16";
+const LINE = "#D9D3C7";
+const WASH = "#EAE5DC";
 
 // Matches the site's type system (src/routes/__root.tsx Google Fonts link + src/styles.css vars).
 const SANS_STACK = `'Public Sans', -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif`;
@@ -50,20 +80,20 @@ const DISPLAY_STACK = `'Archivo', ${SANS_STACK}`;
 const MONO_STACK = `'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace`;
 const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Public+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');`;
 
-const SMALL_WORDS = new Set(['and', 'of', 'the', 'in', 'on', 'for', 'to', 'a', 'an', '&']);
+const SMALL_WORDS = new Set(["and", "of", "the", "in", "on", "for", "to", "a", "an", "&"]);
 
 function toTitleCase(str) {
   return str
     .toLowerCase()
-    .split(' ')
+    .split(" ")
     .map((word, i) => {
       if (i !== 0 && SMALL_WORDS.has(word)) return word;
       return word
-        .split('-')
+        .split("-")
         .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-        .join('-');
+        .join("-");
     })
-    .join(' ');
+    .join(" ");
 }
 
 // Embeds the actual brand asset (public/opus-form-primary-light.svg) rather than
@@ -71,7 +101,7 @@ function toTitleCase(str) {
 // The source viewBox (0 0 480 120) has wide side margins for the app's hero banners;
 // cropped here to a tight bounding box around the glyphs for a compact letterhead.
 function printLogo({ height }) {
-  const raw = fs.readFileSync(LOGO_SVG_PATH, 'utf8');
+  const raw = fs.readFileSync(LOGO_SVG_PATH, "utf8");
   const inner = raw.match(/<svg[^>]*>([\s\S]*)<\/svg>/)[1];
   return `<svg viewBox="30 20 405 65" height="${height}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
 }
@@ -81,14 +111,14 @@ function printLogo({ height }) {
 // markdown body plus the extracted metadata.
 function extractMeta(markdown) {
   const lines = markdown.split(/\r?\n/);
-  let title = '';
-  let director = '';
-  let issued = '';
+  let title = "";
+  let director = "";
+  let issued = "";
   let bodyStartIndex = lines.length;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (!title && line.startsWith('# ')) {
+    if (!title && line.startsWith("# ")) {
       title = toTitleCase(line.slice(2).trim());
       continue;
     }
@@ -102,13 +132,13 @@ function extractMeta(markdown) {
       issued = dateMatch[1].trim();
       continue;
     }
-    if (line.startsWith('## ') || line.startsWith('### ')) {
+    if (line.startsWith("## ") || line.startsWith("### ")) {
       bodyStartIndex = i;
       break;
     }
   }
 
-  const body = lines.slice(bodyStartIndex).join('\n');
+  const body = lines.slice(bodyStartIndex).join("\n");
   return { title, director, issued, body };
 }
 
@@ -126,7 +156,7 @@ const renderer = {
     const text = this.parser.parseInline(tokens);
     const match = text.match(/^(\d+)\.\s*(.*)$/);
     if ((depth === 2 || depth === 3) && match) {
-      const num = match[1].padStart(2, '0');
+      const num = match[1].padStart(2, "0");
       return `<h${depth}><span class="num">${num}</span> ${match[2]}</h${depth}>\n`;
     }
     return `<h${depth}>${text}</h${depth}>\n`;
@@ -368,7 +398,7 @@ function buildHtml({ title, kind, bodyHtml, director, issued, reference }) {
 </head>
 <body>
   <div class="doc-header">
-    ${printLogo({ height: '20px' })}
+    ${printLogo({ height: "20px" })}
     <div class="reg">
       ${COMPANY_NAME}<br>
       Company No. ${COMPANY_NUMBER}<br>
@@ -434,7 +464,7 @@ async function main() {
       const outputPath = path.join(OUTPUT_DIR, `${policy.outputName}.pdf`);
 
       try {
-        const markdown = fs.readFileSync(sourcePath, 'utf8');
+        const markdown = fs.readFileSync(sourcePath, "utf8");
         const { title, director, issued, body } = extractMeta(markdown);
         const bodyHtml = marked.parse(body);
         const html = buildHtml({
@@ -448,22 +478,24 @@ async function main() {
 
         const page = await browser.newPage();
         try {
-          await page.setContent(html, { waitUntil: 'networkidle0' });
+          await page.setContent(html, { waitUntil: "networkidle0" });
           await page.pdf({
             path: outputPath,
-            format: 'A4',
+            format: "A4",
             printBackground: true,
             displayHeaderFooter: true,
             headerTemplate: headerTemplate({ title }),
             footerTemplate: footerTemplate({ title, reference: policy.reference }),
-            margin: { top: '24mm', bottom: '20mm', left: '18mm', right: '18mm' },
+            margin: { top: "24mm", bottom: "20mm", left: "18mm", right: "18mm" },
           });
         } finally {
           await page.close();
         }
 
         const { size } = fs.statSync(outputPath);
-        console.log(`OK   ${policy.source} -> policies/${policy.outputName}.pdf (${(size / 1024).toFixed(1)} KB)`);
+        console.log(
+          `OK   ${policy.source} -> policies/${policy.outputName}.pdf (${(size / 1024).toFixed(1)} KB)`,
+        );
         results.push({ policy: title, ok: true });
       } catch (err) {
         console.error(`FAIL ${policy.source}: ${err.message}`);
@@ -478,12 +510,12 @@ async function main() {
   console.log(`\n${results.length - failed.length}/${results.length} PDFs generated successfully.`);
 
   if (failed.length > 0) {
-    console.error(`Failed: ${failed.map((f) => f.policy).join(', ')}`);
+    console.error(`Failed: ${failed.map((f) => f.policy).join(", ")}`);
     process.exitCode = 1;
   }
 }
 
 main().catch((err) => {
-  console.error('Fatal error generating PDFs:', err);
+  console.error("Fatal error generating PDFs:", err);
   process.exitCode = 1;
 });

@@ -4,133 +4,213 @@
   Not read by Supabase automatically — kept here for reference/version history only.
 -->
 
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="color-scheme" content="light dark">
-  <meta name="supported-color-schemes" content="light dark">
-  <style>
-    :root {
-      color-scheme: light dark;
-      supported-color-schemes: light dark;
-    }
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="supported-color-schemes" content="light dark" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        supported-color-schemes: light dark;
+      }
 
-    .bg-page {
-      background-color: #F5F1EA !important;
-      background-image: none !important;
-    }
-
-    .bg-card {
-      background-color: #FDFAF5 !important;
-      background-image: none !important;
-    }
-
-    .bg-header {
-      background-color: #EAE5DC !important;
-      background-image: none !important;
-    }
-
-    .text-title {
-      color: #2B2F33 !important;
-    }
-
-    .text-secondary {
-      color: #5A5450 !important;
-    }
-
-    .border-theme {
-      border-color: #D9D3C7 !important;
-    }
-
-    @media (prefers-color-scheme: dark) {
       .bg-page {
-        background-color: #1B1C20 !important;
+        background-color: #f5f1ea !important;
         background-image: none !important;
       }
 
       .bg-card {
-        background-color: #232429 !important;
+        background-color: #fdfaf5 !important;
         background-image: none !important;
       }
 
       .bg-header {
-        background-color: #2E3036 !important;
+        background-color: #eae5dc !important;
         background-image: none !important;
       }
 
       .text-title {
-        color: #EDEBE6 !important;
+        color: #2b2f33 !important;
       }
 
       .text-secondary {
-        color: #ACA89F !important;
+        color: #5a5450 !important;
       }
 
       .border-theme {
-        border-color: #2E3036 !important;
+        border-color: #d9d3c7 !important;
       }
-    }
 
-    [data-ogsc] .text-title {
-      color: #EDEBE6 !important;
-    }
+      @media (prefers-color-scheme: dark) {
+        .bg-page {
+          background-color: #1b1c20 !important;
+          background-image: none !important;
+        }
 
-    [data-ogsc] .text-secondary {
-      color: #ACA89F !important;
-    }
+        .bg-card {
+          background-color: #232429 !important;
+          background-image: none !important;
+        }
 
-    [data-ogsb] .bg-page {
-      background-color: #1B1C20 !important;
-      background-image: none !important;
-    }
+        .bg-header {
+          background-color: #2e3036 !important;
+          background-image: none !important;
+        }
 
-    [data-ogsb] .bg-card {
-      background-color: #232429 !important;
-      background-image: none !important;
-    }
+        .text-title {
+          color: #edebe6 !important;
+        }
 
-    [data-ogsb] .bg-header {
-      background-color: #2E3036 !important;
-      background-image: none !important;
-    }
-  </style>
-</head>
-<body>
-<div class="bg-page"
-  style="background-color: #F5F1EA; padding: 40px 20px; font-family: 'Inter', -apple-system, sans-serif; font-size: 14px; line-height: 1.6;">
-  <div class="bg-card border-theme"
-    style="max-width: 600px; margin: 0 auto; background-color: #FDFAF5; border: 1px solid #D9D3C7; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
-    <div class="bg-header border-theme"
-      style="background-color: #EAE5DC; padding: 30px 40px; border-bottom: 3px solid #B5651D; text-align: center;">
-      <span class="text-title"
-        style="font-family: 'Arial Black', Arial, sans-serif; font-weight: 900; font-size: 30px; letter-spacing: 3px;">OPUS<span
-          style="color: #B5651D; padding: 0 8px; font-size: 22px;">&bull;</span>FORM</span>
-    </div>
-    <div style="padding: 40px;">
+        .text-secondary {
+          color: #aca89f !important;
+        }
+
+        .border-theme {
+          border-color: #2e3036 !important;
+        }
+      }
+
+      [data-ogsc] .text-title {
+        color: #edebe6 !important;
+      }
+
+      [data-ogsc] .text-secondary {
+        color: #aca89f !important;
+      }
+
+      [data-ogsb] .bg-page {
+        background-color: #1b1c20 !important;
+        background-image: none !important;
+      }
+
+      [data-ogsb] .bg-card {
+        background-color: #232429 !important;
+        background-image: none !important;
+      }
+
+      [data-ogsb] .bg-header {
+        background-color: #2e3036 !important;
+        background-image: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      class="bg-page"
+      style="
+        background-color: #f5f1ea;
+        padding: 40px 20px;
+        font-family:
+          &quot;Inter&quot;,
+          -apple-system,
+          sans-serif;
+        font-size: 14px;
+        line-height: 1.6;
+      "
+    >
       <div
-        style="text-transform: uppercase; font-size: 10px; font-weight: 900; letter-spacing: 0.2em; color: #B5651D; margin-bottom: 20px;">
-        Confirm Email Change</div>
-      <p class="text-title" style="margin: 0 0 16px; font-size: 16px; font-weight: 700;">Hello,</p>
-      <p class="text-secondary" style="margin: 0 0 24px;">We received a request to change the email address on your Opus
-        Form account to <strong class="text-title">{{ .NewEmail }}</strong>. Confirm below to complete the change.</p>
-      <div style="text-align: center; margin-bottom: 32px;">
-        <a href="{{ .ConfirmationURL }}"
-          style="display: inline-block; padding: 14px 28px; background-color: #B5651D; color: #FDFAF5; text-decoration: none; border-radius: 8px; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em; box-shadow: 0 4px 12px rgba(181, 101, 29, 0.3);">Confirm
-          Change</a>
-      </div>
-      <p class="text-secondary" style="margin: 0 0 24px; font-size: 12px; text-align: center;">If you did not request
-        this change, please contact support immediately.</p>
-      <div class="border-theme" style="border-top: 1px solid #D9D3C7; padding-top: 24px; margin-top: 32px;">
-        <p class="text-title"
-          style="margin: 0 0 4px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">
-          Opus Form Support</p>
-        <a href="mailto:support@opusform.co.uk"
-          style="color: #B5651D; text-decoration: none; font-size: 12px; font-weight: 700;">support@opusform.co.uk</a>
+        class="bg-card border-theme"
+        style="
+          max-width: 600px;
+          margin: 0 auto;
+          background-color: #fdfaf5;
+          border: 1px solid #d9d3c7;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        "
+      >
+        <div
+          class="bg-header border-theme"
+          style="
+            background-color: #eae5dc;
+            padding: 30px 40px;
+            border-bottom: 3px solid #b5651d;
+            text-align: center;
+          "
+        >
+          <span
+            class="text-title"
+            style="
+              font-family: &quot;Arial Black&quot;, Arial, sans-serif;
+              font-weight: 900;
+              font-size: 30px;
+              letter-spacing: 3px;
+            "
+            >OPUS<span style="color: #b5651d; padding: 0 8px; font-size: 22px">&bull;</span
+            >FORM</span
+          >
+        </div>
+        <div style="padding: 40px">
+          <div
+            style="
+              text-transform: uppercase;
+              font-size: 10px;
+              font-weight: 900;
+              letter-spacing: 0.2em;
+              color: #b5651d;
+              margin-bottom: 20px;
+            "
+          >
+            Confirm Email Change
+          </div>
+          <p class="text-title" style="margin: 0 0 16px; font-size: 16px; font-weight: 700">
+            Hello,
+          </p>
+          <p class="text-secondary" style="margin: 0 0 24px">
+            We received a request to change the email address on your Opus Form account to
+            <strong class="text-title">{{ .NewEmail }}</strong>. Confirm below to complete the
+            change.
+          </p>
+          <div style="text-align: center; margin-bottom: 32px">
+            <a
+              href="{{ .ConfirmationURL }}"
+              style="
+                display: inline-block;
+                padding: 14px 28px;
+                background-color: #b5651d;
+                color: #fdfaf5;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 900;
+                font-size: 12px;
+                text-transform: uppercase;
+                letter-spacing: 0.15em;
+                box-shadow: 0 4px 12px rgba(181, 101, 29, 0.3);
+              "
+              >Confirm Change</a
+            >
+          </div>
+          <p class="text-secondary" style="margin: 0 0 24px; font-size: 12px; text-align: center">
+            If you did not request this change, please contact support immediately.
+          </p>
+          <div
+            class="border-theme"
+            style="border-top: 1px solid #d9d3c7; padding-top: 24px; margin-top: 32px"
+          >
+            <p
+              class="text-title"
+              style="
+                margin: 0 0 4px;
+                font-size: 12px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+              "
+            >
+              Opus Form Support
+            </p>
+            <a
+              href="mailto:support@opusform.co.uk"
+              style="color: #b5651d; text-decoration: none; font-size: 12px; font-weight: 700"
+              >support@opusform.co.uk</a
+            >
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
-</body>
+  </body>
 </html>

@@ -10,7 +10,8 @@ const ARCHIVE_AFTER_DAYS = 30;
 
 const isArchived = (job: Job) => {
   if (job.status !== "completed" || !job.updatedAt) return false;
-  const daysSinceCompletion = (Date.now() - new Date(job.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
+  const daysSinceCompletion =
+    (Date.now() - new Date(job.updatedAt).getTime()) / (1000 * 60 * 60 * 24);
   return daysSinceCompletion > ARCHIVE_AFTER_DAYS;
 };
 

@@ -13,7 +13,10 @@ export const TermsOfServicePage: React.FC = () => (
       <p>
         This Portal Usage Policy governs the use of the Opus Form workforce management portal by
         employees, contractors, and operatives of{" "}
-        <strong style={{ color: "var(--foreground)" }}>Opus Form Ltd</strong> (Company No. 17228356). Opus Form Ltd is a concrete flooring contractor, and this portal is a proprietary internal company tool built to manage our own construction operations. It is not a commercial SaaS agreement.
+        <strong style={{ color: "var(--foreground)" }}>Opus Form Ltd</strong> (Company No.
+        17228356). Opus Form Ltd is a concrete flooring contractor, and this portal is a proprietary
+        internal company tool built to manage our own construction operations. It is not a
+        commercial SaaS agreement.
       </p>
       <p>
         By accessing the portal, you confirm that you have read and understood this policy and agree
@@ -44,7 +47,11 @@ export const TermsOfServicePage: React.FC = () => (
         <li>Logging out when using shared or site-based devices</li>
         <li>
           Reporting any suspected unauthorised access immediately to{" "}
-          <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
+          <a
+            href="mailto:admin@opusform.co.uk"
+            className="underline"
+            style={{ color: "var(--primary)" }}
+          >
             admin@opusform.co.uk
           </a>
         </li>
@@ -127,7 +134,11 @@ export const TermsOfServicePage: React.FC = () => (
     <Section title="11. Contact">
       <p>
         For questions about this policy, contact{" "}
-        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
+        <a
+          href="mailto:admin@opusform.co.uk"
+          className="underline"
+          style={{ color: "var(--primary)" }}
+        >
           admin@opusform.co.uk
         </a>
         .

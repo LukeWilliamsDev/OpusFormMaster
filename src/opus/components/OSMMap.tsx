@@ -211,10 +211,11 @@ export const OSMMap: React.FC<OSMMapProps> = ({
 
         // Extra bottom padding so neither pin sits behind the details card
         // overlaid at the bottom of the map.
-        mapRef.current.fitBounds(
-          L.latLngBounds([siteCoords.lat, siteCoords.lng], supplierLatLng),
-          { paddingTopLeft: [40, 40], paddingBottomRight: [40, 130], maxZoom: 12 },
-        );
+        mapRef.current.fitBounds(L.latLngBounds([siteCoords.lat, siteCoords.lng], supplierLatLng), {
+          paddingTopLeft: [40, 40],
+          paddingBottomRight: [40, 130],
+          maxZoom: 12,
+        });
       }
     } else if (isValidCoord(center)) {
       mapRef.current.setView([center.lat, center.lng], 13, { animate: true });

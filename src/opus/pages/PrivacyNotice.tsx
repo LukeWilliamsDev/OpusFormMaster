@@ -10,16 +10,23 @@ export const PrivacyNoticePage: React.FC = () => (
       <p>
         Opus Form Ltd ("<strong style={{ color: "var(--foreground)" }}>we</strong>", "
         <strong style={{ color: "var(--foreground)" }}>us</strong>", "
-        <strong style={{ color: "var(--foreground)" }}>our</strong>") is a concrete flooring contractor and the data controller for personal data processed through this internal platform. This notice applies to all staff, contractors, and operatives whose data is managed through our proprietary workforce management portal.
+        <strong style={{ color: "var(--foreground)" }}>our</strong>") is a concrete flooring
+        contractor and the data controller for personal data processed through this internal
+        platform. This notice applies to all staff, contractors, and operatives whose data is
+        managed through our proprietary workforce management portal.
       </p>
       <p>
-        <strong style={{ color: "var(--foreground)" }}>Registered Address:</strong> 128 City Road, London,
-        England, EC1V 2NX
+        <strong style={{ color: "var(--foreground)" }}>Registered Address:</strong> 128 City Road,
+        London, England, EC1V 2NX
         <br />
         <strong style={{ color: "var(--foreground)" }}>Company Number:</strong> 17228356
         <br />
         <strong style={{ color: "var(--foreground)" }}>Contact:</strong>{" "}
-        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
+        <a
+          href="mailto:admin@opusform.co.uk"
+          className="underline"
+          style={{ color: "var(--primary)" }}
+        >
           admin@opusform.co.uk
         </a>
       </p>
@@ -28,10 +35,22 @@ export const PrivacyNoticePage: React.FC = () => (
     <Section title="2. Data We Collect">
       <p>To effectively manage our construction operations and ensure site safety, we collect:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
-        <li><strong>Identity & Contact:</strong> Name, phone number, email, and emergency contacts.</li>
-        <li><strong>Compliance & Right-to-Work:</strong> CSCS card details, CITB training certificates, visa/right-to-work documentation, and driving licenses (if operating company vehicles).</li>
-        <li><strong>Operational Data:</strong> Shift allocations, site diary entries, clock-in/out times on flooring jobs, and site logs.</li>
-        <li><strong>Technical Data:</strong> IP address, login times, and device information when you access the portal for security auditing.</li>
+        <li>
+          <strong>Identity & Contact:</strong> Name, phone number, email, and emergency contacts.
+        </li>
+        <li>
+          <strong>Compliance & Right-to-Work:</strong> CSCS card details, CITB training
+          certificates, visa/right-to-work documentation, and driving licenses (if operating company
+          vehicles).
+        </li>
+        <li>
+          <strong>Operational Data:</strong> Shift allocations, site diary entries, clock-in/out
+          times on flooring jobs, and site logs.
+        </li>
+        <li>
+          <strong>Technical Data:</strong> IP address, login times, and device information when you
+          access the portal for security auditing.
+        </li>
       </ul>
     </Section>
 
@@ -39,7 +58,10 @@ export const PrivacyNoticePage: React.FC = () => (
       <DataTable
         headers={["Purpose", "Lawful Basis"]}
         rows={[
-          ["Scheduling your concrete flooring shifts and site allocations", "Performance of a Contract"],
+          [
+            "Scheduling your concrete flooring shifts and site allocations",
+            "Performance of a Contract",
+          ],
           ["Verifying your CSCS, training, and right-to-work compliance", "Legal Obligation"],
           ["Maintaining site health & safety records and RAMS acknowledgments", "Legal Obligation"],
           ["Processing your payments/invoices for work completed", "Performance of a Contract"],
@@ -50,18 +72,31 @@ export const PrivacyNoticePage: React.FC = () => (
 
     <Section title="4. Sharing Your Data">
       <p>
-        We do not sell your data. We only share it with third parties when strictly necessary for our business operations:
+        We do not sell your data. We only share it with third parties when strictly necessary for
+        our business operations:
       </p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
-        <li><strong>Main Contractors:</strong> We may need to share your compliance data (e.g., CSCS numbers) with main contractors to secure your site access.</li>
-        <li><strong>Regulatory Bodies:</strong> HSE or HMRC during audits or investigations (e.g., verifying employment or sub-contractor status).</li>
-        <li><strong>Service Providers:</strong> Our secure cloud hosting provider (Supabase) where the portal database is physically stored.</li>
+        <li>
+          <strong>Main Contractors:</strong> We may need to share your compliance data (e.g., CSCS
+          numbers) with main contractors to secure your site access.
+        </li>
+        <li>
+          <strong>Regulatory Bodies:</strong> HSE or HMRC during audits or investigations (e.g.,
+          verifying employment or sub-contractor status).
+        </li>
+        <li>
+          <strong>Service Providers:</strong> Our secure cloud hosting provider (Supabase) where the
+          portal database is physically stored.
+        </li>
       </ul>
     </Section>
 
     <Section title="5. Data Retention">
       <p>
-        We keep your personal data only as long as necessary. Training certificates and right-to-work documentation are kept for the duration of your engagement with us. Site diaries, health and safety records, and payment data are retained for up to 7 years in compliance with UK tax and safety legislation.
+        We keep your personal data only as long as necessary. Training certificates and
+        right-to-work documentation are kept for the duration of your engagement with us. Site
+        diaries, health and safety records, and payment data are retained for up to 7 years in
+        compliance with UK tax and safety legislation.
       </p>
     </Section>
 
@@ -70,12 +105,21 @@ export const PrivacyNoticePage: React.FC = () => (
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>Request access to the personal data we hold about you.</li>
         <li>Request correction of inaccurate data (e.g., updating an expired CSCS card).</li>
-        <li>Request deletion of your data (subject to our legal obligations to retain H&S records).</li>
-        <li>Complain to the Information Commissioner's Office (ICO) if you feel your data has been mishandled.</li>
+        <li>
+          Request deletion of your data (subject to our legal obligations to retain H&S records).
+        </li>
+        <li>
+          Complain to the Information Commissioner's Office (ICO) if you feel your data has been
+          mishandled.
+        </li>
       </ul>
       <p>
         To exercise these rights, please contact{" "}
-        <a href="mailto:admin@opusform.co.uk" className="underline" style={{ color: "var(--primary)" }}>
+        <a
+          href="mailto:admin@opusform.co.uk"
+          className="underline"
+          style={{ color: "var(--primary)" }}
+        >
           admin@opusform.co.uk
         </a>
         .

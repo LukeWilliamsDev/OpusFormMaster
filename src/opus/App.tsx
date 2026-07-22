@@ -66,7 +66,9 @@ const RoleGuard: React.FC<{
     return <Navigate to="/portal/audit" replace />;
   }
   if (!allow.includes(role)) {
-    const fallback = FIELD_ROLES.includes(role) ? "/portal/roster?view=calendar" : "/portal/dashboard";
+    const fallback = FIELD_ROLES.includes(role)
+      ? "/portal/roster?view=calendar"
+      : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
@@ -79,7 +81,9 @@ const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     return <div className="min-h-screen bg-background" />;
   }
   if (role !== "admin" || user?.email !== "admin@opusform.co.uk") {
-    const fallback = FIELD_ROLES.includes(role) ? "/portal/roster?view=calendar" : "/portal/dashboard";
+    const fallback = FIELD_ROLES.includes(role)
+      ? "/portal/roster?view=calendar"
+      : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;

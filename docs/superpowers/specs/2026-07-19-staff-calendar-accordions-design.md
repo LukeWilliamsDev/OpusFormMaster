@@ -31,23 +31,23 @@ const ROLE_CATEGORY_MAP: Record<string, RoleCategory> = {
   "Concrete Pour Supervisor": "Concrete Crew",
   "Concrete Pump Operator": "Concrete Crew",
   "Decking Assistant": "Concrete Crew",
-  "Ganger": "Concrete Crew",
+  Ganger: "Concrete Crew",
   "General Construction Labourer": "Concrete Crew",
   "Telehandler Operator": "Concrete Crew",
   "Logistics and Operations Assistant": "Logistics",
   "Material Handler": "Logistics",
-  "Director": "Office & Admin",
-  "IT": "Office & Admin",
+  Director: "Office & Admin",
+  IT: "Office & Admin",
   "Inbound Sales Representative": "Office & Admin",
 };
 
 const CATEGORY_ORDER: RoleCategory[] = ["Concrete Crew", "Logistics", "Office & Admin", "Other"];
 
-export const getRoleCategory = (role: string): RoleCategory =>
-  ROLE_CATEGORY_MAP[role] ?? "Other";
+export const getRoleCategory = (role: string): RoleCategory => ROLE_CATEGORY_MAP[role] ?? "Other";
 ```
 
 `groupWorkersByCategory<T>(items: T[], getRole: (item: T) => string): { category: RoleCategory; items: T[] }[]`
+
 - Generic over the item type so it works for both `Worker[]` (unassigned) and `DayAssignment[]` (assigned).
 - Buckets items by `getRoleCategory(getRole(item))`.
 - Returns groups in `CATEGORY_ORDER`, omitting any category with zero items.

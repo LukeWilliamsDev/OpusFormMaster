@@ -14,13 +14,13 @@ Defines how changes to the Opus Form platform — code, database schema, configu
 
 ## 2. Change Categories
 
-| Category | Examples | Approval Required |
-|:---------|:---------|:------------------|
-| **Critical Fix** | Security patch, data breach response, production outage | Immediate — post-deploy review |
+| Category          | Examples                                                              | Approval Required                    |
+| :---------------- | :-------------------------------------------------------------------- | :----------------------------------- |
+| **Critical Fix**  | Security patch, data breach response, production outage               | Immediate — post-deploy review       |
 | **Schema Change** | Database migration, new table, column modification, RLS policy change | Implementation plan + admin approval |
-| **Feature** | New page, component, edge function, integration | Implementation plan + admin approval |
-| **Minor Fix** | UI bug, typo, styling adjustment | Direct commit to Dev branch |
-| **Documentation** | QMS updates, README changes, memory updates | Direct commit |
+| **Feature**       | New page, component, edge function, integration                       | Implementation plan + admin approval |
+| **Minor Fix**     | UI bug, typo, styling adjustment                                      | Direct commit to Dev branch          |
+| **Documentation** | QMS updates, README changes, memory updates                           | Direct commit                        |
 
 ---
 
@@ -62,24 +62,24 @@ Defines how changes to the Opus Form platform — code, database schema, configu
 
 ## 4. Source Control
 
-| Practice | Standard |
-|:---------|:---------|
-| **Primary branch** | `Dev` branch for all development work |
-| **Commit convention** | Use `/commit` skill: stage, commit with descriptive message, push to Dev |
-| **Database migrations** | Versioned SQL files in `supabase/migrations/` with timestamp prefixes |
-| **No force-push** | Never force-push to shared branches |
-| **Secrets** | Never committed to source. Stored in Supabase Vault. |
+| Practice                | Standard                                                                 |
+| :---------------------- | :----------------------------------------------------------------------- |
+| **Primary branch**      | `Dev` branch for all development work                                    |
+| **Commit convention**   | Use `/commit` skill: stage, commit with descriptive message, push to Dev |
+| **Database migrations** | Versioned SQL files in `supabase/migrations/` with timestamp prefixes    |
+| **No force-push**       | Never force-push to shared branches                                      |
+| **Secrets**             | Never committed to source. Stored in Supabase Vault.                     |
 
 ---
 
 ## 5. Deployment
 
-| Component | Deployment Method |
-|:----------|:-----------------|
-| **Frontend** | Cloudflare Pages — auto-deploys from Git on push to production branch |
-| **Edge Functions** | Supabase CLI — `supabase functions deploy <name>` |
-| **Database Migrations** | Supabase CLI — `supabase db push` or applied via MCP tool |
-| **Configuration** | Environment variables managed via Supabase dashboard and `.env` |
+| Component               | Deployment Method                                                     |
+| :---------------------- | :-------------------------------------------------------------------- |
+| **Frontend**            | Cloudflare Pages — auto-deploys from Git on push to production branch |
+| **Edge Functions**      | Supabase CLI — `supabase functions deploy <name>`                     |
+| **Database Migrations** | Supabase CLI — `supabase db push` or applied via MCP tool             |
+| **Configuration**       | Environment variables managed via Supabase dashboard and `.env`       |
 
 ---
 

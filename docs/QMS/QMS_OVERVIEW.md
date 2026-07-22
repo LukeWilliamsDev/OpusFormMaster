@@ -24,13 +24,13 @@ This policy applies to all internal business operations managed through the Opus
 
 This QMS covers:
 
-| Area | Documents |
-|:-----|:----------|
-| Quote & invoice generation | [QUOTE_PROCESS.md](./QUOTE_PROCESS.md) |
+| Area                        | Documents                                        |
+| :-------------------------- | :----------------------------------------------- |
+| Quote & invoice generation  | [QUOTE_PROCESS.md](./QUOTE_PROCESS.md)           |
 | Staff compliance management | [COMPLIANCE_PROCESS.md](./COMPLIANCE_PROCESS.md) |
-| Job lifecycle management | [JOB_LIFECYCLE.md](./JOB_LIFECYCLE.md) |
-| Incident & defect handling | [INCIDENT_HANDLING.md](./INCIDENT_HANDLING.md) |
-| Change management | [CHANGE_MANAGEMENT.md](./CHANGE_MANAGEMENT.md) |
+| Job lifecycle management    | [JOB_LIFECYCLE.md](./JOB_LIFECYCLE.md)           |
+| Incident & defect handling  | [INCIDENT_HANDLING.md](./INCIDENT_HANDLING.md)   |
+| Change management           | [CHANGE_MANAGEMENT.md](./CHANGE_MANAGEMENT.md)   |
 
 ---
 
@@ -47,11 +47,11 @@ All processes follow the PDCA cycle:
 
 ## 4. Roles & Responsibilities
 
-| Role | QMS Responsibility |
-|:-----|:-------------------|
-| **Primary Admin** | Overall QMS ownership, audit trail review, compliance oversight |
-| **Dispatchers** | Operational process execution (scheduling, quotes, compliance requests) |
-| **Operatives** | Compliance document submission, shift attendance |
+| Role              | QMS Responsibility                                                      |
+| :---------------- | :---------------------------------------------------------------------- |
+| **Primary Admin** | Overall QMS ownership, audit trail review, compliance oversight         |
+| **Dispatchers**   | Operational process execution (scheduling, quotes, compliance requests) |
+| **Operatives**    | Compliance document submission, shift attendance                        |
 
 ---
 

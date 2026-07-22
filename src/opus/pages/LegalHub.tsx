@@ -44,9 +44,7 @@ export const LegalHubPage: React.FC = () => {
         <h1 className="text-2xl font-black uppercase tracking-wide font-archivo mb-1">
           Legal & Privacy
         </h1>
-        <p className="text-sm text-muted-foreground mb-6">
-          Select a policy to view.
-        </p>
+        <p className="text-sm text-muted-foreground mb-6">Select a policy to view.</p>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {POLICIES.map(({ label, description, path, icon: Icon }) => (

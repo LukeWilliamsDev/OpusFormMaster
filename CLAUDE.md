@@ -23,10 +23,12 @@ Opus Form — ERP portal for labor/compliance management (Supabase-backed SPA). 
 ```
 
 **At task completion:**
+
 - Create completion doc in `.claude/completions/YYYY-MM-DD-task-name.md`
 - Move session file to `.claude/sessions/archive/` (if created)
 
 **⚠️ NEVER auto-load:**
+
 - Files in `.claude/completions/` (0 token cost)
 - Files in `.claude/sessions/` (0 token cost)
 - Files in `docs/archive/` (0 token cost)

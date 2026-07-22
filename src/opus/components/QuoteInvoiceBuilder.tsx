@@ -595,64 +595,64 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       {/* --- STICKY ACTION BAR --- */}
       <div className="sticky top-16 lg:top-0 z-40 bg-background/90 backdrop-blur border-b border-border mb-4">
         <div className="w-full py-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-[11px] font-black uppercase tracking-widest shrink-0"
-          >
-            ← Back
-          </button>
-          <div className="w-px h-4 bg-border hidden sm:block" />
-          <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 flex-1 sm:flex-initial min-w-0">
-            <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase whitespace-nowrap">
-              Ref
-            </span>
-            <input
-              className="bg-transparent border-none outline-none text-primary text-xs font-black tracking-widest uppercase font-mono w-full sm:w-24 min-w-0"
-              value={quoteReference}
-              onChange={(e) => setQuoteReference(e.target.value)}
-              placeholder="JOB-0000"
-            />
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              onClick={onBack}
+              className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors text-[11px] font-black uppercase tracking-widest shrink-0"
+            >
+              ← Back
+            </button>
+            <div className="w-px h-4 bg-border hidden sm:block" />
+            <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 flex-1 sm:flex-initial min-w-0">
+              <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase whitespace-nowrap">
+                Ref
+              </span>
+              <input
+                className="bg-transparent border-none outline-none text-primary text-xs font-black tracking-widest uppercase font-mono w-full sm:w-24 min-w-0"
+                value={quoteReference}
+                onChange={(e) => setQuoteReference(e.target.value)}
+                placeholder="JOB-0000"
+              />
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2 sm:shrink-0">
-          <button
-            type="button"
-            onClick={() => setPreviewOpen(true)}
-            className="lg:hidden flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Preview</span>
-          </button>
-          <button
-            onClick={handleSaveDraft}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
-          >
-            <Save className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{lastSaved ? "SAVED" : "SAVE"}</span>
-          </button>
-          <button
-            onClick={handleDownloadPDF}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">PDF</span>
-          </button>
-          <button
-            type="button"
-            onClick={handleSend}
-            disabled={isSendingEmail}
-            className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-primary hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-4 py-1.5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
-          >
-            {isSendingEmail ? (
-              <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            ) : (
-              <Send className="w-3.5 h-3.5" />
-            )}
-            <span className="hidden sm:inline">{isSendingEmail ? "SENDING..." : "SEND"}</span>
-          </button>
-        </div>
+          <div className="flex items-center gap-2 sm:shrink-0">
+            <button
+              type="button"
+              onClick={() => setPreviewOpen(true)}
+              className="lg:hidden flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Preview</span>
+            </button>
+            <button
+              onClick={handleSaveDraft}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{lastSaved ? "SAVED" : "SAVE"}</span>
+            </button>
+            <button
+              onClick={handleDownloadPDF}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={isSendingEmail}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-primary hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-4 py-1.5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
+            >
+              {isSendingEmail ? (
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Send className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline">{isSendingEmail ? "SENDING..." : "SEND"}</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1178,7 +1178,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             Are you sure you want to delete the quote{" "}
             <span className="font-bold text-foreground">{quoteToDelete?.reference}</span>?
             <div className="mt-3 p-4 bg-white/5 border border-white/5 rounded-lg text-xs font-medium text-red-400 leading-relaxed">
-              This action is irreversible and will permanently delete this quote draft from the database.
+              This action is irreversible and will permanently delete this quote draft from the
+              database.
             </div>
           </>
         }

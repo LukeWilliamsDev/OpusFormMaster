@@ -36,14 +36,14 @@ Defines the process for creating, reviewing, sending, and tracking quotes and in
 
 ## 3. Controls & Validation
 
-| Control | Description |
-|:--------|:------------|
-| **UI validation** | All required fields enforced before PDF generation. Toast modal alerts on missing data. |
-| **VAT calculation** | Automatic 20% UK VAT computation. Net and gross totals displayed. |
-| **PDF format lock** | Viewport clamped to 794×1122px (A4) to prevent scaling issues. |
+| Control             | Description                                                                             |
+| :------------------ | :-------------------------------------------------------------------------------------- |
+| **UI validation**   | All required fields enforced before PDF generation. Toast modal alerts on missing data. |
+| **VAT calculation** | Automatic 20% UK VAT computation. Net and gross totals displayed.                       |
+| **PDF format lock** | Viewport clamped to 794×1122px (A4) to prevent scaling issues.                          |
 | **Colour fallback** | `oklch()`/`lch()`/`lab()` values stripped before html2canvas render to prevent crashes. |
-| **Audit trail** | Quote creation, edits, and deletions logged to `public.audit_logs`. |
-| **Access control** | Only `admin` and `dispatcher` roles can access the pipeline and quote builder. |
+| **Audit trail**     | Quote creation, edits, and deletions logged to `public.audit_logs`.                     |
+| **Access control**  | Only `admin` and `dispatcher` roles can access the pipeline and quote builder.          |
 
 ---
 
@@ -57,9 +57,9 @@ Defines the process for creating, reviewing, sending, and tracking quotes and in
 
 ## 5. Pipeline Stages
 
-| Stage | Description |
-|:------|:------------|
-| **Quote** | Initial pricing proposal sent to client |
+| Stage        | Description                                          |
+| :----------- | :--------------------------------------------------- |
+| **Quote**    | Initial pricing proposal sent to client              |
 | **Contract** | Client has accepted the quote; engagement formalised |
-| **Job** | Work is scheduled and in progress |
-| **Complete** | Work finished; final invoice issued |
+| **Job**      | Work is scheduled and in progress                    |
+| **Complete** | Work finished; final invoice issued                  |

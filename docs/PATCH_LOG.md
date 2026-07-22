@@ -7,8 +7,8 @@ Quarterly dependency audit log for Cyber Essentials compliance.
 
 ## Audit Schedule
 
-| Quarter | Target Month | Status |
-|:--------|:-------------|:-------|
+| Quarter | Target Month | Status     |
+| :------ | :----------- | :--------- |
 | Q3 2026 | July 2026    | ⬜ Pending |
 | Q4 2026 | October 2026 | ⬜ Pending |
 | Q1 2027 | January 2027 | ⬜ Pending |
@@ -28,14 +28,15 @@ Copy this block for each quarterly audit:
 **Auditor:** [Name]  
 **Command:** `npm audit`  
 **Summary:**
+
 - Total vulnerabilities: [X]
 - Critical: [X] | High: [X] | Moderate: [X] | Low: [X]
 
 **Actions Taken:**
 
-| Package | Severity | CVE / Advisory | Action | Resolved Date |
-|:--------|:---------|:---------------|:-------|:--------------|
-| example | High     | GHSA-xxxx      | Updated to v2.0.1 | YYYY-MM-DD |
+| Package | Severity | CVE / Advisory | Action            | Resolved Date |
+| :------ | :------- | :------------- | :---------------- | :------------ |
+| example | High     | GHSA-xxxx      | Updated to v2.0.1 | YYYY-MM-DD    |
 
 **Notes:** [Any relevant context]
 ```

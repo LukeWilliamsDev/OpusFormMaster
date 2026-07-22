@@ -26,7 +26,8 @@ import { SidebarNavigationSlim } from "@/components/application/app-navigation/s
 export const PortalLayout: React.FC = () => {
   const { signOut, role, user, profile, theme, setTheme } = usePortal();
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
-  const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
+  const logoSrc =
+    theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
     () => localStorage.getItem("portal-sidebar-collapsed") === "true",
@@ -83,7 +84,11 @@ export const PortalLayout: React.FC = () => {
     if (user?.email === "admin@opusform.co.uk") {
       return item.path === "/portal/audit" || item.path === "/portal/policies";
     }
-    if ((item.path === "/portal/audit" || item.path === "/portal/policies") && user?.email !== "admin@opusform.co.uk") return false;
+    if (
+      (item.path === "/portal/audit" || item.path === "/portal/policies") &&
+      user?.email !== "admin@opusform.co.uk"
+    )
+      return false;
     return true;
   });
 
@@ -235,7 +240,11 @@ export const PortalLayout: React.FC = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <NavList
-                  items={navItems.map((item) => ({ label: item.name, href: item.path, icon: item.icon }))}
+                  items={navItems.map((item) => ({
+                    label: item.name,
+                    href: item.path,
+                    icon: item.icon,
+                  }))}
                   isActive={(item) => checkIsActive(item.href!)}
                 />
               </nav>

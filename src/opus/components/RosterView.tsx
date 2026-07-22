@@ -36,7 +36,12 @@ import { getRoleColorClasses } from "./calendar/roleColors";
 import { getTicketStatus } from "../utils/workerValidation";
 import { TicketStatusBadge } from "./TicketStatusBadge";
 import { RequestCredentialsModal } from "./RequestCredentialsModal";
-import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "../../components/ui/accordion";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "../../components/ui/accordion";
 import { supabase } from "../../integrations/supabase/client";
 import { workerToRow, usePortal } from "../context/PortalContext";
 import { computeDiff } from "../utils/auditDiff";
@@ -272,7 +277,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
           return;
         }
         setDossierShifts(
-          (data || []).map((r: any) => ({ id: r.id, workerId: r.worker_id, jobId: r.job_id, date: r.date })),
+          (data || []).map((r: any) => ({
+            id: r.id,
+            workerId: r.worker_id,
+            jobId: r.job_id,
+            date: r.date,
+          })),
         );
       });
     return () => {
@@ -290,7 +300,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
     try {
       const worker = workers.find((w) => w.id === selectedWorkerDetailsId);
       if (!worker || !worker.email) {
-        toast.error("Worker email is missing", { id: sendingToastId, description: "Cannot resend request." });
+        toast.error("Worker email is missing", {
+          id: sendingToastId,
+          description: "Cannot resend request.",
+        });
         return;
       }
 
@@ -364,13 +377,22 @@ export const RosterView: React.FC<RosterViewProps> = ({
       setDossierAuditLogs(updatedLogs.data || []);
 
       if (emailSentResult) {
-        toast.success("REQUEST SENT", { id: sendingToastId, description: "Compliance request resent to worker." });
+        toast.success("REQUEST SENT", {
+          id: sendingToastId,
+          description: "Compliance request resent to worker.",
+        });
       } else {
-        toast.error("EMAIL FAILED", { id: sendingToastId, description: emailErrorResult || "Failed to send email." });
+        toast.error("EMAIL FAILED", {
+          id: sendingToastId,
+          description: emailErrorResult || "Failed to send email.",
+        });
       }
     } catch (e: any) {
       console.error("Failed to resend request:", e);
-      toast.error("Failed to resend request", { id: sendingToastId, description: e.message || String(e) });
+      toast.error("Failed to resend request", {
+        id: sendingToastId,
+        description: e.message || String(e),
+      });
     } finally {
       setResendingRequestMap((prev) => ({ ...prev, [request.id]: false }));
     }
@@ -724,7 +746,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
         : "border-success/30 text-success bg-success/5";
     if (expiredCount > 0) {
       statusText = `${expiredCount} EXPIRED`;
-      badgeColorClasses = "bg-destructive/10 border border-destructive/30 text-destructive font-bold";
+      badgeColorClasses =
+        "bg-destructive/10 border border-destructive/30 text-destructive font-bold";
       avatarBorderColorClasses = "border-destructive/30 text-destructive bg-destructive/5";
     } else if (expiringCount > 0) {
       statusText = "EXPIRING";
@@ -792,7 +815,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
         : "border-success/30 text-success bg-success/5";
     if (expiredCount > 0) {
       statusText = `${expiredCount} EXPIRED`;
-      badgeColorClasses = "bg-destructive/10 border border-destructive/30 text-destructive font-bold";
+      badgeColorClasses =
+        "bg-destructive/10 border border-destructive/30 text-destructive font-bold";
       avatarBorderColorClasses = "border-destructive/30 text-destructive bg-destructive/5";
     } else if (expiringCount > 0) {
       statusText = "EXPIRING";
@@ -1510,74 +1534,74 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="pb-0 pt-3">
-              {loadingDossierShifts ? (
-                <div className="flex items-center justify-center py-6">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
-                </div>
-              ) : Object.keys(groupedHistoryShifts).length > 0 ? (
-                <div className="space-y-2">
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                    {(showAllHistory
-                      ? Object.entries(groupedHistoryShifts)
-                      : Object.entries(groupedHistoryShifts).slice(0, 5)
-                    ).map(([jobId, shiftDates]) => {
-                      const job = (jobs || []).find((j) => j.id === jobId);
-                      if (!job) return null;
-                      return (
-                        <div
-                          key={jobId}
-                          onClick={() =>
-                          navigate(
-                            `/portal/ledger?jobId=${job.id}&from=staff&workerId=${selectedWorkerDetails.id}`,
-                          )
-                        }
-                          className="p-3.5 rounded-xl border border-border bg-card/40 hover:bg-card/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer"
-                        >
-                          <div className="space-y-1">
-                            <h4 className="text-xs font-bold text-muted-foreground tracking-wide flex items-center gap-1.5">
-                              <MapPin className="w-3 h-3 text-muted-foreground" />
-                              {job.siteName}
-                            </h4>
-                            <p className="text-[10px] font-medium text-muted-foreground leading-none mt-0.5">
-                              Contractor: {job.mainContractor} &bull; Ref: {job.jobRef}
-                            </p>
-                          </div>
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            {(shiftDates as string[]).map((dateStr) => (
-                              <span
-                                key={dateStr}
-                                className="px-2 py-0.5 rounded-xl bg-secondary border border-border text-[10px] font-semibold text-muted-foreground tracking-wide"
-                              >
-                                {getDayName(dateStr)}
-                              </span>
-                            ))}
-                            <span className="px-2 py-0.5 rounded-xl text-[9px] font-semibold tracking-wider border border-border text-muted-foreground uppercase">
-                              Completed
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {Object.keys(groupedHistoryShifts).length > 5 && (
-                    <div className="flex justify-center pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setShowAllHistory(!showAllHistory)}
-                        className="text-[10px] font-bold text-warning hover:text-warning/80 uppercase tracking-wider px-3.5 py-2 rounded-xl bg-card border border-border transition-all hover:bg-secondary active:scale-95"
-                      >
-                        {showAllHistory
-                          ? "Show Less History"
-                          : `View All History (${Object.keys(groupedHistoryShifts).length} total)`}
-                      </button>
+                  {loadingDossierShifts ? (
+                    <div className="flex items-center justify-center py-6">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary" />
                     </div>
+                  ) : Object.keys(groupedHistoryShifts).length > 0 ? (
+                    <div className="space-y-2">
+                      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                        {(showAllHistory
+                          ? Object.entries(groupedHistoryShifts)
+                          : Object.entries(groupedHistoryShifts).slice(0, 5)
+                        ).map(([jobId, shiftDates]) => {
+                          const job = (jobs || []).find((j) => j.id === jobId);
+                          if (!job) return null;
+                          return (
+                            <div
+                              key={jobId}
+                              onClick={() =>
+                                navigate(
+                                  `/portal/ledger?jobId=${job.id}&from=staff&workerId=${selectedWorkerDetails.id}`,
+                                )
+                              }
+                              className="p-3.5 rounded-xl border border-border bg-card/40 hover:bg-card/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer"
+                            >
+                              <div className="space-y-1">
+                                <h4 className="text-xs font-bold text-muted-foreground tracking-wide flex items-center gap-1.5">
+                                  <MapPin className="w-3 h-3 text-muted-foreground" />
+                                  {job.siteName}
+                                </h4>
+                                <p className="text-[10px] font-medium text-muted-foreground leading-none mt-0.5">
+                                  Contractor: {job.mainContractor} &bull; Ref: {job.jobRef}
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                {(shiftDates as string[]).map((dateStr) => (
+                                  <span
+                                    key={dateStr}
+                                    className="px-2 py-0.5 rounded-xl bg-secondary border border-border text-[10px] font-semibold text-muted-foreground tracking-wide"
+                                  >
+                                    {getDayName(dateStr)}
+                                  </span>
+                                ))}
+                                <span className="px-2 py-0.5 rounded-xl text-[9px] font-semibold tracking-wider border border-border text-muted-foreground uppercase">
+                                  Completed
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {Object.keys(groupedHistoryShifts).length > 5 && (
+                        <div className="flex justify-center pt-2">
+                          <button
+                            type="button"
+                            onClick={() => setShowAllHistory(!showAllHistory)}
+                            className="text-[10px] font-bold text-warning hover:text-warning/80 uppercase tracking-wider px-3.5 py-2 rounded-xl bg-card border border-border transition-all hover:bg-secondary active:scale-95"
+                          >
+                            {showAllHistory
+                              ? "Show Less History"
+                              : `View All History (${Object.keys(groupedHistoryShifts).length} total)`}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider py-2">
+                      No completed or archived shifts found
+                    </p>
                   )}
-                </div>
-              ) : (
-                <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider py-2">
-                  No completed or archived shifts found
-                </p>
-              )}
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -1630,229 +1654,227 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 )}
 
                 {filteredEvents.length > 0 ? (
-              <div className="divide-y divide-border px-1">
-                {paginatedEvents.map((event) => {
-                  const date = new Date(event.created_at).toLocaleString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
+                  <div className="divide-y divide-border px-1">
+                    {paginatedEvents.map((event) => {
+                      const date = new Date(event.created_at).toLocaleString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      });
 
-                  // Icon + color matching the event's action
-                  let bulletColor = "bg-primary";
-                  let LogIcon = FileText;
-                  let iconColorClass = "text-primary";
+                      // Icon + color matching the event's action
+                      let bulletColor = "bg-primary";
+                      let LogIcon = FileText;
+                      let iconColorClass = "text-primary";
 
-                  if (event.type === "request") {
-                    const status = event.details?.status;
-                    if (status === "completed") {
-                      bulletColor = "bg-success";
-                      LogIcon = CheckCircle2;
-                      iconColorClass = "text-success";
-                    } else if (status === "expired") {
-                      bulletColor = "bg-destructive";
-                      LogIcon = Trash2;
-                      iconColorClass = "text-destructive";
-                    } else {
-                      bulletColor = "bg-warning"; // pending
-                      LogIcon = Send;
-                      iconColorClass = "text-warning";
-                    }
-                  } else {
-                    const action = event.action;
-                    if (action === "APPROVE_DOCUMENT" || action === "SUBMIT_DOCUMENTS") {
-                      bulletColor = "bg-success";
-                      LogIcon = CheckCircle2;
-                      iconColorClass = "text-success";
-                    } else if (action === "REJECT_DOCUMENT") {
-                      bulletColor = "bg-destructive";
-                      LogIcon = Trash2;
-                      iconColorClass = "text-destructive";
-                    } else if (action === "CREATE") {
-                      bulletColor = "bg-primary";
-                      LogIcon = Plus;
-                      iconColorClass = "text-primary";
-                    } else if (action === "UPDATE") {
-                      bulletColor = "bg-primary";
-                      LogIcon = PencilLine;
-                      iconColorClass = "text-primary";
-                    } else if (action === "INSPECT") {
-                      bulletColor = "bg-warning";
-                      LogIcon = Eye;
-                      iconColorClass = "text-purple-400 [.light-theme_&]:text-purple-600";
-                    } else {
-                      bulletColor = "bg-warning";
-                      LogIcon = Send;
-                      iconColorClass = "text-warning";
-                    }
-                  }
-
-                  // Compute diff & summaries
-                  let summaryText = "";
-                  let diff: any[] = [];
-                  let badgeColor = "bg-secondary border-border text-muted-foreground";
-
-                  if (event.type !== "request") {
-                    const action = event.action;
-                    if (action === "APPROVE_DOCUMENT") {
-                      badgeColor = "bg-success/10 border-success/20 text-success";
-                      summaryText = `${event.details?.ticket_type || "Certificate"} (Ref: ${event.details?.ticket_number || "N/A"})`;
-                    } else if (action === "REJECT_DOCUMENT") {
-                      badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                      summaryText = `${event.details?.ticket_type || "Certificate"} (Ref: ${event.details?.ticket_number || "N/A"})`;
-                    } else if (action === "SUBMIT_DOCUMENTS") {
-                      badgeColor = "bg-success/10 border-success/20 text-success";
-                      const submittedCerts = event.details?.tickets_submitted || [];
-                      summaryText = `Submitted: ${submittedCerts.map((c: any) => c.type).join(", ")}`;
-                    } else if (action === "RESEND_DOCUMENT_REQUEST") {
-                      badgeColor = "bg-primary/5 border-primary/20 text-primary";
-                      const resentCerts = event.details?.requested_certs || [];
-                      summaryText = resentCerts.length
-                        ? `Requested: ${resentCerts.join(", ")}`
-                        : "Document request email renewed and dispatched to operative.";
-                    } else if (action === "CREATE" || action === "UPDATE") {
-                      badgeColor = "bg-secondary border-border text-muted-foreground";
-                      if (action === "CREATE") {
-                        summaryText = "Initial database record created for staff member";
+                      if (event.type === "request") {
+                        const status = event.details?.status;
+                        if (status === "completed") {
+                          bulletColor = "bg-success";
+                          LogIcon = CheckCircle2;
+                          iconColorClass = "text-success";
+                        } else if (status === "expired") {
+                          bulletColor = "bg-destructive";
+                          LogIcon = Trash2;
+                          iconColorClass = "text-destructive";
+                        } else {
+                          bulletColor = "bg-warning"; // pending
+                          LogIcon = Send;
+                          iconColorClass = "text-warning";
+                        }
                       } else {
-                        diff = event.details?.old
-                          ? computeDiff(event.details.old, event.details.new)
-                          : [];
-                        const changedFields = diff
-                          .filter((d) => REVERTIBLE_FIELDS.includes(d.field))
-                          .map((d) => FIELD_LABELS[d.field] || d.field);
-                        summaryText = changedFields.length
-                          ? `Staff Details Updated: ${changedFields.join(", ")}`
-                          : "Staff Details Have Been Updated";
+                        const action = event.action;
+                        if (action === "APPROVE_DOCUMENT" || action === "SUBMIT_DOCUMENTS") {
+                          bulletColor = "bg-success";
+                          LogIcon = CheckCircle2;
+                          iconColorClass = "text-success";
+                        } else if (action === "REJECT_DOCUMENT") {
+                          bulletColor = "bg-destructive";
+                          LogIcon = Trash2;
+                          iconColorClass = "text-destructive";
+                        } else if (action === "CREATE") {
+                          bulletColor = "bg-primary";
+                          LogIcon = Plus;
+                          iconColorClass = "text-primary";
+                        } else if (action === "UPDATE") {
+                          bulletColor = "bg-primary";
+                          LogIcon = PencilLine;
+                          iconColorClass = "text-primary";
+                        } else if (action === "INSPECT") {
+                          bulletColor = "bg-warning";
+                          LogIcon = Eye;
+                          iconColorClass = "text-purple-400 [.light-theme_&]:text-purple-600";
+                        } else {
+                          bulletColor = "bg-warning";
+                          LogIcon = Send;
+                          iconColorClass = "text-warning";
+                        }
                       }
-                    } else if (action === "INSPECT") {
-                      badgeColor =
-                        "bg-purple-500/10 border-purple-500/30 text-purple-400 [.light-theme_&]:text-purple-600";
-                      summaryText = "Staff dossier profile viewed by administrator";
-                    } else if (action === "VIEW_DOCUMENT") {
-                      badgeColor = "bg-primary/5 border-primary/20 text-primary";
-                      const viewerFirstName = (event.actor || "").split("@")[0].split(".")[0];
-                      summaryText = `${event.details?.ticket_type || "Document"} viewed by ${
-                        viewerFirstName || "operative"
-                      }`;
-                    } else if (action === "COMPLIANCE_REMINDER_SENT") {
-                      badgeColor = "bg-primary/5 border-primary/20 text-primary";
-                      summaryText = `Reminder sent: ${event.details?.ticket_type || "Certificate"}`;
-                    } else if (action === "ASSIGN_STAFF") {
-                      badgeColor = "bg-primary/5 border-primary/20 text-primary";
-                      summaryText = `Assigned to ${event.details?.job_name || "a job"}`;
-                    } else if (action === "REALLOCATE_STAFF") {
-                      badgeColor = "bg-warning/15 border-warning/30 text-warning";
-                      summaryText = `Reallocated to ${event.details?.job_name || "a job"}`;
-                    } else if (action === "REMOVE_STAFF") {
-                      badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                      summaryText = `Removed from ${event.details?.job_name || "a job"}`;
-                    } else {
-                      summaryText =
-                        typeof event.details === "string" ? event.details : "";
-                    }
-                  }
 
-                  // Single-line badge + summary shown in the header row
-                  let headerBadgeText = event.action?.replace(/_/g, " ");
-                  let headerBadgeColor = badgeColor;
-                  let headerSummary = summaryText;
+                      // Compute diff & summaries
+                      let summaryText = "";
+                      let diff: any[] = [];
+                      let badgeColor = "bg-secondary border-border text-muted-foreground";
 
-                  if (event.type === "request") {
-                    const status = event.details?.status || "pending";
-                    headerBadgeText = status;
-                    headerBadgeColor =
-                      status === "completed"
-                        ? "bg-success/10 border-success/20 text-success"
-                        : status === "expired"
-                          ? "bg-red-500/10 border-red-500/30 text-red-400"
-                          : "bg-warning/15 border-warning/20 text-warning";
-                    headerSummary = `Requested: ${(event.details?.requested_certs || []).join(", ")}`;
-                  }
+                      if (event.type !== "request") {
+                        const action = event.action;
+                        if (action === "APPROVE_DOCUMENT") {
+                          badgeColor = "bg-success/10 border-success/20 text-success";
+                          summaryText = `${event.details?.ticket_type || "Certificate"} (Ref: ${event.details?.ticket_number || "N/A"})`;
+                        } else if (action === "REJECT_DOCUMENT") {
+                          badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
+                          summaryText = `${event.details?.ticket_type || "Certificate"} (Ref: ${event.details?.ticket_number || "N/A"})`;
+                        } else if (action === "SUBMIT_DOCUMENTS") {
+                          badgeColor = "bg-success/10 border-success/20 text-success";
+                          const submittedCerts = event.details?.tickets_submitted || [];
+                          summaryText = `Submitted: ${submittedCerts.map((c: any) => c.type).join(", ")}`;
+                        } else if (action === "RESEND_DOCUMENT_REQUEST") {
+                          badgeColor = "bg-primary/5 border-primary/20 text-primary";
+                          const resentCerts = event.details?.requested_certs || [];
+                          summaryText = resentCerts.length
+                            ? `Requested: ${resentCerts.join(", ")}`
+                            : "Document request email renewed and dispatched to operative.";
+                        } else if (action === "CREATE" || action === "UPDATE") {
+                          badgeColor = "bg-secondary border-border text-muted-foreground";
+                          if (action === "CREATE") {
+                            summaryText = "Initial database record created for staff member";
+                          } else {
+                            diff = event.details?.old
+                              ? computeDiff(event.details.old, event.details.new)
+                              : [];
+                            const changedFields = diff
+                              .filter((d) => REVERTIBLE_FIELDS.includes(d.field))
+                              .map((d) => FIELD_LABELS[d.field] || d.field);
+                            summaryText = changedFields.length
+                              ? `Staff Details Updated: ${changedFields.join(", ")}`
+                              : "Staff Details Have Been Updated";
+                          }
+                        } else if (action === "INSPECT") {
+                          badgeColor =
+                            "bg-purple-500/10 border-purple-500/30 text-purple-400 [.light-theme_&]:text-purple-600";
+                          summaryText = "Staff dossier profile viewed by administrator";
+                        } else if (action === "VIEW_DOCUMENT") {
+                          badgeColor = "bg-primary/5 border-primary/20 text-primary";
+                          const viewerFirstName = (event.actor || "").split("@")[0].split(".")[0];
+                          summaryText = `${event.details?.ticket_type || "Document"} viewed by ${
+                            viewerFirstName || "operative"
+                          }`;
+                        } else if (action === "COMPLIANCE_REMINDER_SENT") {
+                          badgeColor = "bg-primary/5 border-primary/20 text-primary";
+                          summaryText = `Reminder sent: ${event.details?.ticket_type || "Certificate"}`;
+                        } else if (action === "ASSIGN_STAFF") {
+                          badgeColor = "bg-primary/5 border-primary/20 text-primary";
+                          summaryText = `Assigned to ${event.details?.job_name || "a job"}`;
+                        } else if (action === "REALLOCATE_STAFF") {
+                          badgeColor = "bg-warning/15 border-warning/30 text-warning";
+                          summaryText = `Reallocated to ${event.details?.job_name || "a job"}`;
+                        } else if (action === "REMOVE_STAFF") {
+                          badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
+                          summaryText = `Removed from ${event.details?.job_name || "a job"}`;
+                        } else {
+                          summaryText = typeof event.details === "string" ? event.details : "";
+                        }
+                      }
 
-                  return (
-                    <div key={event.id} className="py-2.5">
-                      <div className="flex items-center gap-2.5 px-2.5">
-                        <div
-                          className={`w-6 h-6 rounded-full ${bulletColor}/10 flex items-center justify-center shrink-0`}
-                        >
-                          <LogIcon className={`w-3.5 h-3.5 ${iconColorClass}`} />
-                        </div>
-                        <span
-                          className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shrink-0 ${headerBadgeColor}`}
-                        >
-                          {headerBadgeText}
-                        </span>
-                        <p className="flex-1 min-w-0 truncate text-[11px] text-foreground/90">
-                          {headerSummary}
-                        </p>
-                        {event.type === "request" && event.details?.status === "pending" && (
-                          <button
-                            type="button"
-                            onClick={() => handleResendRequest(event.rawRecord)}
-                            disabled={resendingRequestMap[event.rawRecord.id]}
-                            className="flex items-center justify-center gap-1.5 px-2.5 py-1 bg-secondary hover:bg-secondary/80 rounded text-[9px] font-bold uppercase border border-border disabled:opacity-50 cursor-pointer text-foreground shrink-0"
-                          >
-                            {resendingRequestMap[event.rawRecord.id] ? (
-                              <RefreshCw className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                      // Single-line badge + summary shown in the header row
+                      let headerBadgeText = event.action?.replace(/_/g, " ");
+                      let headerBadgeColor = badgeColor;
+                      let headerSummary = summaryText;
+
+                      if (event.type === "request") {
+                        const status = event.details?.status || "pending";
+                        headerBadgeText = status;
+                        headerBadgeColor =
+                          status === "completed"
+                            ? "bg-success/10 border-success/20 text-success"
+                            : status === "expired"
+                              ? "bg-red-500/10 border-red-500/30 text-red-400"
+                              : "bg-warning/15 border-warning/20 text-warning";
+                        headerSummary = `Requested: ${(event.details?.requested_certs || []).join(", ")}`;
+                      }
+
+                      return (
+                        <div key={event.id} className="py-2.5">
+                          <div className="flex items-center gap-2.5 px-2.5">
+                            <div
+                              className={`w-6 h-6 rounded-full ${bulletColor}/10 flex items-center justify-center shrink-0`}
+                            >
+                              <LogIcon className={`w-3.5 h-3.5 ${iconColorClass}`} />
+                            </div>
+                            <span
+                              className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shrink-0 ${headerBadgeColor}`}
+                            >
+                              {headerBadgeText}
+                            </span>
+                            <p className="flex-1 min-w-0 truncate text-[11px] text-foreground/90">
+                              {headerSummary}
+                            </p>
+                            {event.type === "request" && event.details?.status === "pending" && (
+                              <button
+                                type="button"
+                                onClick={() => handleResendRequest(event.rawRecord)}
+                                disabled={resendingRequestMap[event.rawRecord.id]}
+                                className="flex items-center justify-center gap-1.5 px-2.5 py-1 bg-secondary hover:bg-secondary/80 rounded text-[9px] font-bold uppercase border border-border disabled:opacity-50 cursor-pointer text-foreground shrink-0"
+                              >
+                                {resendingRequestMap[event.rawRecord.id] ? (
+                                  <RefreshCw className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <RefreshCw className="h-3 w-3 text-muted-foreground" />
+                                )}
+                                <span>Resend</span>
+                              </button>
                             )}
-                            <span>Resend</span>
-                          </button>
-                        )}
-                        {diff.some((d) => REVERTIBLE_FIELDS.includes(d.field)) && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setRevertConfirmTarget({
-                                oldDetails: event.details?.old,
-                                currentDetails: event.details?.new,
-                                workerId:
-                                  event.rawRecord?.target_id || selectedWorkerDetailsId || "",
-                              })
-                            }
-                            className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                          >
-                            Revert
-                          </button>
-                        )}
-                        <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
-                          {date}
+                            {diff.some((d) => REVERTIBLE_FIELDS.includes(d.field)) && (
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setRevertConfirmTarget({
+                                    oldDetails: event.details?.old,
+                                    currentDetails: event.details?.new,
+                                    workerId:
+                                      event.rawRecord?.target_id || selectedWorkerDetailsId || "",
+                                  })
+                                }
+                                className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                              >
+                                Revert
+                              </button>
+                            )}
+                            <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
+                              {date}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Pagination Controls */}
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between pt-3 border-t border-border">
+                        <button
+                          type="button"
+                          onClick={() => setAuditLogPage((prev) => Math.max(1, prev - 1))}
+                          disabled={auditLogPage === 1}
+                          className="px-3.5 py-1.5 bg-card/60 border border-border text-[10px] font-bold uppercase tracking-wider rounded-lg text-muted-foreground hover:text-foreground transition-all disabled:opacity-40 cursor-pointer"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                          Page {auditLogPage} of {totalPages}
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => setAuditLogPage((prev) => Math.min(totalPages, prev + 1))}
+                          disabled={auditLogPage === totalPages}
+                          className="px-3.5 py-1.5 bg-card/60 border border-border text-[10px] font-bold uppercase tracking-wider rounded-lg text-muted-foreground hover:text-foreground transition-all disabled:opacity-40 cursor-pointer"
+                        >
+                          Next
+                        </button>
                       </div>
-
-                    </div>
-                  );
-                })}
-
-                {/* Pagination Controls */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-between pt-3 border-t border-border">
-                    <button
-                      type="button"
-                      onClick={() => setAuditLogPage((prev) => Math.max(1, prev - 1))}
-                      disabled={auditLogPage === 1}
-                      className="px-3.5 py-1.5 bg-card/60 border border-border text-[10px] font-bold uppercase tracking-wider rounded-lg text-muted-foreground hover:text-foreground transition-all disabled:opacity-40 cursor-pointer"
-                    >
-                      Previous
-                    </button>
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                      Page {auditLogPage} of {totalPages}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setAuditLogPage((prev) => Math.min(totalPages, prev + 1))}
-                      disabled={auditLogPage === totalPages}
-                      className="px-3.5 py-1.5 bg-card/60 border border-border text-[10px] font-bold uppercase tracking-wider rounded-lg text-muted-foreground hover:text-foreground transition-all disabled:opacity-40 cursor-pointer"
-                    >
-                      Next
-                    </button>
+                    )}
                   </div>
-                )}
-              </div>
                 ) : (
                   <div className="text-center py-12 border border-dashed border-border rounded-xl bg-muted/40">
                     <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-3" />

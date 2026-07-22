@@ -25,14 +25,14 @@ src/
 
 ## Database (Supabase Postgres, RLS everywhere)
 
-| Table | Purpose |
-|---|---|
-| `public.staff` | Operative details, certs, tickets |
-| `public.jobs` | Job/site definitions, pour tallies |
-| `public.shifts` | Shift scheduling |
-| `public.quotes` | Invoices/quotes |
-| `public.document_requests` | 48h operative doc-upload tokens |
-| `public.audit_logs` | Audit trail (admin@opusform.co.uk only) |
+| Table                                                                        | Purpose                                         |
+| ---------------------------------------------------------------------------- | ----------------------------------------------- |
+| `public.staff`                                                               | Operative details, certs, tickets               |
+| `public.jobs`                                                                | Job/site definitions, pour tallies              |
+| `public.shifts`                                                              | Shift scheduling                                |
+| `public.quotes`                                                              | Invoices/quotes                                 |
+| `public.document_requests`                                                   | 48h operative doc-upload tokens                 |
+| `public.audit_logs`                                                          | Audit trail (admin@opusform.co.uk only)         |
 | `public.job_attachments`, `public.job_diary`, `public.job_document_requests` | Job files, site diary, third-party doc requests |
 
 ## RBAC

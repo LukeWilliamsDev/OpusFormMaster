@@ -383,33 +383,29 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user) return;
     const channel = supabase
       .channel(`staff-changes-${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "staff" },
-        (payload) => {
-          if (!hydratedRef.current) return;
-          setWorkers((prev) => {
-            const next =
-              payload.eventType === "DELETE"
-                ? prev.filter((w) => w.id !== payload.old.id)
-                : (() => {
-                    const updated = rowToWorker(payload.new);
-                    const idx = prev.findIndex((w) => w.id === updated.id);
-                    return idx === -1
-                      ? [...prev, updated]
-                      : prev.map((w, i) => (i === idx ? updated : w));
-                  })();
+      .on("postgres_changes", { event: "*", schema: "public", table: "staff" }, (payload) => {
+        if (!hydratedRef.current) return;
+        setWorkers((prev) => {
+          const next =
+            payload.eventType === "DELETE"
+              ? prev.filter((w) => w.id !== payload.old.id)
+              : (() => {
+                  const updated = rowToWorker(payload.new);
+                  const idx = prev.findIndex((w) => w.id === updated.id);
+                  return idx === -1
+                    ? [...prev, updated]
+                    : prev.map((w, i) => (i === idx ? updated : w));
+                })();
 
-            // Mark this state as already persisted so the auto-save effect
-            // below doesn't immediately echo it back as a redundant upsert.
-            prevWorkerIdsRef.current = new Set(next.map((w) => w.id));
-            lastSavedWorkersRef.current = JSON.stringify(
-              next.map((w) => workerToRow(w, profile?.tenant_id)),
-            );
-            return next;
-          });
-        },
-      )
+          // Mark this state as already persisted so the auto-save effect
+          // below doesn't immediately echo it back as a redundant upsert.
+          prevWorkerIdsRef.current = new Set(next.map((w) => w.id));
+          lastSavedWorkersRef.current = JSON.stringify(
+            next.map((w) => workerToRow(w, profile?.tenant_id)),
+          );
+          return next;
+        });
+      })
       .subscribe();
 
     return () => {
@@ -424,33 +420,29 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user) return;
     const channel = supabase
       .channel(`jobs-changes-${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "jobs" },
-        (payload) => {
-          if (!hydratedRef.current) return;
-          setJobs((prev) => {
-            const next =
-              payload.eventType === "DELETE"
-                ? prev.filter((j) => j.id !== payload.old.id)
-                : (() => {
-                    const updated = rowToJob(payload.new);
-                    const idx = prev.findIndex((j) => j.id === updated.id);
-                    return idx === -1
-                      ? [...prev, updated]
-                      : prev.map((j, i) => (i === idx ? updated : j));
-                  })();
+      .on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, (payload) => {
+        if (!hydratedRef.current) return;
+        setJobs((prev) => {
+          const next =
+            payload.eventType === "DELETE"
+              ? prev.filter((j) => j.id !== payload.old.id)
+              : (() => {
+                  const updated = rowToJob(payload.new);
+                  const idx = prev.findIndex((j) => j.id === updated.id);
+                  return idx === -1
+                    ? [...prev, updated]
+                    : prev.map((j, i) => (i === idx ? updated : j));
+                })();
 
-            // Mark this state as already persisted so the auto-save effect
-            // below doesn't immediately echo it back as a redundant upsert.
-            prevJobIdsRef.current = new Set(next.map((j) => j.id));
-            lastSavedJobsRef.current = JSON.stringify(
-              next.map((j) => jobToRow(j, profile?.tenant_id)),
-            );
-            return next;
-          });
-        },
-      )
+          // Mark this state as already persisted so the auto-save effect
+          // below doesn't immediately echo it back as a redundant upsert.
+          prevJobIdsRef.current = new Set(next.map((j) => j.id));
+          lastSavedJobsRef.current = JSON.stringify(
+            next.map((j) => jobToRow(j, profile?.tenant_id)),
+          );
+          return next;
+        });
+      })
       .subscribe();
 
     return () => {
@@ -464,31 +456,27 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     if (!user) return;
     const channel = supabase
       .channel(`shifts-changes-${user.id}`)
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "shifts" },
-        (payload) => {
-          if (!hydratedRef.current) return;
-          setShifts((prev) => {
-            const next =
-              payload.eventType === "DELETE"
-                ? prev.filter((s) => s.id !== payload.old.id)
-                : (() => {
-                    const updated = rowToShift(payload.new);
-                    const idx = prev.findIndex((s) => s.id === updated.id);
-                    return idx === -1
-                      ? [...prev, updated]
-                      : prev.map((s, i) => (i === idx ? updated : s));
-                  })();
+      .on("postgres_changes", { event: "*", schema: "public", table: "shifts" }, (payload) => {
+        if (!hydratedRef.current) return;
+        setShifts((prev) => {
+          const next =
+            payload.eventType === "DELETE"
+              ? prev.filter((s) => s.id !== payload.old.id)
+              : (() => {
+                  const updated = rowToShift(payload.new);
+                  const idx = prev.findIndex((s) => s.id === updated.id);
+                  return idx === -1
+                    ? [...prev, updated]
+                    : prev.map((s, i) => (i === idx ? updated : s));
+                })();
 
-            prevShiftIdsRef.current = new Set(next.map((s) => s.id));
-            lastSavedShiftsRef.current = JSON.stringify(
-              next.map((s) => shiftToRow(s, profile?.tenant_id)),
-            );
-            return next;
-          });
-        },
-      )
+          prevShiftIdsRef.current = new Set(next.map((s) => s.id));
+          lastSavedShiftsRef.current = JSON.stringify(
+            next.map((s) => shiftToRow(s, profile?.tenant_id)),
+          );
+          return next;
+        });
+      })
       .subscribe();
 
     return () => {

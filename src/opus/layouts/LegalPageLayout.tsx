@@ -162,9 +162,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
   }
 
   return (
-    <div
-      className="min-h-screen font-sans relative overflow-hidden bg-background text-foreground"
-    >
+    <div className="min-h-screen font-sans relative overflow-hidden bg-background text-foreground">
       {/* Subtle concrete-texture grid overlay — matches landing page */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -177,7 +175,10 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
       {/* Header bar */}
       <header
         className="sticky top-0 z-30 border-b backdrop-blur-md"
-        style={{ borderColor: "var(--border)", backgroundColor: "color-mix(in srgb, var(--background) 92%, transparent)" }}
+        style={{
+          borderColor: "var(--border)",
+          backgroundColor: "color-mix(in srgb, var(--background) 92%, transparent)",
+        }}
       >
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <button
@@ -243,7 +244,9 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
                       className="block text-[11px] font-medium transition-colors duration-200 leading-snug"
                       style={{ color: "var(--muted-foreground)" }}
                       onMouseEnter={(e) => (e.currentTarget.style.color = "var(--primary)")}
-                      onMouseLeave={(e) => (e.currentTarget.style.color = "var(--muted-foreground)")}
+                      onMouseLeave={(e) =>
+                        (e.currentTarget.style.color = "var(--muted-foreground)")
+                      }
                     >
                       {item.title}
                     </a>
@@ -331,7 +334,10 @@ export const Section: React.FC<{ title: string; children: React.ReactNode; id?: 
     >
       {title}
     </h2>
-    <div className="space-y-3 text-[13px] leading-relaxed" style={{ color: "var(--muted-foreground)" }}>
+    <div
+      className="space-y-3 text-[13px] leading-relaxed"
+      style={{ color: "var(--muted-foreground)" }}
+    >
       {children}
     </div>
   </section>

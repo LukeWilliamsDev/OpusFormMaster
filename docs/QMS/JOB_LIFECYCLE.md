@@ -38,14 +38,14 @@ Defines how construction jobs are created, scheduled, tracked, and completed thr
 
 ## 3. Job Creation Controls
 
-| Field | Validation |
-|:------|:-----------|
-| **Job Reference** | Auto-generated unique ID (OP-XXXX-X format) |
-| **Site Name** | Required |
-| **Main Contractor** | Required |
-| **Postcode** | UK postcode format validated |
-| **Contract Max Pours** | Positive integer required |
-| **Schedule Value** | Positive number required (£) |
+| Field                  | Validation                                  |
+| :--------------------- | :------------------------------------------ |
+| **Job Reference**      | Auto-generated unique ID (OP-XXXX-X format) |
+| **Site Name**          | Required                                    |
+| **Main Contractor**    | Required                                    |
+| **Postcode**           | UK postcode format validated                |
+| **Contract Max Pours** | Positive integer required                   |
+| **Schedule Value**     | Positive number required (£)                |
 
 ---
 
@@ -60,13 +60,13 @@ Defines how construction jobs are created, scheduled, tracked, and completed thr
 
 ## 5. On-Site Operations
 
-| Feature | Description |
-|:--------|:------------|
+| Feature                 | Description                                                                                                                     |
+| :---------------------- | :------------------------------------------------------------------------------------------------------------------------------ |
 | **H&S Daily Checklist** | PPE verification, toolbox briefing, delivery access, weather risk assessment. Must be completed before pour logging is enabled. |
-| **Pour Logs** | Records pours against the contract maximum. Tracks progress percentage. |
-| **Site Diary** | Free-text daily notes for site conditions, incidents, or progress. |
-| **Photo Gallery** | Before/after photos uploaded to Supabase storage for evidence trail. |
-| **Weather Risk** | Real-time OpenWeatherMap API integration flags adverse conditions. |
+| **Pour Logs**           | Records pours against the contract maximum. Tracks progress percentage.                                                         |
+| **Site Diary**          | Free-text daily notes for site conditions, incidents, or progress.                                                              |
+| **Photo Gallery**       | Before/after photos uploaded to Supabase storage for evidence trail.                                                            |
+| **Weather Risk**        | Real-time OpenWeatherMap API integration flags adverse conditions.                                                              |
 
 ---
 

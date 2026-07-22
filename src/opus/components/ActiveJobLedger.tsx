@@ -29,9 +29,7 @@ const JobWarnings: React.FC<{ job: Job; followup: { reason: string } | null; den
   const showWeather = weather?.isImpactful;
 
   if (!showWeather && !followup) {
-    return dense ? null : (
-      <span className="text-[12px] text-muted-foreground font-medium">—</span>
-    );
+    return dense ? null : <span className="text-[12px] text-muted-foreground font-medium">—</span>;
   }
 
   const badgePad = dense ? "px-1.5 py-0.5" : "px-2 py-0.5";

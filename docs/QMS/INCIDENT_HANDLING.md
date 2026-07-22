@@ -14,14 +14,14 @@ Defines how incidents, defects, and complaints are reported, investigated, and r
 
 ## 2. Incident Categories
 
-| Category | Examples | Severity |
-|:---------|:---------|:---------|
-| **Data Breach** | Unauthorised access, credential compromise, data exposure | 🔴 Critical |
-| **Service Outage** | Platform unavailable, database connectivity failure | 🔴 Critical |
-| **Security Vulnerability** | CVE with CVSS ≥ 7.0, RLS bypass, privilege escalation | 🟠 High |
-| **Compliance Failure** | Expired certificates not flagged, missing audit logs | 🟠 High |
-| **Functional Defect** | UI bugs, calculation errors, broken workflows | 🟡 Medium |
-| **User Complaint** | UX friction, missing features, performance issues | 🔵 Low |
+| Category                   | Examples                                                  | Severity    |
+| :------------------------- | :-------------------------------------------------------- | :---------- |
+| **Data Breach**            | Unauthorised access, credential compromise, data exposure | 🔴 Critical |
+| **Service Outage**         | Platform unavailable, database connectivity failure       | 🔴 Critical |
+| **Security Vulnerability** | CVE with CVSS ≥ 7.0, RLS bypass, privilege escalation     | 🟠 High     |
+| **Compliance Failure**     | Expired certificates not flagged, missing audit logs      | 🟠 High     |
+| **Functional Defect**      | UI bugs, calculation errors, broken workflows             | 🟡 Medium   |
+| **User Complaint**         | UX friction, missing features, performance issues         | 🔵 Low      |
 
 ---
 
@@ -49,12 +49,12 @@ Defines how incidents, defects, and complaints are reported, investigated, and r
 
 ## 4. Response Timeframes
 
-| Severity | Acknowledgement | Resolution Target |
-|:---------|:----------------|:------------------|
-| 🔴 Critical | 1 hour | 4 hours |
-| 🟠 High | 4 hours | 24 hours |
-| 🟡 Medium | 24 hours | 5 business days |
-| 🔵 Low | 48 hours | Next scheduled release |
+| Severity    | Acknowledgement | Resolution Target      |
+| :---------- | :-------------- | :--------------------- |
+| 🔴 Critical | 1 hour          | 4 hours                |
+| 🟠 High     | 4 hours         | 24 hours               |
+| 🟡 Medium   | 24 hours        | 5 business days        |
+| 🔵 Low      | 48 hours        | Next scheduled release |
 
 ---
 
@@ -63,6 +63,7 @@ Defines how incidents, defects, and complaints are reported, investigated, and r
 Under UK GDPR Article 33, personal data breaches must be reported to the ICO within **72 hours** if they pose a risk to individuals' rights and freedoms.
 
 **Breach response steps:**
+
 1. **Contain** — Isolate affected systems, revoke compromised credentials
 2. **Assess** — Determine scope, data involved, and risk to individuals
 3. **Notify ICO** — If risk threshold met, report via [ico.org.uk/make-a-complaint](https://ico.org.uk/make-a-complaint) within 72 hours
@@ -74,6 +75,7 @@ Under UK GDPR Article 33, personal data breaches must be reported to the ICO wit
 ## 6. Corrective Action & Prevention
 
 After resolution:
+
 - Update relevant QMS process documents if the root cause was a process gap
 - Add automated checks where feasible (e.g. new validation rules, audit triggers)
 - Review security headers, RLS policies, and access controls if security-related
@@ -84,6 +86,7 @@ After resolution:
 ## 7. Audit Trail
 
 All incidents are recorded in the system audit trail (`public.audit_logs`) including:
+
 - Timestamp
 - Actor
 - Action taken

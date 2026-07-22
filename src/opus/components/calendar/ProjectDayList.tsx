@@ -86,8 +86,12 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 ${colors.bullet}`} />
-                  <h3 className={`text-[11px] sm:text-sm font-bold truncate ${colors.text}`}>{job.siteName}</h3>
+                  <span
+                    className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 ${colors.bullet}`}
+                  />
+                  <h3 className={`text-[11px] sm:text-sm font-bold truncate ${colors.text}`}>
+                    {job.siteName}
+                  </h3>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
                   <span className="text-[9px] sm:text-[10px] font-black font-mono uppercase tracking-wider text-muted-foreground">

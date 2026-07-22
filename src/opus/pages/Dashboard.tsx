@@ -265,7 +265,9 @@ export const DashboardPage: React.FC = () => {
       toast.success(`Compliance reminder sent to ${worker.name}`, { id: sendingToastId });
     } catch (e: any) {
       console.error("Failed to send compliance reminder:", e);
-      toast.warning("Failed to send reminder: " + (e.message || "Unknown error"), { id: sendingToastId });
+      toast.warning("Failed to send reminder: " + (e.message || "Unknown error"), {
+        id: sendingToastId,
+      });
 
       // Fire-and-forget admin failure alert
       supabase.functions
@@ -414,7 +416,9 @@ export const DashboardPage: React.FC = () => {
                           {searchResults.quotes.map((quote) => (
                             <div
                               key={quote.id}
-                              onMouseDown={() => navigate(`/portal/pipeline?view=pipeline-registry`)}
+                              onMouseDown={() =>
+                                navigate(`/portal/pipeline?view=pipeline-registry`)
+                              }
                               className="px-3 py-2 hover:bg-secondary rounded-lg cursor-pointer flex items-center justify-between"
                             >
                               <div className="flex items-center space-x-2.5">
@@ -458,7 +462,9 @@ export const DashboardPage: React.FC = () => {
                 key={t}
                 onClick={() => setTimeframe(t)}
                 className={`px-2.5 py-1 text-[10px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
-                  timeframe === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  timeframe === t
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {t}
@@ -811,7 +817,6 @@ export const DashboardPage: React.FC = () => {
           </div>
         </div>
       </div>
-
     </div>
   );
 };

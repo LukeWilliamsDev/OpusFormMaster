@@ -51,7 +51,8 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
     if (ticket.diffDays < 0) {
       // Expired
       return {
-        cardBg: "bg-destructive/10 border-destructive/20 hover:border-destructive/40 hover:bg-destructive/15",
+        cardBg:
+          "bg-destructive/10 border-destructive/20 hover:border-destructive/40 hover:bg-destructive/15",
         badgeBg: "bg-destructive/20 text-destructive border-destructive/30",
         statusText: "Blocked",
         daysText: "Expired",

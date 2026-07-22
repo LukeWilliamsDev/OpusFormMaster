@@ -22,10 +22,12 @@
 ### Task 1: Role category mapping module
 
 **Files:**
+
 - Create: `src/opus/components/calendar/roleCategories.ts`
 - Test: `src/opus/components/calendar/__tests__/roleCategories.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing (pure module, no imports from other new files).
 - Produces:
   - `export type RoleCategory = "Concrete Crew" | "Logistics" | "Office & Admin" | "Other";`
@@ -173,9 +175,11 @@ git commit -m "Add role category grouping for staff calendar accordions"
 ### Task 2: `RoleAccordion` component
 
 **Files:**
+
 - Create: `src/opus/components/calendar/RoleAccordion.tsx`
 
 **Interfaces:**
+
 - Consumes: `RoleCategory` type from `./roleCategories` (Task 1).
 - Produces:
   ```ts
@@ -259,9 +263,11 @@ git commit -m "Add RoleAccordion component for staff calendar"
 ### Task 3: Wire accordions into `StaffDayList`
 
 **Files:**
+
 - Modify: `src/opus/components/calendar/StaffDayList.tsx` (full rewrite of the render body, lines 1-81)
 
 **Interfaces:**
+
 - Consumes:
   - `groupWorkersByCategory`, `RoleCategory` from `./roleCategories` (Task 1)
   - `RoleAccordion` from `./RoleAccordion` (Task 2)

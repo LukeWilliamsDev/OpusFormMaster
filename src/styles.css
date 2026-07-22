@@ -6,11 +6,11 @@
 
 @theme {
   /* Brand tokens sourced directly from logo/favicon SVG assets */
-  --color-brand-dark-bg: #16171A;       /* Icon dark background */
-  --color-brand-light-bg: #F5F1EA;      /* Icon light background (warm cream) */
-  --color-brand-dark-text: #2B2F33;     /* Logo light-mode text (charcoal) */
-  --color-brand-light-text: #F7F5F2;    /* Logo dark-mode text (warm white) */
-  --color-brand-orange: #B5651D;        /* Accent dot — consistent across all assets */
+  --color-brand-dark-bg: #16171a; /* Icon dark background */
+  --color-brand-light-bg: #f5f1ea; /* Icon light background (warm cream) */
+  --color-brand-dark-text: #2b2f33; /* Logo light-mode text (charcoal) */
+  --color-brand-light-text: #f7f5f2; /* Logo dark-mode text (warm white) */
+  --color-brand-orange: #b5651d; /* Accent dot — consistent across all assets */
 
   --font-sans: "Public Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -49,53 +49,53 @@
 /* Sourced from: icon bg #16171A, logo text #F7F5F2, accent dot #B5651D       */
 :root {
   --radius: 0.625rem;
-  --background: #1B1C20;          /* Lifted off pure-near-black — softer, lower-glare surface */
-  --foreground: #EDEBE6;          /* Off-white instead of stark white — reduces halation on dark bg */
-  --card: #232429;                /* Slightly lifted dark surface */
-  --card-foreground: #EDEBE6;
+  --background: #1b1c20; /* Lifted off pure-near-black — softer, lower-glare surface */
+  --foreground: #edebe6; /* Off-white instead of stark white — reduces halation on dark bg */
+  --card: #232429; /* Slightly lifted dark surface */
+  --card-foreground: #edebe6;
   --popover: #232429;
-  --popover-foreground: #EDEBE6;
-  --primary: #B5651D;             /* Brand burnt-orange */
-  --primary-foreground: #EDEBE6;
-  --secondary: #2E3036;           /* Subtle raised surface */
-  --secondary-foreground: #DAD6CF;
+  --popover-foreground: #edebe6;
+  --primary: #b5651d; /* Brand burnt-orange */
+  --primary-foreground: #edebe6;
+  --secondary: #2e3036; /* Subtle raised surface */
+  --secondary-foreground: #dad6cf;
   --muted: #232429;
-  --muted-foreground: #ACA89F;    /* Warm mid-tone grey, boosted to ~7:1 (AAA) for readability */
-  --accent: #B5651D;
-  --accent-foreground: #EDEBE6;
-  --destructive: #E5484D;          /* Brighter red for dark surfaces — #C0392B read too dark/muddy at low opacity on dark backgrounds */
-  --destructive-foreground: #FDFAF5;
-  --success: #2E7D52;
-  --warning: #C47A28;             /* Slightly brighter warm orange for warnings */
-  --border: #2E3036;
-  --input: #2E3036;
-  --ring: #B5651D;
+  --muted-foreground: #aca89f; /* Warm mid-tone grey, boosted to ~7:1 (AAA) for readability */
+  --accent: #b5651d;
+  --accent-foreground: #edebe6;
+  --destructive: #e5484d; /* Brighter red for dark surfaces — #C0392B read too dark/muddy at low opacity on dark backgrounds */
+  --destructive-foreground: #fdfaf5;
+  --success: #2e7d52;
+  --warning: #c47a28; /* Slightly brighter warm orange for warnings */
+  --border: #2e3036;
+  --input: #2e3036;
+  --ring: #b5651d;
 }
 
 /* ─── LIGHT THEME ────────────────────────────────────────────────────────── */
 /* Sourced from: icon bg #F5F1EA, logo text #2B2F33, accent dot #B5651D       */
 .light-theme {
-  --background: #F5F1EA;          /* Icon light background — warm cream */
-  --foreground: #2B2F33;          /* Logo light-mode text — dark charcoal */
-  --card: #FDFAF5;                /* Slightly lighter warm surface */
-  --card-foreground: #2B2F33;
-  --popover: #FDFAF5;
-  --popover-foreground: #2B2F33;
-  --primary: #8D4F17;             /* Darkened from brand #B5651D — the lighter value fails WCAG AA (4.16:1) as text on this theme's cream surfaces; this hits ~5.7:1 */
-  --primary-foreground: #FDFAF5;
-  --secondary: #EAE5DC;           /* Slightly deeper cream */
-  --secondary-foreground: #2B2F33;
-  --muted: #EAE5DC;
-  --muted-foreground: #5A5450;    /* Warm helper text, boosted contrast for readability */
-  --accent: #8D4F17;
-  --accent-foreground: #FDFAF5;
-  --destructive: #C0392B;
-  --destructive-foreground: #FDFAF5;
-  --success: #2E7D52;
-  --warning: #A16421;              /* Darkened from #C47A28 — fails WCAG AA as text on this theme's cream surfaces */
-  --border: #D9D3C7;              /* Warm grey border */
-  --input: #EAE5DC;
-  --ring: #8D4F17;
+  --background: #f5f1ea; /* Icon light background — warm cream */
+  --foreground: #2b2f33; /* Logo light-mode text — dark charcoal */
+  --card: #fdfaf5; /* Slightly lighter warm surface */
+  --card-foreground: #2b2f33;
+  --popover: #fdfaf5;
+  --popover-foreground: #2b2f33;
+  --primary: #8d4f17; /* Darkened from brand #B5651D — the lighter value fails WCAG AA (4.16:1) as text on this theme's cream surfaces; this hits ~5.7:1 */
+  --primary-foreground: #fdfaf5;
+  --secondary: #eae5dc; /* Slightly deeper cream */
+  --secondary-foreground: #2b2f33;
+  --muted: #eae5dc;
+  --muted-foreground: #5a5450; /* Warm helper text, boosted contrast for readability */
+  --accent: #8d4f17;
+  --accent-foreground: #fdfaf5;
+  --destructive: #c0392b;
+  --destructive-foreground: #fdfaf5;
+  --success: #2e7d52;
+  --warning: #a16421; /* Darkened from #C47A28 — fails WCAG AA as text on this theme's cream surfaces */
+  --border: #d9d3c7; /* Warm grey border */
+  --input: #eae5dc;
+  --ring: #8d4f17;
 }
 
 @layer base {
@@ -107,65 +107,144 @@
     color: var(--foreground);
     font-family: "Public Sans", ui-sans-serif, system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
-    transition: background-color 0.15s ease, color 0.15s ease;
+    transition:
+      background-color 0.15s ease,
+      color 0.15s ease;
   }
 }
 
 @media print {
-  @page { size: A4; margin: 0; }
-  body * { visibility: hidden; }
-  .print-area, .print-area * { visibility: visible; }
-  .print-area {
-    position: fixed; left: 0; top: 0;
-    width: 210mm !important; height: 297mm !important;
-    margin: 0 !important; padding: 0 !important;
-    background: white !important; box-shadow: none !important;
-    transform: none !important; z-index: 9999;
+  @page {
+    size: A4;
+    margin: 0;
   }
-  ::-webkit-scrollbar { display: none; }
+  body * {
+    visibility: hidden;
+  }
+  .print-area,
+  .print-area * {
+    visibility: visible;
+  }
+  .print-area {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 210mm !important;
+    height: 297mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+    transform: none !important;
+    z-index: 9999;
+  }
+  ::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @keyframes leaflet-ping {
-  0% { transform: scale(0.6); opacity: 0.8; }
-  100% { transform: scale(2.2); opacity: 0; }
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
 }
 @keyframes scaleIn {
-  from { transform: scale(0); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 @keyframes drawCheck {
-  to { stroke-dashoffset: 0; }
+  to {
+    stroke-dashoffset: 0;
+  }
 }
 @keyframes fadeSlideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .pulsing-marker-red::after {
-  content: ''; position: absolute; width: 30px; height: 30px; border-radius: 50%;
-  background-color: #E11D48; opacity: 0.4;
-  animation: leaflet-ping 1.5s ease-out infinite; pointer-events: none;
+  content: "";
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: #e11d48;
+  opacity: 0.4;
+  animation: leaflet-ping 1.5s ease-out infinite;
+  pointer-events: none;
 }
 .pulsing-marker-accent::after {
-  content: ''; position: absolute; width: 30px; height: 30px; border-radius: 50%;
-  background-color: var(--primary); opacity: 0.4;
-  animation: leaflet-ping 1.5s ease-out infinite; pointer-events: none;
+  content: "";
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--primary);
+  opacity: 0.4;
+  animation: leaflet-ping 1.5s ease-out infinite;
+  pointer-events: none;
 }
 .leaflet-popup-content-wrapper {
-  background: var(--card) !important; color: var(--card-foreground) !important;
-  border: 1px solid var(--border); border-radius: 12px !important;
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5) !important; font-family: inherit;
+  background: var(--card) !important;
+  color: var(--card-foreground) !important;
+  border: 1px solid var(--border);
+  border-radius: 12px !important;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5) !important;
+  font-family: inherit;
 }
-.leaflet-popup-tip { background: var(--card) !important; border-left: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-.leaflet-popup-close-button { color: var(--muted-foreground) !important; font-size: 14px !important; padding: 6px !important; }
-.leaflet-bar { border: 1px solid var(--border) !important; box-shadow: none !important; border-radius: 8px !important; overflow: hidden; }
-.leaflet-bar a { background-color: var(--secondary) !important; color: var(--secondary-foreground) !important; border-bottom: 1px solid var(--border) !important; }
-.leaflet-bar a:hover { background-color: var(--muted) !important; color: var(--foreground) !important; }
+.leaflet-popup-tip {
+  background: var(--card) !important;
+  border-left: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.leaflet-popup-close-button {
+  color: var(--muted-foreground) !important;
+  font-size: 14px !important;
+  padding: 6px !important;
+}
+.leaflet-bar {
+  border: 1px solid var(--border) !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  overflow: hidden;
+}
+.leaflet-bar a {
+  background-color: var(--secondary) !important;
+  color: var(--secondary-foreground) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.leaflet-bar a:hover {
+  background-color: var(--muted) !important;
+  color: var(--foreground) !important;
+}
 .leaflet-control-attribution {
-  background: rgba(0,0,0,0.25) !important; color: var(--muted-foreground) !important;
-  font-size: 6px !important; line-height: 1.4 !important; padding: 0 3px !important;
-  border-radius: 3px 0 0 0 !important; opacity: 0.7;
+  background: rgba(0, 0, 0, 0.25) !important;
+  color: var(--muted-foreground) !important;
+  font-size: 6px !important;
+  line-height: 1.4 !important;
+  padding: 0 3px !important;
+  border-radius: 3px 0 0 0 !important;
+  opacity: 0.7;
 }
-.leaflet-control-attribution a { color: var(--muted-foreground) !important; }
+.leaflet-control-attribution a {
+  color: var(--muted-foreground) !important;
+}
 
 /* Custom scrollbar for horizontal calendar view */
 .custom-scrollbar::-webkit-scrollbar {
@@ -181,4 +260,3 @@
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--primary);
 }
-

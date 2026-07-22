@@ -38,13 +38,13 @@ Defines how staff compliance documents (CSCS cards, certificates, right-to-work 
 
 ## 3. Security Controls
 
-| Control | Description |
-|:--------|:------------|
+| Control                  | Description                                                                                                  |
+| :----------------------- | :----------------------------------------------------------------------------------------------------------- |
 | **48-hour token expiry** | Upload links expire automatically. Previous pending requests are auto-expired when a new request is created. |
-| **Signed URLs** | Private files accessed via 60-second signed URLs. No permanent direct links. |
-| **Storage RLS** | Workers can only INSERT into `requests/<token>/` path. Only authenticated admins can read/list files. |
-| **Edge function auth** | JWT and role checks enforced on all compliance email dispatch functions. |
-| **Audit logging** | `COMPLIANCE_REMINDER_SENT`, document upload, and validation events all logged. |
+| **Signed URLs**          | Private files accessed via 60-second signed URLs. No permanent direct links.                                 |
+| **Storage RLS**          | Workers can only INSERT into `requests/<token>/` path. Only authenticated admins can read/list files.        |
+| **Edge function auth**   | JWT and role checks enforced on all compliance email dispatch functions.                                     |
+| **Audit logging**        | `COMPLIANCE_REMINDER_SENT`, document upload, and validation events all logged.                               |
 
 ---
 
@@ -67,6 +67,7 @@ Defines how staff compliance documents (CSCS cards, certificates, right-to-work 
 ## 6. Legal Basis
 
 Processing compliance documents is performed under **Legal Obligation** (UK GDPR Article 6(1)(c)):
+
 - CDM Regulations 2015 require verification of worker competence
 - Health and Safety at Work Act 1974 mandates safe working practices
 - Construction (Design and Management) Regulations require proof of qualification

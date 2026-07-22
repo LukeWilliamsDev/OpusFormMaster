@@ -9,7 +9,6 @@ import {
   Phone,
   ChevronDown,
   ChevronUp,
-  HardHat,
 } from "lucide-react";
 import { Worker } from "../types/erp";
 
@@ -29,15 +28,7 @@ export function getNextScheduledPour(pourLogs: PourLog[]): PourLog | null {
   return [...scheduled].sort((a, b) => (a.date || "").localeCompare(b.date || ""))[0];
 }
 
-function formatPourDate(dateStr: string): string {
-  if (!dateStr) return "TBC";
-  const d = new Date(dateStr);
-  if (isNaN(d.getTime())) return "TBC";
-  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
-}
-
 interface PersistentJobHeaderProps {
-  pourLogs: PourLog[];
   weatherData: {
     temperature: number;
     condition: string;
@@ -49,33 +40,15 @@ interface PersistentJobHeaderProps {
 }
 
 export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({
-  pourLogs,
   weatherData,
   loadingWeather,
   groupedStaff,
 }) => {
   const [staffExpanded, setStaffExpanded] = useState(false);
-  const nextPour = getNextScheduledPour(pourLogs);
   const staffCount = Object.values(groupedStaff).reduce((sum, list) => sum + list.length, 0);
 
   return (
     <div className="bg-card border border-border rounded-xl divide-y divide-border">
-      <div className="p-3 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2 min-w-0">
-          <HardHat className="w-4 h-4 text-primary shrink-0" />
-          <span className="text-xs font-bold text-foreground uppercase tracking-wider shrink-0">
-            Next Pour
-          </span>
-        </div>
-        {nextPour ? (
-          <span className="text-sm font-bold text-foreground truncate">
-            #{nextPour.pourNumber} · {formatPourDate(nextPour.date)}
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground">None scheduled</span>
-        )}
-      </div>
-
       <div className="p-3 flex items-center justify-between gap-3">
         {loadingWeather ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

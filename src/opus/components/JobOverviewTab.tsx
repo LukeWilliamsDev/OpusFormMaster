@@ -1,13 +1,11 @@
 // @ts-nocheck
 import React from "react";
-import { Check, Circle, Clock, MapPin, Navigation, Phone, Loader } from "lucide-react";
+import { MapPin, Navigation, Phone, Loader } from "lucide-react";
 import { OSMMap } from "./OSMMap";
 import { Job } from "../types/erp";
 
 interface JobOverviewTabProps {
   job: Job;
-  status: Job["status"];
-  setPendingStatus: (s: Job["status"] | null) => void;
   siteCoords: { lat: number; lng: number } | null;
   suppliers: any[];
   selectedSupplierId: string | null;
@@ -17,8 +15,6 @@ interface JobOverviewTabProps {
 
 export function JobOverviewTab({
   job,
-  status,
-  setPendingStatus,
   siteCoords,
   suppliers,
   selectedSupplierId,
@@ -27,51 +23,6 @@ export function JobOverviewTab({
 }: JobOverviewTabProps) {
   return (
     <div className="space-y-4">
-      {/* Project Status Selector */}
-      <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-center">
-        <div className="flex flex-col items-stretch gap-0.5">
-          {(
-            [
-              {
-                key: "in-progress",
-                label: "In Progress",
-                Icon: Clock,
-                activeClasses: "bg-primary/15 text-primary border-primary/30",
-              },
-              {
-                key: "pending",
-                label: "Pending",
-                Icon: Circle,
-                activeClasses: "bg-warning/15 text-warning border-warning/30",
-              },
-              {
-                key: "completed",
-                label: "Completed",
-                Icon: Check,
-                activeClasses: "bg-success/15 text-success border-success/30",
-              },
-            ] as const
-          ).map(({ key: s, label, Icon, activeClasses }) => {
-            const isActive = status === s;
-            return (
-              <button
-                key={s}
-                onClick={() => !isActive && setPendingStatus(s)}
-                aria-pressed={isActive}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                  isActive
-                    ? activeClasses
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Interactive Proximity Suppliers Map */}
       <div className="grid grid-cols-1 lg:grid-cols-3 bg-card border border-border rounded-xl overflow-hidden">
         <div className="lg:col-span-2 flex flex-col lg:border-r border-border">

@@ -3,14 +3,15 @@ import React, { useState, useEffect, useRef } from "react";
 import {
   ChevronLeft,
   Check,
+  Circle,
+  Clock,
   AlertCircle,
   Paperclip,
   History,
   PencilLine,
   Trash2,
-  Layers,
   LayoutGrid,
-  MessageSquare,
+  MapPin,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -714,7 +715,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     }
   };
 
-  const pourPercent = Math.round((currentPours / (contractMaxPours || 1)) * 100);
   const beforePhotos = attachments.filter((a) => a.type === "image_before");
   const afterPhotos = attachments.filter((a) => a.type === "image_after");
   const projectDocs = attachments.filter((a) => a.type === "document");
@@ -765,6 +765,59 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         <div className="text-xs font-semibold bg-secondary border border-border text-muted-foreground px-3 py-1 rounded-md font-mono shrink-0">
           {job.jobRef.replace("-X", "")}
         </div>
+      </div>
+
+      {/* Project Status Selector + Persistent Header, side by side */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+      <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-center">
+        <div className="flex flex-col items-stretch gap-0.5">
+          {(
+            [
+              {
+                key: "pending",
+                label: "Pending",
+                Icon: Circle,
+                activeClasses: "bg-warning/15 text-warning border-warning/30",
+              },
+              {
+                key: "in-progress",
+                label: "In Progress",
+                Icon: Clock,
+                activeClasses: "bg-primary/15 text-primary border-primary/30",
+              },
+              {
+                key: "completed",
+                label: "Completed",
+                Icon: Check,
+                activeClasses: "bg-success/15 text-success border-success/30",
+              },
+            ] as const
+          ).map(({ key: s, label, Icon, activeClasses }) => {
+            const isActive = status === s;
+            return (
+              <button
+                key={s}
+                onClick={() => !isActive && setPendingStatus(s)}
+                aria-pressed={isActive}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                  isActive
+                    ? activeClasses
+                    : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                <Icon className="w-4 h-4 shrink-0" />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <PersistentJobHeader
+        weatherData={weatherData}
+        loadingWeather={loadingWeather}
+        groupedStaff={groupedStaff}
+      />
       </div>
 
       {/* Edit Job Details Dialog */}
@@ -848,39 +901,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         }
       />
 
-      {/* Pour Progress */}
-      <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-center">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="text-lg font-bold text-foreground flex items-center gap-2">
-              <span>{pourPercent}%</span>
-              <span
-                className={`text-[12px] px-2 py-0.5 rounded-full font-bold uppercase ${
-                  pourPercent >= 100
-                    ? "bg-success/15 text-success border border-success/20"
-                    : "bg-primary/15 text-primary border border-primary/20"
-                }`}
-              >
-                {currentPours} of {contractMaxPours}
-              </span>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {contractMaxPours - currentPours > 0
-                ? `${contractMaxPours - currentPours} pours remaining`
-                : "Contract fully poured"}
-            </p>
-          </div>
-          <Layers className="w-8 h-8 text-muted-foreground shrink-0" />
-        </div>
-        <div className="h-2 bg-secondary rounded-full overflow-hidden mt-3">
-          <div
-            className={`h-full rounded-full transition-all duration-500 ${
-              pourPercent >= 100 ? "bg-success" : "bg-primary"
-            }`}
-            style={{ width: `${Math.min(100, pourPercent)}%` }}
-          />
-        </div>
-      </div>
 
       {/* Change Project Status Confirmation */}
       <ConfirmDialog
@@ -902,178 +922,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           )
         }
       />
-
-      {/* Scheduled Pours: dated pour plan, always visible above the tabs regardless of which one is active */}
-      <div className="bg-card border border-border rounded-xl p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-bold text-foreground">Scheduled Pours</h2>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsAddingPour(!isAddingPour)}
-              className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border bg-card border-border hover:bg-secondary text-foreground"
-            >
-              {isAddingPour ? "Cancel" : "+ Schedule Pour"}
-            </button>
-          </div>
-        </div>
-
-        {isAddingPour && (
-          <form
-            onSubmit={handleAddPourSubmit}
-            className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4"
-          >
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Expected Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={newPourDate}
-                  onChange={(e) => setNewPourDate(e.target.value)}
-                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Mix Type
-                </label>
-                <select
-                  value={newPourMix}
-                  onChange={(e) => setNewPourMix(e.target.value)}
-                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none cursor-pointer"
-                >
-                  <option value="C28/35">C28/35</option>
-                  <option value="C32/40">C32/40</option>
-                  <option value="C35/45">C35/45</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                  Volume (m³)
-                </label>
-                <input
-                  type="number"
-                  required
-                  min="1"
-                  value={newPourVolume}
-                  onChange={(e) => setNewPourVolume(e.target.value)}
-                  className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                Pour Notes
-              </label>
-              <input
-                type="text"
-                placeholder="Notes..."
-                value={newPourNotes}
-                onChange={(e) => setNewPourNotes(e.target.value)}
-                className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none"
-              />
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg text-xs cursor-pointer"
-              >
-                Schedule Pour
-              </button>
-            </div>
-          </form>
-        )}
-
-        <div className="space-y-2.5">
-          {pourLogs.map((log) => {
-            const isCompleted = log.status === "completed";
-            return (
-              <div
-                key={log.id}
-                className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-xl transition-all ${
-                  isCompleted
-                    ? "bg-card border-border hover:bg-secondary"
-                    : "bg-warning/5 border-warning/20 hover:bg-warning/10"
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <button
-                    type="button"
-                    aria-label={
-                      isCompleted
-                        ? `Mark pour ${log.pourNumber} as scheduled`
-                        : `Mark pour ${log.pourNumber} complete`
-                    }
-                    onClick={() => setPourToggleTarget(log)}
-                    className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
-                      isCompleted
-                        ? "bg-success/15 border-success/30 text-success hover:bg-success/25"
-                        : "border-border text-transparent hover:border-primary hover:bg-primary/10"
-                    }`}
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="space-y-1 min-w-0">
-                    <div className="text-sm font-bold text-foreground flex items-center flex-wrap gap-x-2 gap-y-1">
-                      Pour #{log.pourNumber}
-                      {!isCompleted && (
-                        <span className="text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
-                          Scheduled
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {log.mixType} · {log.volumeM3}m³
-                    </div>
-                    {log.notes && (
-                      <div className="text-[13px] text-muted-foreground/80 italic truncate max-w-[280px]">
-                        {log.notes}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-                  {isCompleted && (
-                    <div className="text-xs text-muted-foreground font-semibold">
-                      {formatPourDate(log.date)}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    aria-label={`Edit notes for pour ${log.pourNumber}`}
-                    onClick={() => {
-                      setEditNoteText(log.notes || "");
-                      setPourNoteTarget(log);
-                    }}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
-                  >
-                    <PencilLine className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={`Remove pour ${log.pourNumber}`}
-                    onClick={() => setPourToRemove(log)}
-                    className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-
-          {pourLogs.length === 0 && (
-            <div className="py-8 text-center text-xs text-muted-foreground uppercase tracking-wider">
-              No pours logged yet
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Remove Pour Confirmation */}
       <ConfirmDialog
@@ -1152,13 +1000,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         }
       />
 
-      <PersistentJobHeader
-        pourLogs={pourLogs}
-        weatherData={weatherData}
-        loadingWeather={loadingWeather}
-        groupedStaff={groupedStaff}
-      />
-
       {/* Secondary sections: Suppliers/Map, Diary+Staff, Attachments */}
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="w-full grid grid-cols-4">
@@ -1179,12 +1020,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             <span className="text-[11px]">Media</span>
           </TabsTrigger>
           <TabsTrigger
-            value="feed"
-            aria-label="Feed"
+            value="suppliers"
+            aria-label="Local Suppliers"
             className="flex items-center justify-center gap-1 px-1.5"
           >
-            <MessageSquare className="w-3.5 h-3.5 shrink-0" />{" "}
-            <span className="text-[11px]">Feed</span>
+            <MapPin className="w-3.5 h-3.5 shrink-0" />{" "}
+            <span className="text-[11px]">Suppliers</span>
           </TabsTrigger>
           <TabsTrigger
             value="history"
@@ -1196,11 +1037,184 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview">
+        <TabsContent value="overview" className="space-y-4">
+          <div className="bg-card border border-border rounded-xl p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-foreground">Scheduled Pours</h2>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setIsAddingPour(!isAddingPour)}
+                  className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border bg-card border-border hover:bg-secondary text-foreground"
+                >
+                  {isAddingPour ? "Cancel" : "+ Schedule Pour"}
+                </button>
+              </div>
+            </div>
+
+            {isAddingPour && (
+              <form
+                onSubmit={handleAddPourSubmit}
+                className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4"
+              >
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                      Expected Date
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={newPourDate}
+                      onChange={(e) => setNewPourDate(e.target.value)}
+                      className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                      Mix Type
+                    </label>
+                    <select
+                      value={newPourMix}
+                      onChange={(e) => setNewPourMix(e.target.value)}
+                      className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none cursor-pointer"
+                    >
+                      <option value="C28/35">C28/35</option>
+                      <option value="C32/40">C32/40</option>
+                      <option value="C35/45">C35/45</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                      Volume (m³)
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min="1"
+                      value={newPourVolume}
+                      onChange={(e) => setNewPourVolume(e.target.value)}
+                      className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                    Pour Notes
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Notes..."
+                    value={newPourNotes}
+                    onChange={(e) => setNewPourNotes(e.target.value)}
+                    className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none"
+                  />
+                </div>
+
+                <div className="flex justify-end">
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg text-xs cursor-pointer"
+                  >
+                    Schedule Pour
+                  </button>
+                </div>
+              </form>
+            )}
+
+            <div className="space-y-2.5">
+              {pourLogs.map((log) => {
+                const isCompleted = log.status === "completed";
+                return (
+                  <div
+                    key={log.id}
+                    className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-xl transition-all ${
+                      isCompleted
+                        ? "bg-card border-border hover:bg-secondary"
+                        : "bg-warning/5 border-warning/20 hover:bg-warning/10"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <button
+                        type="button"
+                        aria-label={
+                          isCompleted
+                            ? `Mark pour ${log.pourNumber} as scheduled`
+                            : `Mark pour ${log.pourNumber} complete`
+                        }
+                        onClick={() => setPourToggleTarget(log)}
+                        className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                          isCompleted
+                            ? "bg-success/15 border-success/30 text-success hover:bg-success/25"
+                            : "border-border text-transparent hover:border-primary hover:bg-primary/10"
+                        }`}
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <div className="space-y-1 min-w-0">
+                        <div className="text-sm font-bold text-foreground flex items-center flex-wrap gap-x-2 gap-y-1">
+                          Pour #{log.pourNumber}
+                          {!isCompleted && (
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
+                              Scheduled
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {log.mixType} · {log.volumeM3}m³
+                        </div>
+                        {log.notes && (
+                          <div className="text-[13px] text-muted-foreground/80 italic truncate max-w-[280px]">
+                            {log.notes}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+                      {isCompleted && (
+                        <div className="text-xs text-muted-foreground font-semibold">
+                          {formatPourDate(log.date)}
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        aria-label={`Edit notes for pour ${log.pourNumber}`}
+                        onClick={() => {
+                          setEditNoteText(log.notes || "");
+                          setPourNoteTarget(log);
+                        }}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                      >
+                        <PencilLine className="w-4 h-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label={`Remove pour ${log.pourNumber}`}
+                        onClick={() => setPourToRemove(log)}
+                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {pourLogs.length === 0 && (
+                <div className="py-8 text-center text-xs text-muted-foreground uppercase tracking-wider">
+                  No pours logged yet
+                </div>
+              )}
+            </div>
+          </div>
+
+          <FeedTab jobId={job.id} />
+        </TabsContent>
+
+        <TabsContent value="suppliers">
           <JobOverviewTab
             job={job}
-            status={status}
-            setPendingStatus={setPendingStatus}
             siteCoords={siteCoords}
             suppliers={suppliers}
             selectedSupplierId={selectedSupplierId}
@@ -1237,10 +1251,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             setRenameValue={setRenameValue}
             executeRenameAttachment={executeRenameAttachment}
           />
-        </TabsContent>
-
-        <TabsContent value="feed">
-          <FeedTab jobId={job.id} />
         </TabsContent>
 
         <TabsContent value="history">

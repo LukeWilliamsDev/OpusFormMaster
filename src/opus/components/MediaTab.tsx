@@ -365,7 +365,7 @@ export function MediaTab({
 
       {/* Before/After photo gallery */}
       <Dialog open={!!gallery} onOpenChange={(open) => !open && setGallery(null)}>
-        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-black">
+        <DialogContent className="max-w-2xl p-0 overflow-hidden bg-black !inset-x-auto !left-1/2 !top-1/2 !bottom-auto !-translate-x-1/2 !-translate-y-1/2 !rounded-lg !w-[calc(100%-2rem)] !max-h-[calc(100dvh-2rem)]">
           {gallery && (
             <div className="relative flex flex-col items-center">
               <img

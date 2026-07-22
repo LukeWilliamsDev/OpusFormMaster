@@ -37,78 +37,77 @@ interface PersistentJobHeaderProps {
   } | null;
   loadingWeather: boolean;
   groupedStaff: { [key: string]: Worker[] };
+  statusPills?: React.ReactNode;
 }
 
 export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({
   weatherData,
   loadingWeather,
   groupedStaff,
+  statusPills,
 }) => {
   const [staffExpanded, setStaffExpanded] = useState(false);
   const staffCount = Object.values(groupedStaff).reduce((sum, list) => sum + list.length, 0);
 
   return (
     <div className="bg-card border border-border rounded-xl divide-y divide-border">
-      <div className="p-3 flex items-center justify-between gap-3">
-        {loadingWeather ? (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Loader className="w-4 h-4 animate-spin text-primary" />
-            <span>Fetching weather...</span>
-          </div>
-        ) : weatherData ? (
-          <>
-            <div className="flex items-center gap-2 min-w-0">
-              {weatherData.condition === "Rain" ? (
-                <CloudRain className="w-5 h-5 text-muted-foreground shrink-0" />
-              ) : weatherData.condition === "Frost" ? (
-                <Snowflake className="w-5 h-5 text-muted-foreground shrink-0" />
-              ) : weatherData.condition === "Wind" ? (
-                <Wind className="w-5 h-5 text-muted-foreground shrink-0" />
-              ) : (
-                <CloudSun className="w-5 h-5 text-muted-foreground shrink-0" />
-              )}
-              <span className="text-sm font-bold text-foreground">{weatherData.temperature}°C</span>
-              <span className="text-xs text-muted-foreground truncate">
-                {weatherData.condition}
-              </span>
+      <div className="p-3 flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-wrap min-w-0">
+          {statusPills}
+          {loadingWeather ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader className="w-4 h-4 animate-spin text-primary" />
+              <span>Fetching weather...</span>
             </div>
-            <span
-              className={`text-[11px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${
-                weatherData.isImpactful
-                  ? "bg-destructive/15 text-destructive border border-destructive/20"
-                  : "bg-success/15 text-success border border-success/20"
-              }`}
-            >
-              {weatherData.riskLevel} Risk
-            </span>
-          </>
-        ) : (
-          <span className="text-xs text-muted-foreground">Weather unavailable</span>
-        )}
-      </div>
+          ) : weatherData ? (
+            <>
+              <div className="flex items-center gap-2 min-w-0">
+                {weatherData.condition === "Rain" ? (
+                  <CloudRain className="w-5 h-5 text-muted-foreground shrink-0" />
+                ) : weatherData.condition === "Frost" ? (
+                  <Snowflake className="w-5 h-5 text-muted-foreground shrink-0" />
+                ) : weatherData.condition === "Wind" ? (
+                  <Wind className="w-5 h-5 text-muted-foreground shrink-0" />
+                ) : (
+                  <CloudSun className="w-5 h-5 text-muted-foreground shrink-0" />
+                )}
+                <span className="text-sm font-bold text-foreground">{weatherData.temperature}°C</span>
+                <span className="text-xs text-muted-foreground truncate">
+                  {weatherData.condition}
+                </span>
+              </div>
+              <span
+                className={`text-[11px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ${
+                  weatherData.isImpactful
+                    ? "bg-destructive/15 text-destructive border border-destructive/20"
+                    : "bg-success/15 text-success border border-success/20"
+                }`}
+              >
+                {weatherData.riskLevel} Risk
+              </span>
+            </>
+          ) : (
+            <span className="text-xs text-muted-foreground">Weather unavailable</span>
+          )}
+        </div>
 
-      <div className="p-3">
         <button
           type="button"
           onClick={() => setStaffExpanded((v) => !v)}
-          className="w-full flex items-center justify-between gap-3 cursor-pointer"
+          className="flex items-center gap-2 cursor-pointer shrink-0"
         >
-          <div className="flex items-center gap-2">
-            <UserCheck className="w-4 h-4 text-primary" />
-            <span className="text-xs font-bold text-foreground uppercase tracking-wider">
-              Active Staff
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-foreground">{staffCount}</span>
-            {staffExpanded ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            )}
-          </div>
+          <UserCheck className="w-4 h-4 text-primary" />
+          <span className="text-xs font-bold text-foreground">{staffCount} active</span>
+          {staffExpanded ? (
+            <ChevronUp className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          )}
         </button>
-        {staffExpanded && (
+      </div>
+
+      {staffExpanded && (
+        <div className="p-3">
           <div className="mt-3 space-y-4">
             {Object.keys(groupedStaff).length > 0 ? (
               Object.keys(groupedStaff).map((roleName) => (
@@ -144,8 +143,8 @@ export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({
               </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -985,9 +985,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
-            <div className="bg-card border border-border rounded-xl p-4 flex flex-col justify-center">
-              <div className="flex flex-col items-stretch gap-0.5">
+          <PersistentJobHeader
+            weatherData={weatherData}
+            loadingWeather={loadingWeather}
+            groupedStaff={groupedStaff}
+            statusPills={
+              <div className="flex flex-wrap items-center gap-1.5">
                 {(
                   [
                     {
@@ -1016,26 +1019,20 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                       key={s}
                       onClick={() => !isActive && setPendingStatus(s)}
                       aria-pressed={isActive}
-                      className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                         isActive
                           ? activeClasses
                           : "border-transparent text-muted-foreground hover:text-foreground"
                       }`}
                     >
-                      <Icon className="w-4 h-4 shrink-0" />
+                      <Icon className="w-3.5 h-3.5 shrink-0" />
                       {label}
                     </button>
                   );
                 })}
               </div>
-            </div>
-
-            <PersistentJobHeader
-              weatherData={weatherData}
-              loadingWeather={loadingWeather}
-              groupedStaff={groupedStaff}
-            />
-          </div>
+            }
+          />
 
           <div className="bg-card border border-border rounded-xl p-4">
             <div className="flex items-center justify-between mb-4">

@@ -1,8 +1,8 @@
 const IGNORED_FIELDS = ["id", "created_at", "updated_at", "tenant_id"];
 
 export function computeDiff(
-  oldObj: Record<string, any> | null | undefined,
-  newObj: Record<string, any> | null | undefined,
+  oldObj: Record<string, unknown> | null | undefined,
+  newObj: Record<string, unknown> | null | undefined,
 ) {
   if (!oldObj || !newObj) return [];
 

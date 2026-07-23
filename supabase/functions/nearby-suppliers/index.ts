@@ -34,7 +34,22 @@ function deriveBusinessType(categories: string[] | undefined): string {
 // Geoapify Places — reliable hosted lookup (3000 free req/day, no shared
 // public-instance rate limiting) instead of calling Overpass directly from
 // the browser, which was timing out under IP-based slot throttling.
-function mapFeature(f: any) {
+interface GeoapifyFeature {
+  geometry: { coordinates: [number, number] };
+  properties: {
+    place_id: string;
+    name?: string;
+    address_line1?: string;
+    address_line2?: string;
+    formatted?: string;
+    contact?: { phone?: string; website?: string };
+    website?: string;
+    categories?: string[];
+    distance?: number;
+  };
+}
+
+function mapFeature(f: GeoapifyFeature) {
   const p = f.properties;
   return {
     id: p.place_id,

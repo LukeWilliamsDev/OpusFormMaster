@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Worker, Ticket } from "../types/erp";
 
 // Validation anchor: today (evaluated at call time so expiry checks stay live)

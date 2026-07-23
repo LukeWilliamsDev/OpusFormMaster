@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -28,7 +27,7 @@ interface AuditLog {
   action: string;
   target_type: string;
   target_id: string;
-  details: any;
+  details: Record<string, unknown> | null;
 }
 
 export const AuditLogPage: React.FC = () => {

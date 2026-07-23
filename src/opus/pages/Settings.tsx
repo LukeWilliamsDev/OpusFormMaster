@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect } from "react";
 import { usePortal } from "../context/PortalContext";
 import { User, Shield, Phone, Key, Check, AlertCircle } from "lucide-react";

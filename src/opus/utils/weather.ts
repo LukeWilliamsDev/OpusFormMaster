@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useEffect, useState } from "react";
 import { WeatherRisk } from "../types/erp";
 import { parseLocalISODate, toLocalISODate } from "./week";

@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { Worker, ScheduledShift } from "../types/erp";
 import { getMonday, toLocalISODate } from "../utils/week";
 
@@ -15,7 +14,7 @@ export const INITIAL_ROSTER: Worker[] = [
   {
     id: "w-1",
     name: "Marcus Vance",
-    role: "Supervisor",
+    role: "Concrete Pour Supervisor",
     phone: "+44 7700 900221",
     email: "marcus.vance@opusconcrete.co.uk",
     uploadedCertificates: [
@@ -30,7 +29,7 @@ export const INITIAL_ROSTER: Worker[] = [
   {
     id: "w-2",
     name: "Declan Brody",
-    role: "Operative",
+    role: "Concrete Operative",
     phone: "+44 7700 900456",
     email: "declan.brody@opusconcrete.co.uk",
     uploadedCertificates: [
@@ -41,7 +40,7 @@ export const INITIAL_ROSTER: Worker[] = [
   {
     id: "w-3",
     name: "Sean O'Connor",
-    role: "Operative",
+    role: "Concrete Operative",
     phone: "+44 7700 900789",
     email: "sean.oconnor@opusconcrete.co.uk",
     uploadedCertificates: [],
@@ -52,7 +51,7 @@ export const INITIAL_ROSTER: Worker[] = [
   {
     id: "w-4",
     name: "Gareth Evans",
-    role: "Telehandler",
+    role: "Telehandler Operator",
     phone: "+44 7700 900112",
     email: "gareth.evans@opusconcrete.co.uk",
     uploadedCertificates: [
@@ -67,7 +66,7 @@ export const INITIAL_ROSTER: Worker[] = [
   {
     id: "w-5",
     name: "Liam Sterling",
-    role: "Groundworker",
+    role: "General Construction Labourer",
     phone: "+44 7700 900993",
     email: "liam.sterling@opusconcrete.co.uk",
     uploadedCertificates: [
@@ -78,7 +77,7 @@ export const INITIAL_ROSTER: Worker[] = [
   {
     id: "w-6",
     name: "Harrison Forde",
-    role: "Supervisor",
+    role: "Concrete Pour Supervisor",
     phone: "+44 7700 900554",
     email: "harrison.forde@opusconcrete.co.uk",
     uploadedCertificates: [],
@@ -89,7 +88,7 @@ export const INITIAL_ROSTER: Worker[] = [
   {
     id: "w-7",
     name: "Kallum Finch",
-    role: "Operative",
+    role: "Concrete Operative",
     phone: "+44 7700 900887",
     email: "kallum.finch@opusconcrete.co.uk",
     uploadedCertificates: [
@@ -102,7 +101,7 @@ export const INITIAL_ROSTER: Worker[] = [
   {
     id: "w-8",
     name: "Niall Gallagher",
-    role: "Groundworker",
+    role: "General Construction Labourer",
     phone: "+44 7700 900332",
     email: "niall.gallagher@opusconcrete.co.uk",
     uploadedCertificates: [

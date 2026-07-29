@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -118,15 +117,40 @@ export const OSMMap: React.FC<OSMMapProps> = ({
     ).addTo(map);
     map.attributionControl.setPrefix(false);
 
-    const siteIcon = createCustomMarkerIcon("#E11D48", "pulsing-marker-red");
+    // Create marker icons with site office colors
+    const selectedIcon = createCustomMarkerIcon("#10B981", "pulsing-marker-emerald"); // emerald
+    const supplierIcon = createCustomMarkerIcon("#6B7280", "pulsing-marker-stone");   // stone
+    const siteIcon = createCustomMarkerIcon("#EA580C", "pulsing-marker-amber");      // amber (site)
+
+    // Add site marker
     const siteMarker = L.marker([siteCoords.lat, siteCoords.lng], { icon: siteIcon }).addTo(map);
     siteMarker.bindPopup(`
-      <div style="padding: 4px; font-family: inherit;">
-        <h4 style="margin: 0 0 4px 0; font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--card-foreground);">${siteName}</h4>
-        <p style="margin: 0; font-size: 8.5px; color: var(--muted-foreground);">Active Job Site Location</p>
+      <div class="p-2 bg-stone-50 dark:bg-slate-800/50 rounded-md border border-stone-200 dark:border-slate-700">
+        <h4 class="font-bold text-stone-900 dark:text-white uppercase text-xs mb-1">${siteName}</h4>
+        <p class="text-sm text-stone-600 dark:text-stone-300">Active Job Site Location</p>
       </div>
     `);
     markersRef.current = { site: siteMarker };
+
+    // Add supplier markers
+    suppliers.forEach((supplier) => {
+      if (!isValidCoord(supplier.coords)) return;
+      const isSelected = supplier.id === selectedSupplierId;
+      const marker = L.marker(
+        [supplier.coords.lat, supplier.coords.lng],
+        { icon: isSelected ? selectedIcon : supplierIcon }
+      ).addTo(map);
+      marker.bindPopup(`
+        <div class="p-2 bg-stone-50 dark:bg-slate-800/50 rounded-md border border-stone-200 dark:border-slate-700">
+          <h4 class="font-bold text-stone-900 dark:text-white uppercase text-xs mb-1">${supplier.name}</h4>
+          <p class="text-sm text-stone-600 dark:text-stone-300">${supplier.businessType || 'Supplier'}</p>
+          <p class="text-xs text-stone-500 dark:text-stone-400">${supplier.address}</p>
+          ${supplier.phone ? `<p class="text-xs text-stone-500 dark:text-stone-400">📞 ${supplier.phone}</p>` : ''}
+          ${supplier.website ? `<p class="text-xs text-stone-500 dark:text-stone-400">🌐 ${supplier.website}</p>` : ''}
+        </div>
+      `);
+      markersRef.current[supplier.id] = marker;
+    });
 
     return () => {
       if (mapRef.current) {
@@ -241,45 +265,47 @@ export const OSMMap: React.FC<OSMMapProps> = ({
               {selectedSupplier.distance} from site
             </span>
           </div>
-          {selectedSupplier.businessType && (
-            <p className="text-[11px] text-primary font-bold uppercase tracking-wider mt-1.5">
-              {selectedSupplier.businessType}
+          <div className="p-4 bg-stone-50 dark:bg-slate-800/50 border border-stone-200 dark:border-slate-700">
+            {selectedSupplier.businessType && (
+              <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">
+                {selectedSupplier.businessType}
+              </p>
+            )}
+            <p className="text-xs text-stone-900 dark:text-white leading-relaxed">
+              {selectedSupplier.address}
             </p>
-          )}
-          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
-            {selectedSupplier.address}
-          </p>
-          {/* Full-height tap targets (not inline text links) — call/website/
+            {/* Full-height tap targets (not inline text links) — call/website/
               directions are the actions staff need mid-task on a tablet/
               phone, so they get real button sizing and share the row evenly
               whichever of the three actually exist for this supplier. */}
-          <div className="flex gap-2 mt-3">
-            {selectedSupplier.phone && (
+            <div className="flex gap-2 border-t-2 border-amber-500 pt-3">
+              {selectedSupplier.phone && (
+                <a
+                  href={`tel:${selectedSupplier.phone.replace(/\s+/g, "")}`}
+                  className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-amber-600/15 border border-amber-600/30 text-amber-600 font-bold text-xs active:scale-95 transition-transform"
+                >
+                  <Phone className="w-4 h-4" /> Call
+                </a>
+              )}
+              {selectedSupplier.website && (
+                <a
+                  href={selectedSupplier.website}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-stone-100/15 border border-stone-200/30 text-stone-800 font-bold text-xs active:scale-95 transition-transform"
+                >
+                  <Globe className="w-4 h-4" /> Website
+                </a>
+              )}
               <a
-                href={`tel:${selectedSupplier.phone.replace(/\s+/g, "")}`}
-                className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-destructive/15 border border-destructive/30 text-destructive font-bold text-xs active:scale-95 transition-transform"
-              >
-                <Phone className="w-4 h-4" /> Call
-              </a>
-            )}
-            {selectedSupplier.website && (
-              <a
-                href={selectedSupplier.website}
+                href={`https://www.google.com/maps/dir/?api=1&destination=${selectedSupplier.coords.lat},${selectedSupplier.coords.lng}`}
                 target="_blank"
                 rel="noreferrer"
-                className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-muted border border-border text-muted-foreground font-bold text-xs active:scale-95 transition-transform"
+                className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-primary/15 border border-primary/30 text-primary font-bold text-xs active:scale-95 transition-transform"
               >
-                <Globe className="w-4 h-4" /> Website
+                <Navigation className="w-4 h-4" /> Directions
               </a>
-            )}
-            <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${selectedSupplier.coords.lat},${selectedSupplier.coords.lng}`}
-              target="_blank"
-              rel="noreferrer"
-              className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-primary/15 border border-primary/30 text-primary font-bold text-xs active:scale-95 transition-transform"
-            >
-              <Navigation className="w-4 h-4" /> Directions
-            </a>
+            </div>
           </div>
         </div>
       )}

@@ -1,5 +1,6 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import React from "react";
+import { CardGrid } from '../components/CardGrid';
 import {
   Camera,
   FileText,
@@ -38,13 +39,13 @@ interface MediaTabProps {
   gallery: { photos: any[]; index: number } | null;
   setGallery: (g: { photos: any[]; index: number } | null) => void;
   viewDocTarget: any;
-  setViewDocTarget: (a: any) => void;
+  setViewDocTarget: (a: Record<string, unknown>) => void;
   executeViewDocument: () => void;
   deleteAttachmentTarget: any;
-  setDeleteAttachmentTarget: (a: any) => void;
+  setDeleteAttachmentTarget: (a: Record<string, unknown>) => void;
   executeDeleteAttachment: () => Promise<void>;
   renameTarget: any;
-  setRenameTarget: (a: any) => void;
+  setRenameTarget: (a: Record<string, unknown>) => void;
   renameValue: string;
   setRenameValue: (v: string) => void;
   executeRenameAttachment: () => Promise<void>;
@@ -407,9 +408,9 @@ export function MediaTab({
 
               <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-card">
                 <div className="min-w-0 text-[12px] text-muted-foreground truncate">
-                  {gallery.photos[gallery.index].uploaded_by} ·{" "}
+                  {gallery.photos[gallery.index].uploaded_by} Â·{" "}
                   {new Date(gallery.photos[gallery.index].uploaded_at).toLocaleDateString("en-GB")}
-                  {gallery.photos.length > 1 && ` · ${gallery.index + 1}/${gallery.photos.length}`}
+                  {gallery.photos.length > 1 && ` Â· ${gallery.index + 1}/${gallery.photos.length}`}
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -478,3 +479,5 @@ export function MediaTab({
     </>
   );
 }
+
+

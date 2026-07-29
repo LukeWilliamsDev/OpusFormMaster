@@ -1,5 +1,6 @@
 ﻿// @ts-nocheck
 import React, { useState, useEffect } from "react";
+import { handleError } from '../utils/errorHandler';
 import {
   Users,
   Search,
@@ -29,25 +30,40 @@ import {
   Eye,
   PencilLine,
 } from "lucide-react";
+import { handleError } from '../utils/errorHandler';
 import { Worker, Ticket, Job, STAFF_ROLES, OFFICE_ROLES } from "../types/erp";
+import { handleError } from '../utils/errorHandler';
 import { RoleAccordion } from "./calendar/RoleAccordion";
+import { handleError } from '../utils/errorHandler';
 import { groupWorkersByCategory } from "./calendar/roleCategories";
+import { handleError } from '../utils/errorHandler';
 import { getRoleColorClasses } from "./calendar/roleColors";
+import { handleError } from '../utils/errorHandler';
 import { getTicketStatus } from "../utils/workerValidation";
+import { handleError } from '../utils/errorHandler';
 import { TicketStatusBadge } from "./TicketStatusBadge";
+import { handleError } from '../utils/errorHandler';
 import { RequestCredentialsModal } from "./RequestCredentialsModal";
+import { handleError } from '../utils/errorHandler';
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
 } from "../../components/ui/accordion";
+import { handleError } from '../utils/errorHandler';
 import { supabase } from "../../integrations/supabase/client";
+import { handleError } from '../utils/errorHandler';
 import { workerToRow, usePortal } from "../context/PortalContext";
+import { handleError } from '../utils/errorHandler';
 import { computeDiff } from "../utils/auditDiff";
+import { handleError } from '../utils/errorHandler';
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { handleError } from '../utils/errorHandler';
 import { toast } from "sonner";
+import { handleError } from '../utils/errorHandler';
 import { useNavigate } from "react-router-dom";
+import { handleError } from '../utils/errorHandler';
 
 // Only these fields count as a real "profile change" worth surfacing a
 // generic "Staff Details Have Been Updated" entry + Revert button for.
@@ -387,7 +403,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           description: emailErrorResult || "Failed to send email.",
         });
       }
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error("Failed to resend request:", e);
       toast.error("Failed to resend request", {
         id: sendingToastId,
@@ -497,7 +513,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       setTimeout(() => {
         fetchLogsAndRequests();
       }, 150);
-    } catch (err: any) {
+    } catch (err: Error | unknown) {
       console.error("Failed to revert staff changes:", err);
       toast.error("Error reverting changes", { description: err.message });
     }
@@ -581,7 +597,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
       fetchLogsAndRequests();
       toast.success(`${ticket.type} removed from compliance record`);
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error("Failed to remove ticket or log audit:", e);
       toast.error("Failed to remove compliance record", { description: e.message });
       // Roll back the optimistic update
@@ -1936,7 +1952,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
               );
               setSelectedWorkerDetailsId(null);
               setSelectedWorkerToDelete(null);
-            } catch (err: any) {
+            } catch (err: Error | unknown) {
               console.error("Failed to archive staff profile:", err);
               toast.error("Failed to archive profile", { description: err.message });
             }
@@ -2089,7 +2105,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
               setWorkers((prev) => prev.filter((w) => w.id !== targetId));
               setSelectedWorkerDetailsId(null);
               setSelectedWorkerToPermanentDelete(null);
-            } catch (err: any) {
+            } catch (err: Error | unknown) {
               console.error("Failed to permanently delete staff member:", err);
               toast.error("Failed to delete staff member", { description: err.message });
             }
@@ -2513,3 +2529,4 @@ export const RosterView: React.FC<RosterViewProps> = ({
     </div>
   );
 };
+

@@ -1,7 +1,10 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import React, { useState, useMemo, useEffect } from "react";
+import { handleError } from '../utils/errorHandler';
 import { useNavigate } from "react-router-dom";
+import { handleError } from '../utils/errorHandler';
 import { motion, AnimatePresence } from "motion/react";
+import { handleError } from '../utils/errorHandler';
 import {
   ClipboardList,
   Target,
@@ -19,12 +22,19 @@ import {
   CloudRain,
   CalendarDays,
 } from "lucide-react";
+import { handleError } from '../utils/errorHandler';
 import { usePortal } from "../context/PortalContext";
+import { handleError } from '../utils/errorHandler';
 import { supabase } from "@/integrations/supabase/client";
+import { handleError } from '../utils/errorHandler';
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { handleError } from '../utils/errorHandler';
 import { toast } from "sonner";
+import { handleError } from '../utils/errorHandler';
 import { useJobForecast, getWeatherOnDate } from "../utils/weather";
+import { handleError } from '../utils/errorHandler';
 import { toLocalISODate } from "../utils/week";
+import { handleError } from '../utils/errorHandler';
 
 const TIMEFRAME_DAYS = { daily: 1, weekly: 7, monthly: 30 };
 
@@ -40,7 +50,7 @@ function formatDayCount(days) {
 }
 
 const JobWeatherRow: React.FC<{
-  job: any;
+  job: import("../types/erp").Job;
   timeframe: string;
   onStatusChange: (id: string, atRisk: boolean) => void;
   onSelectDate: (date: string) => void;
@@ -76,7 +86,7 @@ const JobWeatherRow: React.FC<{
   return (
     <div
       onClick={() => onSelectDate(worst.date)}
-      className="flex items-center justify-between gap-2 px-2 py-2.5 hover:bg-secondary/60 transition-colors cursor-pointer"
+      className="flex items-center justify-between gap-2 px-6 py-2.5 hover:bg-secondary/60 transition-colors cursor-pointer"
     >
       <div className="flex-1 min-w-0 flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[12px]">
         <span className="font-bold text-foreground">{job.siteName}</span>
@@ -348,7 +358,7 @@ export const DashboardPage: React.FC = () => {
       });
 
       toast.success(`Compliance reminder sent to ${worker.name}`, { id: sendingToastId });
-    } catch (e: any) {
+    } catch (e: Error | unknown) {
       console.error("Failed to send compliance reminder:", e);
       toast.warning("Failed to send reminder: " + (e.message || "Unknown error"), {
         id: sendingToastId,
@@ -358,7 +368,7 @@ export const DashboardPage: React.FC = () => {
       supabase.functions
         .invoke("send-admin-alert", {
           body: {
-            subject: `Compliance Reminder Failed — ${alert.workerName}`,
+            subject: `Compliance Reminder Failed â€” ${alert.workerName}`,
             body: `A compliance reminder for ${alert.workerName} (${alert.ticketType}) could not be sent.\n\nWorker ID: ${alert.workerId}\nError: ${e.message || "Unknown error"}\n\nPlease review the document_requests table and retry manually.`,
           },
         })
@@ -516,7 +526,7 @@ export const DashboardPage: React.FC = () => {
                                 </span>
                               </div>
                               <span className="text-[12px] font-mono text-foreground font-semibold">
-                                £{quote.netTotal.toLocaleString("en-GB")}
+                                Â£{quote.netTotal.toLocaleString("en-GB")}
                               </span>
                             </div>
                           ))}
@@ -624,93 +634,8 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Operations Summary panel — one shell, internal hairlines instead of stacked cards */}
+      {/* Operations Summary panel â€” one shell, internal hairlines instead of stacked cards */}
       <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
-        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-border sm:divide-y-0 sm:divide-x sm:divide-border">
-          {/* Active Job Sites */}
-          <div className="p-6 space-y-4 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <MapPin className="w-4 h-4 text-primary shrink-0" />
-                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                  Active Job Sites
-                </h2>
-              </div>
-              <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full shrink-0">
-                {activeJobsFiltered.length}
-              </span>
-            </div>
-
-            <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
-              {activeJobsFiltered.map((job) => (
-                <div
-                  key={job.id}
-                  onClick={() => navigate(`/portal/ledger?jobId=${job.id}`)}
-                  className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
-                >
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-bold text-foreground truncate">
-                      {job.siteName}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">{job.postcode}</div>
-                  </div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary px-2 py-0.5 rounded shrink-0">
-                    {job.status}
-                  </span>
-                </div>
-              ))}
-
-              {activeJobsFiltered.length === 0 && (
-                <p className="text-[12px] text-muted-foreground py-4 text-center">
-                  No active job sites for the selected timeframe.
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Scheduled Crew per site */}
-          <div className="p-6 space-y-4 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <UserCheck className="w-4 h-4 text-success shrink-0" />
-                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                  Scheduled Crew
-                </h2>
-              </div>
-              {scheduledWorkersOnActiveSites > 0 && (
-                <span className="text-xs font-medium text-success bg-success/10 px-2 py-0.5 rounded-full shrink-0">
-                  {scheduledWorkersOnActiveSites}
-                </span>
-              )}
-            </div>
-
-            <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
-              {crewPerSiteFiltered.map((site) => (
-                <div
-                  key={site.jobId}
-                  onClick={() =>
-                    navigate(`/portal/roster?view=calendar&group=project&date=${site.nextDate}`)
-                  }
-                  className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
-                >
-                  <span className="text-[13px] font-bold text-foreground truncate">
-                    {site.siteName}
-                  </span>
-                  <span className="text-[12px] font-mono text-muted-foreground font-bold shrink-0">
-                    {site.crewCount} crew
-                  </span>
-                </div>
-              ))}
-
-              {crewPerSiteFiltered.length === 0 && (
-                <p className="text-[12px] text-muted-foreground py-4 text-center">
-                  No active job sites for the selected timeframe.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-border sm:divide-y-0 sm:divide-x sm:divide-border">
           {/* Compliance Alerts */}
           <div className="p-6 space-y-4">
@@ -721,17 +646,21 @@ export const DashboardPage: React.FC = () => {
                   Compliance
                 </h2>
               </div>
-              <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full shrink-0">
+              <span
+                className={`text-xs font-mono font-bold shrink-0 ${
+                  expiringTickets.length > 0 ? "text-destructive" : "text-success"
+                }`}
+              >
                 {expiringTickets.length}
               </span>
             </div>
 
-            <div className="divide-y divide-border flex-1 overflow-y-auto max-h-[280px]">
+            <div className="divide-y divide-border overflow-y-auto max-h-[280px] -mx-6">
               {expiringTickets.map((alert) => (
                 <div
                   key={alert.alertId}
                   onClick={() => handleUpdateAlert(alert.workerId)}
-                  className="flex flex-col gap-1 px-2 py-2.5 hover:bg-secondary/60 transition-colors cursor-pointer"
+                  className="flex flex-col gap-1 px-6 py-2.5 hover:bg-secondary/60 transition-colors cursor-pointer"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <span className="text-[12px] font-bold text-foreground truncate">
@@ -753,15 +682,15 @@ export const DashboardPage: React.FC = () => {
                     {alert.isExpired
                       ? `Expired ${formatDayCount(Math.abs(alert.diffDays))} ago`
                       : `Expiring in ${formatDayCount(alert.diffDays)}`}
-                    {" — "}
+                    {" â€” "}
                     {alert.ticketType}
                   </span>
                 </div>
               ))}
 
               {expiringTickets.length === 0 && (
-                <div className="flex flex-col items-center justify-center py-8 text-center space-y-2">
-                  <CheckCircle className="w-8 h-8 text-success/80" />
+                <div className="flex items-center gap-2 py-3 px-6">
+                  <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
                   <p className="text-[11px] text-muted-foreground">Roster fully compliant.</p>
                 </div>
               )}
@@ -819,12 +748,16 @@ export const DashboardPage: React.FC = () => {
                   Weather
                 </h2>
               </div>
-              <span className="text-xs font-medium text-destructive bg-destructive/10 px-2 py-0.5 rounded-full shrink-0">
+              <span
+                className={`text-xs font-mono font-bold shrink-0 ${
+                  weatherWarningCount > 0 ? "text-destructive" : "text-success"
+                }`}
+              >
                 {weatherWarningCount}
               </span>
             </div>
 
-            <div className="divide-y divide-border flex-1 overflow-y-auto max-h-[280px]">
+            <div className="divide-y divide-border overflow-y-auto max-h-[280px] -mx-6">
               {activeJobsFiltered.map((job) => (
                 <JobWeatherRow
                   key={job.id}
@@ -838,7 +771,7 @@ export const DashboardPage: React.FC = () => {
               ))}
 
               {activeJobsFiltered.length > 0 && weatherWarningCount === 0 && (
-                <div className="flex items-center gap-2 py-3 px-1">
+                <div className="flex items-center gap-2 py-3 px-6">
                   <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
                   <p className="text-[11px] text-muted-foreground">
                     No weather risks for active sites.
@@ -847,9 +780,98 @@ export const DashboardPage: React.FC = () => {
               )}
 
               {activeJobsFiltered.length === 0 && (
-                <div className="flex items-center gap-2 py-3 px-1">
+                <div className="flex items-center gap-2 py-3 px-6">
                   <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
                   <p className="text-[11px] text-muted-foreground">No active job sites to check.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-border sm:divide-y-0 sm:divide-x sm:divide-border">
+          {/* Active Job Sites */}
+          <div className="p-6 space-y-4 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <MapPin className="w-4 h-4 text-primary shrink-0" />
+                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                  Active Job Sites
+                </h2>
+              </div>
+              <span className="text-xs font-mono font-bold text-muted-foreground shrink-0">
+                {activeJobsFiltered.length}
+              </span>
+            </div>
+
+            <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
+              {activeJobsFiltered.map((job) => (
+                <div
+                  key={job.id}
+                  onClick={() => navigate(`/portal/ledger?jobId=${job.id}`)}
+                  className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
+                >
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-bold text-foreground truncate">
+                      {job.siteName}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">{job.postcode}</div>
+                  </div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary px-2 py-0.5 rounded shrink-0">
+                    {job.status}
+                  </span>
+                </div>
+              ))}
+
+              {activeJobsFiltered.length === 0 && (
+                <div className="flex items-center gap-2 py-3 px-1">
+                  <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
+                  <p className="text-[11px] text-muted-foreground">
+                    No active job sites for the selected timeframe.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Scheduled Crew per site */}
+          <div className="p-6 space-y-4 min-w-0">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <UserCheck className="w-4 h-4 text-success shrink-0" />
+                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
+                  Scheduled Crew
+                </h2>
+              </div>
+              <span className="text-xs font-mono font-bold text-muted-foreground shrink-0">
+                {scheduledWorkersOnActiveSites}
+              </span>
+            </div>
+
+            <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
+              {crewPerSiteFiltered.map((site) => (
+                <div
+                  key={site.jobId}
+                  onClick={() =>
+                    navigate(`/portal/roster?view=calendar&group=project&date=${site.nextDate}`)
+                  }
+                  className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
+                >
+                  <span className="text-[13px] font-bold text-foreground truncate">
+                    {site.siteName}
+                  </span>
+                  <span className="text-[12px] font-mono text-muted-foreground font-bold shrink-0">
+                    {site.crewCount} crew
+                  </span>
+                </div>
+              ))}
+
+              {crewPerSiteFiltered.length === 0 && (
+                <div className="flex items-center gap-2 py-3 px-1">
+                  <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
+                  <p className="text-[11px] text-muted-foreground">
+                    No active job sites for the selected timeframe.
+                  </p>
                 </div>
               )}
             </div>
@@ -859,3 +881,4 @@ export const DashboardPage: React.FC = () => {
     </div>
   );
 };
+

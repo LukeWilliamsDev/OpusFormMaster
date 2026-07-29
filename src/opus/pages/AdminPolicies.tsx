@@ -38,7 +38,7 @@ export const AdminPolicies: React.FC = () => {
           Compliance Policies
         </h2>
         <p className="text-muted-foreground mt-2">
-          Manage and view the official company compliance documents.
+          Company policies and compliance documents.
         </p>
       </div>
 

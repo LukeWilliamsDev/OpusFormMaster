@@ -1,4 +1,5 @@
-import React from "react";
+﻿import React from "react";
+import { CardGrid } from '../components/CardGrid';
 import { motion, AnimatePresence } from "motion/react";
 import { CloudSun, AlertCircle, HardHat, DollarSign } from "lucide-react";
 import { Job } from "../types/erp";
@@ -28,7 +29,7 @@ const JobWarnings: React.FC<{ job: Job; followup: { reason: string } | null; den
   const showWeather = weather?.isImpactful;
 
   if (!showWeather && !followup) {
-    return dense ? null : <span className="text-[12px] text-muted-foreground font-medium">—</span>;
+    return dense ? null : <span className="text-[12px] text-muted-foreground font-medium">â€”</span>;
   }
 
   const badgePad = dense ? "px-1.5 py-0.5" : "px-2 py-0.5";
@@ -41,7 +42,7 @@ const JobWarnings: React.FC<{ job: Job; followup: { reason: string } | null; den
         >
           <CloudSun className="w-3.5 h-3.5" />
           <span>
-            {weather.condition} ({weather.temperature}°C)
+            {weather.condition} ({weather.temperature}Â°C)
           </span>
         </span>
       )}
@@ -219,3 +220,5 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
     </div>
   );
 };
+
+

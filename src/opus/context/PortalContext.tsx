@@ -1,4 +1,4 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
@@ -81,9 +81,9 @@ export const ALL_ROLES: AppRole[] = [
   "site_foreman",
   "labourer",
 ];
-// Full ops write access — mirrors private.can_write_ops() in the DB.
+// Full ops write access â€” mirrors private.can_write_ops() in the DB.
 export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
-// Restricted access — mirrors the old "operative" tier.
+// Restricted access â€” mirrors the old "operative" tier.
 export const FIELD_ROLES: AppRole[] = ["logistics_assistant", "site_foreman", "labourer"];
 
 // ---- Row <-> App mappers -----------------------------------------------
@@ -99,7 +99,7 @@ export const workerToRow = (w: Worker, tenantId?: string) => ({
   uploaded_certificates: w.uploadedCertificates ?? [],
   ...(tenantId ? { tenant_id: tenantId } : {}),
 });
-const rowToWorker = (r: any): Worker => ({
+const rowToWorker = (r: Record<string, unknown>): Worker => ({
   id: r.id,
   name: r.name,
   role: r.role,
@@ -126,7 +126,7 @@ export const jobToRow = (j: Job, tenantId?: string) => ({
 const toTitleCase = (s: string) =>
   s.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
 
-const rowToJob = (r: any): Job => ({
+const rowToJob = (r: Record<string, unknown>): Job => ({
   id: r.id,
   jobRef: r.job_ref,
   siteName: r.site_name ? toTitleCase(r.site_name) : r.site_name,
@@ -146,7 +146,7 @@ const shiftToRow = (s: ScheduledShift, tenantId?: string) => ({
   date: s.date,
   ...(tenantId ? { tenant_id: tenantId } : {}),
 });
-const rowToShift = (r: any): ScheduledShift => ({
+const rowToShift = (r: Record<string, unknown>): ScheduledShift => ({
   id: r.id,
   workerId: r.worker_id,
   jobId: r.job_id,

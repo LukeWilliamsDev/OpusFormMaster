@@ -1,5 +1,6 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import React from "react";
+import { CardGrid } from '../components/CardGrid';
 import { AlertTriangle, ShieldCheck, HelpCircle } from "lucide-react";
 
 interface TicketInfo {
@@ -60,7 +61,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
         iconColor: "text-destructive",
       };
     } else if (ticket.diffDays <= 14) {
-      // <= 14 days (Critical — stronger warning tint)
+      // <= 14 days (Critical â€” stronger warning tint)
       return {
         cardBg: "bg-warning/15 border-warning/30 hover:border-warning/50 hover:bg-warning/20",
         badgeBg: "bg-warning/25 text-warning border-warning/40",
@@ -176,3 +177,5 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
     </div>
   );
 };
+
+

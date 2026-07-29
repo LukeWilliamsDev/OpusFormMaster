@@ -3,6 +3,7 @@ import { X, Send, Check, Copy } from "lucide-react";
 import { supabase } from "../../integrations/supabase/client";
 import { usePortal } from "../context/PortalContext";
 import { ON_SITE_CERTIFICATIONS } from "./RosterView";
+import { Worker } from "../types/erp";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,7 +11,7 @@ import { cn } from "@/lib/utils";
 interface RequestCredentialsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  worker: any;
+  worker: Worker;
 }
 
 export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = ({
@@ -19,15 +20,11 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
   worker,
 }) => {
   const { profile } = usePortal();
-  const [selectedCerts, setSelectedCerts] = useState<string[]>([]);
-  const [customCertInput, setCustomCertInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [sendEmail, setSendEmail] = useState(true);
+  const [form, setForm] = useState({ selectedCerts: [] as string[], sendEmail: true });
+  const [ui, setUi] = useState({ loading: false, copied: false });
+  const [link, setLink] = useState<string | null>(null);
+  const [messages, setMessages] = useState({ error: null as string | null, emailError: null as string | null });
   const [emailSent, setEmailSent] = useState(false);
-  const [emailErrorMsg, setEmailErrorMsg] = useState<string | null>(null);
 
   React.useEffect(() => {
     if (isOpen && worker) {

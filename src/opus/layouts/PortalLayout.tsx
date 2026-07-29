@@ -20,6 +20,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { usePortal, ALL_ROLES, MANAGEMENT_ROLES } from "../context/PortalContext";
 import { getAvatarPresetClass } from "../pages/Settings";
+import { getAvatarInitials } from "../utils/workerValidation";
 import { NavList } from "@/components/application/app-navigation/base-components/nav-list";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
 
@@ -77,19 +78,11 @@ export const PortalLayout: React.FC = () => {
     { name: "Policies", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
   ];
 
-  // Filter main nav items based on user's role and email constraints
+  const isAdminAuditUser = user?.email === "admin@opusform.co.uk";
   const navItems = allNav.filter((item) => {
-    if (!role) return false;
-    if (!item.roles.includes(role)) return false;
-    if (user?.email === "admin@opusform.co.uk") {
-      return item.path === "/portal/audit" || item.path === "/portal/policies";
-    }
-    if (
-      (item.path === "/portal/audit" || item.path === "/portal/policies") &&
-      user?.email !== "admin@opusform.co.uk"
-    )
-      return false;
-    return true;
+    if (!role || !item.roles.includes(role)) return false;
+    if (isAdminAuditUser) return item.path === "/portal/audit" || item.path === "/portal/policies";
+    return item.path !== "/portal/audit" && item.path !== "/portal/policies";
   });
 
   const checkIsActive = (path: string) => {
@@ -143,10 +136,15 @@ export const PortalLayout: React.FC = () => {
         <div className="flex items-center space-x-2">
           <button
             onClick={toggleTheme}
-            className="p-2 text-muted-foreground hover:text-foreground cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className="p-2 text-muted-foreground hover:text-amber-600 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center group transition-colors"
             aria-label="Toggle light/dark theme"
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
-            {theme === "light" ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+            {theme === "light" ? (
+              <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform" />
+            ) : (
+              <Sun className="w-5 h-5 group-hover:rotate-45 transition-transform" />
+            )}
           </button>
           {/* Audit Admin Logout for mobile */}
           {user?.email === "admin@opusform.co.uk" && (
@@ -213,12 +211,7 @@ export const PortalLayout: React.FC = () => {
                 >
                   {profile?.full_name ? (
                     <span className="text-[11px] font-black tracking-wider text-white">
-                      {profile.full_name
-                        .split(" ")
-                        .map((p) => p[0])
-                        .join("")
-                        .toUpperCase()
-                        .slice(0, 2)}
+                      {getAvatarInitials(profile.full_name)}
                     </span>
                   ) : (
                     <UserIcon className="w-4 h-4 text-muted-foreground group-hover:text-white transition-colors" />

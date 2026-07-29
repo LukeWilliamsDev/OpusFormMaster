@@ -10,31 +10,25 @@ export const TermsOfServicePage: React.FC = () => (
   <LegalPageLayout title="Portal Usage Policy" lastUpdated="July 2026">
     <Section title="1. About This Policy">
       <p>
-        This Portal Usage Policy governs the use of the Opus Form workforce management portal by
-        employees, contractors, and operatives of{" "}
-        <strong style={{ color: "var(--foreground)" }}>Opus Form Ltd</strong> (Company No.
-        17228356). Opus Form Ltd is a concrete flooring contractor, and this portal is a proprietary
-        internal company tool built to manage our own construction operations. It is not a
-        commercial SaaS agreement.
+        This policy covers how Opus Form Ltd employees, contractors, and operatives use our internal
+        shift and project management system. It's not a commercial agreement — it's our house rules.
       </p>
       <p>
-        By accessing the portal, you confirm that you have read and understood this policy and agree
-        to abide by its terms as a condition of your engagement with the company.
+        By using the portal, you agree to follow this policy. That's part of working here.
       </p>
     </Section>
 
     <Section title="2. Portal Purpose">
-      <p>The Opus Form portal is an internal business tool providing:</p>
+      <p>Our system handles:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
-        <li>Staff roster and shift scheduling management</li>
-        <li>Compliance document tracking and verification (CSCS, certificates)</li>
-        <li>Job ledger, project tracking, and site operations</li>
-        <li>Quote and invoice generation</li>
-        <li>Audit trail and activity logging</li>
+        <li>Shift schedules and rosters</li>
+        <li>Compliance document checks (CSCS, certs)</li>
+        <li>Job tracking and site logging</li>
+        <li>Quotes and invoices</li>
+        <li>Activity logs for security</li>
       </ul>
       <p>
-        The portal is for authorised internal use only. It is not a public service and is not
-        available for external subscription.
+        It's staff only. Not public, not for sale.
       </p>
     </Section>
 
@@ -59,12 +53,11 @@ export const TermsOfServicePage: React.FC = () => (
 
     <Section title="4. Acceptable Use">
       <p>
-        Your use of the portal must comply with our{" "}
+        Follow our{" "}
         <a href="#/portal/acceptable-use" className="underline" style={{ color: "var(--primary)" }}>
           Acceptable Use Policy
         </a>
-        . Misuse of the portal may result in disciplinary action up to and including termination of
-        your engagement with the company.
+        . Misuse can get you fired.
       </p>
     </Section>
 
@@ -105,9 +98,7 @@ export const TermsOfServicePage: React.FC = () => (
 
     <Section title="8. Availability">
       <p>
-        While we aim to keep the portal available at all times, we may need to take it offline for
-        maintenance, updates, or security patches. We will provide reasonable notice where
-        practicable, but emergency maintenance may occur without prior notification.
+        We'll give you notice when we do maintenance. Emergency fixes might happen without warning.
       </p>
     </Section>
 

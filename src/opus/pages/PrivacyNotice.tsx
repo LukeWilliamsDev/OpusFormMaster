@@ -8,12 +8,8 @@ export const PrivacyNoticePage: React.FC = () => (
   <LegalPageLayout title="Staff Privacy Notice" lastUpdated="July 2026">
     <Section title="1. Who We Are">
       <p>
-        Opus Form Ltd ("<strong style={{ color: "var(--foreground)" }}>we</strong>", "
-        <strong style={{ color: "var(--foreground)" }}>us</strong>", "
-        <strong style={{ color: "var(--foreground)" }}>our</strong>") is a concrete flooring
-        contractor and the data controller for personal data processed through this internal
-        platform. This notice applies to all staff, contractors, and operatives whose data is
-        managed through our proprietary workforce management portal.
+        Opus Form Ltd is a concrete flooring contractor and data controller for this internal portal.
+        This privacy notice applies to you if you're staff, a contractor, or operative on our jobs.
       </p>
       <p>
         <strong style={{ color: "var(--foreground)" }}>Registered Address:</strong> 128 City Road,
@@ -33,7 +29,7 @@ export const PrivacyNoticePage: React.FC = () => (
     </Section>
 
     <Section title="2. Data We Collect">
-      <p>To effectively manage our construction operations and ensure site safety, we collect:</p>
+      <p>To run our operations and keep sites safe, we collect:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>
           <strong>Identity & Contact:</strong> Name, phone number, email, and emergency contacts.
@@ -72,8 +68,7 @@ export const PrivacyNoticePage: React.FC = () => (
 
     <Section title="4. Sharing Your Data">
       <p>
-        We do not sell your data. We only share it with third parties when strictly necessary for
-        our business operations:
+        We don't sell your data. We only share it when we have to for running the business:
       </p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>

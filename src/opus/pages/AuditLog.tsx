@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
+﻿import React, { useEffect, useState, useMemo } from "react";
+import { CardGrid } from '../components/CardGrid';
 import { supabase } from "@/integrations/supabase/client";
 import {
   Activity,
@@ -101,7 +102,7 @@ export const AuditLogPage: React.FC = () => {
       });
       setSelectedLog(null);
       fetchLogs();
-    } catch (err: any) {
+    } catch (err: Error | unknown) {
       console.error("Failed to restore record:", err);
       toast.error("Restoration failed", { description: err.message || "Unknown error" });
     } finally {
@@ -140,7 +141,7 @@ export const AuditLogPage: React.FC = () => {
     setLoading(false);
   };
 
-  const getTargetDisplayName = (targetType: string, targetId: string, details?: any) => {
+  const getTargetDisplayName = (targetType: string, targetId: string, details?: Record<string, unknown>) => {
     if (targetType === "staff") {
       const match = staffList.find((s) => s.id === targetId);
       if (match) return match.name;
@@ -347,7 +348,7 @@ export const AuditLogPage: React.FC = () => {
                         )}
                       </div>
                       <div className="text-[12px] text-muted-foreground mt-1">
-                        {log.user_email || "system"} ·{" "}
+                        {log.user_email || "system"} Â·{" "}
                         {new Date(log.created_at).toLocaleString("en-GB")}
                       </div>
                     </div>
@@ -536,3 +537,5 @@ export const AuditLogPage: React.FC = () => {
     </div>
   );
 };
+
+

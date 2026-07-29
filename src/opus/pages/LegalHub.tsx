@@ -5,31 +5,31 @@ import { FileText, ShieldCheck, Cookie, ScrollText, Users } from "lucide-react";
 const POLICIES = [
   {
     label: "Staff Privacy Notice",
-    description: "How we collect, use, and protect your personal data.",
+    description: "How we handle your personal data.",
     path: "/portal/privacy",
     icon: ShieldCheck,
   },
   {
     label: "Usage Policy",
-    description: "Terms governing your use of the workforce portal.",
+    description: "Rules for using the portal.",
     path: "/portal/terms",
     icon: FileText,
   },
   {
     label: "Acceptable Use",
-    description: "Rules for appropriate conduct on company systems.",
+    description: "What you can and can't do on the system.",
     path: "/portal/acceptable-use",
     icon: ScrollText,
   },
   {
     label: "Cookie Statement",
-    description: "What cookies we use on this platform and why.",
+    description: "What cookies we use and why.",
     path: "/portal/cookies",
     icon: Cookie,
   },
   {
     label: "Modern Slavery",
-    description: "Our statement on modern slavery and human trafficking.",
+    description: "How we oppose slavery and trafficking.",
     path: "/portal/modern-slavery",
     icon: Users,
   },

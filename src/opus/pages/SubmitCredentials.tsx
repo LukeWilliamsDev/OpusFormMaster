@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+﻿import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "../../integrations/supabase/client";
 import {
@@ -18,7 +18,7 @@ import {
 import { ON_SITE_CERTIFICATIONS } from "../components/RosterView";
 import { usePortal } from "../context/PortalContext";
 
-/* ─── Types ──────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 interface UploadSlot {
   id: string;
@@ -50,9 +50,9 @@ const emptySlot = (): UploadSlot => ({
   displayFilename: null,
 });
 
-/* ─── Helpers ────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
-/** Derive initials from a name, e.g. "Luke Williams" → "LW" */
+/** Derive initials from a name, e.g. "Luke Williams" â†’ "LW" */
 const getInitials = (name: string): string =>
   name
     .split(/\s+/)
@@ -60,7 +60,7 @@ const getInitials = (name: string): string =>
     .map((w) => w[0].toUpperCase())
     .join("");
 
-/** Derive a slug from a cert name, e.g. "CSCS Labourer Card" → "CSCS-LABOURER-CARD" */
+/** Derive a slug from a cert name, e.g. "CSCS Labourer Card" â†’ "CSCS-LABOURER-CARD" */
 const certSlug = (cert: string): string =>
   cert
     .toUpperCase()
@@ -82,7 +82,7 @@ const readAsDataUrl = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
-/* ─── Circular Progress Ring ────────────────────────────────────── */
+/* â”€â”€â”€ Circular Progress Ring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const ProgressRing: React.FC<{ progress: number; size?: number }> = ({ progress, size = 64 }) => {
   const strokeWidth = 4;
@@ -116,12 +116,12 @@ const ProgressRing: React.FC<{ progress: number; size?: number }> = ({ progress,
   );
 };
 
-/* ─── Animated Checkmark (Success) ───────────────────────────────── */
+/* â”€â”€â”€ Animated Checkmark (Success) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 const AnimatedCheckmark: React.FC = () => (
   <div className="relative w-20 h-20 mx-auto">
     <svg viewBox="0 0 80 80" className="w-full h-full">
-      {/* Outer circle – scale in */}
+      {/* Outer circle â€“ scale in */}
       <circle
         cx="40"
         cy="40"
@@ -141,7 +141,7 @@ const AnimatedCheckmark: React.FC = () => (
         className="animate-[scaleIn_0.5s_ease-out_0.1s_forwards]"
         style={{ transformOrigin: "center", opacity: 0 }}
       />
-      {/* Checkmark path – draw in */}
+      {/* Checkmark path â€“ draw in */}
       <path
         d="M24 42 L34 52 L56 30"
         fill="none"
@@ -156,7 +156,7 @@ const AnimatedCheckmark: React.FC = () => (
   </div>
 );
 
-/* ─── Stepper ────────────────────────────────────────────────────── */
+/* â”€â”€â”€ Stepper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 interface StepperProps {
   steps: string[];
@@ -199,7 +199,7 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep }) => (
   </div>
 );
 
-/* ─── Dropzone ───────────────────────────────────────────────────── */
+/* â”€â”€â”€ Dropzone â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 interface DropzoneProps {
   slot: UploadSlot;
@@ -228,19 +228,19 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
     [onFileSelected],
   );
 
-  // Uploading state — show progress ring
+  // Uploading state â€” show progress ring
   if (slot.uploading) {
     return (
       <div className="flex flex-col items-center justify-center py-10 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5">
         <ProgressRing progress={slot.progress} />
         <span className="text-[9px] font-black uppercase tracking-widest text-primary mt-3">
-          Uploading… {slot.progress}%
+          Uploadingâ€¦ {slot.progress}%
         </span>
       </div>
     );
   }
 
-  // Selected state — show preview
+  // Selected state â€” show preview
   if (slot.file) {
     return (
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
@@ -288,7 +288,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
     );
   }
 
-  // Empty state — dropzone
+  // Empty state â€” dropzone
   return (
     <div
       onDragEnter={handleDrag}
@@ -333,7 +333,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
         Tap to Upload
       </span>
       <span className="text-[8px] text-muted-foreground uppercase tracking-widest mt-1.5">
-        PDF, PNG, or JPG — Max 5 MB
+        PDF, PNG, or JPG â€” Max 5 MB
       </span>
       {slot.error && (
         <p className="text-[8.5px] font-bold text-red-400 uppercase tracking-wider mt-3 px-4 text-center">
@@ -344,9 +344,9 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
   );
 };
 
-/* ═══════════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN PAGE COMPONENT
-   ═══════════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 export const SubmitCredentialsPage: React.FC = () => {
   const { theme } = usePortal();
@@ -355,7 +355,7 @@ export const SubmitCredentialsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
-  /* ─── State ───────────────────────────────────────────────────── */
+  /* â”€â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const [loading, setLoading] = useState(true);
   const [requestData, setRequestData] = useState<any>(null);
   const [staffName, setStaffName] = useState<string>("");
@@ -366,13 +366,13 @@ export const SubmitCredentialsPage: React.FC = () => {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  /* ─── Derived ─────────────────────────────────────────────────── */
+  /* â”€â”€â”€ Derived â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   // Steps = one per cert + "Review"
   const stepLabels = [...slots.map((s) => s.cert.split(" ").slice(0, 2).join(" ")), "Review"];
   const isReviewStep = currentStep === slots.length;
   const totalSteps = stepLabels.length;
 
-  /* ─── Fetch request details ───────────────────────────────────── */
+  /* â”€â”€â”€ Fetch request details â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   useEffect(() => {
     if (token) {
       fetchRequestDetails();
@@ -393,7 +393,7 @@ export const SubmitCredentialsPage: React.FC = () => {
       let reqData: any = null;
 
       if (!rpcError && rpcData) {
-        // RPC succeeded — use its result. get_document_request_details returns
+        // RPC succeeded â€” use its result. get_document_request_details returns
         // jsonb, so the generated type is the generic Json union; the actual
         // shape includes worker_name from its staff join.
         reqData = rpcData;
@@ -431,7 +431,7 @@ export const SubmitCredentialsPage: React.FC = () => {
     }
   };
 
-  /* ─── Slot helpers ────────────────────────────────────────────── */
+  /* â”€â”€â”€ Slot helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
   const updateSlot = (index: number, updates: Partial<UploadSlot>) => {
     setSlots((prev) => prev.map((s, idx) => (idx === index ? { ...s, ...updates } : s)));
@@ -449,7 +449,7 @@ export const SubmitCredentialsPage: React.FC = () => {
     }
   };
 
-  /* ─── File selection handler ──────────────────────────────────── */
+  /* â”€â”€â”€ File selection handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
   const handleFileSelected = async (index: number, file: File) => {
     if (!file) return;
@@ -486,7 +486,7 @@ export const SubmitCredentialsPage: React.FC = () => {
     });
   };
 
-  /* ─── Navigation ──────────────────────────────────────────────── */
+  /* â”€â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
   const canAdvance = (): boolean => {
     if (isReviewStep) return false;
@@ -507,7 +507,7 @@ export const SubmitCredentialsPage: React.FC = () => {
     setCurrentStep(idx);
   };
 
-  /* ─── Submit handler (uploads files now) ───────────────────────── */
+  /* â”€â”€â”€ Submit handler (uploads files now) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
   const handleSubmit = async () => {
     setErrorMsg(null);
@@ -602,9 +602,9 @@ export const SubmitCredentialsPage: React.FC = () => {
     }
   };
 
-  /* ═══════════════════════════════════════════════════════════════
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
      RENDER STATES
-     ═══════════════════════════════════════════════════════════════ */
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   // Loading
   if (loading) {
@@ -661,16 +661,16 @@ export const SubmitCredentialsPage: React.FC = () => {
     );
   }
 
-  /* ═══════════════════════════════════════════════════════════════
-     MAIN FORM — MULTI-STEP WIZARD
-     ═══════════════════════════════════════════════════════════════ */
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+     MAIN FORM â€” MULTI-STEP WIZARD
+     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
   const activeSlot = !isReviewStep ? slots[currentStep] : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
-        {/* ─── Header / Branding ─────────────────────────────────── */}
+        {/* â”€â”€â”€ Header / Branding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="text-center space-y-3">
           <img src={logoSrc} alt="Opus Form" className="h-12 w-auto mx-auto" />
           <h1 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
@@ -678,7 +678,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           </h1>
         </div>
 
-        {/* ─── Greeting Card ─────────────────────────────────────── */}
+        {/* â”€â”€â”€ Greeting Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="bg-card border border-border hover:border-primary/40 rounded-xl p-5 transition-colors duration-300">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
@@ -697,12 +697,12 @@ export const SubmitCredentialsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ─── Stepper ───────────────────────────────────────────── */}
+        {/* â”€â”€â”€ Stepper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <Stepper steps={stepLabels} currentStep={currentStep} />
 
-        {/* ─── Step Content ──────────────────────────────────────── */}
+        {/* â”€â”€â”€ Step Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div key={currentStep} className="animate-[fadeSlideUp_0.3s_ease-out]">
-          {/* ─── PER-CERT STEP ─────────────────────────────────── */}
+          {/* â”€â”€â”€ PER-CERT STEP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {!isReviewStep && activeSlot && (
             <div className="bg-card border border-border rounded-xl p-6 space-y-5">
               {/* Cert header */}
@@ -779,7 +779,7 @@ export const SubmitCredentialsPage: React.FC = () => {
             </div>
           )}
 
-          {/* ─── REVIEW STEP ───────────────────────────────────── */}
+          {/* â”€â”€â”€ REVIEW STEP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
           {isReviewStep && (
             <div className="space-y-4">
               <div className="bg-card border border-border rounded-xl p-5">
@@ -818,7 +818,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                           Expires:{" "}
                           {slot.expiryDate
                             ? new Date(slot.expiryDate).toLocaleDateString("en-GB")
-                            : "—"}
+                            : "â€”"}
                         </p>
                       </div>
                       {/* Status + edit */}
@@ -859,7 +859,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                 {submitting ? (
                   <>
                     <Loader className="w-4 h-4 animate-spin" />
-                    Submitting…
+                    Submittingâ€¦
                   </>
                 ) : (
                   <>
@@ -872,7 +872,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           )}
         </div>
 
-        {/* ─── Open-ended: Add cert button ───────────────────────── */}
+        {/* â”€â”€â”€ Open-ended: Add cert button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {openEnded && !isReviewStep && (
           <button
             type="button"
@@ -884,7 +884,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           </button>
         )}
 
-        {/* ─── Navigation ────────────────────────────────────────── */}
+        {/* â”€â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         {!isReviewStep && (
           <div className="flex items-center gap-3">
             {currentStep > 0 && (
@@ -925,10 +925,10 @@ export const SubmitCredentialsPage: React.FC = () => {
           </button>
         )}
 
-        {/* ─── Footer ────────────────────────────────────────────── */}
+        {/* â”€â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
         <div className="text-center pt-4 border-t border-border">
           <p className="text-[8px] text-muted-foreground uppercase tracking-widest">
-            Opus Form Ltd — Secure Document Portal
+            Opus Form Ltd â€” Secure Document Portal
           </p>
         </div>
       </div>

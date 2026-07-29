@@ -2,12 +2,12 @@
 import React from "react";
 import { MapPin, Phone, Loader } from "lucide-react";
 import { OSMMap } from "./OSMMap";
-import { Job } from "../types/erp";
+import { Job, Supplier } from "../types/erp";
 
 interface JobOverviewTabProps {
   job: Job;
   siteCoords: { lat: number; lng: number } | null;
-  suppliers: any[];
+  suppliers: Supplier[];
   selectedSupplierId: string | null;
   setSelectedSupplierId: (id: string | null | ((prev: string | null) => string | null)) => void;
   loadingSuppliers: boolean;

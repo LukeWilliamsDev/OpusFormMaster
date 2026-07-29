@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { Bell, Send, Loader } from "lucide-react";
 import { supabase } from "../../integrations/supabase/client";
 import { toast } from "sonner";
@@ -217,3 +217,4 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
     </div>
   );
 };
+

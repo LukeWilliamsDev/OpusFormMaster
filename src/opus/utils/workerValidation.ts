@@ -1,11 +1,18 @@
 import { Worker, Ticket } from "../types/erp";
 
-// Validation anchor: today (evaluated at call time so expiry checks stay live)
 const getAnchorDate = () => {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
   return now;
 };
+
+export const getAvatarInitials = (fullName?: string) =>
+  fullName
+    ?.split(" ")
+    .map((p) => p[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) ?? "";
 
 export const validateWorkerForDeployment = (
   worker: Worker,

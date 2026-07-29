@@ -8,19 +8,15 @@ export const AcceptableUsePolicyPage: React.FC = () => (
   <LegalPageLayout title="Acceptable Use Policy" lastUpdated="July 2026">
     <Section title="1. Purpose">
       <p>
-        This Acceptable Use Policy outlines the rules and guidelines for using the Opus Form
-        internal workforce portal. Opus Form Ltd is a concrete flooring contractor, and this portal
-        is provided strictly for managing our site operatives, subcontractors, and construction
-        projects.
+        These are our rules for using the portal. It's for managing shifts, sites, and projects.
       </p>
       <p>
-        By accessing the portal, you agree to comply with this policy. Failure to do so may result
-        in the suspension of your access and disciplinary action.
+        Breaking these rules can get you suspended or fired.
       </p>
     </Section>
 
-    <Section title="2. Permitted Use">
-      <p>The portal is provided exclusively for the following purposes:</p>
+    <Section title="2. What You Can Use It For">
+      <p>You can:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>Viewing your assigned shifts, site locations, and project briefs.</li>
         <li>
@@ -31,8 +27,8 @@ export const AcceptableUsePolicyPage: React.FC = () => (
       </ul>
     </Section>
 
-    <Section title="3. Prohibited Activities">
-      <p>When using the portal, you must strictly avoid the following:</p>
+    <Section title="3. Don't Do This">
+      <p>Don't:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>Sharing your login credentials with anyone, including colleagues or site managers.</li>
         <li>
@@ -48,27 +44,22 @@ export const AcceptableUsePolicyPage: React.FC = () => (
       </ul>
     </Section>
 
-    <Section title="4. Data Accuracy on Site">
+    <Section title="4. Keep Your Data Accurate">
       <p>
-        As a concrete flooring operative or subcontractor, the information you provide in this
-        portal directly impacts health and safety on site. You must ensure that all right-to-work,
-        training, and site diary information is strictly accurate. Falsifying compliance data is a
-        serious breach of health and safety regulations.
+        The info you enter affects site safety. Your right-to-work docs, training, and diary entries
+        need to be accurate. Fake compliance docs break the law.
       </p>
     </Section>
 
-    <Section title="5. System Monitoring">
+    <Section title="5. We Log Everything">
       <p>
-        To ensure the security of our internal operations, Opus Form Ltd maintains detailed audit
-        logs of all portal activity. This includes logging IP addresses, login times, and document
-        uploads. Misuse detected during routine audits will be investigated by management.
+        We track who logs in, when, and what they upload. If we spot misuse, we investigate.
       </p>
     </Section>
 
-    <Section title="6. Contact">
+    <Section title="6. Problems?">
       <p>
-        If you experience technical issues or suspect unauthorised access to your account, please
-        immediately inform the office at{" "}
+        Tell us right away if something's broken or your account is compromised: {" "}
         <a
           href="mailto:admin@opusform.co.uk"
           className="underline"

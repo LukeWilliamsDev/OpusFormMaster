@@ -109,3 +109,24 @@ export interface ScheduledShift {
   jobId: string;
   date: string; // YYYY-MM-DD
 }
+
+export interface AuditLogEntry {
+  id: string;
+  action: "UPDATE" | "CREATE" | "DELETE";
+  timestamp: string;
+  userId?: string;
+  details?: {
+    old?: Record<string, unknown>;
+    new?: Record<string, unknown>;
+  };
+  [key: string]: unknown;
+}
+
+export interface Supplier {
+  id: string;
+  name: string;
+  distance?: number;
+  lat?: number;
+  lng?: number;
+  [key: string]: unknown;
+}

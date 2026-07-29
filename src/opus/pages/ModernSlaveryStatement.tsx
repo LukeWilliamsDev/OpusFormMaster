@@ -7,39 +7,31 @@ import { LegalPageLayout, Section } from "../layouts/LegalPageLayout";
  */
 export const ModernSlaveryStatementPage: React.FC = () => (
   <LegalPageLayout title="Modern Slavery and Illegal Working Statement" lastUpdated="July 2026">
-    <Section title="1. Introduction">
+    <Section title="1. Our Stance">
       <p>
-        Opus Form Ltd (Company No. 17228356) is committed to preventing modern slavery and human
-        trafficking in our corporate activities, and to ensuring that our supply chains are free
-        from these practices.
+        We oppose modern slavery and trafficking in everything we do. Our supply chain needs to be
+        clean too.
       </p>
       <p>
-        While Opus Form Ltd currently has an annual turnover below the £36 million threshold
-        requiring a mandatory statement under section 54 of the Modern Slavery Act 2015, we are
-        making this voluntary statement to demonstrate our commitment to best practices and ethical
-        operations.
+        We're under the £36 million turnover threshold, so this statement is voluntary. But we're
+        publishing it to show we take this seriously.
       </p>
     </Section>
 
-    <Section title="2. Organisational Structure and Supply Chains">
+    <Section title="2. What We Do">
       <p>
-        We provide concrete flooring and associated construction services, including the provision
-        of labour, materials, and plant machinery for industrial flooring projects across the United
-        Kingdom.
+        We do concrete flooring across the UK. We hire workers, buy materials, and rent equipment
+        for jobs.
       </p>
       <p>
-        Our supply chains include the sourcing of raw materials (such as concrete and steel
-        reinforcement), plant and machinery hire, and the use of specialised sub-contractors and
-        labour agencies. We recognise that the construction industry carries a higher inherent risk
-        of modern slavery and illegal working, and we are committed to mitigating this risk.
+        We use subcontractors and labor agencies. Construction has real slavery risks. We work to
+        stop that.
       </p>
     </Section>
 
-    <Section title="3. Policies on Modern Slavery and Illegal Working">
+    <Section title="3. Our Policy">
       <p>
-        We operate a zero-tolerance approach to modern slavery, human trafficking, and illegal
-        working. We are committed to acting ethically and with integrity in all our business
-        dealings and relationships.
+        We won't tolerate slavery, trafficking, or illegal hiring. We deal fairly with everyone.
       </p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>
@@ -54,8 +46,8 @@ export const ModernSlaveryStatementPage: React.FC = () => (
       </ul>
     </Section>
 
-    <Section title="4. Due Diligence Processes">
-      <p>As part of our initiative to identify and mitigate risk, we:</p>
+    <Section title="4. How We Check">
+      <p>We:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>Evaluate the modern slavery risks of any new major suppliers.</li>
         <li>
@@ -69,11 +61,9 @@ export const ModernSlaveryStatementPage: React.FC = () => (
       </ul>
     </Section>
 
-    <Section title="5. Reporting and Raising Concerns">
+    <Section title="5. Tell Us If You See Something">
       <p>
-        We encourage all our employees, contractors, and partners to report any concerns regarding
-        modern slavery or illegal working within our business or supply chain. Concerns should be
-        raised directly to management via:
+        If you see slavery or illegal hiring in our business or with our suppliers, tell us:
       </p>
       <p>
         <a
@@ -86,10 +76,9 @@ export const ModernSlaveryStatementPage: React.FC = () => (
       </p>
     </Section>
 
-    <Section title="6. Ongoing Review">
+    <Section title="6. We'll Keep It Current">
       <p>
-        We will periodically review and update this statement to reflect our ongoing commitment and
-        any changes in our business operations or legal obligations.
+        We review this statement when things change in our business or the law.
       </p>
     </Section>
   </LegalPageLayout>

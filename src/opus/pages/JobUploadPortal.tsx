@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { supabase } from "../../integrations/supabase/client";
 import { FileUp, Check, AlertCircle, Loader, UploadCloud } from "lucide-react";
@@ -43,7 +43,7 @@ export const JobUploadPortalPage: React.FC = () => {
       }
 
       setRequestData(data);
-      // data.job is the raw jobs row (to_jsonb in the RPC) — snake_case, not
+      // data.job is the raw jobs row (to_jsonb in the RPC) â€” snake_case, not
       // the camelCase Job type used everywhere else in the app. RPC returns
       // jsonb, so the generated type is the generic Json union; the actual
       // shape here comes from get_job_document_request_details's jsonb_build_object.

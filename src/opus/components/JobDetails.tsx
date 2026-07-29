@@ -678,9 +678,20 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [pourNoteTarget, setPourNoteTarget] = useState<PourLog | null>(null);
   const [editNoteText, setEditNoteText] = useState("");
 
-  const executeSaveNote = () => {
+  const executeSaveNote = async () => {
     if (!pourNoteTarget) return;
     const updatedLog = { ...pourNoteTarget, notes: editNoteText };
+
+    const { error } = await supabase
+      .from("pours")
+      .update({ notes: editNoteText })
+      .eq("id", pourNoteTarget.id);
+
+    if (error) {
+      toast.error("Failed to save note");
+      return;
+    }
+
     setPourLogs((prev) => prev.map((l) => (l.id === pourNoteTarget.id ? updatedLog : l)));
     setPourNoteTarget(null);
     toast.success("Pour notes updated");

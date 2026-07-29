@@ -1,11 +1,12 @@
-// @ts-nocheck
+﻿// @ts-nocheck
 import React from "react";
 import { Loader, Search, PencilLine, Layers } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { AuditLogEntry } from "../types/erp";
 import { computeDiff } from "../utils/auditDiff";
 
 // Only these job columns count as a real "job detail change" worth surfacing
-// an audit entry + Revert button for — same convention as the staff dossier.
+// an audit entry + Revert button for â€” same convention as the staff dossier.
 export const JOB_REVERTIBLE_FIELDS = [
   "site_name",
   "main_contractor",
@@ -22,12 +23,12 @@ export const JOB_FIELD_LABELS: Record<string, string> = {
 };
 
 interface HistoryTabProps {
-  jobAuditLogs: any[];
+  jobAuditLogs: AuditLogEntry[];
   loadingJobAuditLogs: boolean;
   auditSearch: string;
   setAuditSearch: (value: string) => void;
-  formatPourDate: (date: any) => string;
-  setRevertConfirmTarget: (target: any) => void;
+  formatPourDate: (date: string) => string;
+  setRevertConfirmTarget: (target: AuditLogEntry) => void;
 }
 
 export function HistoryTab({
@@ -90,7 +91,7 @@ export function HistoryTab({
                     .map((d: any) => JOB_FIELD_LABELS[d.field] || d.field);
 
                   const pourLabel = event.details?.pour_number
-                    ? `Pour #${event.details.pour_number} (${event.details.mix_type}, ${event.details.volume_m3}m³)`
+                    ? `Pour #${event.details.pour_number} (${event.details.mix_type}, ${event.details.volume_m3}mÂ³)`
                     : "";
 
                   let badgeColor = "bg-secondary border-border text-muted-foreground";
@@ -205,3 +206,4 @@ export function HistoryTab({
     </div>
   );
 }
+

@@ -13,10 +13,10 @@ const WeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) => {
   if (!weather) return null;
 
   const colorClass = !weather.isImpactful
-    ? "bg-success/10 border-success/30 text-success"
+    ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
     : weather.riskLevel === "High"
-      ? "bg-warning/10 border-warning/30 text-warning"
-      : "bg-warning/10 border-warning/20 text-warning";
+      ? "bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400"
+      : "bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400";
 
   return (
     <div
@@ -52,6 +52,16 @@ interface ProjectDayListProps {
   onRemoveShift: (shiftId: string) => void;
 }
 
+// Site office design constants
+const SITE_STONE_BG = "bg-stone-50 dark:bg-slate-800/50 border-2 border-stone-200 dark:border-slate-700 rounded-xl";
+const SITE_DIVIDER = "bg-stone-200 dark:bg-slate-700";
+const SITE_DEPLOYED_TEXT = "text-emerald-600 dark:text-emerald-400";
+const SITE_EMPTY_TEXT = "text-stone-400 dark:text-stone-500";
+const SITE_AVAILABLE_TEXT = "text-stone-500 dark:text-stone-400";
+const SITE_HEADER_TEXT = "text-stone-500 dark:text-stone-400";
+const SITE_JOB_CARD = "border border-stone-200 dark:border-slate-700 rounded-lg bg-stone-100/50 dark:bg-slate-800/50 p-3 space-y-2";
+const SITE_ADD_STAFF = "w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-stone-200 dark:border-slate-700 text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-amber-600 dark:hover:border-amber-400 text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer";
+
 export const ProjectDayList: React.FC<ProjectDayListProps> = ({
   jobs,
   schedule,
@@ -62,17 +72,19 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
   const activeJobs = jobs.filter((j) => j.status !== "completed");
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${SITE_STONE_BG} p-4`}>
       <div className="flex items-center gap-2 text-[11px] sm:text-xs">
-        <span className="font-bold text-muted-foreground">{formatDayHeading(date)}</span>
-        <span className="text-muted-foreground">·</span>
-        <span className="font-black text-success">{schedule.deployedCount} staff deployed</span>
+        <span className={`font-bold ${SITE_HEADER_TEXT}`}>{formatDayHeading(date)}</span>
+        <span className={SITE_HEADER_TEXT}>·</span>
+        <span className={`font-black ${SITE_DEPLOYED_TEXT}`}>{schedule.deployedCount} operatives deployed</span>
       </div>
 
       {activeJobs.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-10 text-muted-foreground border border-dashed border-border rounded-xl">
-          <Users className="w-6 h-6" />
-          <span className="text-xs font-bold uppercase tracking-wider">No active projects</span>
+        <div className="flex flex-col items-center gap-2 py-10 text-center border-2 border-dashed border-stone-200 dark:border-slate-700 rounded-xl">
+          <Users className="w-6 h-6 text-stone-300 dark:text-stone-600" />
+          <span className={`text-xs font-bold uppercase tracking-wider ${SITE_EMPTY_TEXT}`}>
+            No sites active
+          </span>
         </div>
       ) : (
         activeJobs.map((job) => {
@@ -82,22 +94,20 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
           return (
             <div
               key={job.id}
-              className={`border rounded-xl bg-card p-3 space-y-2 ${colors.border}`}
+              className={SITE_JOB_CARD}
             >
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 ${colors.bullet}`}
-                  />
+                  <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 ${colors.bullet}`} />
                   <h3 className={`text-[11px] sm:text-sm font-bold truncate ${colors.text}`}>
                     {job.siteName}
                   </h3>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-                  <span className="text-[9px] sm:text-[10px] font-black font-mono uppercase tracking-wider text-muted-foreground">
+                  <span className="text-[9px] sm:text-[10px] font-black font-mono uppercase tracking-wider text-stone-500 dark:text-stone-400">
                     {job.jobRef.split("-").slice(0, 2).join("-")}
                   </span>
-                  <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-black text-muted-foreground">
+                  <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-black text-stone-500 dark:text-stone-400">
                     <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {crew.length}
                   </span>
                 </div>
@@ -123,10 +133,10 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
               <button
                 type="button"
                 onClick={() => onAddStaff(job)}
-                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                className={SITE_ADD_STAFF}
               >
                 <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                Add Staff Member
+                ADD OPERATIVES
               </button>
             </div>
           );

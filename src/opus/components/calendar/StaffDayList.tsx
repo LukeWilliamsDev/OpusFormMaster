@@ -26,6 +26,16 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const isSearching = searchQuery.trim().length > 0;
 
+  // Site office design constants
+  const SITE_STONE_BG = "bg-stone-50 dark:bg-slate-800/50 border-2 border-stone-200 dark:border-slate-700 rounded-xl";
+  const SITE_STONE_BORDER = "border-stone-200 dark:border-slate-700";
+  const SITE_DIVIDER = "bg-stone-200 dark:bg-slate-700";
+  const SITE_DEPLOYED_TEXT = "text-emerald-600 dark:text-emerald-400";
+  const SITE_EMPTY_TEXT = "text-stone-400 dark:text-stone-500";
+  const SITE_AVAILABLE_TEXT = "text-stone-500 dark:text-stone-400";
+  const SITE_HEADER_TEXT = "text-stone-500 dark:text-stone-400";
+  const SITE_HEADING_TEXT = "text-stone-900 dark:text-white";
+
   useEffect(() => {
     setExpanded(new Set());
   }, [date]);
@@ -47,18 +57,18 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
   const availableGroups = groupWorkersByCategory(unassigned, (w) => w.role);
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${SITE_STONE_BG} p-4`}>
       <div className="flex items-center gap-2 text-xs">
-        <span className="font-bold text-muted-foreground">{formatDayHeading(date)}</span>
-        <span className="text-muted-foreground">·</span>
-        <span className="font-black text-success">{deployedCount} staff deployed</span>
+        <span className={`font-bold ${SITE_HEADER_TEXT}`}>{formatDayHeading(date)}</span>
+        <span className={SITE_HEADER_TEXT}>·</span>
+        <span className={`font-black ${SITE_DEPLOYED_TEXT}`}>{deployedCount} operatives deployed</span>
       </div>
 
       {assigned.length === 0 && unassigned.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-10 text-muted-foreground border border-dashed border-border rounded-xl">
-          <Users className="w-6 h-6" />
-          <span className="text-xs font-bold uppercase tracking-wider">
-            No staff match this view
+        <div className="flex flex-col items-center gap-2 py-10 text-center border-2 border-dashed border-stone-200 dark:border-slate-700 rounded-xl">
+          <Users className="w-6 h-6 text-stone-300 dark:text-stone-600" />
+          <span className={`text-xs font-bold uppercase tracking-wider ${SITE_EMPTY_TEXT}`}>
+            No operatives scheduled
           </span>
         </div>
       ) : (
@@ -66,11 +76,11 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
           {deployedGroups.length > 0 && (
             <div className="space-y-2.5">
               <div className="flex items-center gap-3 pt-2">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Already Deployed ({assigned.length})
+                <div className={`h-px flex-1 ${SITE_DIVIDER}`} />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${SITE_DEPLOYED_TEXT}`}>
+                  ALREADY DEPLOYED ({assigned.length})
                 </span>
-                <div className="h-px flex-1 bg-border" />
+                <div className={`h-px flex-1 ${SITE_DIVIDER}`} />
               </div>
               <div className="space-y-2">
                 {deployedGroups.map(({ category, items }) => {
@@ -103,11 +113,11 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
           {availableGroups.length > 0 && (
             <div className="space-y-2.5">
               <div className="flex items-center gap-3 pt-2">
-                <div className="h-px flex-1 bg-border" />
-                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Available ({unassigned.length})
+                <div className={`h-px flex-1 ${SITE_DIVIDER}`} />
+                <span className={`text-[10px] font-black uppercase tracking-widest ${SITE_AVAILABLE_TEXT}`}>
+                  AVAILABLE ({unassigned.length})
                 </span>
-                <div className="h-px flex-1 bg-border" />
+                <div className={`h-px flex-1 ${SITE_DIVIDER}`} />
               </div>
               <div className="space-y-2">
                 {availableGroups.map(({ category, items }) => {

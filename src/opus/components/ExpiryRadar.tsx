@@ -113,69 +113,58 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
           </span>
         </div>
 
-        {/* Responsive grid to prevent horizontal scrolling on mobile viewports */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sortedTickets.length === 0 ? (
-            <div className="py-8 text-center text-xs text-muted-foreground col-span-full flex flex-col items-center justify-center gap-2">
-              <ShieldCheck className="w-8 h-8 text-emerald-500 opacity-60" />
-              <span className="font-black uppercase tracking-widest text-[9px]">
-                All active personnel are fully compliant
-              </span>
-            </div>
-          ) : (
-            sortedTickets.map((ticketInfo) => {
-              const style = getTicketStyle(ticketInfo);
-              return (
-                <div
-                  key={`${ticketInfo.workerId}-${ticketInfo.ticketId}`}
-                  onClick={() => onSelectWorker?.(ticketInfo.workerId)}
-                  className={`w-full py-4 px-4 rounded-xl border bg-background flex flex-col gap-2.5 transition-all duration-150 cursor-pointer select-none ${style.cardBg}`}
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm font-bold text-foreground truncate mr-2">
-                        {ticketInfo.workerName}
-                      </div>
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0 ${style.badgeBg}`}
-                      >
-                        {style.statusText}
-                      </span>
+        <CardGrid
+          items={sortedTickets}
+          renderCard={(ticketInfo) => {
+            const style = getTicketStyle(ticketInfo);
+            return (
+              <div
+                key={`${ticketInfo.workerId}-${ticketInfo.ticketId}`}
+                onClick={() => onSelectWorker?.(ticketInfo.workerId)}
+                className={`w-full py-4 px-4 rounded-xl border bg-background flex flex-col gap-2.5 transition-all duration-150 cursor-pointer select-none ${style.cardBg}`}
+              >
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-bold text-foreground truncate mr-2">
+                      {ticketInfo.workerName}
                     </div>
-                    <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider truncate">
-                      {ticketInfo.workerRole}
-                    </div>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border shrink-0 ${style.badgeBg}`}
+                    >
+                      {style.statusText}
+                    </span>
                   </div>
-
-                  <div className="h-px bg-border/50" />
-
-                  <div className="flex justify-between items-center text-xs gap-2">
-                    <div className="flex flex-col truncate">
-                      <span className="text-foreground font-semibold truncate text-[11px]">
-                        {ticketInfo.ticketType} Card
-                      </span>
-                      <span className="text-muted-foreground text-[9px] font-mono font-bold truncate mt-0.5">
-                        No. {ticketInfo.ticketNumber}
-                      </span>
-                    </div>
-
-                    <div className="text-right flex flex-col items-end shrink-0">
-                      <span className={`font-mono font-bold text-[11px] ${style.daysColor}`}>
-                        {style.daysText}
-                      </span>
-                      <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">
-                        Exp: {new Date(ticketInfo.expiryDate).toLocaleDateString("en-GB")}
-                      </span>
-                    </div>
+                  <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-wider truncate">
+                    {ticketInfo.workerRole}
                   </div>
                 </div>
-              );
-            })
-          )}
-        </div>
-      </div>
-    </div>
-  );
-};
+
+                <div className="h-px bg-border/50" />
+
+                <div className="flex justify-between items-center text-xs gap-2">
+                  <div className="flex flex-col truncate">
+                    <span className="text-foreground font-semibold truncate text-[11px]">
+                      {ticketInfo.ticketType} Card
+                    </span>
+                    <span className="text-muted-foreground text-[9px] font-mono font-bold truncate mt-0.5">
+                      No. {ticketInfo.ticketNumber}
+                    </span>
+                  </div>
+
+                  <div className="text-right flex flex-col items-end shrink-0">
+                    <span className={`font-mono font-bold text-[11px] ${style.daysColor}`}>
+                      {style.daysText}
+                    </span>
+                    <span className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider mt-0.5">
+                      Exp: {new Date(ticketInfo.expiryDate).toLocaleDateString("en-GB")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          }}
+          emptyMessage="All active personnel are fully compliant"
+          emptyIcon={<ShieldCheck className="w-8 h-8 text-emerald-500 opacity-60" />}
+        />
 
 

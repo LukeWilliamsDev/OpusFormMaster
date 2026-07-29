@@ -4,7 +4,7 @@
  */
 
 // Profile form state pattern
-export const createProfileFormState = (profile?: any) => ({
+export const createProfileFormState = (profile?: { full_name?: string; phone_number?: string; avatar_url?: string }) => ({
   fullName: profile?.full_name || "",
   phone: profile?.phone_number || "",
   selectedAvatar: profile?.avatar_url || "slate",
@@ -42,4 +42,104 @@ export const createAsyncState = () => ({
   loading: false,
   success: false,
   error: null as string | null,
+});
+
+// ============================================================
+// NEW PATTERNS FOR AUDIT REFACTORING
+// ============================================================
+
+// Form field state with validation
+export const createFormFieldState = <T>(initialValue: T) => ({
+  value: initialValue,
+  error: null as string | null,
+  touched: false,
+});
+
+// Search/filter state pattern
+export const createSearchState = () => ({
+  query: "",
+  debouncedQuery: "",
+  isFocused: false,
+  results: null as any[] | null,
+});
+
+// Pagination state pattern
+export const createPaginationState = () => ({
+  page: 1,
+  pageSize: 10,
+  total: 0,
+  totalPages: 0,
+});
+
+// Modal/dialog state pattern
+export const createModalState = <T>() => ({
+  isOpen: false,
+  data: null as T | null,
+  loading: false,
+});
+
+// File upload state pattern
+export const createFileUploadState = () => ({
+  files: [] as File[],
+  uploading: false,
+  uploadProgress: 0,
+  uploadedUrls: [] as string[],
+  error: null as string | null,
+});
+
+// Stepper/wizard state pattern
+export const createStepperState = <T extends string[]>(steps: T) => ({
+  currentStep: 0,
+  stepLabels: steps as T,
+  completedSteps: [] as number[],
+  stepData: {} as Record<string, any>,
+});
+
+// Data fetching state pattern
+export const createDataFetchState = <T>() => ({
+  data: null as T | null,
+  loading: false,
+  error: null as string | null,
+  lastFetched: null as Date | null,
+});
+
+// Selection state pattern (for lists/grids)
+export const createSelectionState = <T>() => ({
+  selectedIds: [] as string[],
+  selectedItems: [] as T[],
+  selectAll: false,
+});
+
+// Snooze/dismiss state pattern (for alerts/notifications)
+export const createSnoozeState = () => ({
+  snoozedIds: new Set<string>(),
+  dismissedIds: new Set<string>(),
+});
+
+// Confirmation dialog state pattern
+export const createConfirmState = <T>() => ({
+  isOpen: false,
+  data: null as T | null,
+  confirmLoading: false,
+});
+
+// Filter state pattern
+export const createFilterState = <T extends Record<string, any>>(defaults: T) => ({
+  ...defaults,
+  active: false,
+});
+
+// Avatar/initials state pattern
+export const createAvatarState = (fullName?: string, email?: string) => ({
+  initials: fullName
+    ? fullName
+        .split(" ")
+        .filter(Boolean)
+        .map((w) => w[0].toUpperCase())
+        .join("")
+        .slice(0, 2)
+    : email
+      ? email.slice(0, 2).toUpperCase()
+      : "OP",
+  preset: "slate" as const,
 });

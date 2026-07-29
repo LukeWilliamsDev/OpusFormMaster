@@ -1,6 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { usePortal } from "../context/PortalContext";
 import { User, Shield, Phone, Key, Check, AlertCircle } from "lucide-react";
+import { 
+  createProfileFormState, 
+  createPasswordFormState, 
+  createUIState, 
+  createMessageState,
+  createAvatarState 
+} from "../utils/stateGrouping";
 
 const AVATAR_PRESETS = [
   {
@@ -34,98 +41,79 @@ export const getAvatarPresetClass = (presetId: string) => {
 export const SettingsPage: React.FC = () => {
   const { user, role, profile, updateProfile, updatePassword } = usePortal();
 
-  // Profile fields state
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState("slate");
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [profileMessage, setProfileMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
-
-  // Password fields state
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [passwordMessage, setPasswordMessage] = useState<{
-    type: "success" | "error";
-    text: string;
-  } | null>(null);
+  // Profile fields state - grouped
+  const [profileForm, setProfileForm] = useState(createProfileFormState(profile));
+  // Password fields state - grouped
+  const [passwordForm, setPasswordForm] = useState(createPasswordFormState());
+  // UI state - grouped
+  const [ui, setUi] = useState(createUIState());
+  // Message state - grouped
+  const [messages, setMessages] = useState(createMessageState());
+  // Avatar state - derived
+  const [avatar, setAvatar] = useState(createAvatarState(profile?.full_name, user?.email));
 
   // Hydrate fields from profile context
   useEffect(() => {
     if (profile) {
-      setFullName(profile.full_name || "");
-      setPhone(profile.phone_number || "");
-      setSelectedAvatar(profile.avatar_url || "slate");
+      setProfileForm(createProfileFormState(profile));
+      setAvatar(createAvatarState(profile.full_name, user?.email));
     }
   }, [profile]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSavingProfile(true);
-    setProfileMessage(null);
+    setUi(prev => ({ ...prev, isSavingProfile: true }));
+    setMessages(prev => ({ ...prev, profileMessage: null }));
 
     const { error } = await updateProfile({
-      full_name: fullName,
-      phone_number: phone,
-      avatar_url: selectedAvatar,
+      full_name: profileForm.fullName,
+      phone_number: profileForm.phone,
+      avatar_url: profileForm.selectedAvatar,
     });
 
-    setIsSavingProfile(false);
+    setUi(prev => ({ ...prev, isSavingProfile: false }));
     if (error) {
-      setProfileMessage({ type: "error", text: error });
+      setMessages(prev => ({ ...prev, profileMessage: { type: "error", text: error } }));
     } else {
-      setProfileMessage({ type: "success", text: "Profile details saved successfully." });
-      setTimeout(() => setProfileMessage(null), 3000);
+      setMessages(prev => ({ ...prev, profileMessage: { type: "success", text: "Profile details saved successfully." } }));
+      setTimeout(() => setMessages(prev => ({ ...prev, profileMessage: null })), 3000);
     }
   };
 
   const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordMessage(null);
+    setMessages(prev => ({ ...prev, passwordMessage: null }));
 
-    if (newPassword.length < 8) {
-      setPasswordMessage({
-        type: "error",
-        text: "New password must be at least 8 characters long.",
-      });
+    if (passwordForm.newPassword.length < 8) {
+      setMessages(prev => ({
+        ...prev,
+        passwordMessage: {
+          type: "error",
+          text: "New password must be at least 8 characters long.",
+        },
+      }));
       return;
     }
 
-    if (newPassword !== confirmPassword) {
-      setPasswordMessage({ type: "error", text: "New passwords do not match." });
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setMessages(prev => ({ ...prev, passwordMessage: { type: "error", text: "New passwords do not match." } }));
       return;
     }
 
-    setIsUpdatingPassword(true);
-    const { error } = await updatePassword(newPassword);
-    setIsUpdatingPassword(false);
+    setUi(prev => ({ ...prev, isUpdatingPassword: true }));
+    const { error } = await updatePassword(passwordForm.newPassword);
+    setUi(prev => ({ ...prev, isUpdatingPassword: false }));
 
     if (error) {
-      setPasswordMessage({ type: "error", text: error });
+      setMessages(prev => ({ ...prev, passwordMessage: { type: "error", text: error } }));
     } else {
-      setPasswordMessage({ type: "success", text: "Password successfully updated." });
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-      setTimeout(() => setPasswordMessage(null), 3000);
+      setMessages(prev => ({ ...prev, passwordMessage: { type: "success", text: "Password successfully updated." } }));
+      setPasswordForm(createPasswordFormState());
+      setTimeout(() => setMessages(prev => ({ ...prev, passwordMessage: null })), 3000);
     }
   };
 
-  const getUserInitials = () => {
-    if (fullName) {
-      const parts = fullName.split(" ");
-      return parts
-        .map((p) => p[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2);
-    }
-    return user?.email ? user.email.slice(0, 2).toUpperCase() : "OP";
-  };
+  const getUserInitials = () => avatar.initials;
 
   return (
     <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-4xl mx-auto animate-fade-in space-y-8">
@@ -148,7 +136,7 @@ export const SettingsPage: React.FC = () => {
 
           {/* Avatar Preview */}
           <div
-            className={`w-28 h-28 rounded-full bg-gradient-to-br ${getAvatarPresetClass(selectedAvatar)} flex items-center justify-center border-2 border-border shadow-2xl relative transition-all duration-300`}
+            className={`w-28 h-28 rounded-full bg-gradient-to-br ${getAvatarPresetClass(profileForm.selectedAvatar)} flex items-center justify-center border-2 border-border shadow-2xl relative transition-all duration-300`}
           >
             <span className="text-3xl font-black tracking-widest">{getUserInitials()}</span>
           </div>
@@ -163,15 +151,15 @@ export const SettingsPage: React.FC = () => {
                 <button
                   key={preset.id}
                   type="button"
-                  onClick={() => setSelectedAvatar(preset.id)}
+                  onClick={() => setProfileForm(prev => ({ ...prev, selectedAvatar: preset.id }))}
                   title={preset.name}
                   className={`h-10 rounded-lg bg-gradient-to-br ${preset.colors} border-2 relative transition-all ${
-                    selectedAvatar === preset.id
+                    profileForm.selectedAvatar === preset.id
                       ? "border-foreground scale-105 shadow-md"
                       : "border-border opacity-75 hover:opacity-100"
                   }`}
                 >
-                  {selectedAvatar === preset.id && (
+                  {profileForm.selectedAvatar === preset.id && (
                     <div className="absolute inset-0 flex items-center justify-center bg-black/10 rounded-lg">
                       <Check className={`w-4 h-4 ${preset.text}`} />
                     </div>
@@ -194,20 +182,20 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSaveProfile} className="space-y-4">
-              {profileMessage && (
+              {messages.profileMessage && (
                 <div
                   className={`flex items-center gap-2 p-3.5 rounded-lg text-xs font-bold uppercase tracking-wider ${
-                    profileMessage.type === "success"
+                    messages.profileMessage.type === "success"
                       ? "bg-success/10 border border-success/30 text-success"
                       : "bg-destructive/10 border border-destructive/30 text-destructive"
                   }`}
                 >
-                  {profileMessage.type === "success" ? (
+                  {messages.profileMessage.type === "success" ? (
                     <Check className="w-4 h-4" />
                   ) : (
                     <AlertCircle className="w-4 h-4" />
                   )}
-                  <span>{profileMessage.text}</span>
+                  <span>{messages.profileMessage.text}</span>
                 </div>
               )}
 
@@ -243,8 +231,8 @@ export const SettingsPage: React.FC = () => {
                     type="text"
                     required
                     className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    value={profileForm.fullName}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, fullName: e.target.value }))}
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -259,8 +247,8 @@ export const SettingsPage: React.FC = () => {
                   <input
                     type="tel"
                     className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    value={profileForm.phone}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="+44 7700 900077"
                   />
                 </div>
@@ -268,10 +256,10 @@ export const SettingsPage: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={isSavingProfile}
+                disabled={ui.isSavingProfile}
                 className="w-full sm:w-auto bg-secondary border border-border hover:bg-secondary/80 text-secondary-foreground text-[11px] font-black tracking-widest uppercase py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
               >
-                {isSavingProfile ? "Saving..." : "Save Profile Details"}
+                {ui.isSavingProfile ? "Saving..." : "Save Profile Details"}
               </button>
             </form>
           </div>
@@ -286,20 +274,20 @@ export const SettingsPage: React.FC = () => {
             </div>
 
             <form onSubmit={handleSavePassword} className="space-y-4">
-              {passwordMessage && (
+              {messages.passwordMessage && (
                 <div
                   className={`flex items-center gap-2 p-3.5 rounded-lg text-xs font-bold uppercase tracking-wider ${
-                    passwordMessage.type === "success"
+                    messages.passwordMessage.type === "success"
                       ? "bg-success/10 border border-success/30 text-success"
                       : "bg-destructive/10 border border-destructive/30 text-destructive"
                   }`}
                 >
-                  {passwordMessage.type === "success" ? (
+                  {messages.passwordMessage.type === "success" ? (
                     <Check className="w-4 h-4" />
                   ) : (
                     <AlertCircle className="w-4 h-4" />
                   )}
-                  <span>{passwordMessage.text}</span>
+                  <span>{messages.passwordMessage.text}</span>
                 </div>
               )}
 
@@ -312,8 +300,8 @@ export const SettingsPage: React.FC = () => {
                     type="password"
                     required
                     className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
                     placeholder="••••••••"
                   />
                 </div>
@@ -329,8 +317,8 @@ export const SettingsPage: React.FC = () => {
                       type="password"
                       required
                       className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
                       placeholder="Min 8 characters"
                     />
                   </div>
@@ -345,8 +333,8 @@ export const SettingsPage: React.FC = () => {
                       type="password"
                       required
                       className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
                       placeholder="Match new password"
                     />
                   </div>
@@ -355,10 +343,10 @@ export const SettingsPage: React.FC = () => {
 
               <button
                 type="submit"
-                disabled={isUpdatingPassword}
+                disabled={ui.isUpdatingPassword}
                 className="w-full sm:w-auto bg-secondary border border-border hover:bg-secondary/80 text-secondary-foreground text-[11px] font-black tracking-widest uppercase py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
               >
-                {isUpdatingPassword ? "Updating..." : "Update Password"}
+                {ui.isUpdatingPassword ? "Updating..." : "Update Password"}
               </button>
             </form>
           </div>

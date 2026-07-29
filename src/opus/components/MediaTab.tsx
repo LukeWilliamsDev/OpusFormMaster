@@ -21,9 +21,9 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 
 interface MediaTabProps {
-  beforePhotos: any[];
-  afterPhotos: any[];
-  projectDocs: any[];
+  beforePhotos: Attachment[];
+  afterPhotos: Attachment[];
+  projectDocs: Attachment[];
   uploadingPhotoBefore: boolean;
   uploadingPhotoAfter: boolean;
   uploadingDoc: boolean;
@@ -36,19 +36,27 @@ interface MediaTabProps {
   copiedLink: boolean;
   generateUploadLink: () => Promise<void>;
   copyToClipboard: () => void;
-  gallery: { photos: any[]; index: number } | null;
-  setGallery: (g: { photos: any[]; index: number } | null) => void;
-  viewDocTarget: any;
-  setViewDocTarget: (a: Record<string, unknown>) => void;
+  gallery: { photos: string[]; index: number } | null;
+  setGallery: (g: { photos: string[]; index: number } | null) => void;
+  viewDocTarget: Attachment | null;
+  setViewDocTarget: (a: Attachment | null) => void;
   executeViewDocument: () => void;
-  deleteAttachmentTarget: any;
-  setDeleteAttachmentTarget: (a: Record<string, unknown>) => void;
+  deleteAttachmentTarget: Attachment | null;
+  setDeleteAttachmentTarget: (a: Attachment | null) => void;
   executeDeleteAttachment: () => Promise<void>;
-  renameTarget: any;
-  setRenameTarget: (a: Record<string, unknown>) => void;
+  renameTarget: Attachment | null;
+  setRenameTarget: (a: Attachment | null) => void;
   renameValue: string;
   setRenameValue: (v: string) => void;
-  executeRenameAttachment: () => Promise<void>;
+}
+
+interface Attachment {
+  id: string;
+  file_url: string;
+  file_name: string;
+  type: "image_before" | "image_after" | "document";
+  file_size_bytes?: number;
+  uploaded_at?: string;
 }
 
 export function MediaTab({
@@ -120,8 +128,9 @@ export function MediaTab({
                 </div>
                 <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
                   {beforePhotos.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                      {beforePhotos.map((p, i) => (
+                    <CardGrid
+                      items={beforePhotos}
+                      renderCard={(p, i) => (
                         <div
                           key={p.id}
                           onClick={() => setGallery({ photos: beforePhotos, index: i })}
@@ -144,8 +153,10 @@ export function MediaTab({
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
-                      ))}
-                    </div>
+                      )}
+                      emptyMessage="No Media"
+                      emptyIcon={<span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold" />}
+                    />
                   ) : (
                     <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
                       No Media
@@ -179,8 +190,9 @@ export function MediaTab({
                 </div>
                 <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
                   {afterPhotos.length > 0 ? (
-                    <div className="grid grid-cols-2 gap-2 w-full">
-                      {afterPhotos.map((p, i) => (
+                    <CardGrid
+                      items={afterPhotos}
+                      renderCard={(p, i) => (
                         <div
                           key={p.id}
                           onClick={() => setGallery({ photos: afterPhotos, index: i })}
@@ -203,8 +215,10 @@ export function MediaTab({
                             <Trash2 className="w-3 h-3" />
                           </button>
                         </div>
-                      ))}
-                    </div>
+                      )}
+                      emptyMessage="No Media"
+                      emptyIcon={<span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold" />}
+                    />
                   ) : (
                     <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
                       No Media
@@ -290,38 +304,43 @@ export function MediaTab({
 
             {/* Documents List */}
             <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
-              {projectDocs.map((d) => (
-                <div
-                  key={d.id}
-                  className="flex justify-between items-center p-2.5 bg-background border border-border rounded-lg hover:border-muted-foreground/40 transition-all"
-                >
-                  <button
-                    type="button"
-                    onClick={() => setViewDocTarget(d)}
-                    className="flex items-center gap-2 truncate max-w-[70%] cursor-pointer"
-                  >
-                    <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <span className="text-xs text-foreground hover:text-primary truncate font-mono">
-                      {d.file_name}
-                    </span>
-                  </button>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[11px] text-muted-foreground font-medium">
-                      {new Date(d.uploaded_at).toLocaleDateString("en-GB")}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteAttachmentTarget(d)}
-                      className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                      aria-label={`Delete ${d.file_name}`}
+              {projectDocs.length > 0 ? (
+                <CardGrid
+                  items={projectDocs}
+                  renderCard={(d) => (
+                    <div
+                      key={d.id}
+                      className="flex justify-between items-center p-2.5 bg-background border border-border rounded-lg hover:border-muted-foreground/40 transition-all"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-
-              {projectDocs.length === 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setViewDocTarget(d)}
+                        className="flex items-center gap-2 truncate max-w-[70%] cursor-pointer"
+                      >
+                        <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <span className="text-xs text-foreground hover:text-primary truncate font-mono">
+                          {d.file_name}
+                        </span>
+                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-[11px] text-muted-foreground font-medium">
+                          {new Date(d.uploaded_at).toLocaleDateString("en-GB")}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteAttachmentTarget(d)}
+                          className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                          aria-label={`Delete ${d.file_name}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  emptyMessage="No documents uploaded yet"
+                  emptyIcon={<span className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold" />}
+                />
+              ) : (
                 <div className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold">
                   No documents uploaded yet
                 </div>

@@ -3,10 +3,11 @@ import { X, Send, Check, Copy } from "lucide-react";
 import { supabase } from "../../integrations/supabase/client";
 import { usePortal } from "../context/PortalContext";
 import { ON_SITE_CERTIFICATIONS } from "./RosterView";
-import { Worker } from "../types/erp";
+import { Worker, Ticket } from "../types/erp";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { handleError } from "../utils/errorHandler";
 
 interface RequestCredentialsModalProps {
   isOpen: boolean;
@@ -30,14 +31,14 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
     if (isOpen && worker) {
       // Find expired or expiring certifications
       const expiredOrExpiring = (worker.tickets || [])
-        .filter((t: any) => {
+        .filter((t: Ticket) => {
           const expiry = new Date(t.expiryDate);
           const now = new Date();
           const soon = new Date();
           soon.setDate(now.getDate() + 30); // 30 days expiring-soon window
           return expiry < now || (expiry >= now && expiry <= soon);
         })
-        .map((t: any) => t.type);
+        .map((t: Ticket) => t.type);
 
       // Pre-populate only valid certifications
       const initialSelected = expiredOrExpiring.filter((cert: string) =>
@@ -123,10 +124,11 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
             emailSentResult = true;
             setEmailSent(true);
           }
-        } catch (e: any) {
+        } catch (e: unknown) {
+          const { message } = handleError(e, { message: "Email send failed" });
           console.error("Email send exception:", e);
-          emailErrorResult = e.message || "Unknown error";
-          setEmailErrorMsg(emailErrorResult);
+          emailErrorResult = message;
+          setEmailErrorMsg(message);
         }
       }
 
@@ -147,9 +149,10 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
 
       // Transition to success screen only after all async steps (email & audit) complete
       setGeneratedLink(uploadUrl);
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      setError(err.message || "Failed to generate request link");
+      const { message } = handleError(err, { message: "Failed to generate request link" });
+      setError(message);
     } finally {
       setLoading(false);
     }

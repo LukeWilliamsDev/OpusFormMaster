@@ -252,8 +252,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
   // Sort filtered quotes
   const sortedQuotes = [...filteredQuotes].sort((a, b) => {
-    let aVal: any;
-    let bVal: any;
+    let aVal: string | number;
+    let bVal: string | number;
 
     switch (sortField) {
       case "ref":

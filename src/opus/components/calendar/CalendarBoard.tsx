@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Layers, LayoutGrid, Search } from "lucide-react";
+import { Layers, LayoutGrid, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Job, Worker, ScheduledShift } from "../../types/erp";
 import {
@@ -72,46 +72,72 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
     onChangeDate(addWeeks(date, deltaWeeks));
   };
 
+  // --- Site Office Design Constants ---
+  const SITE_AMBER = "bg-amber-600 text-white shadow-amber-600/20";
+  const SITE_STONE = "bg-stone-100 dark:bg-slate-800 text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 hover:bg-stone-200 dark:hover:bg-slate-700";
+  const SITE_BORDER = "border-stone-200 dark:border-slate-700";
+  const SITE_CARD = "bg-white dark:bg-slate-900 border-2 " + SITE_BORDER;
+  const SITE_HEADER_BAR = "bg-white/5 dark:bg-slate-900/50 backdrop-blur-sm border-b-2 " + SITE_BORDER;
+
   return (
-    <div className="max-w-3xl md:max-w-none mx-auto space-y-4">
-      {/* Toggle + search + filters */}
+    <div className="space-y-4 font-sans">
+      {/* Site Office Header Bar */}
+      <div className={SITE_HEADER_BAR}>
+        <div className="max-w-3xl md:max-w-none mx-auto px-4 py-3">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-8 bg-amber-600 rounded" />
+              <div>
+                <h1 className="text-xl font-black text-stone-900 dark:text-white tracking-tight">
+                  SITE DISPATCH BOARD
+                </h1>
+                <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
+                  {workers.length} operatives · {jobs.length} sites · Week of {weekDays[0]?.slice(5)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Toggle + Search + Filters */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="grid grid-cols-2 md:flex md:items-center gap-2">
           <button
             type="button"
             onClick={() => onChangeGroup("staff")}
-            className={`flex items-center justify-center md:justify-start gap-2 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
+            className={`flex items-center justify-center md:justify-start gap-2 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border-2 transition-all cursor-pointer ${
               group === "staff"
-                ? "bg-primary border-primary text-white shadow-lg shadow-primary/10"
-                : "bg-card/50 border-border text-muted-foreground hover:text-foreground"
+                ? SITE_AMBER + " border-amber-600"
+                : SITE_STONE + " " + SITE_BORDER
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
-            <span>Staff</span>
+            <span>OPERATIVES</span>
           </button>
           <button
             type="button"
             onClick={() => onChangeGroup("project")}
-            className={`flex items-center justify-center md:justify-start gap-2 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border transition-all cursor-pointer ${
+            className={`flex items-center justify-center md:justify-start gap-2 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border-2 transition-all cursor-pointer ${
               group === "project"
-                ? "bg-primary border-primary text-white shadow-lg shadow-primary/10"
-                : "bg-card/50 border-border text-muted-foreground hover:text-foreground"
+                ? SITE_AMBER + " border-amber-600"
+                : SITE_STONE + " " + SITE_BORDER
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>Project</span>
+            <span>SITES</span>
           </button>
         </div>
 
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
           <div className="relative md:w-56">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-stone-400 dark:text-stone-500" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search staff or projects…"
-              className="w-full bg-card border border-border rounded-xl pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary transition-colors"
+              placeholder="Search operatives or sites…"
+              className={`w-full ${SITE_CARD} pl-9 pr-3 py-2 text-xs text-stone-900 dark:text-white placeholder:text-stone-400 dark:placeholder:text-stone-500 focus:outline-none focus:border-amber-600 dark:focus:border-amber-400 transition-colors`}
             />
           </div>
         </div>
@@ -152,7 +178,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
       </div>
 
       <div className="hidden 2xl:block pb-2">
-        <div className="grid grid-cols-[repeat(5,minmax(240px,1fr))] border border-border rounded-xl bg-card overflow-hidden">
+        <div className={`grid grid-cols-[repeat(5,minmax(240px,1fr))] border-2 ${SITE_BORDER} rounded-xl ${SITE_CARD.replace("bg-white", "")} overflow-hidden`}>
           {group === "staff" ? (
             <WeekGridStaff
               weekDays={weekDays}

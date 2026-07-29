@@ -17,8 +17,16 @@ import {
 } from "lucide-react";
 import { ON_SITE_CERTIFICATIONS } from "../components/RosterView";
 import { usePortal } from "../context/PortalContext";
+import { 
+  createDataFetchState,
+  createStepperState,
+  createFileUploadState,
+  createUIState,
+  createAsyncState
+} from "../utils/stateGrouping";
+import { handleError } from "../utils/errorHandler";
 
-/* â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ────────────────────────────── Types ────────────────────────────── */
 
 interface UploadSlot {
   id: string;
@@ -50,9 +58,9 @@ const emptySlot = (): UploadSlot => ({
   displayFilename: null,
 });
 
-/* â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ────────────────────────────── Helpers ────────────────────────────── */
 
-/** Derive initials from a name, e.g. "Luke Williams" â†’ "LW" */
+/** Derive initials from a name, e.g. "Luke Williams" → "LW" */
 const getInitials = (name: string): string =>
   name
     .split(/\s+/)
@@ -60,7 +68,7 @@ const getInitials = (name: string): string =>
     .map((w) => w[0].toUpperCase())
     .join("");
 
-/** Derive a slug from a cert name, e.g. "CSCS Labourer Card" â†’ "CSCS-LABOURER-CARD" */
+/** Derive a slug from a cert name, e.g. "CSCS Labourer Card" → "CSCS-LABOURER-CARD" */
 const certSlug = (cert: string): string =>
   cert
     .toUpperCase()
@@ -82,7 +90,7 @@ const readAsDataUrl = (file: File): Promise<string> =>
     reader.readAsDataURL(file);
   });
 
-/* â”€â”€â”€ Circular Progress Ring â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ────────────────────────────── Progress Ring ────────────────────────────── */
 
 const ProgressRing: React.FC<{ progress: number; size?: number }> = ({ progress, size = 64 }) => {
   const strokeWidth = 4;
@@ -116,12 +124,12 @@ const ProgressRing: React.FC<{ progress: number; size?: number }> = ({ progress,
   );
 };
 
-/* â”€â”€â”€ Animated Checkmark (Success) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ────────────────────────────── Animated Checkmark (Success) ────────────────────────────── */
 
 const AnimatedCheckmark: React.FC = () => (
   <div className="relative w-20 h-20 mx-auto">
     <svg viewBox="0 0 80 80" className="w-full h-full">
-      {/* Outer circle â€“ scale in */}
+      {/* Outer circle – scale in */}
       <circle
         cx="40"
         cy="40"
@@ -141,7 +149,7 @@ const AnimatedCheckmark: React.FC = () => (
         className="animate-[scaleIn_0.5s_ease-out_0.1s_forwards]"
         style={{ transformOrigin: "center", opacity: 0 }}
       />
-      {/* Checkmark path â€“ draw in */}
+      {/* Checkmark path – draw in */}
       <path
         d="M24 42 L34 52 L56 30"
         fill="none"
@@ -156,7 +164,7 @@ const AnimatedCheckmark: React.FC = () => (
   </div>
 );
 
-/* â”€â”€â”€ Stepper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ────────────────────────────── Stepper ────────────────────────────── */
 
 interface StepperProps {
   steps: string[];
@@ -199,7 +207,7 @@ const Stepper: React.FC<StepperProps> = ({ steps, currentStep }) => (
   </div>
 );
 
-/* â”€â”€â”€ Dropzone â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ────────────────────────────── Dropzone ────────────────────────────── */
 
 interface DropzoneProps {
   slot: UploadSlot;
@@ -228,19 +236,19 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
     [onFileSelected],
   );
 
-  // Uploading state â€” show progress ring
+  // Uploading state — show progress ring
   if (slot.uploading) {
     return (
       <div className="flex flex-col items-center justify-center py-10 rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5">
         <ProgressRing progress={slot.progress} />
         <span className="text-[9px] font-black uppercase tracking-widest text-primary mt-3">
-          Uploadingâ€¦ {slot.progress}%
+          Uploading… {slot.progress}%
         </span>
       </div>
     );
   }
 
-  // Selected state â€” show preview
+  // Selected state — show preview
   if (slot.file) {
     return (
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 space-y-3">
@@ -288,7 +296,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
     );
   }
 
-  // Empty state â€” dropzone
+  // Empty state — dropzone
   return (
     <div
       onDragEnter={handleDrag}
@@ -333,7 +341,7 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
         Tap to Upload
       </span>
       <span className="text-[8px] text-muted-foreground uppercase tracking-widest mt-1.5">
-        PDF, PNG, or JPG â€” Max 5 MB
+        PDF, PNG, or JPG — Max 5 MB
       </span>
       {slot.error && (
         <p className="text-[8.5px] font-bold text-red-400 uppercase tracking-wider mt-3 px-4 text-center">
@@ -344,9 +352,9 @@ const Dropzone: React.FC<DropzoneProps> = ({ slot, onFileSelected, onRemoveFile 
   );
 };
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ════════════════════════════════════════════════════════════════════════
    MAIN PAGE COMPONENT
-   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+   ═══════════════════════════════════════════════════════════════════════ */
 
 export const SubmitCredentialsPage: React.FC = () => {
   const { theme } = usePortal();
@@ -355,34 +363,37 @@ export const SubmitCredentialsPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
-  /* â”€â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  const [loading, setLoading] = useState(true);
-  const [requestData, setRequestData] = useState<any>(null);
-  const [staffName, setStaffName] = useState<string>("");
+  /* ────────────────── State ────────────────── */
+  // Request data fetching state
+  const [requestFetch, setRequestFetch] = useState(createDataFetchState());
+  // Form state
+  const [staffName, setStaffName] = useState("");
   const [slots, setSlots] = useState<UploadSlot[]>([]);
   const [openEnded, setOpenEnded] = useState(false);
-  const [currentStep, setCurrentStep] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  // Stepper state
+  const [stepper, setStepper] = useState(() => createStepperState([]));
+  // Submit state
+  const [submitState, setSubmitState] = useState(createAsyncState());
+  // Error state
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  /* â”€â”€â”€ Derived â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-  // Steps = one per cert + "Review"
+  /* ────────────────── Derived ────────────────── */
   const stepLabels = [...slots.map((s) => s.cert.split(" ").slice(0, 2).join(" ")), "Review"];
-  const isReviewStep = currentStep === slots.length;
+  const isReviewStep = stepper.currentStep === slots.length;
   const totalSteps = stepLabels.length;
 
-  /* â”€â”€â”€ Fetch request details â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ────────────────── Fetch request details ────────────────── */
   useEffect(() => {
     if (token) {
       fetchRequestDetails();
     } else {
       setErrorMsg("No upload token provided. Please use a valid submission link.");
-      setLoading(false);
+      setRequestFetch(prev => ({ ...prev, loading: false }));
     }
   }, [token]);
 
   const fetchRequestDetails = async () => {
+    setRequestFetch(prev => ({ ...prev, loading: true, error: null }));
     try {
       // Try the SECURITY DEFINER RPC first (returns worker_name via staff join)
       const { data: rpcData, error: rpcError } = await supabase.rpc(
@@ -390,10 +401,10 @@ export const SubmitCredentialsPage: React.FC = () => {
         { p_request_id: token! },
       );
 
-      let reqData: any = null;
+      let reqData: { worker_name?: string } | null = null;
 
       if (!rpcError && rpcData) {
-        // RPC succeeded â€” use its result. get_document_request_details returns
+        // RPC succeeded — use its result. get_document_request_details returns
         // jsonb, so the generated type is the generic Json union; the actual
         // shape includes worker_name from its staff join.
         reqData = rpcData;
@@ -414,42 +425,54 @@ export const SubmitCredentialsPage: React.FC = () => {
         setStaffName(fallback.staff?.name || "Staff Member");
       }
 
-      setRequestData(reqData);
+      setRequestFetch(prev => ({ ...prev, data: reqData, loading: false }));
 
       const certs = reqData.requested_certs;
       if (!certs || certs.length === 0) {
         setOpenEnded(true);
         setSlots([emptySlot()]);
+        setStepper(createStepperState(["Review"]));
       } else {
-        setSlots(certs.map((cert: string) => ({ ...emptySlot(), cert })));
+        const newSlots = certs.map((cert: string) => ({ ...emptySlot(), cert }));
+        setSlots(newSlots);
+        setStepper(createStepperState(newSlots.map(s => s.cert.split(" ").slice(0, 2).join(" "))));
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Fetch error:", err);
-      setErrorMsg(err.message || "Access Denied: Invalid or expired upload link.");
-    } finally {
-      setLoading(false);
+      const { message } = handleError(err, { message: "Failed to fetch request details" });
+      setRequestFetch(prev => ({ ...prev, loading: false, error: message }));
+      setErrorMsg(message);
     }
   };
 
-  /* â”€â”€â”€ Slot helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ────────────────── Slot helpers ────────────────── */
 
   const updateSlot = (index: number, updates: Partial<UploadSlot>) => {
     setSlots((prev) => prev.map((s, idx) => (idx === index ? { ...s, ...updates } : s)));
   };
 
   const addSlot = () => {
-    setSlots((prev) => [...prev, emptySlot()]);
+    const newSlot = emptySlot();
+    setSlots((prev) => [...prev, newSlot]);
+    setStepper(prev => ({
+      ...prev,
+      stepLabels: [...prev.stepLabels, newSlot.cert.split(" ").slice(0, 2).join(" ")]
+    }));
   };
 
   const removeSlot = (index: number) => {
     setSlots((prev) => prev.filter((_, idx) => idx !== index));
+    setStepper(prev => ({
+      ...prev,
+      stepLabels: prev.stepLabels.filter((_, idx) => idx !== index)
+    }));
     // Adjust current step if we removed a step before or at the current position
-    if (currentStep >= slots.length - 1) {
-      setCurrentStep(Math.max(0, slots.length - 2));
+    if (stepper.currentStep >= slots.length - 1) {
+      setStepper(prev => ({ ...prev, currentStep: Math.max(0, slots.length - 2) }));
     }
   };
 
-  /* â”€â”€â”€ File selection handler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ────────────────── File selection handler ────────────────── */
 
   const handleFileSelected = async (index: number, file: File) => {
     if (!file) return;
@@ -486,28 +509,28 @@ export const SubmitCredentialsPage: React.FC = () => {
     });
   };
 
-  /* â”€â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ────────────────── Navigation ────────────────── */
 
   const canAdvance = (): boolean => {
     if (isReviewStep) return false;
-    const slot = slots[currentStep];
+    const slot = slots[stepper.currentStep];
     if (!slot) return false;
     return !!slot.file && !!slot.expiryDate;
   };
 
   const goNext = () => {
-    if (currentStep < totalSteps - 1) setCurrentStep((s) => s + 1);
+    if (stepper.currentStep < totalSteps - 1) setStepper(prev => ({ ...prev, currentStep: prev.currentStep + 1 }));
   };
 
   const goBack = () => {
-    if (currentStep > 0) setCurrentStep((s) => s - 1);
+    if (stepper.currentStep > 0) setStepper(prev => ({ ...prev, currentStep: prev.currentStep - 1 }));
   };
 
   const goToStep = (idx: number) => {
-    setCurrentStep(idx);
+    setStepper(prev => ({ ...prev, currentStep: idx }));
   };
 
-  /* â”€â”€â”€ Submit handler (uploads files now) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ────────────────── Submit handler (uploads files now) ────────────────── */
 
   const handleSubmit = async () => {
     setErrorMsg(null);
@@ -529,7 +552,7 @@ export const SubmitCredentialsPage: React.FC = () => {
       }
     }
 
-    setSubmitting(true);
+    setSubmitState(prev => ({ ...prev, loading: true, success: false, error: null }));
 
     try {
       const uploadedTickets = [];
@@ -593,21 +616,21 @@ export const SubmitCredentialsPage: React.FC = () => {
 
       if (submitError) throw submitError;
 
-      setSubmitSuccess(true);
-    } catch (err: any) {
+      setSubmitState(prev => ({ ...prev, loading: false, success: true }));
+    } catch (err) {
       console.error("Submit error:", err);
-      setErrorMsg(err.message || "Submission failed. Please check your inputs and try again.");
-    } finally {
-      setSubmitting(false);
+      const { message } = handleError(err, { message: "Submission failed" });
+      setSubmitState(prev => ({ ...prev, loading: false, error: message }));
+      setErrorMsg(message);
     }
   };
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  /* ═══════════════════════════════════════════════════════════════════════
      RENDER STATES
-     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+     ═══════════════════════════════════════════════════════════════════════ */
 
   // Loading
-  if (loading) {
+  if (requestFetch.loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8">
         <img src={logoSrc} alt="Opus Form" className="h-12 w-auto" />
@@ -617,7 +640,7 @@ export const SubmitCredentialsPage: React.FC = () => {
   }
 
   // Error (no request data)
-  if (errorMsg && !requestData) {
+  if (errorMsg && !requestFetch.data) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4">
         <img src={logoSrc} alt="Opus Form" className="h-12 w-auto" />
@@ -637,7 +660,7 @@ export const SubmitCredentialsPage: React.FC = () => {
   }
 
   // Success
-  if (submitSuccess) {
+  if (submitState.success) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4">
         <img src={logoSrc} alt="Opus Form" className="h-12 w-auto" />
@@ -661,16 +684,16 @@ export const SubmitCredentialsPage: React.FC = () => {
     );
   }
 
-  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-     MAIN FORM â€” MULTI-STEP WIZARD
-     â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+  /* ═══════════════════════════════════════════════════════════════════════
+     MAIN FORM — MULTI-STEP WIZARD
+     ═══════════════════════════════════════════════════════════════════════ */
 
-  const activeSlot = !isReviewStep ? slots[currentStep] : null;
+  const activeSlot = !isReviewStep ? slots[stepper.currentStep] : null;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-6">
-        {/* â”€â”€â”€ Header / Branding â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ────────────────── Header / Branding ────────────────── */}
         <div className="text-center space-y-3">
           <img src={logoSrc} alt="Opus Form" className="h-12 w-auto mx-auto" />
           <h1 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
@@ -678,7 +701,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           </h1>
         </div>
 
-        {/* â”€â”€â”€ Greeting Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ────────────────── Greeting Card ────────────────── */}
         <div className="bg-card border border-border hover:border-primary/40 rounded-xl p-5 transition-colors duration-300">
           <div className="flex items-start gap-4">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 border border-primary/20">
@@ -697,12 +720,12 @@ export const SubmitCredentialsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* â”€â”€â”€ Stepper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-        <Stepper steps={stepLabels} currentStep={currentStep} />
+        {/* ────────────────── Stepper ────────────────── */}
+        <Stepper steps={stepLabels} currentStep={stepper.currentStep} />
 
-        {/* â”€â”€â”€ Step Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-        <div key={currentStep} className="animate-[fadeSlideUp_0.3s_ease-out]">
-          {/* â”€â”€â”€ PER-CERT STEP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ────────────────── Step Content ────────────────── */}
+        <div key={stepper.currentStep} className="animate-[fadeSlideUp_0.3s_ease-out]">
+          {/* ────────────────── PER-CERT STEP ────────────────── */}
           {!isReviewStep && activeSlot && (
             <div className="bg-card border border-border rounded-xl p-6 space-y-5">
               {/* Cert header */}
@@ -710,7 +733,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                 {openEnded ? (
                   <select
                     value={activeSlot.cert}
-                    onChange={(e) => updateSlot(currentStep, { cert: e.target.value })}
+                    onChange={(e) => updateSlot(stepper.currentStep, { cert: e.target.value })}
                     className="flex-1 min-w-0 bg-secondary/40 border border-border hover:border-muted-foreground/50 focus:border-primary rounded-xl px-3 py-2.5 text-xs text-foreground/85 uppercase font-bold tracking-wider outline-none appearance-none transition-colors"
                   >
                     {ON_SITE_CERTIFICATIONS.map((cert) => (
@@ -722,7 +745,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                 ) : (
                   <div>
                     <p className="text-[8px] text-muted-foreground uppercase tracking-widest mb-1">
-                      Step {currentStep + 1} of {slots.length}
+                      Step {stepper.currentStep + 1} of {slots.length}
                     </p>
                     <h4 className="text-xs font-bold uppercase tracking-widest text-foreground/85 leading-normal">
                       {activeSlot.cert}
@@ -732,7 +755,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                 {openEnded && slots.length > 1 && (
                   <button
                     type="button"
-                    onClick={() => removeSlot(currentStep)}
+                    onClick={() => removeSlot(stepper.currentStep)}
                     className="shrink-0 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-red-500/10"
                     aria-label="Remove certification"
                   >
@@ -744,9 +767,9 @@ export const SubmitCredentialsPage: React.FC = () => {
               {/* Dropzone */}
               <Dropzone
                 slot={activeSlot}
-                onFileSelected={(file) => handleFileSelected(currentStep, file)}
+                onFileSelected={(file) => handleFileSelected(stepper.currentStep, file)}
                 onRemoveFile={() =>
-                  updateSlot(currentStep, {
+                  updateSlot(stepper.currentStep, {
                     file: null,
                     uploadedUrl: null,
                     progress: 0,
@@ -765,7 +788,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                 <input
                   type="date"
                   value={activeSlot.expiryDate}
-                  onChange={(e) => updateSlot(currentStep, { expiryDate: e.target.value })}
+                  onChange={(e) => updateSlot(stepper.currentStep, { expiryDate: e.target.value })}
                   className="w-full bg-secondary/40 border border-border hover:border-muted-foreground/50 focus:border-primary rounded-xl px-4 py-3 text-xs text-foreground outline-none transition-colors min-h-[48px]"
                 />
               </div>
@@ -779,7 +802,7 @@ export const SubmitCredentialsPage: React.FC = () => {
             </div>
           )}
 
-          {/* â”€â”€â”€ REVIEW STEP â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {/* ────────────────── REVIEW STEP ────────────────── */}
           {isReviewStep && (
             <div className="space-y-4">
               <div className="bg-card border border-border rounded-xl p-5">
@@ -818,7 +841,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                           Expires:{" "}
                           {slot.expiryDate
                             ? new Date(slot.expiryDate).toLocaleDateString("en-GB")
-                            : "â€”"}
+                            : "—"}
                         </p>
                       </div>
                       {/* Status + edit */}
@@ -853,13 +876,13 @@ export const SubmitCredentialsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleSubmit}
-                disabled={submitting}
+                disabled={submitState.loading}
                 className="w-full py-4 bg-primary hover:bg-primary/80 disabled:opacity-50 text-primary-foreground rounded-xl text-[10px] font-black uppercase tracking-[0.2em] shadow-lg shadow-primary/20 transition-all min-h-[52px] cursor-pointer flex items-center justify-center gap-2"
               >
-                {submitting ? (
+                {submitState.loading ? (
                   <>
                     <Loader className="w-4 h-4 animate-spin" />
-                    Submittingâ€¦
+                    Submitting…
                   </>
                 ) : (
                   <>
@@ -872,7 +895,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           )}
         </div>
 
-        {/* â”€â”€â”€ Open-ended: Add cert button â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ────────────────── Open-ended: Add cert button ────────────────── */}
         {openEnded && !isReviewStep && (
           <button
             type="button"
@@ -884,10 +907,10 @@ export const SubmitCredentialsPage: React.FC = () => {
           </button>
         )}
 
-        {/* â”€â”€â”€ Navigation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ────────────────── Navigation ────────────────── */}
         {!isReviewStep && (
           <div className="flex items-center gap-3">
-            {currentStep > 0 && (
+            {stepper.currentStep > 0 && (
               <button
                 type="button"
                 onClick={goBack}
@@ -907,7 +930,7 @@ export const SubmitCredentialsPage: React.FC = () => {
                   : "bg-secondary text-muted-foreground border border-border cursor-not-allowed"
               }`}
             >
-              {currentStep === slots.length - 1 ? "Review" : "Next"}
+              {stepper.currentStep === slots.length - 1 ? "Review" : "Next"}
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -925,10 +948,10 @@ export const SubmitCredentialsPage: React.FC = () => {
           </button>
         )}
 
-        {/* â”€â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+        {/* ────────────────── Footer ────────────────── */}
         <div className="text-center pt-4 border-t border-border">
           <p className="text-[8px] text-muted-foreground uppercase tracking-widest">
-            Opus Form Ltd â€” Secure Document Portal
+            Opus Form Ltd — Secure Document Portal
           </p>
         </div>
       </div>

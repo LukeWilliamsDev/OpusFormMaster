@@ -1,9 +1,16 @@
 ﻿import React, { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { supabase } from "../../integrations/supabase/client";
 import { FileUp, Check, AlertCircle, Loader, UploadCloud } from "lucide-react";
 import { usePortal } from "../context/PortalContext";
 import { compressImageFile } from "../lib/compressImage";
+import { 
+  createDataFetchState, 
+  createFileUploadState, 
+  createUIState,
+  createAsyncState
+} from "../utils/stateGrouping";
+import { handleError } from "../utils/errorHandler";
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_BYTES = 100 * 1024 * 1024;
@@ -13,26 +20,39 @@ export const JobUploadPortalPage: React.FC = () => {
   const logoSrc =
     theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const { token } = useParams<{ token: string }>();
-  const [loading, setLoading] = useState(true);
-  const [jobData, setJobData] = useState<any>(null);
-  const [requestData, setRequestData] = useState<any>(null);
-  const [existingTotalBytes, setExistingTotalBytes] = useState(0);
-  const [dragActive, setDragActive] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadSuccess, setUploadSuccess] = useState(false);
+
+  /* ────────────────── State ────────────────── */
+  // Request data fetching state
+  const [requestFetch, setRequestFetch] = useState(createDataFetchState());
+  // File upload state
+  const [uploadState, setUploadState] = useState(createFileUploadState());
+  // UI state (drag, etc.)
+  const [ui, setUi] = useState(createUIState());
+  // Submit state
+  const [submitState, setSubmitState] = useState(createAsyncState());
+  // Error state
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
+  /* ────────────────── Derived ────────────────── */
+  const loading = requestFetch.loading;
+  const jobData = requestFetch.data;
+  const existingTotalBytes = (requestFetch.data as any)?.existing_total_bytes || 0;
+  const files = uploadState.files;
+  const uploading = submitState.loading;
+  const uploadSuccess = submitState.success;
+
+  /* ────────────────── Fetch request details ────────────────── */
   useEffect(() => {
     if (token) {
       fetchRequestDetails();
     } else {
       setErrorMsg("No upload token provided. Please use a valid submission link.");
-      setLoading(false);
+      setRequestFetch(prev => ({ ...prev, loading: false }));
     }
   }, [token]);
 
   const fetchRequestDetails = async () => {
+    setRequestFetch(prev => ({ ...prev, loading: true, error: null }));
     try {
       const { data, error } = await supabase.rpc("get_job_document_request_details", {
         p_token: token!,
@@ -42,8 +62,9 @@ export const JobUploadPortalPage: React.FC = () => {
         throw new Error("This upload link is invalid, expired, or has already been completed.");
       }
 
-      setRequestData(data);
-      // data.job is the raw jobs row (to_jsonb in the RPC) â€” snake_case, not
+      setRequestFetch(prev => ({ ...prev, data, loading: false }));
+
+      // data.job is the raw jobs row (to_jsonb in the RPC) — snake_case, not
       // the camelCase Job type used everywhere else in the app. RPC returns
       // jsonb, so the generated type is the generic Json union; the actual
       // shape here comes from get_job_document_request_details's jsonb_build_object.
@@ -51,23 +72,21 @@ export const JobUploadPortalPage: React.FC = () => {
         job: { job_ref: string; site_name: string };
         existing_total_bytes: number;
       };
-      setJobData({ jobRef: details.job.job_ref, siteName: details.job.site_name });
-      setExistingTotalBytes(details.existing_total_bytes || 0);
-    } catch (err: any) {
-      console.error(err);
-      setErrorMsg(err.message || "Access Denied: Invalid or expired upload link.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    } catch (err) {
+        console.error(err);
+        const { message } = handleError(err, { message: "Failed to fetch request details" });
+        setRequestFetch(prev => ({ ...prev, loading: false, error: message }));
+        setErrorMsg(message);
+      }
+    };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
-      setDragActive(true);
+      setUi(prev => ({ ...prev, dragActive: true }));
     } else if (e.type === "dragleave") {
-      setDragActive(false);
+      setUi(prev => ({ ...prev, dragActive: false }));
     }
   };
 
@@ -89,13 +108,13 @@ export const JobUploadPortalPage: React.FC = () => {
       );
       return;
     }
-    if (candidates.length > 0) setFiles((prev) => [...prev, ...candidates]);
+    if (candidates.length > 0) setUploadState(prev => ({ ...prev, files: [...prev.files, ...candidates] }));
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setDragActive(false);
+    setUi(prev => ({ ...prev, dragActive: false }));
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       addFiles(Array.from(e.dataTransfer.files));
@@ -109,14 +128,14 @@ export const JobUploadPortalPage: React.FC = () => {
   };
 
   const handleRemoveFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setUploadState(prev => ({ ...prev, files: prev.files.filter((_, i) => i !== index) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (files.length === 0) return;
 
-    setUploading(true);
+    setSubmitState(prev => ({ ...prev, loading: true, error: null }));
     setErrorMsg(null);
 
     try {
@@ -152,12 +171,12 @@ export const JobUploadPortalPage: React.FC = () => {
       // Mark document request as completed
       await supabase.rpc("complete_job_document_request", { p_token: token! });
 
-      setUploadSuccess(true);
-    } catch (err: any) {
+      setSubmitState(prev => ({ ...prev, loading: false, success: true }));
+    } catch (err) {
       console.error(err);
-      setErrorMsg(err.message || "An error occurred during file upload.");
-    } finally {
-      setUploading(false);
+      const { message } = handleError(err, { message: "File upload failed" });
+      setSubmitState(prev => ({ ...prev, loading: false, error: message }));
+      setErrorMsg(message);
     }
   };
 
@@ -199,13 +218,13 @@ export const JobUploadPortalPage: React.FC = () => {
         {/* Title and Job info */}
         <div className="text-center space-y-2">
           <div className="inline-flex px-3 py-1 bg-secondary border border-border rounded-full text-[10px] font-bold uppercase tracking-wider text-muted-foreground font-mono">
-            {jobData.jobRef.replace("-X", "")}
+            {jobData?.jobRef?.replace("-X", "")}
           </div>
           <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
             Job Document Portal
           </h1>
           <p className="text-sm text-muted-foreground">
-            Uploading documents for <strong className="text-foreground">{jobData.siteName}</strong>
+            Uploading documents for <strong className="text-foreground">{jobData?.siteName}</strong>
           </p>
         </div>
 
@@ -230,7 +249,7 @@ export const JobUploadPortalPage: React.FC = () => {
               onDragLeave={handleDrag}
               onDrop={handleDrop}
               className={`border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center transition-all cursor-pointer relative ${
-                dragActive
+                ui.dragActive
                   ? "border-primary bg-primary/10"
                   : "border-border hover:border-muted-foreground/40 bg-background"
               }`}

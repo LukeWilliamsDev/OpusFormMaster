@@ -197,22 +197,27 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
           No notes yet
         </div>
       ) : (
-        grouped.map(({ day, notes: dayNotes }) => (
-          <div key={day} className="space-y-2">
-            <div className="text-[12px] text-primary font-bold uppercase tracking-wider border-b border-border pb-1">
-              {formatDayHeading(day)}
-            </div>
-            {dayNotes.map((n) => (
-              <div key={n.id} className="bg-card border border-border rounded-lg p-3">
-                <p className="text-sm text-foreground leading-relaxed">{n.body}</p>
-                <div className="flex items-center justify-between mt-2 text-[11px] text-muted-foreground">
-                  <span>{n.user_email}</span>
-                  <span>{formatReminderTime(n.created_at)}</span>
-                </div>
+        <CardGrid
+          items={grouped}
+          renderCard={({ day, notes: dayNotes }) => (
+            <div key={day} className="space-y-2">
+              <div className="text-[12px] text-primary font-bold uppercase tracking-wider border-b border-border pb-1">
+                {formatDayHeading(day)}
               </div>
-            ))}
-          </div>
-        ))
+              {dayNotes.map((n) => (
+                <div key={n.id} className="bg-card border border-border rounded-lg p-3">
+                  <p className="text-sm text-foreground leading-relaxed">{n.body}</p>
+                  <div className="flex items-center justify-between mt-2 text-[11px] text-muted-foreground">
+                    <span>{n.user_email}</span>
+                    <span>{formatReminderTime(n.created_at)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          emptyMessage="No notes yet"
+          emptyIcon={<span className="text-xs text-muted-foreground py-8 text-center uppercase tracking-wider" />}
+        />
       )}
     </div>
   );

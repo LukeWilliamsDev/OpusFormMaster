@@ -41,12 +41,6 @@ interface LegalPageLayoutProps {
   children: React.ReactNode;
 }
 
-/**
- * Shared layout wrapper for all legal/compliance pages.
- * Conditionally adapts:
- * - Unauthenticated: standalone full-page layout with custom header/footer.
- * - Authenticated: clean nested layout fitting within the PortalLayout viewport.
- */
 export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
   title,
   lastUpdated,
@@ -114,14 +108,14 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             </p>
           </div>
 
-          <div className="h-px mb-6 bg-border" />
+          <div className="h-px mb-6" style={{ backgroundColor: "var(--border)" }} />
 
           <div className="lg:grid lg:grid-cols-[200px_1fr] lg:gap-10">
             {/* Section nav */}
             {toc.length > 0 && (
               <nav className="hidden lg:block sticky top-6 self-start">
                 <span className="block text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground mb-3">
-                  On this page
+                  ON THIS PAGE
                 </span>
                 <ul className="space-y-2">
                   {toc.map((item) => (
@@ -141,19 +135,19 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
 
             {/* Legal content */}
             <div className="legal-content space-y-6 min-w-0 max-w-3xl">{stamped}</div>
-          </div>
 
-          {/* Inline footer links */}
-          <div className="border-t border-border mt-12 pt-6 flex flex-wrap gap-x-6 gap-y-2 justify-center">
-            {getFooterLinks().map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-primary transition-colors duration-200"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {/* Inline footer links */}
+                        <div className="border-t border-border mt-12 pt-6 flex flex-wrap gap-x-6 gap-y-2 justify-center">
+                          {getFooterLinks().map((link) => (
+                            <Link
+                              key={link.path}
+                              to={link.path}
+                              className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
+                            >
+                              {link.label}
+                            </Link>
+                          ))}
+                        </div>
           </div>
         </div>
       </div>
@@ -166,7 +160,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 0 L 60 0 L 60 60' fill='none' stroke='%23ffffff' stroke-width='0.4'/%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 0 L 60 0 L 60 60' fill='none' stroke='%23ffffff' stroke-width='0.4'/%3E%3Ccircle cx='0' cy='0' r='1.5' fill='%23D97706'/%3E%3C/svg%3E")`,
           opacity: 0.025,
         }}
       />
@@ -227,10 +221,9 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
         <div className="lg:grid lg:grid-cols-[200px_1fr] lg:gap-10">
           {/* Section nav */}
           {toc.length > 0 && (
-            <nav className="hidden lg:block sticky top-24 self-start">
+            <nav className="hidden lg:block sticky top-6 self-start">
               <span
-                className="block text-[10px] font-mono font-bold uppercase tracking-[0.18em] mb-3"
-                style={{ color: "var(--muted-foreground)" }}
+                className="block text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground mb-3"
               >
                 On this page
               </span>
@@ -240,12 +233,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
                     <a
                       href={`#${item.id}`}
                       onClick={(e) => scrollToSection(e, item.id)}
-                      className="block text-[11px] font-medium transition-colors duration-200 leading-snug"
-                      style={{ color: "var(--muted-foreground)" }}
-                      onMouseEnter={(e) => (e.currentTarget.style.color = "var(--primary)")}
-                      onMouseLeave={(e) =>
-                        (e.currentTarget.style.color = "var(--muted-foreground)")
-                      }
+                      className="block text-[11px] font-medium text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200 leading-snug"
                     >
                       {item.title}
                     </a>
@@ -278,48 +266,46 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
         }}
       >
         {/* Legal links row */}
-        <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-x-5 gap-y-2 mb-4">
-          {getFooterLinks().map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-primary transition-colors duration-200"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
+                <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-x-5 gap-y-2 mb-4">
+                  {getFooterLinks().map((link) => (
+                    <Link
+                      key={link.path}
+                      to={link.path}
+                      className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
 
         {/* Company details + contact */}
-        <div
-          className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono uppercase text-muted-foreground/80 text-center max-w-xl lg:max-w-none mx-auto"
-          style={{ letterSpacing: "0.15em" }}
-        >
-          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
-            <span>Opus Form Ltd</span>
-            <span>·</span>
-            <span>Company No. 17228356</span>
-            <span>·</span>
-            <span className="text-center">128 City Road, London, EC1V 2NX</span>
-          </div>
-          <span className="hidden lg:inline">·</span>
-          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
-            <a
-              href="mailto:admin@opusform.co.uk"
-              className="hover:text-primary transition-colors duration-200"
-            >
-              admin@opusform.co.uk
-            </a>
-            <span>·</span>
-            <span>© {new Date().getFullYear()} All Rights Reserved</span>
-          </div>
-        </div>
-      </footer>
-    </div>
-  );
-};
-
-/* Reusable sub-components for consistent legal page formatting */
+                <div
+                  className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono uppercase text-muted-foreground/80 text-center max-w-xl lg:max-w-none mx-auto"
+                  style={{ letterSpacing: "0.15em" }}
+                >
+                  <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+                    <span>OPUS FORM LTD</span>
+                    <span>·</span>
+                    <span>CO. NO. 17228356</span>
+                    <span>·</span>
+                    <span className="text-center">128 CITY ROAD, LONDON, EC1V 2NX</span>
+                  </div>
+                  <span className="hidden lg:inline">·</span>
+                  <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+                    <a
+                      href="mailto:admin@opusform.co.uk"
+                      className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
+                    >
+                      ADMIN@OPUSFORM.CO.UK
+                    </a>
+                    <span>·</span>
+                    <span>© {new Date().getFullYear()} ALL RIGHTS RESERVED</span>
+                  </div>
+                </div>
+              </footer>
+            </div>
+          );
+        };
 
 export const Section: React.FC<{ title: string; children: React.ReactNode; id?: string }> = ({
   title,
@@ -351,7 +337,7 @@ export const DataTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ h
             <th
               key={i}
               className="text-left px-4 py-2.5 font-mono font-bold uppercase tracking-wider border-b"
-              style={{ color: "var(--primary)", borderColor: "var(--border)", fontSize: "10px" }}
+              style={{ color: "var(--primary)", fontSize: "10px", borderColor: "var(--border)", fontSize: "10px" }}
             >
               {h}
             </th>

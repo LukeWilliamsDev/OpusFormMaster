@@ -30,40 +30,25 @@ import {
   Eye,
   PencilLine,
 } from "lucide-react";
-import { handleError } from '../utils/errorHandler';
 import { Worker, Ticket, Job, STAFF_ROLES, OFFICE_ROLES } from "../types/erp";
-import { handleError } from '../utils/errorHandler';
 import { RoleAccordion } from "./calendar/RoleAccordion";
-import { handleError } from '../utils/errorHandler';
 import { groupWorkersByCategory } from "./calendar/roleCategories";
-import { handleError } from '../utils/errorHandler';
 import { getRoleColorClasses } from "./calendar/roleColors";
-import { handleError } from '../utils/errorHandler';
 import { getTicketStatus } from "../utils/workerValidation";
-import { handleError } from '../utils/errorHandler';
 import { TicketStatusBadge } from "./TicketStatusBadge";
-import { handleError } from '../utils/errorHandler';
 import { RequestCredentialsModal } from "./RequestCredentialsModal";
-import { handleError } from '../utils/errorHandler';
 import {
   Accordion,
   AccordionItem,
   AccordionTrigger,
   AccordionContent,
 } from "../../components/ui/accordion";
-import { handleError } from '../utils/errorHandler';
 import { supabase } from "../../integrations/supabase/client";
-import { handleError } from '../utils/errorHandler';
 import { workerToRow, usePortal } from "../context/PortalContext";
-import { handleError } from '../utils/errorHandler';
 import { computeDiff } from "../utils/auditDiff";
-import { handleError } from '../utils/errorHandler';
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { handleError } from '../utils/errorHandler';
 import { toast } from "sonner";
-import { handleError } from '../utils/errorHandler';
 import { useNavigate } from "react-router-dom";
-import { handleError } from '../utils/errorHandler';
 
 // Only these fields count as a real "profile change" worth surfacing a
 // generic "Staff Details Have Been Updated" entry + Revert button for.
@@ -80,8 +65,8 @@ const FIELD_LABELS: Record<string, string> = {
 interface RosterViewProps {
   workers: Worker[];
   setWorkers: React.Dispatch<React.SetStateAction<Worker[]>>;
-  setShifts: React.Dispatch<React.SetStateAction<any[]>>;
-  shifts?: any[];
+  setShifts: React.Dispatch<React.SetStateAction<ScheduledShift[]>>;
+  shifts?: ScheduledShift[];
   jobs?: Job[];
   selectedWorkerDetailsId?: string | null;
   setSelectedWorkerDetailsId?: (id: string | null) => void;
@@ -165,8 +150,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
     useState<Worker | null>(null);
   const [selectedWorkerToRestore, setSelectedWorkerToRestore] = useState<Worker | null>(null);
   const [revertConfirmTarget, setRevertConfirmTarget] = useState<{
-    oldDetails: any;
-    currentDetails: any;
+    oldDetails: Record<string, unknown>;
+    currentDetails: Record<string, unknown>;
     workerId: string;
   } | null>(null);
 
@@ -255,6 +240,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
       setDossierDocRequests(reqsRes.data || []);
     } catch (err) {
       console.error("Fetch logs error:", err);
+      const { message } = handleError(err, { message: "Failed to fetch logs" });
+      toast.error(message);
     } finally {
       setLoadingDossierLogs(false);
     }
@@ -293,7 +280,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           return;
         }
         setDossierShifts(
-          (data || []).map((r: any) => ({
+          (data || []).map((r: Record<string, unknown>) => ({
             id: r.id,
             workerId: r.worker_id,
             jobId: r.job_id,
@@ -306,7 +293,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     };
   }, [selectedWorkerDetailsId]);
 
-  const handleResendRequest = async (request: any) => {
+  const handleResendRequest = async (request: Record<string, unknown>) => {
     if (resendingRequestMap[request.id]) return;
     setResendingRequestMap((prev) => ({ ...prev, [request.id]: true }));
     const sendingToastId = toast.loading("SENDING REQUEST", {
@@ -404,10 +391,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
         });
       }
     } catch (e: Error | unknown) {
+      const { message } = handleError(e, { message: "Failed to resend request" });
       console.error("Failed to resend request:", e);
       toast.error("Failed to resend request", {
         id: sendingToastId,
-        description: e.message || String(e),
+        description: message,
       });
     } finally {
       setResendingRequestMap((prev) => ({ ...prev, [request.id]: false }));
@@ -457,6 +445,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
         }
       } catch (err) {
         console.error("Failed to generate signed URL:", err);
+        const { message } = handleError(err, { message: "Failed to generate signed URL" });
         if (newTab) newTab.location.href = documentUrl;
         else window.open(documentUrl, "_blank");
         return;
@@ -467,7 +456,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     else window.open(documentUrl, "_blank");
   };
 
-  const executeRevertUpdate = async (oldDetails: any, workerId: string) => {
+  const executeRevertUpdate = async (oldDetails: Record<string, unknown>, workerId: string) => {
     if (!oldDetails || !workerId) return;
     try {
       const name = oldDetails.name;
@@ -514,8 +503,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
         fetchLogsAndRequests();
       }, 150);
     } catch (err: Error | unknown) {
+      const { message } = handleError(err, { message: "Failed to revert staff changes" });
       console.error("Failed to revert staff changes:", err);
-      toast.error("Error reverting changes", { description: err.message });
+      toast.error("Error reverting changes", { description: message });
     }
   };
 
@@ -562,7 +552,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
       fetchLogsAndRequests();
     } catch (e) {
+      const { message } = handleError(e, { message: "Failed to update tickets or log audit" });
       console.error("Failed to update tickets or log audit:", e);
+      // No toast for this background update
     }
   };
 
@@ -598,8 +590,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
       fetchLogsAndRequests();
       toast.success(`${ticket.type} removed from compliance record`);
     } catch (e: Error | unknown) {
+      const { message } = handleError(e, { message: "Failed to remove compliance record" });
       console.error("Failed to remove ticket or log audit:", e);
-      toast.error("Failed to remove compliance record", { description: e.message });
+      toast.error("Failed to remove compliance record", { description: message });
       // Roll back the optimistic update
       setWorkers((prev) => prev.map((w) => (w.id === workerId ? worker : w)));
     }
@@ -695,6 +688,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             console.error("Failed to create document request:", requestError);
           }
         } catch (err) {
+          const { message } = handleError(err, { message: "Compliance request flow failed" });
           console.error("Compliance request flow failed:", err);
         }
       }
@@ -1107,7 +1101,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
   const renderDetailsDossier = () => {
     if (!selectedWorkerDetails) return null;
-    const isShiftHistory = (shift: any) => {
+    const isShiftHistory = (shift: ScheduledShift) => {
       const job = (jobs || []).find((j) => j.id === shift.jobId);
       const isJobCompleted = job?.status === "completed";
 
@@ -1127,7 +1121,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       (s) => s.workerId === selectedWorkerDetails.id && isShiftHistory(s),
     );
 
-    const groupShifts = (shiftsList: any[]) => {
+    const groupShifts = (shiftsList: ScheduledShift[]) => {
       const grouped = shiftsList.reduce(
         (acc, shift) => {
           if (!acc[shift.jobId]) {
@@ -1731,7 +1725,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
                       // Compute diff & summaries
                       let summaryText = "";
-                      let diff: any[] = [];
+                      let diff: Record<string, unknown>[] = [];
                       let badgeColor = "bg-secondary border-border text-muted-foreground";
 
                       if (event.type !== "request") {
@@ -1745,7 +1739,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         } else if (action === "SUBMIT_DOCUMENTS") {
                           badgeColor = "bg-success/10 border-success/20 text-success";
                           const submittedCerts = event.details?.tickets_submitted || [];
-                          summaryText = `Submitted: ${submittedCerts.map((c: any) => c.type).join(", ")}`;
+                          summaryText = `Submitted: ${submittedCerts.map((c: Record<string, unknown>) => c.type).join(", ")}`;
                         } else if (action === "RESEND_DOCUMENT_REQUEST") {
                           badgeColor = "bg-primary/5 border-primary/20 text-primary";
                           const resentCerts = event.details?.requested_certs || [];
@@ -1953,8 +1947,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
               setSelectedWorkerDetailsId(null);
               setSelectedWorkerToDelete(null);
             } catch (err: Error | unknown) {
+              const { message } = handleError(err, { message: "Failed to archive profile" });
               console.error("Failed to archive staff profile:", err);
-              toast.error("Failed to archive profile", { description: err.message });
+              toast.error("Failed to archive profile", { description: message });
             }
           }}
         />
@@ -2106,8 +2101,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
               setSelectedWorkerDetailsId(null);
               setSelectedWorkerToPermanentDelete(null);
             } catch (err: Error | unknown) {
+              const { message } = handleError(err, { message: "Failed to permanently delete staff member" });
               console.error("Failed to permanently delete staff member:", err);
-              toast.error("Failed to delete staff member", { description: err.message });
+              toast.error("Failed to delete staff member", { description: message });
             }
           }}
         />

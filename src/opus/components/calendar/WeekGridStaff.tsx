@@ -25,6 +25,15 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
   const weekKey = weekDays.map((d) => d.date).join(",");
   const isSearching = searchQuery.trim().length > 0;
 
+  // Site office design constants
+  const SITE_STONE_BG = "bg-stone-50 dark:bg-slate-800/50";
+  const SITE_STONE_BORDER = "border-stone-200 dark:border-slate-700";
+  const SITE_BORDER_R = "border-r " + SITE_STONE_BORDER + " last:border-r-0";
+  const SITE_DEPLOYED_TEXT = "text-emerald-600 dark:text-emerald-400";
+  const SITE_EMPTY_TEXT = "text-stone-400 dark:text-stone-500";
+  const SITE_DIVIDER = "bg-stone-200 dark:bg-slate-700";
+  const SITE_AVAILABLE_TEXT = "text-stone-500 dark:text-stone-400";
+
   useEffect(() => {
     setExpanded(new Set());
   }, [weekKey]);
@@ -55,25 +64,25 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
         return (
           <div
             key={day.date}
-            className="min-w-0 p-3 space-y-3 border-r border-border last:border-r-0"
+            className={`min-w-0 p-3 space-y-3 ${SITE_BORDER_R} ${SITE_STONE_BG}`}
           >
             <div className="flex items-center justify-between gap-1.5 px-0.5">
               <div className="flex items-baseline gap-1.5 min-w-0">
-                <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                <span className="text-[11px] font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
                   {day.shortName}
                 </span>
-                <span className="text-[11px] font-bold font-mono text-muted-foreground">
+                <span className="text-[11px] font-bold font-mono text-stone-500 dark:text-stone-400">
                   {day.date.split("-")[2]}
                 </span>
               </div>
-              <span className="text-[11px] font-black shrink-0 text-success">
+              <span className={`text-[11px] font-black shrink-0 ${SITE_DEPLOYED_TEXT}`}>
                 {schedule?.deployedCount ? schedule.deployedCount : "0 deployed"}
               </span>
             </div>
 
             {isEmpty ? (
-              <div className="py-4 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                No matches
+              <div className={`py-4 text-center text-[10px] font-bold uppercase tracking-wider ${SITE_EMPTY_TEXT}`}>
+                No operatives scheduled
               </div>
             ) : (
               <>
@@ -109,11 +118,11 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
                   <div className="space-y-1.5">
                     {deployedGroups.length > 0 && (
                       <div className="flex items-center gap-2 pt-1">
-                        <div className="h-px flex-1 bg-border" />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground shrink-0">
-                          Available
+                        <div className={`h-px flex-1 ${SITE_DIVIDER}`} />
+                        <span className={`text-[9px] font-black uppercase tracking-widest ${SITE_AVAILABLE_TEXT} shrink-0`}>
+                          AVAILABLE
                         </span>
-                        <div className="h-px flex-1 bg-border" />
+                        <div className={`h-px flex-1 ${SITE_DIVIDER}`} />
                       </div>
                     )}
                     {availableGroups.map(({ category, items }) => {

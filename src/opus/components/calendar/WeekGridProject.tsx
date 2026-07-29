@@ -13,10 +13,10 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
   if (!weather) return null;
 
   const colorClass = !weather.isImpactful
-    ? "bg-success/10 border-success/30 text-success"
+    ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
     : weather.riskLevel === "High"
-      ? "bg-warning/10 border-warning/30 text-warning"
-      : "bg-warning/10 border-warning/20 text-warning";
+      ? "bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400"
+      : "bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400";
 
   return (
     <div
@@ -52,6 +52,15 @@ interface WeekGridProjectProps {
   onRemoveShift: (shiftId: string) => void;
 }
 
+// Site office design constants
+const SITE_STONE_BG = "bg-stone-50 dark:bg-slate-800/50";
+const SITE_STONE_BORDER = "border-stone-200 dark:border-slate-700";
+const SITE_BORDER_R = "border-r " + SITE_STONE_BORDER + " last:border-r-0";
+const SITE_DEPLOYED_TEXT = "text-emerald-600 dark:text-emerald-400";
+const SITE_EMPTY_TEXT = "text-stone-400 dark:text-stone-500";
+const SITE_JOB_CARD = "border border-stone-200 dark:border-slate-700 rounded-lg bg-stone-100/50 dark:bg-slate-800/50 p-2 space-y-2";
+const SITE_ADD_STAFF = "w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-stone-200 dark:border-slate-700 text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-amber-600 dark:hover:border-amber-400 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer";
+
 export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
   jobs,
   weekDays,
@@ -69,29 +78,25 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
         return (
           <div
             key={day.date}
-            className="min-w-0 p-3 space-y-3 border-r border-border last:border-r-0"
+            className={`min-w-0 p-3 space-y-3 ${SITE_BORDER_R} ${SITE_STONE_BG}`}
           >
             <div className="flex items-center justify-between gap-1.5 px-0.5">
               <div className="flex items-baseline gap-1.5 min-w-0">
-                <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                <span className="text-[11px] font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
                   {day.shortName}
                 </span>
-                <span className="text-[11px] font-bold font-mono text-muted-foreground">
+                <span className="text-[11px] font-bold font-mono text-stone-500 dark:text-stone-400">
                   {day.date.split("-")[2]}
                 </span>
               </div>
-              <span
-                className={`text-[11px] font-black shrink-0 ${
-                  schedule?.deployedCount ? "text-success" : "text-muted-foreground"
-                }`}
-              >
+              <span className={`text-[11px] font-black shrink-0 ${SITE_DEPLOYED_TEXT}`}>
                 {schedule?.deployedCount ? schedule.deployedCount : "0 deployed"}
               </span>
             </div>
 
             {activeJobs.length === 0 ? (
-              <div className="py-4 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                No projects
+              <div className={`py-4 text-center text-[10px] font-bold uppercase tracking-wider ${SITE_EMPTY_TEXT}`}>
+                No sites active
               </div>
             ) : (
               activeJobs.map((job) => {
@@ -101,7 +106,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                 return (
                   <div
                     key={job.id}
-                    className="border border-border rounded-lg bg-background/40 p-2 space-y-2"
+                    className={SITE_JOB_CARD}
                   >
                     <div className="flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1.5 min-w-0">
@@ -110,7 +115,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                           {job.siteName}
                         </h4>
                       </div>
-                      <span className="flex items-center gap-1 text-[11px] font-black text-muted-foreground shrink-0">
+                      <span className="flex items-center gap-1 text-[11px] font-black text-stone-500 dark:text-stone-400 shrink-0">
                         <Users className="w-3 h-3" /> {crew.length}
                       </span>
                     </div>
@@ -136,11 +141,11 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                     <button
                       type="button"
                       onClick={() => onAddStaff(job, day.date)}
-                      aria-label={`Add staff to ${job.siteName}`}
-                      className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                      aria-label={`Add operatives to ${job.siteName}`}
+                      className={SITE_ADD_STAFF}
                     >
                       <Plus className="w-3 h-3" />
-                      <span className="hidden xl:inline">Add Staff</span>
+                      <span className="hidden xl:inline">ADD OPERATIVES</span>
                     </button>
                   </div>
                 );

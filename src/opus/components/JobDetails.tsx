@@ -29,6 +29,7 @@ import { FeedTab } from "./FeedTab";
 import { MediaTab } from "./MediaTab";
 import { JobOverviewTab } from "./JobOverviewTab";
 import { PersistentJobHeader } from "./PersistentJobHeader";
+import { handleError } from "../utils/errorHandler";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 100 * 1024 * 1024;
@@ -92,7 +93,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [copiedLink, setCopiedLink] = useState(false);
   const [viewDocTarget, setViewDocTarget] = useState<any>(null);
   const [deleteAttachmentTarget, setDeleteAttachmentTarget] = useState<any>(null);
-  const [gallery, setGallery] = useState<{ photos: any[]; index: number } | null>(null);
+  const [gallery, setGallery] = useState<{ photos: string[]; index: number } | null>(null);
   const [renameTarget, setRenameTarget] = useState<any>(null);
   const [renameValue, setRenameValue] = useState("");
 
@@ -125,10 +126,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [loadingJobAuditLogs, setLoadingJobAuditLogs] = useState(false);
   const [auditSearch, setAuditSearch] = useState("");
   const [revertConfirmTarget, setRevertConfirmTarget] = useState<{
-    oldDetails: any;
-    newDetails: any;
-  } | null>(null);
-
+      oldDetails: Record<string, unknown>;
+      newDetails: Record<string, unknown>;
+      jobId: string;
+    } | null>(null);
   const fetchJobAuditLogs = async () => {
     setLoadingJobAuditLogs(true);
     try {
@@ -142,6 +143,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       setJobAuditLogs(data || []);
     } catch (err) {
       console.error("Error loading job audit logs:", err);
+      const { message } = handleError(err, { message: "Failed to load audit logs" });
+      toast.error(message);
     } finally {
       setLoadingJobAuditLogs(false);
     }
@@ -271,7 +274,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     };
   }, [job.id]);
 
-  const rowToPourLog = (r: any): PourLog => ({
+  const rowToPourLog = (r: Record<string, unknown>): PourLog => ({
     id: r.id,
     pourNumber: r.pour_number,
     date: r.date || "",
@@ -351,7 +354,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       if (supData?.suppliers && Array.isArray(supData.suppliers)) {
         const mapped = supData.suppliers
-          .map((s: any) => {
+          .map((s: Record<string, unknown>) => {
             const dist =
               s.distanceMeters != null
                 ? s.distanceMeters / 1609.34
@@ -372,7 +375,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         setSuppliers(mapped);
       }
     } catch (err) {
+      const { message } = handleError(err, { message: "Failed to fetch suppliers" });
       console.error("Error geocoding or fetching suppliers:", err);
+      toast.error(message);
     } finally {
       setLoadingSuppliers(false);
     }
@@ -415,7 +420,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         setAttachments(signed);
       }
     } catch (err) {
+      const { message } = handleError(err, { message: "Failed to fetch attachments" });
       console.error("Error fetching attachments:", err);
+      toast.error(message);
     }
   };
 
@@ -470,7 +477,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       logAttachmentAudit("UPLOAD_ATTACHMENT", { attachment_type: type, file_name: file.name });
       await fetchAttachments();
     } catch (err) {
+      const { message } = handleError(err, { message: "Failed to upload attachment" });
       console.error("Error uploading attachment:", err);
+      toast.error(message);
     } finally {
       setUploadingPhotoBefore(false);
       setUploadingPhotoAfter(false);
@@ -503,8 +512,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       await fetchAttachments();
       toast.success("Attachment deleted");
     } catch (err) {
+      const { message } = handleError(err, { message: "Failed to delete attachment" });
       console.error("Error deleting attachment:", err);
-      toast.error("Failed to delete attachment");
+      toast.error(message);
     } finally {
       setDeleteAttachmentTarget(null);
     }
@@ -526,8 +536,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       await fetchAttachments();
       toast.success("File renamed");
     } catch (err) {
+      const { message } = handleError(err, { message: "Failed to rename file" });
       console.error("Error renaming attachment:", err);
-      toast.error("Failed to rename file");
+      toast.error(message);
     } finally {
       setRenameTarget(null);
     }
@@ -554,7 +565,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       setGeneratedLink(link);
       logAttachmentAudit("GENERATE_UPLOAD_LINK", {});
     } catch (err) {
+      const { message } = handleError(err, { message: "Failed to generate upload link" });
       console.error("Error generating link:", err);
+      toast.error(message);
     } finally {
       setGeneratingLink(false);
     }
@@ -598,8 +611,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       .single();
 
     if (error) {
+      const { message } = handleError(error, { message: "Failed to schedule pour" });
       console.error("Failed to schedule pour", error);
-      toast.error("Failed to schedule pour");
+      toast.error(message);
       return;
     }
 
@@ -626,8 +640,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       .update({ status: nextStatus, date: nextDate })
       .eq("id", log.id);
     if (error) {
+      const { message } = handleError(error, { message: "Failed to update pour" });
       console.error("Failed to toggle pour status", error);
-      toast.error("Failed to update pour");
+      toast.error(message);
       setPourToggleTarget(null);
       return;
     }
@@ -656,8 +671,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
     const { error } = await supabase.from("pours").delete().eq("id", pourToRemove.id);
     if (error) {
+      const { message } = handleError(error, { message: "Failed to remove pour" });
       console.error("Failed to remove pour", error);
-      toast.error("Failed to remove pour");
+      toast.error(message);
       return;
     }
 
@@ -688,7 +704,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       .eq("id", pourNoteTarget.id);
 
     if (error) {
-      toast.error("Failed to save note");
+      const { message } = handleError(error, { message: "Failed to save note" });
+      toast.error(message);
       return;
     }
 

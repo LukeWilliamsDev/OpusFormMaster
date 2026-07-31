@@ -10,9 +10,7 @@ export const AcceptableUsePolicyPage: React.FC = () => (
       <p>
         These are our rules for using the portal. It's for managing shifts, sites, and projects.
       </p>
-      <p>
-        Breaking these rules can get you suspended or fired.
-      </p>
+      <p>Breaking these rules can get you suspended or fired.</p>
     </Section>
 
     <Section title="2. What You Can Use It For">
@@ -52,14 +50,12 @@ export const AcceptableUsePolicyPage: React.FC = () => (
     </Section>
 
     <Section title="5. We Log Everything">
-      <p>
-        We track who logs in, when, and what they upload. If we spot misuse, we investigate.
-      </p>
+      <p>We track who logs in, when, and what they upload. If we spot misuse, we investigate.</p>
     </Section>
 
     <Section title="6. Problems?">
       <p>
-        Tell us right away if something's broken or your account is compromised: {" "}
+        Tell us right away if something's broken or your account is compromised:{" "}
         <a
           href="mailto:admin@opusform.co.uk"
           className="underline"

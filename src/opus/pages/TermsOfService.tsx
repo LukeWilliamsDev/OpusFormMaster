@@ -13,9 +13,7 @@ export const TermsOfServicePage: React.FC = () => (
         This policy covers how Opus Form Ltd employees, contractors, and operatives use our internal
         shift and project management system. It's not a commercial agreement — it's our house rules.
       </p>
-      <p>
-        By using the portal, you agree to follow this policy. That's part of working here.
-      </p>
+      <p>By using the portal, you agree to follow this policy. That's part of working here.</p>
     </Section>
 
     <Section title="2. Portal Purpose">
@@ -27,9 +25,7 @@ export const TermsOfServicePage: React.FC = () => (
         <li>Quotes and invoices</li>
         <li>Activity logs for security</li>
       </ul>
-      <p>
-        It's staff only. Not public, not for sale.
-      </p>
+      <p>It's staff only. Not public, not for sale.</p>
     </Section>
 
     <Section title="3. Access & Credentials">

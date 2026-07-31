@@ -1,10 +1,13 @@
 # OSMMap Design Audit
 
 ## ORIGINAL
+
 The OSMMap component uses Leaflet to display a map with site location, supplier markers, and routing. It currently uses semantic UI colors (destructive, muted, primary) for action buttons and popups. The map theme switches between light and dark based on the app theme via CartoDB basemaps. The component has no explicit concrete/flooring industry styling beyond the theme-aware basemap.
 
 ## EDITOR
+
 Apply the concrete/flooring industry theme to the OSMMap component:
+
 1. Replace semantic button colors with site office palette:
    - Replace `bg-destructive/15 border border-destructive/30 text-destructive` (Call button) with `bg-amber-600/15 border border-amber-600/30 text-amber-600` (amber for site-related actions)
    - Replace `bg-muted border border-border text-muted-foreground` (Website button) with `bg-stone-100/15 border border-stone-200/30 text-stone-800` (stone for informational actions)
@@ -23,12 +26,14 @@ Apply the concrete/flooring industry theme to the OSMMap component:
 5. Improve accessibility by ensuring sufficient contrast in popup elements
 
 ## CRITIC
+
 - The changes maintain functionality while enhancing brand consistency.
 - Color replacements preserve semantic meaning (destructive → amber for cautionary but actionable, muted → stone for neutral, primary → primary for core action).
 - The map remains readable in both light and dark modes due to reliance on CSS variables and theme-aware classes.
 - No breaking changes to component API or props.
 
 ## APPLY
+
 - Update button classes in OSMMap.tsx as described.
 - Add popup styling in the marker popup JSX.
 - Adjust marker icon colors via createCustomMarkerIcon function parameters.

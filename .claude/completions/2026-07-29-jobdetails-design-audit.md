@@ -10,6 +10,7 @@
 ## ORIGINAL — Current Design Patterns
 
 ### 1. **Tabs Navigation (Standard)**
+
 ```tsx
 <Tabs defaultValue="pours">
   <TabsList className="grid w-full grid-cols-5">
@@ -20,11 +21,13 @@
     <TabsTrigger value="history">History</TabsTrigger>
   </TabsList>
 ```
+
 - **Pattern:** Standard horizontal tabs, 5 equal columns
 - **Visual:** Underline indicator, no icons
 - **Critique:** Generic, no domain personality. No visual hierarchy between primary/secondary tabs.
 
 ### 2. **Persistent Header (JobDetails specific)**
+
 ```tsx
 <PersistentJobHeader
   job={job}
@@ -34,6 +37,7 @@
   pendingStatus={pendingStatus}
 />
 ```
+
 - **Pattern:** Sticky header with job reference, site name, status pills
 - **Visual:** Status buttons with colored backgrounds (primary/success/warning)
 - **Critique:** Good persistence, but status buttons are generic Bootstrap-style pills
@@ -41,17 +45,22 @@
 ### 3. **Card Grid / List Patterns (Repeated 8+ times)**
 
 #### Empty State Pattern (Repeated):
+
 ```tsx
-{pourLogs.length === 0 && (
-  <div className="py-8 text-center text-xs text-muted-foreground uppercase tracking-wider">
-    No pours logged yet
-  </div>
-)}
+{
+  pourLogs.length === 0 && (
+    <div className="py-8 text-center text-xs text-muted-foreground uppercase tracking-wider">
+      No pours logged yet
+    </div>
+  );
+}
 ```
+
 - **Variations:** "No pours logged yet", "No notes yet", "No documents uploaded yet"
 - **Critique:** Inconsistent messaging, no icon, generic empty state
 
 #### Card Layout (Pour Logs):
+
 ```tsx
 <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-xl transition-all ${
   isCompleted
@@ -59,12 +68,14 @@
     : "bg-warning/5 border-warning/20 hover:bg-warning/10"
 }`}
 ```
+
 - **Pattern:** Conditional background colors (completed vs scheduled)
 - **Critique:** Good visual distinction, but card structure is generic
 
 ### 4. **Form Patterns (Repeated 4+ times)**
 
 #### Add Pour Form:
+
 ```tsx
 <form onSubmit={handleAddPourSubmit} className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4">
   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -89,6 +100,7 @@
   </div>
 </form>
 ```
+
 - **Pattern:** Label above input, uppercase tracking-wider labels, grid layout for fields
 - **Variations:** Job edit form, pour notes form, rename attachment
 - **Critique:** Repetitive form structure, generic styling
@@ -96,14 +108,13 @@
 ### 5. **Status/Action Badges (Repeated)**
 
 #### Job Status Pills:
+
 ```tsx
 const isActive = status === s;
 return (
   <button
     className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-      isActive
-        ? activeClasses
-        : "border-transparent text-muted-foreground hover:text-foreground"
+      isActive ? activeClasses : "border-transparent text-muted-foreground hover:text-foreground"
     }`}
   >
     <Icon className="w-3.5 h-3.5 shrink-0" />
@@ -111,10 +122,12 @@ return (
   </button>
 );
 ```
+
 - **Colors:** Primary (active), Success (completed), Warning (pending)
 - **Critique:** Generic pill pattern, no domain-specific styling
 
 #### Pour Status Toggle:
+
 ```tsx
 <button
   className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
@@ -126,6 +139,7 @@ return (
   <Check className="w-3.5 h-3.5" />
 </button>
 ```
+
 - **Pattern:** Circle toggle with check icon
 - **Critique:** Invisible when unchecked (text-transparent), confusing UX
 
@@ -150,6 +164,7 @@ return (
   <Trash2 className="w-4 h-4" />
 </button>
 ```
+
 - **Pattern:** p-1.5 rounded-lg, hover:bg-secondary, Trash2/PencilLine icons
 - **Critique:** Extremely repetitive, no micro-interactions
 
@@ -158,20 +173,27 @@ return (
 ```tsx
 <ConfirmDialog
   open={!!pourToRemove}
-  onOpenChange={(open) => { if (!open) setPourToRemove(null); }}
+  onOpenChange={(open) => {
+    if (!open) setPourToRemove(null);
+  }}
   tone="destructive"
   title="Remove Pour"
-  message={pourToRemove && (
-    <>
-      Are you sure you want to remove <span className="font-bold text-foreground">Pour #{pourToRemove.pourNumber}</span>?
-      <br /><br />
-      This action cannot be undone.
-    </>
-  )}
+  message={
+    pourToRemove && (
+      <>
+        Are you sure you want to remove{" "}
+        <span className="font-bold text-foreground">Pour #{pourToRemove.pourNumber}</span>?
+        <br />
+        <br />
+        This action cannot be undone.
+      </>
+    )
+  }
   confirmLabel="Remove"
   onConfirm={executeRemovePour}
 />
 ```
+
 - **Variations:** Remove pour, delete attachment, archive worker, permanent delete, revert job
 - **Critique:** Identical structure, generic messaging
 
@@ -179,27 +201,33 @@ return (
 
 ```tsx
 <div className="bg-muted/40 border border-border rounded-lg divide-y divide-border text-[12px] mt-3">
-  {JOB_REVERTIBLE_FIELDS.filter(f => revertConfirmTarget.oldDetails?.[f] !== undefined).map(f => {
-    const changed = rawOldVal !== rawNewVal;
-    return (
-      <div key={f} className={`flex items-center justify-between px-4 py-2.5 ${
-        changed ? "bg-amber-500/5 border-l-2 border-amber-500/40" : ""
-      }`}>
-        <span className={changed ? "text-amber-400/70" : "text-muted-foreground"}>
-          {JOB_FIELD_LABELS[f]}
-        </span>
-        <div className="flex items-center gap-2 text-right">
-          {changed && newVal != null && <span className="line-through text-muted-foreground">{newVal}</span>}
-          {changed && <span className="text-muted-foreground">→</span>}
-          <span className={changed ? "text-amber-300" : "text-foreground"}>
-            {oldVal}
+  {JOB_REVERTIBLE_FIELDS.filter((f) => revertConfirmTarget.oldDetails?.[f] !== undefined).map(
+    (f) => {
+      const changed = rawOldVal !== rawNewVal;
+      return (
+        <div
+          key={f}
+          className={`flex items-center justify-between px-4 py-2.5 ${
+            changed ? "bg-amber-500/5 border-l-2 border-amber-500/40" : ""
+          }`}
+        >
+          <span className={changed ? "text-amber-400/70" : "text-muted-foreground"}>
+            {JOB_FIELD_LABELS[f]}
           </span>
+          <div className="flex items-center gap-2 text-right">
+            {changed && newVal != null && (
+              <span className="line-through text-muted-foreground">{newVal}</span>
+            )}
+            {changed && <span className="text-muted-foreground">→</span>}
+            <span className={changed ? "text-amber-300" : "text-foreground"}>{oldVal}</span>
+          </div>
         </div>
-      </div>
-    );
-  })}
+      );
+    },
+  )}
 </div>
 ```
+
 - **Pattern:** Diff view with amber highlighting for changes
 - **Critique:** Good information density, but styling is generic
 
@@ -208,13 +236,16 @@ return (
 ## EDITOR — Domain-Specific Personality Enhancements
 
 ### 1. **Navigation: Concrete Industry Tab Bar**
+
 Replace generic tabs with domain-aware navigation:
+
 - **Primary tabs** (core workflow): Pours, Feed, Media → larger, more prominent
 - **Secondary tabs** (supporting): Suppliers, History → smaller, grouped
 - **Visual:** Concrete-textured background, pour-count badges on Pours tab
 - **Icons:** Concrete mixer for Pours, Clipboard for Feed, Camera for Media, Building for Suppliers, Clock for History
 
 ### 2. **Persistent Header: Site Identity Card**
+
 ```tsx
 // Instead of generic status pills
 <div className="bg-gradient-to-r from-stone-900 to-stone-800 border border-stone-700 rounded-xl p-4">
@@ -228,6 +259,7 @@ Replace generic tabs with domain-aware navigation:
   </div>
 </div>
 ```
+
 - **Domain:** Concrete batch ticket aesthetic
 - **Data:** Pour progress as fractional (3/12 pours) not percentage
 
@@ -276,6 +308,7 @@ Replace generic tabs with domain-aware navigation:
 ```
 
 **Domain Personality:**
+
 - Scheduled = Amber "delivery ticket" (pre-pour paperwork)
 - Completed = Emerald "delivery receipt" (post-pour confirmation)
 - Truck icon for scheduled, CheckCircle for completed
@@ -294,7 +327,10 @@ Replace generic tabs with domain-aware navigation:
         <label className="block text-[11px] font-bold uppercase tracking-wide text-stone-500 dark:text-stone-400 mb-1">
           EXPECTED DATE
         </label>
-        <input type="date" className="w-full bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500" />
+        <input
+          type="date"
+          className="w-full bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+        />
       </div>
       <div>
         <label className="block text-[11px] font-bold uppercase tracking-wide text-stone-500 dark:text-stone-400 mb-1">
@@ -311,12 +347,20 @@ Replace generic tabs with domain-aware navigation:
         <label className="block text-[11px] font-bold uppercase tracking-wide text-stone-500 dark:text-stone-400 mb-1">
           VOLUME (m³)
         </label>
-        <input type="number" min="1" step="0.5" className="w-full bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500" />
+        <input
+          type="number"
+          min="1"
+          step="0.5"
+          className="w-full bg-white dark:bg-stone-800 border border-stone-300 dark:border-stone-600 rounded-lg px-3 py-2 text-sm font-mono outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500"
+        />
       </div>
     </div>
   </fieldset>
   <div className="flex justify-end pt-2">
-    <button type="submit" className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors">
+    <button
+      type="submit"
+      className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-lg text-xs uppercase tracking-wider transition-colors"
+    >
       SCHEDULE POUR
     </button>
   </div>
@@ -324,6 +368,7 @@ Replace generic tabs with domain-aware navigation:
 ```
 
 **Domain touches:**
+
 - Fieldset with "POUR DETAILS" legend (batch ticket style)
 - Amber-600 primary button (concrete amber)
 - Mix design descriptions (C35/45 — Heavy Structural)
@@ -384,7 +429,8 @@ Replace generic tabs with domain-aware navigation:
           <p className="font-bold">Remove Pour #{pourNumber}?</p>
           <p className="mt-1 text-stone-500 dark:text-stone-400">
             This will permanently delete the pour record from the delivery log.
-            {isCompleted && " This pour was marked as delivered — removing it will adjust the site pour count."}
+            {isCompleted &&
+              " This pour was marked as delivered — removing it will adjust the site pour count."}
           </p>
         </div>
       </div>
@@ -405,29 +451,31 @@ Replace generic tabs with domain-aware navigation:
 // Instead of generic pills
 const JobStatusBadge = ({ status, pours, maxPours }) => {
   const configs = {
-    "in-progress": { 
-      bg: "bg-amber-600", 
-      text: "text-white", 
+    "in-progress": {
+      bg: "bg-amber-600",
+      text: "text-white",
       icon: <Truck className="w-3 h-3" />,
-      label: `ACTIVE — ${pours}/${maxPours} POURS`
+      label: `ACTIVE — ${pours}/${maxPours} POURS`,
     },
-    "pending": { 
-      bg: "bg-stone-500", 
-      text: "text-white", 
+    pending: {
+      bg: "bg-stone-500",
+      text: "text-white",
       icon: <Clock className="w-3 h-3" />,
-      label: `PENDING — ${maxPours} POURS PLANNED`
+      label: `PENDING — ${maxPours} POURS PLANNED`,
     },
-    "completed": { 
-      bg: "bg-emerald-600", 
-      text: "text-white", 
+    completed: {
+      bg: "bg-emerald-600",
+      text: "text-white",
       icon: <CheckCircle className="w-3 h-3" />,
-      label: `COMPLETE — ${pours}/${maxPours} POURS DELIVERED`
+      label: `COMPLETE — ${pours}/${maxPours} POURS DELIVERED`,
     },
   };
   const cfg = configs[status] || configs.pending;
-  
+
   return (
-    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
+    <span
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${cfg.bg} ${cfg.text}`}
+    >
       {cfg.icon}
       {cfg.label}
     </span>
@@ -444,9 +492,14 @@ const JobStatusBadge = ({ status, pours, maxPours }) => {
       VARIANCE REPORT — JOB REVERT
     </h3>
   </div>
-  {fields.map(f => (
-    <div key={f} className={`px-4 py-3 flex items-center justify-between ${changed ? "bg-amber-50 dark:bg-amber-900/20 border-l-2 border-amber-500" : ""}`}>
-      <span className={`text-xs font-bold uppercase tracking-wider ${changed ? "text-amber-700 dark:text-amber-300" : "text-stone-500"}`}>
+  {fields.map((f) => (
+    <div
+      key={f}
+      className={`px-4 py-3 flex items-center justify-between ${changed ? "bg-amber-50 dark:bg-amber-900/20 border-l-2 border-amber-500" : ""}`}
+    >
+      <span
+        className={`text-xs font-bold uppercase tracking-wider ${changed ? "text-amber-700 dark:text-amber-300" : "text-stone-500"}`}
+      >
         {JOB_FIELD_LABELS[f]}
       </span>
       <div className="flex items-center gap-2 text-right">
@@ -454,7 +507,9 @@ const JobStatusBadge = ({ status, pours, maxPours }) => {
           <span className="line-through text-stone-400 text-[12px]">{newVal}</span>
         )}
         {changed && <span className="text-stone-400 text-[11px]">→</span>}
-        <span className={`font-bold ${changed ? "text-amber-600 dark:text-amber-400" : "text-stone-900 dark:text-stone-100"}`}>
+        <span
+          className={`font-bold ${changed ? "text-amber-600 dark:text-amber-400" : "text-stone-900 dark:text-stone-100"}`}
+        >
           {oldVal}
         </span>
       </div>
@@ -472,7 +527,9 @@ const JobStatusBadge = ({ status, pours, maxPours }) => {
 }
 .pour-card:hover {
   @apply -translate-y-0.5 shadow-lg;
-  box-shadow: 0 10px 25px -5px rgb(217 119 6 / 0.2), 0 8px 10px -6px rgb(217 119 6 / 0.1);
+  box-shadow:
+    0 10px 25px -5px rgb(217 119 6 / 0.2),
+    0 8px 10px -6px rgb(217 119 6 / 0.1);
 }
 
 /* Button press */
@@ -482,38 +539,54 @@ const JobStatusBadge = ({ status, pours, maxPours }) => {
 
 /* Status badge pulse for active */
 @keyframes pulse-amber {
-  0%, 100% { box-shadow: 0 0 0 0 rgb(217 119 6 / 0.4); }
-  50% { box-shadow: 0 0 0 8px rgb(217 119 6 / 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(217 119 6 / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgb(217 119 6 / 0);
+  }
 }
-.status-active { animation: pulse-amber 2s infinite; }
+.status-active {
+  animation: pulse-amber 2s infinite;
+}
 
 /* Pour toggle check animation */
 @keyframes check-pop {
-  0% { transform: scale(0); }
-  50% { transform: scale(1.2); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
-.pour-toggle.checking .check-icon { animation: check-pop 0.3s ease-out; }
+.pour-toggle.checking .check-icon {
+  animation: check-pop 0.3s ease-out;
+}
 ```
 
 ---
 
 ## CRITIC FEEDBACK
 
-| Aspect | Original | Editor | Critic Assessment |
-|--------|----------|--------|-------------------|
-| **Visual Identity** | Generic SaaS (slate/gray) | Concrete/Flooring (amber/stone/emerald) | **Strong improvement** — domain personality throughout |
-| **Information Hierarchy** | Flat tabs, equal weight | Primary/secondary tabs, site identity header | **Significant** — core workflow (pours) emphasized |
-| **Data Density** | Good | Better — pour cards show mix/volume/date at glance | **Improved** — less clicking for key info |
-| **Empty States** | Generic text | Contextual with illustrations + CTAs | **Major** — guides user to action |
-| **Forms** | Generic inputs | Batch ticket fieldset, amber focus, mix descriptions | **Strong** — domain language throughout |
-| **Status Badges** | Generic pills | Safety tag style, pour progress, icons | **Clear** — instant recognition |
-| **Confirm Dialogs** | Generic warnings | Safety notice style, context-aware | **Safety-critical** — appropriate gravity |
-| **Pour Cards** | Generic cards | Delivery ticket (scheduled) / Receipt (completed) | **Domain-native** — matches real workflow |
-| **Micro-interactions** | None | Hover lift, amber pulse, check pop, amber focus | **Polish** — feels alive and responsive |
-| **Color Palette** | Slate/Blue | Amber/Stone/Emerald/Rust (concrete site colors) | **Authentic** — matches industry |
+| Aspect                    | Original                  | Editor                                               | Critic Assessment                                      |
+| ------------------------- | ------------------------- | ---------------------------------------------------- | ------------------------------------------------------ |
+| **Visual Identity**       | Generic SaaS (slate/gray) | Concrete/Flooring (amber/stone/emerald)              | **Strong improvement** — domain personality throughout |
+| **Information Hierarchy** | Flat tabs, equal weight   | Primary/secondary tabs, site identity header         | **Significant** — core workflow (pours) emphasized     |
+| **Data Density**          | Good                      | Better — pour cards show mix/volume/date at glance   | **Improved** — less clicking for key info              |
+| **Empty States**          | Generic text              | Contextual with illustrations + CTAs                 | **Major** — guides user to action                      |
+| **Forms**                 | Generic inputs            | Batch ticket fieldset, amber focus, mix descriptions | **Strong** — domain language throughout                |
+| **Status Badges**         | Generic pills             | Safety tag style, pour progress, icons               | **Clear** — instant recognition                        |
+| **Confirm Dialogs**       | Generic warnings          | Safety notice style, context-aware                   | **Safety-critical** — appropriate gravity              |
+| **Pour Cards**            | Generic cards             | Delivery ticket (scheduled) / Receipt (completed)    | **Domain-native** — matches real workflow              |
+| **Micro-interactions**    | None                      | Hover lift, amber pulse, check pop, amber focus      | **Polish** — feels alive and responsive                |
+| **Color Palette**         | Slate/Blue                | Amber/Stone/Emerald/Rust (concrete site colors)      | **Authentic** — matches industry                       |
 
 **Risk Areas:**
+
 - Color contrast on amber backgrounds — verify WCAG AA
 - Amber focus rings — ensure visible in light/dark
 - Truck icon for scheduled — ensure recognizable at small sizes

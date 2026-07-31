@@ -23,7 +23,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
     };
   }, []);
 
-  const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
+  const logoSrc =
+    theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
 
   return (
     <div

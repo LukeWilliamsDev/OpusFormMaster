@@ -8,8 +8,9 @@ export const PrivacyNoticePage: React.FC = () => (
   <LegalPageLayout title="Staff Privacy Notice" lastUpdated="July 2026">
     <Section title="1. Who We Are">
       <p>
-        Opus Form Ltd is a concrete flooring contractor and data controller for this internal portal.
-        This privacy notice applies to you if you're staff, a contractor, or operative on our jobs.
+        Opus Form Ltd is a concrete flooring contractor and data controller for this internal
+        portal. This privacy notice applies to you if you're staff, a contractor, or operative on
+        our jobs.
       </p>
       <p>
         <strong style={{ color: "var(--foreground)" }}>Registered Address:</strong> 128 City Road,
@@ -67,9 +68,7 @@ export const PrivacyNoticePage: React.FC = () => (
     </Section>
 
     <Section title="4. Sharing Your Data">
-      <p>
-        We don't sell your data. We only share it when we have to for running the business:
-      </p>
+      <p>We don't sell your data. We only share it when we have to for running the business:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>
           <strong>Main Contractors:</strong> We may need to share your compliance data (e.g., CSCS

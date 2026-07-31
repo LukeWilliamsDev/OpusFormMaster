@@ -1,6 +1,6 @@
 ﻿// @ts-nocheck
 import React, { useState, useEffect } from "react";
-import { handleError } from '../utils/errorHandler';
+import { handleError } from "../utils/errorHandler";
 import {
   Users,
   Search,
@@ -2101,7 +2101,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
               setSelectedWorkerDetailsId(null);
               setSelectedWorkerToPermanentDelete(null);
             } catch (err: Error | unknown) {
-              const { message } = handleError(err, { message: "Failed to permanently delete staff member" });
+              const { message } = handleError(err, {
+                message: "Failed to permanently delete staff member",
+              });
               console.error("Failed to permanently delete staff member:", err);
               toast.error("Failed to delete staff member", { description: message });
             }
@@ -2525,4 +2527,3 @@ export const RosterView: React.FC<RosterViewProps> = ({
     </div>
   );
 };
-

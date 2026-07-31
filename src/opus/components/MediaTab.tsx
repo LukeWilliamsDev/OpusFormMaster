@@ -1,6 +1,6 @@
 ﻿// @ts-nocheck
 import React from "react";
-import { CardGrid } from '../components/CardGrid';
+import { CardGrid } from "../components/CardGrid";
 import {
   Camera,
   FileText,
@@ -155,7 +155,9 @@ export function MediaTab({
                         </div>
                       )}
                       emptyMessage="No Media"
-                      emptyIcon={<span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold" />}
+                      emptyIcon={
+                        <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold" />
+                      }
                     />
                   ) : (
                     <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
@@ -217,7 +219,9 @@ export function MediaTab({
                         </div>
                       )}
                       emptyMessage="No Media"
-                      emptyIcon={<span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold" />}
+                      emptyIcon={
+                        <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold" />
+                      }
                     />
                   ) : (
                     <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
@@ -338,7 +342,9 @@ export function MediaTab({
                     </div>
                   )}
                   emptyMessage="No documents uploaded yet"
-                  emptyIcon={<span className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold" />}
+                  emptyIcon={
+                    <span className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold" />
+                  }
                 />
               ) : (
                 <div className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold">
@@ -498,5 +504,3 @@ export function MediaTab({
     </>
   );
 }
-
-

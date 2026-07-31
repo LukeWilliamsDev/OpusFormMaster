@@ -137,17 +137,17 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             <div className="legal-content space-y-6 min-w-0 max-w-3xl">{stamped}</div>
 
             {/* Inline footer links */}
-                        <div className="border-t border-border mt-12 pt-6 flex flex-wrap gap-x-6 gap-y-2 justify-center">
-                          {getFooterLinks().map((link) => (
-                            <Link
-                              key={link.path}
-                              to={link.path}
-                              className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
-                            >
-                              {link.label}
-                            </Link>
-                          ))}
-                        </div>
+            <div className="border-t border-border mt-12 pt-6 flex flex-wrap gap-x-6 gap-y-2 justify-center">
+              {getFooterLinks().map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -222,9 +222,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
           {/* Section nav */}
           {toc.length > 0 && (
             <nav className="hidden lg:block sticky top-6 self-start">
-              <span
-                className="block text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground mb-3"
-              >
+              <span className="block text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground mb-3">
                 On this page
               </span>
               <ul className="space-y-2">
@@ -266,46 +264,46 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
         }}
       >
         {/* Legal links row */}
-                <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-x-5 gap-y-2 mb-4">
-                  {getFooterLinks().map((link) => (
-                    <Link
-                      key={link.path}
-                      to={link.path}
-                      className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
+        <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-x-5 gap-y-2 mb-4">
+          {getFooterLinks().map((link) => (
+            <Link
+              key={link.path}
+              to={link.path}
+              className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </div>
 
         {/* Company details + contact */}
-                <div
-                  className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono uppercase text-muted-foreground/80 text-center max-w-xl lg:max-w-none mx-auto"
-                  style={{ letterSpacing: "0.15em" }}
-                >
-                  <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
-                    <span>OPUS FORM LTD</span>
-                    <span>·</span>
-                    <span>CO. NO. 17228356</span>
-                    <span>·</span>
-                    <span className="text-center">128 CITY ROAD, LONDON, EC1V 2NX</span>
-                  </div>
-                  <span className="hidden lg:inline">·</span>
-                  <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
-                    <a
-                      href="mailto:admin@opusform.co.uk"
-                      className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
-                    >
-                      ADMIN@OPUSFORM.CO.UK
-                    </a>
-                    <span>·</span>
-                    <span>© {new Date().getFullYear()} ALL RIGHTS RESERVED</span>
-                  </div>
-                </div>
-              </footer>
-            </div>
-          );
-        };
+        <div
+          className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono uppercase text-muted-foreground/80 text-center max-w-xl lg:max-w-none mx-auto"
+          style={{ letterSpacing: "0.15em" }}
+        >
+          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+            <span>OPUS FORM LTD</span>
+            <span>·</span>
+            <span>CO. NO. 17228356</span>
+            <span>·</span>
+            <span className="text-center">128 CITY ROAD, LONDON, EC1V 2NX</span>
+          </div>
+          <span className="hidden lg:inline">·</span>
+          <div className="flex flex-wrap justify-center gap-x-2 gap-y-1">
+            <a
+              href="mailto:admin@opusform.co.uk"
+              className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
+            >
+              ADMIN@OPUSFORM.CO.UK
+            </a>
+            <span>·</span>
+            <span>© {new Date().getFullYear()} ALL RIGHTS RESERVED</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+};
 
 export const Section: React.FC<{ title: string; children: React.ReactNode; id?: string }> = ({
   title,
@@ -337,7 +335,12 @@ export const DataTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ h
             <th
               key={i}
               className="text-left px-4 py-2.5 font-mono font-bold uppercase tracking-wider border-b"
-              style={{ color: "var(--primary)", fontSize: "10px", borderColor: "var(--border)", fontSize: "10px" }}
+              style={{
+                color: "var(--primary)",
+                fontSize: "10px",
+                borderColor: "var(--border)",
+                fontSize: "10px",
+              }}
             >
               {h}
             </th>

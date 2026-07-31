@@ -30,7 +30,8 @@ import { SidebarNavigationSlim } from "@/components/application/app-navigation/s
 export const PortalLayout: React.FC = () => {
   const { signOut, role, user, profile, theme, setTheme } = usePortal();
   const toggleTheme = () => setTheme(theme === "dark" ? "light" : "dark");
-  const logoSrc = theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
+  const logoSrc =
+    theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
     () => localStorage.getItem("portal-sidebar-collapsed") === "true",

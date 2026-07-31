@@ -58,8 +58,10 @@ const SITE_STONE_BORDER = "border-stone-200 dark:border-slate-700";
 const SITE_BORDER_R = "border-r " + SITE_STONE_BORDER + " last:border-r-0";
 const SITE_DEPLOYED_TEXT = "text-emerald-600 dark:text-emerald-400";
 const SITE_EMPTY_TEXT = "text-stone-400 dark:text-stone-500";
-const SITE_JOB_CARD = "border border-stone-200 dark:border-slate-700 rounded-lg bg-stone-100/50 dark:bg-slate-800/50 p-2 space-y-2";
-const SITE_ADD_STAFF = "w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-stone-200 dark:border-slate-700 text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-amber-600 dark:hover:border-amber-400 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer";
+const SITE_JOB_CARD =
+  "border border-stone-200 dark:border-slate-700 rounded-lg bg-stone-100/50 dark:bg-slate-800/50 p-2 space-y-2";
+const SITE_ADD_STAFF =
+  "w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-stone-200 dark:border-slate-700 text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-amber-600 dark:hover:border-amber-400 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer";
 
 export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
   jobs,
@@ -76,10 +78,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
         const schedule = weekSchedule.get(day.date);
 
         return (
-          <div
-            key={day.date}
-            className={`min-w-0 p-3 space-y-3 ${SITE_BORDER_R} ${SITE_STONE_BG}`}
-          >
+          <div key={day.date} className={`min-w-0 p-3 space-y-3 ${SITE_BORDER_R} ${SITE_STONE_BG}`}>
             <div className="flex items-center justify-between gap-1.5 px-0.5">
               <div className="flex items-baseline gap-1.5 min-w-0">
                 <span className="text-[11px] font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
@@ -95,7 +94,9 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
             </div>
 
             {activeJobs.length === 0 ? (
-              <div className={`py-4 text-center text-[10px] font-bold uppercase tracking-wider ${SITE_EMPTY_TEXT}`}>
+              <div
+                className={`py-4 text-center text-[10px] font-bold uppercase tracking-wider ${SITE_EMPTY_TEXT}`}
+              >
                 No sites active
               </div>
             ) : (
@@ -104,10 +105,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                 const colors = getJobColorClasses(job.id);
 
                 return (
-                  <div
-                    key={job.id}
-                    className={SITE_JOB_CARD}
-                  >
+                  <div key={job.id} className={SITE_JOB_CARD}>
                     <div className="flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className={`w-2 h-2 rounded-full shrink-0 ${colors.bullet}`} />

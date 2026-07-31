@@ -27,7 +27,8 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
   const isSearching = searchQuery.trim().length > 0;
 
   // Site office design constants
-  const SITE_STONE_BG = "bg-stone-50 dark:bg-slate-800/50 border-2 border-stone-200 dark:border-slate-700 rounded-xl";
+  const SITE_STONE_BG =
+    "bg-stone-50 dark:bg-slate-800/50 border-2 border-stone-200 dark:border-slate-700 rounded-xl";
   const SITE_STONE_BORDER = "border-stone-200 dark:border-slate-700";
   const SITE_DIVIDER = "bg-stone-200 dark:bg-slate-700";
   const SITE_DEPLOYED_TEXT = "text-emerald-600 dark:text-emerald-400";
@@ -61,7 +62,9 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
       <div className="flex items-center gap-2 text-xs">
         <span className={`font-bold ${SITE_HEADER_TEXT}`}>{formatDayHeading(date)}</span>
         <span className={SITE_HEADER_TEXT}>·</span>
-        <span className={`font-black ${SITE_DEPLOYED_TEXT}`}>{deployedCount} operatives deployed</span>
+        <span className={`font-black ${SITE_DEPLOYED_TEXT}`}>
+          {deployedCount} operatives deployed
+        </span>
       </div>
 
       {assigned.length === 0 && unassigned.length === 0 ? (
@@ -77,7 +80,9 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
             <div className="space-y-2.5">
               <div className="flex items-center gap-3 pt-2">
                 <div className={`h-px flex-1 ${SITE_DIVIDER}`} />
-                <span className={`text-[10px] font-black uppercase tracking-widest ${SITE_DEPLOYED_TEXT}`}>
+                <span
+                  className={`text-[10px] font-black uppercase tracking-widest ${SITE_DEPLOYED_TEXT}`}
+                >
                   ALREADY DEPLOYED ({assigned.length})
                 </span>
                 <div className={`h-px flex-1 ${SITE_DIVIDER}`} />
@@ -114,7 +119,9 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
             <div className="space-y-2.5">
               <div className="flex items-center gap-3 pt-2">
                 <div className={`h-px flex-1 ${SITE_DIVIDER}`} />
-                <span className={`text-[10px] font-black uppercase tracking-widest ${SITE_AVAILABLE_TEXT}`}>
+                <span
+                  className={`text-[10px] font-black uppercase tracking-widest ${SITE_AVAILABLE_TEXT}`}
+                >
                   AVAILABLE ({unassigned.length})
                 </span>
                 <div className={`h-px flex-1 ${SITE_DIVIDER}`} />

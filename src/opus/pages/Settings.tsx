@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { usePortal } from "../context/PortalContext";
 import { User, Shield, Phone, Key, Check, AlertCircle } from "lucide-react";
-import { 
-  createProfileFormState, 
-  createPasswordFormState, 
-  createUIState, 
+import {
+  createProfileFormState,
+  createPasswordFormState,
+  createUIState,
   createMessageState,
-  createAvatarState 
+  createAvatarState,
 } from "../utils/stateGrouping";
 
 const AVATAR_PRESETS = [
@@ -62,8 +62,8 @@ export const SettingsPage: React.FC = () => {
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    setUi(prev => ({ ...prev, isSavingProfile: true }));
-    setMessages(prev => ({ ...prev, profileMessage: null }));
+    setUi((prev) => ({ ...prev, isSavingProfile: true }));
+    setMessages((prev) => ({ ...prev, profileMessage: null }));
 
     const { error } = await updateProfile({
       full_name: profileForm.fullName,
@@ -71,21 +71,24 @@ export const SettingsPage: React.FC = () => {
       avatar_url: profileForm.selectedAvatar,
     });
 
-    setUi(prev => ({ ...prev, isSavingProfile: false }));
+    setUi((prev) => ({ ...prev, isSavingProfile: false }));
     if (error) {
-      setMessages(prev => ({ ...prev, profileMessage: { type: "error", text: error } }));
+      setMessages((prev) => ({ ...prev, profileMessage: { type: "error", text: error } }));
     } else {
-      setMessages(prev => ({ ...prev, profileMessage: { type: "success", text: "Profile details saved successfully." } }));
-      setTimeout(() => setMessages(prev => ({ ...prev, profileMessage: null })), 3000);
+      setMessages((prev) => ({
+        ...prev,
+        profileMessage: { type: "success", text: "Profile details saved successfully." },
+      }));
+      setTimeout(() => setMessages((prev) => ({ ...prev, profileMessage: null })), 3000);
     }
   };
 
   const handleSavePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessages(prev => ({ ...prev, passwordMessage: null }));
+    setMessages((prev) => ({ ...prev, passwordMessage: null }));
 
     if (passwordForm.newPassword.length < 8) {
-      setMessages(prev => ({
+      setMessages((prev) => ({
         ...prev,
         passwordMessage: {
           type: "error",
@@ -96,20 +99,26 @@ export const SettingsPage: React.FC = () => {
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setMessages(prev => ({ ...prev, passwordMessage: { type: "error", text: "New passwords do not match." } }));
+      setMessages((prev) => ({
+        ...prev,
+        passwordMessage: { type: "error", text: "New passwords do not match." },
+      }));
       return;
     }
 
-    setUi(prev => ({ ...prev, isUpdatingPassword: true }));
+    setUi((prev) => ({ ...prev, isUpdatingPassword: true }));
     const { error } = await updatePassword(passwordForm.newPassword);
-    setUi(prev => ({ ...prev, isUpdatingPassword: false }));
+    setUi((prev) => ({ ...prev, isUpdatingPassword: false }));
 
     if (error) {
-      setMessages(prev => ({ ...prev, passwordMessage: { type: "error", text: error } }));
+      setMessages((prev) => ({ ...prev, passwordMessage: { type: "error", text: error } }));
     } else {
-      setMessages(prev => ({ ...prev, passwordMessage: { type: "success", text: "Password successfully updated." } }));
+      setMessages((prev) => ({
+        ...prev,
+        passwordMessage: { type: "success", text: "Password successfully updated." },
+      }));
       setPasswordForm(createPasswordFormState());
-      setTimeout(() => setMessages(prev => ({ ...prev, passwordMessage: null })), 3000);
+      setTimeout(() => setMessages((prev) => ({ ...prev, passwordMessage: null })), 3000);
     }
   };
 
@@ -151,7 +160,7 @@ export const SettingsPage: React.FC = () => {
                 <button
                   key={preset.id}
                   type="button"
-                  onClick={() => setProfileForm(prev => ({ ...prev, selectedAvatar: preset.id }))}
+                  onClick={() => setProfileForm((prev) => ({ ...prev, selectedAvatar: preset.id }))}
                   title={preset.name}
                   className={`h-10 rounded-lg bg-gradient-to-br ${preset.colors} border-2 relative transition-all ${
                     profileForm.selectedAvatar === preset.id
@@ -232,7 +241,9 @@ export const SettingsPage: React.FC = () => {
                     required
                     className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
                     value={profileForm.fullName}
-                    onChange={(e) => setProfileForm(prev => ({ ...prev, fullName: e.target.value }))}
+                    onChange={(e) =>
+                      setProfileForm((prev) => ({ ...prev, fullName: e.target.value }))
+                    }
                     placeholder="Enter your full name"
                   />
                 </div>
@@ -248,7 +259,7 @@ export const SettingsPage: React.FC = () => {
                     type="tel"
                     className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
                     value={profileForm.phone}
-                    onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) => setProfileForm((prev) => ({ ...prev, phone: e.target.value }))}
                     placeholder="+44 7700 900077"
                   />
                 </div>
@@ -301,7 +312,9 @@ export const SettingsPage: React.FC = () => {
                     required
                     className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
                     value={passwordForm.currentPassword}
-                    onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                    onChange={(e) =>
+                      setPasswordForm((prev) => ({ ...prev, currentPassword: e.target.value }))
+                    }
                     placeholder="••••••••"
                   />
                 </div>
@@ -318,7 +331,9 @@ export const SettingsPage: React.FC = () => {
                       required
                       className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
                       value={passwordForm.newPassword}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                      onChange={(e) =>
+                        setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))
+                      }
                       placeholder="Min 8 characters"
                     />
                   </div>
@@ -334,7 +349,9 @@ export const SettingsPage: React.FC = () => {
                       required
                       className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold"
                       value={passwordForm.confirmPassword}
-                      onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      onChange={(e) =>
+                        setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
+                      }
                       placeholder="Match new password"
                     />
                   </div>

@@ -10,6 +10,7 @@
 ## ORIGINAL — Current Design Patterns
 
 ### 1. **Page Layout — Centered Card Form**
+
 ```tsx
 <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-8 p-4 font-sans text-foreground">
   <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
@@ -76,6 +77,7 @@
 ```
 
 ### 2. **Success State — Simple Check Circle**
+
 ```tsx
 <div className="text-center space-y-5 py-6">
   <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-success/10 border border-success/20 text-success">
@@ -83,12 +85,15 @@
   </div>
   <div className="space-y-1">
     <h2 className="text-lg font-bold text-foreground">Upload Complete</h2>
-    <p className="text-sm text-muted-foreground">Your documents have been submitted to the site supervisor.</p>
+    <p className="text-sm text-muted-foreground">
+      Your documents have been submitted to the site supervisor.
+    </p>
   </div>
 </div>
 ```
 
 ### 3. **Error/Loading States**
+
 ```tsx
 // Loading
 if (loading) {
@@ -97,7 +102,9 @@ if (loading) {
       <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
       <div className="flex flex-col items-center gap-3">
         <Loader className="w-8 h-8 text-primary animate-spin" />
-        <span className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Verifying Token...</span>
+        <span className="text-xs text-muted-foreground font-bold uppercase tracking-widest">
+          Verifying Token...
+        </span>
       </div>
     </div>
   );
@@ -112,7 +119,9 @@ if (errorMsg) {
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 border border-primary/20 text-primary">
           <AlertCircle className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-foreground uppercase tracking-wider">Access Denied</h2>
+        <h2 className="text-lg font-bold text-foreground uppercase tracking-wider">
+          Access Denied
+        </h2>
         <p className="text-sm text-muted-foreground">{errorMsg}</p>
       </div>
     </div>
@@ -124,23 +133,24 @@ if (errorMsg) {
 
 ## CRITIC FEEDBACK — Current State
 
-| Aspect | Assessment |
-|--------|------------|
-| **Upload UX** | Good 3-state dropzone (idle/drag/files), clear limits |
-| **File List** | Clean list with remove buttons, shows count |
-| **Validation** | Client-side size/type validation, total limit enforcement |
-| **Progress** | No progress indication during upload (spinner only) |
-| **State Management** | Already grouped with stateGrouping utilities |
-| **Error Handling** | Uses handleError utility |
-| **Visual Identity** | Generic SaaS — slate/blue/primary, no concrete industry personality |
-| **Terminology** | "Job Document Portal", "Submit Documentation" — generic |
-| **Color Palette** | Primary/secondary/success — no domain palette |
+| Aspect               | Assessment                                                          |
+| -------------------- | ------------------------------------------------------------------- |
+| **Upload UX**        | Good 3-state dropzone (idle/drag/files), clear limits               |
+| **File List**        | Clean list with remove buttons, shows count                         |
+| **Validation**       | Client-side size/type validation, total limit enforcement           |
+| **Progress**         | No progress indication during upload (spinner only)                 |
+| **State Management** | Already grouped with stateGrouping utilities                        |
+| **Error Handling**   | Uses handleError utility                                            |
+| **Visual Identity**  | Generic SaaS — slate/blue/primary, no concrete industry personality |
+| **Terminology**      | "Job Document Portal", "Submit Documentation" — generic             |
+| **Color Palette**    | Primary/secondary/success — no domain palette                       |
 
 ---
 
 ## EDITOR — Domain-Specific Personality Enhancements
 
 ### Color System: Concrete/Flooring Industry Palette
+
 ```css
 :root {
   --concrete-amber: #d97706;
@@ -161,6 +171,7 @@ if (errorMsg) {
 ---
 
 ### 1. **Page Header: Site Office Document Drop**
+
 ```tsx
 <div className="min-h-screen bg-formwork dark:bg-formwork-dark flex flex-col items-center justify-center gap-8 p-4 font-sans text-foreground">
   {/* Formwork shuttering pattern overlay — site hoarding */}
@@ -168,7 +179,7 @@ if (errorMsg) {
     backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 0 L 60 0 L 60 60' fill='none' stroke='%23${theme === "light" ? "D97706" : "FDE68A"}' stroke-width='0.4'/%3E%3Ccircle cx='0' cy='0' r='1.5' fill='%23D97706'/%3E%3C/svg%3E")`,
     opacity: theme === "light" ? 0.15 : 0.08
   }} />
-  
+
   <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
   <div className="w-full max-w-lg bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-2xl p-6 md:p-8 space-y-6">
     {/* Site Header */}
@@ -186,6 +197,7 @@ if (errorMsg) {
 ---
 
 ### 2. **Upload Zone: Site Delivery Receipt**
+
 ```tsx
 <form onSubmit={handleSubmit} className="space-y-6">
   {/* Drop Zone — Site Delivery Receipt */}
@@ -214,6 +226,7 @@ if (errorMsg) {
 ---
 
 ### 3. **File Queue: Site Attachment Register**
+
 ```tsx
 {files.length > 0 && (
   <div className="space-y-2">
@@ -243,38 +256,48 @@ if (errorMsg) {
 ---
 
 ### 4. **Progress During Upload: Concrete Pour Progress**
+
 ```tsx
-{uploading && (
-  <div className="bg-stone-50 dark:bg-stone-900/30 border-2 border-stone-200 dark:border-slate-700 rounded-xl p-6 space-y-4">
-    <div className="flex items-center gap-2">
-      <Truck className="w-5 h-5 text-amber-600 dark:text-amber-400" />
-      <span className="text-sm font-black uppercase tracking-wider text-stone-700 dark:text-stone-300">POURING ATTACHMENTS TO SITE</span>
+{
+  uploading && (
+    <div className="bg-stone-50 dark:bg-stone-900/30 border-2 border-stone-200 dark:border-slate-700 rounded-xl p-6 space-y-4">
+      <div className="flex items-center gap-2">
+        <Truck className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+        <span className="text-sm font-black uppercase tracking-wider text-stone-700 dark:text-stone-300">
+          POURING ATTACHMENTS TO SITE
+        </span>
+      </div>
+      <div className="h-3 bg-stone-200 dark:bg-slate-700 rounded-full overflow-hidden">
+        <motion.div
+          className="h-full bg-amber-600 rounded-full"
+          initial={{ width: 0 }}
+          animate={{ width: "100%" }}
+          transition={{ duration: 1.5, ease: "easeOut" }}
+        />
+      </div>
+      <p className="text-[10px] font-mono text-amber-600 dark:text-amber-400 text-center">
+        TRANSFERRING {files.length} ATTACHMENT(S)...
+      </p>
     </div>
-    <div className="h-3 bg-stone-200 dark:bg-slate-700 rounded-full overflow-hidden">
-      <motion.div 
-        className="h-full bg-amber-600 rounded-full" 
-        initial={{ width: 0 }} 
-        animate={{ width: "100%" }} 
-        transition={{ duration: 1.5, ease: "easeOut" }}
-      />
-    </div>
-    <p className="text-[10px] font-mono text-amber-600 dark:text-amber-400 text-center">
-      TRANSFERRING {files.length} ATTACHMENT(S)...
-    </p>
-  </div>
-)}
+  );
+}
 ```
 
 ---
 
 ### 5. **Submit Button: Concrete Delivery Button**
+
 ```tsx
-<button type="submit" disabled={files.length === 0 || uploading} className={cn(
-  "w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 min-h-[52px]",
-  files.length === 0 || uploading
-    ? "bg-stone-200 dark:bg-slate-700 text-stone-400 dark:text-stone-500 cursor-not-allowed"
-    : "bg-amber-600 hover:bg-amber-700 text-white cursor-pointer shadow-lg shadow-amber-600/20 active:scale-[0.98]"
-)}>
+<button
+  type="submit"
+  disabled={files.length === 0 || uploading}
+  className={cn(
+    "w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex justify-center items-center gap-2 min-h-[52px]",
+    files.length === 0 || uploading
+      ? "bg-stone-200 dark:bg-slate-700 text-stone-400 dark:text-stone-500 cursor-not-allowed"
+      : "bg-amber-600 hover:bg-amber-700 text-white cursor-pointer shadow-lg shadow-amber-600/20 active:scale-[0.98]",
+  )}
+>
   {uploading ? (
     <>
       <Loader className="w-4 h-4 animate-spin" />
@@ -292,6 +315,7 @@ if (errorMsg) {
 ---
 
 ### 6. **Success State: Delivery Receipt**
+
 ```tsx
 {uploadSuccess ? (
   <div className="text-center space-y-5 py-6">
@@ -314,19 +338,28 @@ if (errorMsg) {
 ---
 
 ### 7. **Error State: Access Denied Notice**
+
 ```tsx
 if (errorMsg) {
   return (
     <div className="min-h-screen bg-formwork dark:bg-formwork-dark flex flex-col items-center justify-center gap-8 p-4">
       {/* Formwork pattern */}
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,...")`, opacity: theme === "light" ? 0.15 : 0.08 }} />
-      
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,...")`,
+          opacity: theme === "light" ? 0.15 : 0.08,
+        }}
+      />
+
       <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
       <div className="w-full max-w-md bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-2xl p-6 text-center space-y-4">
         <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 text-red-600 dark:text-red-400">
           <AlertCircle className="w-6 h-6" />
         </div>
-        <h2 className="text-lg font-bold text-stone-900 dark:text-white uppercase tracking-wider">ACCESS DENIED</h2>
+        <h2 className="text-lg font-bold text-stone-900 dark:text-white uppercase tracking-wider">
+          ACCESS DENIED
+        </h2>
         <p className="text-sm text-stone-500 dark:text-stone-400">{errorMsg}</p>
       </div>
     </div>
@@ -337,16 +370,25 @@ if (errorMsg) {
 ---
 
 ### 8. **Loading State: Verifying Site Access**
+
 ```tsx
 if (loading) {
   return (
     <div className="min-h-screen bg-formwork dark:bg-formwork-dark flex flex-col items-center justify-center gap-8 p-4">
-      <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,...")`, opacity: theme === "light" ? 0.15 : 0.08 }} />
-      
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,...")`,
+          opacity: theme === "light" ? 0.15 : 0.08,
+        }}
+      />
+
       <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
       <div className="flex flex-col items-center gap-3">
         <div className="w-10 h-10 border-3 border-stone-200 dark:border-slate-700 border-t-amber-600 rounded-full animate-spin" />
-        <span className="text-xs text-stone-500 dark:text-stone-400 font-black uppercase tracking-widest">VERIFYING SITE ACCESS...</span>
+        <span className="text-xs text-stone-500 dark:text-stone-400 font-black uppercase tracking-widest">
+          VERIFYING SITE ACCESS...
+        </span>
       </div>
     </div>
   );
@@ -356,6 +398,7 @@ if (loading) {
 ---
 
 ### 8. **Micro-Interactions**
+
 ```css
 /* File card hover */
 .attachment-card {
@@ -363,7 +406,9 @@ if (loading) {
 }
 .attachment-card:hover {
   @apply -translate-y-0.5 shadow-lg;
-  box-shadow: 0 10px 25px -5px rgb(217 119 6 / 0.2), 0 8px 10px -6px rgb(217 119 6 / 0.1);
+  box-shadow:
+    0 10px 25px -5px rgb(217 119 6 / 0.2),
+    0 8px 10px -6px rgb(217 119 6 / 0.1);
 }
 
 /* Button press */
@@ -373,40 +418,56 @@ if (loading) {
 
 /* Upload progress */
 @keyframes pour-fill {
-  0% { width: 0; }
-  100% { width: 100%; }
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 100%;
+  }
 }
-.pour-progress { animation: pour-fill 1.5s ease-out; }
+.pour-progress {
+  animation: pour-fill 1.5s ease-out;
+}
 
 /* Amber focus ring */
-input:focus, button:focus, select:focus {
+input:focus,
+button:focus,
+select:focus {
   @apply border-amber-500 ring-1 ring-amber-500;
 }
 
 /* Drag active pulse */
 @keyframes drag-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgb(217 119 6 / 0.4); }
-  50% { box-shadow: 0 0 0 12px rgb(217 119 6 / 0); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(217 119 6 / 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgb(217 119 6 / 0);
+  }
 }
-.drag-active { animation: drag-pulse 2s infinite; }
+.drag-active {
+  animation: drag-pulse 2s infinite;
+}
 ```
 
 ---
 
 ## CRITIC FEEDBACK
 
-| Aspect | Original | Editor | Critic Assessment |
-|--------|----------|--------|-------------------|
-| **Visual Identity** | Generic SaaS | Concrete/Flooring (amber/stone/emerald) | **Strong improvement** — domain personality throughout |
-| **Terminology** | "Job Document Portal", "Submit Documentation" | "Site Document Drop", "Site Delivery Receipt", "Attachment Register" | **Clear** — site office language |
-| **Upload Zone** | Generic dropzone | "Site Delivery Receipt" with truck icon | **Authentic** — matches concrete delivery paperwork |
-| **File List** | Generic list | "Site Attachment Register" with file sizes | **Functional** — site register terminology |
-| **Progress** | Spinner only | "Pouring Attachments" with truck icon + progress bar | **Excellent** — concrete pour metaphor |
-| **Success** | Generic checkmark | "Delivery Confirmed" with receipt notice | **Authentic** — matches site sign-off |
-| **Color Palette** | Slate/Blue | Amber/Stone/Emerald | **Authentic** — concrete industry colors |
-| **Micro-interactions** | None | Card lift, pour progress, amber pulse | **Polished** — feels alive |
+| Aspect                 | Original                                      | Editor                                                               | Critic Assessment                                      |
+| ---------------------- | --------------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------ |
+| **Visual Identity**    | Generic SaaS                                  | Concrete/Flooring (amber/stone/emerald)                              | **Strong improvement** — domain personality throughout |
+| **Terminology**        | "Job Document Portal", "Submit Documentation" | "Site Document Drop", "Site Delivery Receipt", "Attachment Register" | **Clear** — site office language                       |
+| **Upload Zone**        | Generic dropzone                              | "Site Delivery Receipt" with truck icon                              | **Authentic** — matches concrete delivery paperwork    |
+| **File List**          | Generic list                                  | "Site Attachment Register" with file sizes                           | **Functional** — site register terminology             |
+| **Progress**           | Spinner only                                  | "Pouring Attachments" with truck icon + progress bar                 | **Excellent** — concrete pour metaphor                 |
+| **Success**            | Generic checkmark                             | "Delivery Confirmed" with receipt notice                             | **Authentic** — matches site sign-off                  |
+| **Color Palette**      | Slate/Blue                                    | Amber/Stone/Emerald                                                  | **Authentic** — concrete industry colors               |
+| **Micro-interactions** | None                                          | Card lift, pour progress, amber pulse                                | **Polished** — feels alive                             |
 
 **Risk Areas:**
+
 - Color contrast on amber/stone — verify WCAG AA
 - Amber focus rings — ensure visible in light/dark
 - Upload progress bar — test on slow connections

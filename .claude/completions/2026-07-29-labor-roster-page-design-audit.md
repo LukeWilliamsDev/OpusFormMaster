@@ -10,6 +10,7 @@
 ## ORIGINAL — Current Design Patterns
 
 ### 1. **Thin Page Wrapper / View Switcher**
+
 ```tsx
 export const LaborRosterPage: React.FC = () => {
   const { workers, setWorkers, shifts, setShifts, profile, role, theme } = usePortal();
@@ -71,6 +72,7 @@ export const LaborRosterPage: React.FC = () => {
 ```
 
 ### 2. **URL-Based State Management**
+
 ```tsx
 const currentView = searchParams.get("view") === "staff" ? "staff" : "calendar";
 const selectedWorkerId = searchParams.get("workerId");
@@ -85,15 +87,16 @@ const selectedDate = isValidISODate(dateParam) ? dateParam : defaultSelectedDay(
 
 ## CRITIC FEEDBACK — Current State
 
-| Aspect | Assessment |
-|--------|------------|
-| **Visual Identity** | None — pure router, delegates all UI to children |
-| **Layout** | Standard max-w-7xl container with animate-fade-in |
-| **Domain Personality** | None visible at this level |
-| **State Management** | Clean URL-based routing (good) |
-| **Design Surface** | Minimal — delegates to RosterView & CalendarBoard |
+| Aspect                 | Assessment                                        |
+| ---------------------- | ------------------------------------------------- |
+| **Visual Identity**    | None — pure router, delegates all UI to children  |
+| **Layout**             | Standard max-w-7xl container with animate-fade-in |
+| **Domain Personality** | None visible at this level                        |
+| **State Management**   | Clean URL-based routing (good)                    |
+| **Design Surface**     | Minimal — delegates to RosterView & CalendarBoard |
 
 **Key Insight:** This page has almost no design surface of its own. The design work belongs in:
+
 - `RosterView` (already audited)
 - `CalendarBoard` + 9 sub-components (already audited as Calendar System)
 
@@ -104,6 +107,7 @@ const selectedDate = isValidISODate(dateParam) ? dateParam : defaultSelectedDay(
 Since this is a thin router, the "design" is about **how the context switch feels**.
 
 ### 1. **Page Header: Site Office Operative Register**
+
 ```tsx
 return (
   <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in font-sans">
@@ -183,11 +187,13 @@ return (
 ```
 
 ### 2. **View Toggle: Site Office Toolbar Style**
+
 - Primary/secondary pills with amber active state
 - Icons: `Users` for operatives, `LayoutGrid` for calendar
 - Labels: "OPERATIVES" / "SITE CALENDAR" (domain language)
 
 ### 3. **Animated View Switch**
+
 ```tsx
 <AnimatePresence mode="wait">
   {currentView === "staff" ? (
@@ -206,15 +212,16 @@ return (
 
 ## CRITIC FEEDBACK
 
-| Aspect | Original | Editor | Critic Assessment |
-|--------|----------|--------|-------------------|
-| **Visual Identity** | None (pure router) | Site office register header | **Strong improvement** — sets domain context |
-| **Tabs** | Generic "Staff"/"Calendar" | "OPERATIVES"/"SITE CALENDAR" | **Clear** — site office language |
-| **Active State** | Primary blue | Amber-600 with shadow | **Authentic** — concrete brand |
-| **Transitions** | None | AnimatePresence slide | **Polished** — app-like feel |
-| **Color Palette** | Slate/Blue | Amber/Stone | **Authentic** — concrete industry |
+| Aspect              | Original                   | Editor                       | Critic Assessment                            |
+| ------------------- | -------------------------- | ---------------------------- | -------------------------------------------- |
+| **Visual Identity** | None (pure router)         | Site office register header  | **Strong improvement** — sets domain context |
+| **Tabs**            | Generic "Staff"/"Calendar" | "OPERATIVES"/"SITE CALENDAR" | **Clear** — site office language             |
+| **Active State**    | Primary blue               | Amber-600 with shadow        | **Authentic** — concrete brand               |
+| **Transitions**     | None                       | AnimatePresence slide        | **Polished** — app-like feel                 |
+| **Color Palette**   | Slate/Blue                 | Amber/Stone                  | **Authentic** — concrete industry            |
 
 **Risk Areas:**
+
 - Adds ~40 lines to previously minimal component
 - Motion/AnimatePresence adds bundle weight (mitigated by code-splitting)
 - Ensure transitions don't block interaction
@@ -223,12 +230,12 @@ return (
 
 ## APPLY — Implementation Priority
 
-| Priority | Task | Effort |
-|----------|------|--------|
-| 1 | Add site office header with amber accent bar | 15 min |
-| 2 | Replace tab buttons with amber-active pills + domain labels | 15 min |
-| 3 | Wrap conditional in AnimatePresence with slide transitions | 20 min |
-| 4 | Add animated count to header (active/archived operatives) | 5 min |
+| Priority | Task                                                        | Effort |
+| -------- | ----------------------------------------------------------- | ------ |
+| 1        | Add site office header with amber accent bar                | 15 min |
+| 2        | Replace tab buttons with amber-active pills + domain labels | 15 min |
+| 3        | Wrap conditional in AnimatePresence with slide transitions  | 20 min |
+| 4        | Add animated count to header (active/archived operatives)   | 5 min  |
 
 ---
 

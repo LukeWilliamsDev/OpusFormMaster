@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { Layers, LayoutGrid, Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
+import {
+  Layers,
+  LayoutGrid,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Job, Worker, ScheduledShift } from "../../types/erp";
 import {
@@ -74,10 +81,12 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
 
   // --- Site Office Design Constants ---
   const SITE_AMBER = "bg-amber-600 text-white shadow-amber-600/20";
-  const SITE_STONE = "bg-stone-100 dark:bg-slate-800 text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 hover:bg-stone-200 dark:hover:bg-slate-700";
+  const SITE_STONE =
+    "bg-stone-100 dark:bg-slate-800 text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 hover:bg-stone-200 dark:hover:bg-slate-700";
   const SITE_BORDER = "border-stone-200 dark:border-slate-700";
   const SITE_CARD = "bg-white dark:bg-slate-900 border-2 " + SITE_BORDER;
-  const SITE_HEADER_BAR = "bg-white/5 dark:bg-slate-900/50 backdrop-blur-sm border-b-2 " + SITE_BORDER;
+  const SITE_HEADER_BAR =
+    "bg-white/5 dark:bg-slate-900/50 backdrop-blur-sm border-b-2 " + SITE_BORDER;
 
   return (
     <div className="space-y-4 font-sans">
@@ -92,7 +101,8 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
                   SITE DISPATCH BOARD
                 </h1>
                 <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-                  {workers.length} operatives · {jobs.length} sites · Week of {weekDays[0]?.slice(5)}
+                  {workers.length} operatives · {jobs.length} sites · Week of{" "}
+                  {weekDays[0]?.slice(5)}
                 </p>
               </div>
             </div>
@@ -107,9 +117,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             type="button"
             onClick={() => onChangeGroup("staff")}
             className={`flex items-center justify-center md:justify-start gap-2 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border-2 transition-all cursor-pointer ${
-              group === "staff"
-                ? SITE_AMBER + " border-amber-600"
-                : SITE_STONE + " " + SITE_BORDER
+              group === "staff" ? SITE_AMBER + " border-amber-600" : SITE_STONE + " " + SITE_BORDER
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
@@ -178,7 +186,9 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
       </div>
 
       <div className="hidden 2xl:block pb-2">
-        <div className={`grid grid-cols-[repeat(5,minmax(240px,1fr))] border-2 ${SITE_BORDER} rounded-xl ${SITE_CARD.replace("bg-white", "")} overflow-hidden`}>
+        <div
+          className={`grid grid-cols-[repeat(5,minmax(240px,1fr))] border-2 ${SITE_BORDER} rounded-xl ${SITE_CARD.replace("bg-white", "")} overflow-hidden`}
+        >
           {group === "staff" ? (
             <WeekGridStaff
               weekDays={weekDays}

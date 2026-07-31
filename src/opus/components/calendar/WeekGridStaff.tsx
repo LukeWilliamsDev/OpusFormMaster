@@ -62,10 +62,7 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
         const availableGroups = groupWorkersByCategory(unassigned, (w) => w.role);
 
         return (
-          <div
-            key={day.date}
-            className={`min-w-0 p-3 space-y-3 ${SITE_BORDER_R} ${SITE_STONE_BG}`}
-          >
+          <div key={day.date} className={`min-w-0 p-3 space-y-3 ${SITE_BORDER_R} ${SITE_STONE_BG}`}>
             <div className="flex items-center justify-between gap-1.5 px-0.5">
               <div className="flex items-baseline gap-1.5 min-w-0">
                 <span className="text-[11px] font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
@@ -81,7 +78,9 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
             </div>
 
             {isEmpty ? (
-              <div className={`py-4 text-center text-[10px] font-bold uppercase tracking-wider ${SITE_EMPTY_TEXT}`}>
+              <div
+                className={`py-4 text-center text-[10px] font-bold uppercase tracking-wider ${SITE_EMPTY_TEXT}`}
+              >
                 No operatives scheduled
               </div>
             ) : (
@@ -119,7 +118,9 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
                     {deployedGroups.length > 0 && (
                       <div className="flex items-center gap-2 pt-1">
                         <div className={`h-px flex-1 ${SITE_DIVIDER}`} />
-                        <span className={`text-[9px] font-black uppercase tracking-widest ${SITE_AVAILABLE_TEXT} shrink-0`}>
+                        <span
+                          className={`text-[9px] font-black uppercase tracking-widest ${SITE_AVAILABLE_TEXT} shrink-0`}
+                        >
                           AVAILABLE
                         </span>
                         <div className={`h-px flex-1 ${SITE_DIVIDER}`} />

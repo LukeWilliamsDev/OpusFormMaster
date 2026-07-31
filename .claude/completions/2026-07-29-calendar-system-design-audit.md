@@ -10,6 +10,7 @@
 ## ORIGINAL — Current Design Patterns
 
 ### 1. **CalendarBoard — Main Orchestrator**
+
 ```tsx
 export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   jobs,
@@ -80,6 +81,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
 ---
 
 ### 2. **WeekHeader — Simple Navigation**
+
 ```tsx
 export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) => (
   <div className="flex items-center justify-between bg-card border border-border rounded-xl px-2 py-1">
@@ -99,9 +101,14 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) 
 ---
 
 ### 3. **WeekGridStaff — Staff-by-Day Grid**
+
 ```tsx
 export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
-  weekDays, weekSchedule, searchQuery, onAssign, onRemoveShift,
+  weekDays,
+  weekSchedule,
+  searchQuery,
+  onAssign,
+  onRemoveShift,
 }) => {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -116,11 +123,18 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
         const availableGroups = groupWorkersByCategory(unassigned, (w) => w.role);
 
         return (
-          <div key={day.date} className="min-w-0 p-3 space-y-3 border-r border-border last:border-r-0">
+          <div
+            key={day.date}
+            className="min-w-0 p-3 space-y-3 border-r border-border last:border-r-0"
+          >
             <div className="flex items-center justify-between gap-1.5 px-0.5">
               <div className="flex items-baseline gap-1.5 min-w-0">
-                <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">{day.shortName}</span>
-                <span className="text-[11px] font-bold font-mono text-muted-foreground">{day.date.split("-")[2]}</span>
+                <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                  {day.shortName}
+                </span>
+                <span className="text-[11px] font-bold font-mono text-muted-foreground">
+                  {day.date.split("-")[2]}
+                </span>
               </div>
               <span className="text-[11px] font-black shrink-0 text-success">
                 {schedule?.deployedCount ? schedule.deployedCount : "0 deployed"}
@@ -128,7 +142,9 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
             </div>
 
             {isEmpty ? (
-              <div className="py-4 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground">No matches</div>
+              <div className="py-4 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                No matches
+              </div>
             ) : (
               <>
                 {deployedGroups.length > 0 && (
@@ -136,9 +152,22 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
                     {deployedGroups.map(({ category, items }) => {
                       const key = `${day.date}:deployed:${category}`;
                       return (
-                        <RoleAccordion key={key} category={category} count={items.length} isOpen={isSearching || expanded.has(key)} onToggle={() => toggle(key)}>
+                        <RoleAccordion
+                          key={key}
+                          category={category}
+                          count={items.length}
+                          isOpen={isSearching || expanded.has(key)}
+                          onToggle={() => toggle(key)}
+                        >
                           {items.map(({ worker, shift, job }) => (
-                            <StaffCard key={worker.id} worker={worker} job={job} shift={shift} onRemove={onRemoveShift} size="row" />
+                            <StaffCard
+                              key={worker.id}
+                              worker={worker}
+                              job={job}
+                              shift={shift}
+                              onRemove={onRemoveShift}
+                              size="row"
+                            />
                           ))}
                         </RoleAccordion>
                       );
@@ -150,14 +179,27 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
                     {deployedGroups.length > 0 && (
                       <div className="flex items-center gap-2 pt-1">
                         <div className="h-px flex-1 bg-border" />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground shrink-0">Available</span>
+                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground shrink-0">
+                          Available
+                        </span>
                         <div className="h-px flex-1 bg-border" />
                       </div>
                     )}
                     {availableGroups.map(({ category, items }) => (
-                      <RoleAccordion key={key} category={category} count={items.length} isOpen={isSearching || expanded.has(key)} onToggle={() => toggle(key)}>
+                      <RoleAccordion
+                        key={key}
+                        category={category}
+                        count={items.length}
+                        isOpen={isSearching || expanded.has(key)}
+                        onToggle={() => toggle(key)}
+                      >
                         {items.map((worker) => (
-                          <StaffCard key={worker.id} worker={worker} onAssign={() => onAssign(worker, day.date)} size="row" />
+                          <StaffCard
+                            key={worker.id}
+                            worker={worker}
+                            onAssign={() => onAssign(worker, day.date)}
+                            size="row"
+                          />
                         ))}
                       </RoleAccordion>
                     ))}
@@ -176,6 +218,7 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
 ---
 
 ### 4. **WeekGridProject — Project-by-Day Grid (with Weather!)**
+
 ```tsx
 const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) => {
   const { forecast } = useJobForecast(job.postcode);
@@ -189,18 +232,37 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
       : "bg-warning/10 border-warning/20 text-warning";
 
   return (
-    <div className={`flex items-center justify-between gap-1 px-1.5 py-1 rounded-md border text-[9px] font-black uppercase tracking-wider ${colorClass}`} title={weather.advice}>
+    <div
+      className={`flex items-center justify-between gap-1 px-1.5 py-1 rounded-md border text-[9px] font-black uppercase tracking-wider ${colorClass}`}
+      title={weather.advice}
+    >
       <span className="flex items-center gap-1 truncate">
-        {weather.condition === "Rain" ? <CloudRain /> : weather.condition === "Frost" ? <Snowflake /> : weather.condition === "Wind" ? <Wind /> : <CloudSun />}
-        <span className="truncate">{weather.condition} · {weather.riskLevel}</span>
+        {weather.condition === "Rain" ? (
+          <CloudRain />
+        ) : weather.condition === "Frost" ? (
+          <Snowflake />
+        ) : weather.condition === "Wind" ? (
+          <Wind />
+        ) : (
+          <CloudSun />
+        )}
+        <span className="truncate">
+          {weather.condition} · {weather.riskLevel}
+        </span>
       </span>
-      <span className="flex items-center gap-0.5 opacity-80 shrink-0"><Thermometer className="w-2.5 h-2.5" /> {weather.temperature}°</span>
+      <span className="flex items-center gap-0.5 opacity-80 shrink-0">
+        <Thermometer className="w-2.5 h-2.5" /> {weather.temperature}°
+      </span>
     </div>
   );
 };
 
 export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
-  jobs, weekDays, weekSchedule, onAddStaff, onRemoveShift,
+  jobs,
+  weekDays,
+  weekSchedule,
+  onAddStaff,
+  onRemoveShift,
 }) => {
   const activeJobs = jobs.filter((j) => j.status !== "completed");
 
@@ -209,32 +271,53 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
       {weekDays.map((day) => {
         const schedule = weekSchedule.get(day.date);
         return (
-          <div key={day.date} className="min-w-0 p-3 space-y-3 border-r border-border last:border-r-0">
+          <div
+            key={day.date}
+            className="min-w-0 p-3 space-y-3 border-r border-border last:border-r-0"
+          >
             <div className="flex items-center justify-between gap-1.5 px-0.5">
               <div className="flex items-baseline gap-1.5 min-w-0">
-                <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">{day.shortName}</span>
-                <span className="text-[11px] font-bold font-mono text-muted-foreground">{day.date.split("-")[2]}</span>
+                <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+                  {day.shortName}
+                </span>
+                <span className="text-[11px] font-bold font-mono text-muted-foreground">
+                  {day.date.split("-")[2]}
+                </span>
               </div>
-              <span className={cn("text-[11px] font-black shrink-0", schedule?.deployedCount ? "text-success" : "text-muted-foreground")}>
+              <span
+                className={cn(
+                  "text-[11px] font-black shrink-0",
+                  schedule?.deployedCount ? "text-success" : "text-muted-foreground",
+                )}
+              >
                 {schedule?.deployedCount ? schedule.deployedCount : "0 deployed"}
               </span>
             </div>
 
             {activeJobs.length === 0 ? (
-              <div className="py-4 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground">No projects</div>
+              <div className="py-4 text-center text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                No projects
+              </div>
             ) : (
               activeJobs.map((job) => {
                 const crew = schedule?.byJob.get(job.id) ?? [];
                 const colors = getJobColorClasses(job.id);
 
                 return (
-                  <div key={job.id} className="border border-border rounded-lg bg-background/40 p-2 space-y-2">
+                  <div
+                    key={job.id}
+                    className="border border-border rounded-lg bg-background/40 p-2 space-y-2"
+                  >
                     <div className="flex items-center justify-between gap-1.5">
                       <div className="flex items-center gap-1.5 min-w-0">
                         <span className={`w-2 h-2 rounded-full shrink-0 ${colors.bullet}`} />
-                        <h4 className={`text-[12px] font-bold truncate ${colors.text}`}>{job.siteName}</h4>
+                        <h4 className={`text-[12px] font-bold truncate ${colors.text}`}>
+                          {job.siteName}
+                        </h4>
                       </div>
-                      <span className="flex items-center gap-1 text-[11px] font-black text-muted-foreground shrink-0"><Users className="w-3 h-3" /> {crew.length}</span>
+                      <span className="flex items-center gap-1 text-[11px] font-black text-muted-foreground shrink-0">
+                        <Users className="w-3 h-3" /> {crew.length}
+                      </span>
                     </div>
 
                     <DenseWeatherChip job={job} date={day.date} />
@@ -242,13 +325,25 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                     {crew.length > 0 && (
                       <div className="space-y-1.5">
                         {crew.map(({ worker, shift }) => (
-                          <StaffCard key={worker.id} worker={worker} job={job} shift={shift} onRemove={onRemoveShift} compact size="dense" />
+                          <StaffCard
+                            key={worker.id}
+                            worker={worker}
+                            job={job}
+                            shift={shift}
+                            onRemove={onRemoveShift}
+                            compact
+                            size="dense"
+                          />
                         ))}
                       </div>
                     )}
 
-                    <button onClick={() => onAddStaff(job, day.date)} className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer">
-                      <Plus className="w-3 h-3" /> <span className="hidden xl:inline">Add Staff</span>
+                    <button
+                      onClick={() => onAddStaff(job, day.date)}
+                      className="w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />{" "}
+                      <span className="hidden xl:inline">Add Staff</span>
                     </button>
                   </div>
                 );
@@ -265,14 +360,24 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
 ---
 
 ### 5. **DayTabs — Mobile Day Selector**
+
 ```tsx
 export const DayTabs: React.FC<DayTabsProps> = ({ weekDays, selectedDate, onSelect }) => (
   <div className="grid grid-cols-5 gap-1.5">
     {weekDays.map((day) => {
       const isActive = selectedDate === day.date;
       return (
-        <button className={cn("py-1.5 text-center rounded-lg border transition-all cursor-pointer", isActive ? "bg-primary border-primary text-white shadow-md" : "bg-card border-border text-muted-foreground hover:text-foreground")}>
-          <div className="text-[11px] font-black uppercase tracking-wider leading-none">{day.shortName}</div>
+        <button
+          className={cn(
+            "py-1.5 text-center rounded-lg border transition-all cursor-pointer",
+            isActive
+              ? "bg-primary border-primary text-white shadow-md"
+              : "bg-card border-border text-muted-foreground hover:text-foreground",
+          )}
+        >
+          <div className="text-[11px] font-black uppercase tracking-wider leading-none">
+            {day.shortName}
+          </div>
           <div className="text-[11px] font-bold font-mono mt-1">{day.date.split("-")[2]}</div>
         </button>
       );
@@ -284,6 +389,7 @@ export const DayTabs: React.FC<DayTabsProps> = ({ weekDays, selectedDate, onSele
 ---
 
 ### 6. **StaffDayList / ProjectDayList — Mobile Day View**
+
 ```tsx
 // StaffDayList — groups by role
 const deployedGroups = groupWorkersByCategory(assigned, (a) => a.worker.role);
@@ -319,17 +425,29 @@ return (
 ---
 
 ### 7. **RoleAccordion — Collapsible Role Groups**
+
 ```tsx
 export const RoleAccordion: React.FC<RoleAccordionProps> = ({
-  category, count, isOpen, onToggle, children,
+  category,
+  count,
+  isOpen,
+  onToggle,
+  children,
 }) => (
   <div className="border border-border rounded-xl bg-card overflow-hidden">
     <button className="w-full flex items-center justify-between gap-2 px-3 py-2.5 text-left cursor-pointer hover:bg-secondary/30 transition-colors">
       <span className="flex items-center gap-2 min-w-0">
-        <span className="text-xs font-bold uppercase tracking-widest text-foreground/85 truncate">{category}</span>
+        <span className="text-xs font-bold uppercase tracking-widest text-foreground/85 truncate">
+          {category}
+        </span>
         <span className="text-[10px] font-bold text-muted-foreground shrink-0">({count})</span>
       </span>
-      <ChevronDown className={cn("w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform", isOpen && "rotate-180")} />
+      <ChevronDown
+        className={cn(
+          "w-3.5 h-3.5 text-muted-foreground shrink-0 transition-transform",
+          isOpen && "rotate-180",
+        )}
+      />
     </button>
     {isOpen && <div className="px-3 pb-1 border-t border-border">{children}</div>}
   </div>
@@ -339,6 +457,7 @@ export const RoleAccordion: React.FC<RoleAccordionProps> = ({
 ---
 
 ### 8. **StaffCard — Multi-variant Worker Card (8 variants!)**
+
 ```tsx
 export const StaffCard: React.FC<StaffCardProps> = ({
   worker, job, shift, onAssign, onRemove, compact, size = "default",
@@ -386,6 +505,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
 ---
 
 ### 9. **StaffCard — Default/Dense Size (Full Card)**
+
 ```tsx
 return (
   <div className={cn("border rounded-xl bg-card transition-all", dense ? "p-3 space-y-2" : "p-4 space-y-3", isAssigned ? "border-border" : "border-border opacity-60 hover:opacity-100")}>
@@ -418,18 +538,19 @@ return (
 
 ## CRITIC FEEDBACK
 
-| Aspect | Original | Editor | Critic Assessment |
-|--------|----------|--------|-------------------|
-| **Visual Identity** | Generic SaaS (slate/blue) | Concrete/Construction (amber/stone/emerald) | **Strong** — authentic industry palette |
-| **Weather Integration** | Basic colored chips | Site weather alerts with icons | **Excellent** — critical for concrete pours |
-| **Staff Cards** | Generic | Site badge style, trade colors | **Authentic** — matches site ID cards |
-| **Role Groups** | "Category" | Trade terminology | **Clear** — operatives understand |
-| **Day/Week Views** | Standard | Site dispatch board metaphor | **Strong** — matches site office workflow |
-| **Empty States** | "No matches" | "NO MATCHES" / "NO SITES" | **Appropriate** — site office language |
-| **Action Buttons** | "Assign", "Add Staff" | "ASSIGN", "ADD OPERATIVE" | **Domain-native** |
-| **Color Palette** | Slate/Blue | Amber/Stone/Emerald | **Authentic** — concrete industry |
+| Aspect                  | Original                  | Editor                                      | Critic Assessment                           |
+| ----------------------- | ------------------------- | ------------------------------------------- | ------------------------------------------- |
+| **Visual Identity**     | Generic SaaS (slate/blue) | Concrete/Construction (amber/stone/emerald) | **Strong** — authentic industry palette     |
+| **Weather Integration** | Basic colored chips       | Site weather alerts with icons              | **Excellent** — critical for concrete pours |
+| **Staff Cards**         | Generic                   | Site badge style, trade colors              | **Authentic** — matches site ID cards       |
+| **Role Groups**         | "Category"                | Trade terminology                           | **Clear** — operatives understand           |
+| **Day/Week Views**      | Standard                  | Site dispatch board metaphor                | **Strong** — matches site office workflow   |
+| **Empty States**        | "No matches"              | "NO MATCHES" / "NO SITES"                   | **Appropriate** — site office language      |
+| **Action Buttons**      | "Assign", "Add Staff"     | "ASSIGN", "ADD OPERATIVE"                   | **Domain-native**                           |
+| **Color Palette**       | Slate/Blue                | Amber/Stone/Emerald                         | **Authentic** — concrete industry           |
 
 **Risk Areas:**
+
 - Color contrast on amber/stone backgrounds — verify WCAG AA
 - Weather chip density on small screens
 - RoleAccordion border weight on mobile

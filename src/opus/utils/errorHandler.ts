@@ -26,7 +26,7 @@ export const handleError = (error: unknown, options: ErrorHandlerOptions = {}) =
 
 export const asyncHandler = async <T>(
   fn: () => Promise<T>,
-  errorMessage = "Operation failed"
+  errorMessage = "Operation failed",
 ): Promise<{ success: boolean; data?: T; error?: string }> => {
   try {
     const data = await fn();

@@ -7,9 +7,7 @@ import { LegalPageLayout, Section, DataTable } from "../layouts/LegalPageLayout"
 export const CookieStatementPage: React.FC = () => (
   <LegalPageLayout title="Cookie Statement" lastUpdated="July 2026">
     <Section title="1. What This Is About">
-      <p>
-        This explains how we use cookies in our portal.
-      </p>
+      <p>This explains how we use cookies in our portal.</p>
       <p>
         We don't use marketing cookies, ad trackers, or anything that follows you across the web.
         This is an internal tool, not a public platform.
@@ -54,7 +52,7 @@ export const CookieStatementPage: React.FC = () => (
 
     <Section title="5. Questions?">
       <p>
-        Email us: {" "}
+        Email us:{" "}
         <a
           href="mailto:admin@opusform.co.uk"
           className="underline"

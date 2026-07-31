@@ -10,6 +10,7 @@
 ## ORIGINAL — Current Design Patterns
 
 ### 1. **Table/Grid Hybrid Layout**
+
 ```tsx
 <div className="grid grid-cols-[repeat(5,minmax(240px,1fr))] border border-border rounded-xl bg-card overflow-hidden">
   <div className="col-span-5 bg-card/50 border-b border-border px-3 py-2">
@@ -42,6 +43,7 @@
 ```
 
 ### 2. **DenseWeatherChip — Weather Integration**
+
 ```tsx
 const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) => {
   const { forecast } = useJobForecast(job.postcode);
@@ -55,12 +57,27 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
       : "bg-warning/10 border-warning/20 text-warning";
 
   return (
-    <div className={`flex items-center justify-between gap-1 px-1.5 py-1 rounded-md border text-[9px] font-black uppercase tracking-wider ${colorClass}`} title={weather.advice}>
+    <div
+      className={`flex items-center justify-between gap-1 px-1.5 py-1 rounded-md border text-[9px] font-black uppercase tracking-wider ${colorClass}`}
+      title={weather.advice}
+    >
       <span className="flex items-center gap-1 truncate">
-        {weather.condition === "Rain" ? <CloudRain /> : weather.condition === "Frost" ? <Snowflake /> : weather.condition === "Wind" ? <Wind /> : <CloudSun />}
-        <span className="truncate">{weather.condition} · {weather.riskLevel}</span>
+        {weather.condition === "Rain" ? (
+          <CloudRain />
+        ) : weather.condition === "Frost" ? (
+          <Snowflake />
+        ) : weather.condition === "Wind" ? (
+          <Wind />
+        ) : (
+          <CloudSun />
+        )}
+        <span className="truncate">
+          {weather.condition} · {weather.riskLevel}
+        </span>
       </span>
-      <span className="flex items-center gap-0.5 opacity-80 shrink-0"><Thermometer className="w-2.5 h-2.5" /> {weather.temperature}°</span>
+      <span className="flex items-center gap-0.5 opacity-80 shrink-0">
+        <Thermometer className="w-2.5 h-2.5" /> {weather.temperature}°
+      </span>
     </div>
   );
 };
@@ -70,19 +87,20 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
 
 ## CRITIC FEEDBACK
 
-| Aspect | Assessment |
-|--------|------------|
-| **Visual Identity** | Generic SaaS (slate/blue) |
-| **Layout** | Table/grid hybrid — NOT standard card grid (CardGrid NOT applicable) |
-| **Weather Integration** | Excellent — DenseWeatherChip is domain-native |
-| **Terminology** | "Site Name", "Reference", "Status", "Pours" — good domain language |
-| **Color Palette** | Slate/Blue — no domain personality |
+| Aspect                  | Assessment                                                           |
+| ----------------------- | -------------------------------------------------------------------- |
+| **Visual Identity**     | Generic SaaS (slate/blue)                                            |
+| **Layout**              | Table/grid hybrid — NOT standard card grid (CardGrid NOT applicable) |
+| **Weather Integration** | Excellent — DenseWeatherChip is domain-native                        |
+| **Terminology**         | "Site Name", "Reference", "Status", "Pours" — good domain language   |
+| **Color Palette**       | Slate/Blue — no domain personality                                   |
 
 ---
 
 ## EDITOR — Domain-Specific Personality Enhancements
 
 ### Color System: Concrete/Flooring Industry Palette
+
 ```css
 :root {
   --concrete-amber: #d97706;
@@ -103,14 +121,25 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
 ---
 
 ### 1. **Header: Site Pour Board**
+
 ```tsx
 <div className="col-span-5 bg-stone-100 dark:bg-slate-900/50 border-b-2 border-stone-200 dark:border-slate-700 px-3 py-2">
   <div className="grid grid-cols-[1.2fr_0.8fr_1fr_1fr_0.8fr] gap-2">
-    <span className="text-[11px] font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">SITE NAME</span>
-    <span className="text-[11px] font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">BATCH REF</span>
-    <span className="text-[11px] font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">STATUS</span>
-    <span className="text-[11px] font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">POURS</span>
-    <span className="text-[11px] font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">WEATHER</span>
+    <span className="text-[11px] font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">
+      SITE NAME
+    </span>
+    <span className="text-[11px] font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">
+      BATCH REF
+    </span>
+    <span className="text-[11px] font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">
+      STATUS
+    </span>
+    <span className="text-[11px] font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">
+      POURS
+    </span>
+    <span className="text-[11px] font-black uppercase tracking-widest text-stone-600 dark:text-stone-400">
+      WEATHER
+    </span>
   </div>
 </div>
 ```
@@ -118,6 +147,7 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
 ---
 
 ### 2. **Job Row: Pour Delivery Ticket**
+
 ```tsx
 {activeJobs.map((job) => (
   <motion.div
@@ -163,6 +193,7 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
 ---
 
 ### 3. **DenseWeatherChip — Site Weather Alert**
+
 ```tsx
 const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) => {
   const { forecast } = useJobForecast(job.postcode);
@@ -170,22 +201,63 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
   if (!weather) return <span className="text-[10px] text-stone-400">—</span>;
 
   const configs = {
-    clear: { bg: "bg-emerald-50 dark:bg-emerald-900/20", border: "border-emerald-200 dark:border-emerald-800", text: "text-emerald-700 dark:text-emerald-300", icon: <CloudSun className="w-2.5 h-2.5" />, label: "CLEAR" },
-    rain: { bg: "bg-blue-50 dark:bg-blue-900/20", border: "border-blue-200 dark:border-blue-800", text: "text-blue-700 dark:text-blue-300", icon: <CloudRain className="w-2.5 h-2.5" />, label: "RAIN" },
-    frost: { bg: "bg-sky-50 dark:bg-sky-900/20", border: "border-sky-200 dark:border-sky-800", text: "text-sky-700 dark:text-sky-300", icon: <Snowflake className="w-2.5 h-2.5" />, label: "FROST" },
-    wind: { bg: "bg-amber-50 dark:bg-amber-900/20", border: "border-amber-200 dark:border-amber-800", text: "text-amber-700 dark:text-amber-300", icon: <Wind className="w-2.5 h-2.5" />, label: "WIND" },
-    high: { bg: "bg-red-50 dark:bg-red-900/20", border: "border-red-200 dark:border-red-800", text: "text-red-700 dark:text-red-300", icon: <AlertTriangle className="w-2.5 h-2.5" />, label: "HIGH RISK" },
+    clear: {
+      bg: "bg-emerald-50 dark:bg-emerald-900/20",
+      border: "border-emerald-200 dark:border-emerald-800",
+      text: "text-emerald-700 dark:text-emerald-300",
+      icon: <CloudSun className="w-2.5 h-2.5" />,
+      label: "CLEAR",
+    },
+    rain: {
+      bg: "bg-blue-50 dark:bg-blue-900/20",
+      border: "border-blue-200 dark:border-blue-800",
+      text: "text-blue-700 dark:text-blue-300",
+      icon: <CloudRain className="w-2.5 h-2.5" />,
+      label: "RAIN",
+    },
+    frost: {
+      bg: "bg-sky-50 dark:bg-sky-900/20",
+      border: "border-sky-200 dark:border-sky-800",
+      text: "text-sky-700 dark:text-sky-300",
+      icon: <Snowflake className="w-2.5 h-2.5" />,
+      label: "FROST",
+    },
+    wind: {
+      bg: "bg-amber-50 dark:bg-amber-900/20",
+      border: "border-amber-200 dark:border-amber-800",
+      text: "text-amber-700 dark:text-amber-300",
+      icon: <Wind className="w-2.5 h-2.5" />,
+      label: "WIND",
+    },
+    high: {
+      bg: "bg-red-50 dark:bg-red-900/20",
+      border: "border-red-200 dark:border-red-800",
+      text: "text-red-700 dark:text-red-300",
+      icon: <AlertTriangle className="w-2.5 h-2.5" />,
+      label: "HIGH RISK",
+    },
   };
 
-  const cfg = weather.isImpactful ? (weather.riskLevel === "High" ? configs.high : configs[weather.condition.toLowerCase()] || configs.rain) : configs.clear;
+  const cfg = weather.isImpactful
+    ? weather.riskLevel === "High"
+      ? configs.high
+      : configs[weather.condition.toLowerCase()] || configs.rain
+    : configs.clear;
 
   return (
-    <span className={`flex items-center justify-between gap-1 px-1.5 py-1 rounded-md border text-[9px] font-black uppercase tracking-wider ${cfg.bg} ${cfg.border} ${cfg.text}`} title={weather.advice}>
+    <span
+      className={`flex items-center justify-between gap-1 px-1.5 py-1 rounded-md border text-[9px] font-black uppercase tracking-wider ${cfg.bg} ${cfg.border} ${cfg.text}`}
+      title={weather.advice}
+    >
       <span className="flex items-center gap-1 truncate">
         {cfg.icon}
-        <span className="truncate">{cfg.label} · {weather.riskLevel}</span>
+        <span className="truncate">
+          {cfg.label} · {weather.riskLevel}
+        </span>
       </span>
-      <span className="flex items-center gap-0.5 opacity-80 shrink-0"><Thermometer className="w-2.5 h-2.5" /> {weather.temperature}°</span>
+      <span className="flex items-center gap-0.5 opacity-80 shrink-0">
+        <Thermometer className="w-2.5 h-2.5" /> {weather.temperature}°
+      </span>
     </span>
   );
 };
@@ -194,6 +266,7 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
 ---
 
 ### 4. **Status Badges: Pour Status Tags**
+
 ```tsx
 // Active pour (in-progress)
 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider border-white/20 bg-amber-600 text-white">
@@ -218,15 +291,16 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
 
 ## CRITIC FEEDBACK
 
-| Aspect | Original | Editor | Critic Assessment |
-|--------|----------|--------|-------------------|
-| **Visual Identity** | Generic SaaS (slate/blue) | Concrete/Flooring (amber/stone/emerald) | **Strong improvement** — domain personality throughout |
-| **Layout** | Table/grid hybrid | Pour delivery ticket grid | **Authentic** — matches site paperwork |
-| **Weather Integration** | DenseWeatherChip (good) | Enhanced with condition-specific icons | **Excellent** — critical for concrete pours |
-| **Status Badges** | Generic semantic colors | Pour status tags (Amber/Stone/Emerald) | **Clear** — instant recognition |
-| **Color Palette** | Slate/Blue | Amber/Stone/Emerald | **Authentic** — concrete industry |
+| Aspect                  | Original                  | Editor                                  | Critic Assessment                                      |
+| ----------------------- | ------------------------- | --------------------------------------- | ------------------------------------------------------ |
+| **Visual Identity**     | Generic SaaS (slate/blue) | Concrete/Flooring (amber/stone/emerald) | **Strong improvement** — domain personality throughout |
+| **Layout**              | Table/grid hybrid         | Pour delivery ticket grid               | **Authentic** — matches site paperwork                 |
+| **Weather Integration** | DenseWeatherChip (good)   | Enhanced with condition-specific icons  | **Excellent** — critical for concrete pours            |
+| **Status Badges**       | Generic semantic colors   | Pour status tags (Amber/Stone/Emerald)  | **Clear** — instant recognition                        |
+| **Color Palette**       | Slate/Blue                | Amber/Stone/Emerald                     | **Authentic** — concrete industry                      |
 
 **Risk Areas:**
+
 - Color contrast on amber backgrounds — verify WCAG AA
 - Amber focus rings — ensure visible in light/dark
 - Truck icon for scheduled — ensure recognizable at small sizes

@@ -126,10 +126,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [loadingJobAuditLogs, setLoadingJobAuditLogs] = useState(false);
   const [auditSearch, setAuditSearch] = useState("");
   const [revertConfirmTarget, setRevertConfirmTarget] = useState<{
-      oldDetails: Record<string, unknown>;
-      newDetails: Record<string, unknown>;
-      jobId: string;
-    } | null>(null);
+    oldDetails: Record<string, unknown>;
+    newDetails: Record<string, unknown>;
+    jobId: string;
+  } | null>(null);
   const fetchJobAuditLogs = async () => {
     setLoadingJobAuditLogs(true);
     try {

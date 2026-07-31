@@ -12,9 +12,10 @@
 ### ORIGINAL — Current Design Patterns
 
 **Sidebar Navigation:**
+
 ```tsx
 <SidebarNavigationSlim
-  items={navItems.map(item => ({ label: item.name, href: item.path, icon: item.icon }))}
+  items={navItems.map((item) => ({ label: item.name, href: item.path, icon: item.icon }))}
   footerItems={[{ label: "Legal & Privacy", href: "/portal/legal", icon: Shield }]}
   isActive={checkIsActive}
   collapsed={isSidebarCollapsed}
@@ -34,26 +35,61 @@
 ```
 
 **Mobile Header:**
+
 ```tsx
 <header className="lg:hidden flex items-center justify-between h-16 bg-background border-b border-border px-4 sticky top-0 z-40">
-  <Link to="/portal/dashboard"><img src={logoSrc} alt="Opus Form" className="h-8 w-auto" /></Link>
+  <Link to="/portal/dashboard">
+    <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
+  </Link>
   <div className="flex items-center space-x-2">
-    <button onClick={toggleTheme} className="p-2 text-muted-foreground hover:text-amber-600 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center group transition-colors">
-      {theme === "light" ? <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform" /> : <Sun className="w-5 h-5 group-hover:rotate-45 transition-transform" />}
+    <button
+      onClick={toggleTheme}
+      className="p-2 text-muted-foreground hover:text-amber-600 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center group transition-colors"
+    >
+      {theme === "light" ? (
+        <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform" />
+      ) : (
+        <Sun className="w-5 h-5 group-hover:rotate-45 transition-transform" />
+      )}
     </button>
-    {user?.email === "admin@opusform.co.uk" && <button onClick={handleLogoutClick} className="p-2 text-muted-foreground hover:text-foreground cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"><LogOut className="w-5 h-5" /></button>}
-    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center">{isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}</button>
+    {user?.email === "admin@opusform.co.uk" && (
+      <button
+        onClick={handleLogoutClick}
+        className="p-2 text-muted-foreground hover:text-foreground cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+      >
+        <LogOut className="w-5 h-5" />
+      </button>
+    )}
+    <button
+      onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+      className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+    >
+      {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+    </button>
   </div>
 </header>
 ```
 
 **Mobile Drawer:**
+
 ```tsx
 <AnimatePresence>
   {isMobileMenuOpen && (
     <>
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsMobileMenuOpen(false)} className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 lg:hidden" />
-      <motion.div initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ type: "spring", damping: 25, stiffness: 220 }} className="fixed top-0 left-0 bottom-0 w-4/5 max-w-xs bg-card border-r border-border z-50 p-6 flex flex-col shadow-2xl lg:hidden">
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={() => setIsMobileMenuOpen(false)}
+        className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 lg:hidden"
+      />
+      <motion.div
+        initial={{ x: "-100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "-100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 220 }}
+        className="fixed top-0 left-0 bottom-0 w-4/5 max-w-xs bg-card border-r border-border z-50 p-6 flex flex-col shadow-2xl lg:hidden"
+      >
         {/* Profile link, nav items, theme toggle, logout */}
       </motion.div>
     </>
@@ -66,11 +102,12 @@
 ### 2. LEGALPAGELAYOUT.TXS — Legal/Compliance Pages
 
 **Unauthenticated Layout:**
+
 ```tsx
 <div className="min-h-screen font-sans relative overflow-hidden bg-background text-foreground">
   {/* Blueprint grid overlay */}
   <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,...")`, opacity: 0.025 }} />
-  
+
   <header className="sticky top-0 z-30 border-b backdrop-blur-md" style={{ borderColor: "var(--border)", backgroundColor: "color-mix(in srgb, var(--background) 92%, transparent)" }}>
     <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200" style={{ color: "var(--primary)" }} onMouseEnter={...} onMouseLeave={...} aria-label="Go back">
@@ -105,7 +142,7 @@
           </ul>
         </nav>
       )}
-      
+
       <div className="legal-content space-y-6 min-w-0 max-w-3xl">{stamped}</div>
     </div>
 
@@ -147,7 +184,13 @@
 
 ```tsx
 export const OSMMap: React.FC<OSMMapProps> = ({
-  center, siteCoords, siteName, postcode, suppliers, selectedSupplierId, onSelectSupplier,
+  center,
+  siteCoords,
+  siteName,
+  postcode,
+  suppliers,
+  selectedSupplierId,
+  onSelectSupplier,
 }) => {
   const { theme } = usePortal();
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -158,10 +201,14 @@ export const OSMMap: React.FC<OSMMapProps> = ({
   selectedIdRef.current = selectedSupplierId;
 
   // Custom marker icons with pulsing
-  const createCustomMarkerIcon = (color: string, pulsingClass: string) => L.divIcon({
-    html: `<div class="${pulsingClass}" style="position: relative; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;"><div style="position: relative; width: 14px; height: 14px; border-radius: 50%; background-color: ${color}; border: 2px solid #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.5);"></div></div>`,
-    className: "", iconSize: [30, 30], iconAnchor: [15, 15], popupAnchor: [0, -10],
-  });
+  const createCustomMarkerIcon = (color: string, pulsingClass: string) =>
+    L.divIcon({
+      html: `<div class="${pulsingClass}" style="position: relative; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;"><div style="position: relative; width: 14px; height: 14px; border-radius: 50%; background-color: ${color}; border: 2px solid #ffffff; box-shadow: 0 2px 5px rgba(0,0,0,0.5);"></div></div>`,
+      className: "",
+      iconSize: [30, 30],
+      iconAnchor: [15, 15],
+      popupAnchor: [0, -10],
+    });
 
   // Map initialization
   useEffect(() => {
@@ -190,24 +237,61 @@ export const OSMMap: React.FC<OSMMapProps> = ({
   }, [selectedSupplierId, center.lat, center.lng, siteCoords.lat, siteCoords.lng]);
 
   // Selected supplier details card (absolute bottom overlay)
-  const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
+  const selectedSupplier = suppliers.find((s) => s.id === selectedSupplierId);
 
   return (
     <div className="relative w-full h-full">
-      <div ref={mapContainerRef} className="w-full h-full rounded-b-xl" style={{ minHeight: "420px", zIndex: 1 }} />
+      <div
+        ref={mapContainerRef}
+        className="w-full h-full rounded-b-xl"
+        style={{ minHeight: "420px", zIndex: 1 }}
+      />
       {selectedSupplier && (
         <div className="absolute bottom-3 left-3 right-3 z-[400] bg-card border border-border rounded-lg p-3.5 shadow-lg">
           <div className="flex justify-between items-start gap-2">
-            <h4 className="text-sm font-extrabold uppercase tracking-wide text-foreground truncate">{selectedSupplier.name}</h4>
-            <span className="text-[11px] font-bold text-primary whitespace-nowrap shrink-0">{selectedSupplier.distance} from site</span>
+            <h4 className="text-sm font-extrabold uppercase tracking-wide text-foreground truncate">
+              {selectedSupplier.name}
+            </h4>
+            <span className="text-[11px] font-bold text-primary whitespace-nowrap shrink-0">
+              {selectedSupplier.distance} from site
+            </span>
           </div>
-          {selectedSupplier.businessType && <p className="text-[11px] text-primary font-bold uppercase tracking-wider mt-1.5">{selectedSupplier.businessType}</p>}
-          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">{selectedSupplier.address}</p>
+          {selectedSupplier.businessType && (
+            <p className="text-[11px] text-primary font-bold uppercase tracking-wider mt-1.5">
+              {selectedSupplier.businessType}
+            </p>
+          )}
+          <p className="text-xs text-muted-foreground mt-1.5 leading-relaxed">
+            {selectedSupplier.address}
+          </p>
           {/* Full-height tap targets for Call/Website/Directions */}
           <div className="flex gap-2 mt-3">
-            {selectedSupplier.phone && <a href={`tel:${selectedSupplier.phone.replace(/\s+/g, "")}`} className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-destructive/15 border border-destructive/30 text-destructive font-bold text-xs active:scale-95 transition-transform"><Phone className="w-4 h-4" /> Call</a>}
-            {selectedSupplier.website && <a href={selectedSupplier.website} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-muted border border-border text-muted-foreground font-bold text-xs active:scale-95 transition-transform"><Globe className="w-4 h-4" /> Website</a>}
-            <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedSupplier.coords.lat},${selectedSupplier.coords.lng}`} target="_blank" rel="noreferrer" className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-primary/15 border border-primary/30 text-primary font-bold text-xs active:scale-95 transition-transform"><Navigation className="w-4 h-4" /> Directions</a>
+            {selectedSupplier.phone && (
+              <a
+                href={`tel:${selectedSupplier.phone.replace(/\s+/g, "")}`}
+                className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-destructive/15 border border-destructive/30 text-destructive font-bold text-xs active:scale-95 transition-transform"
+              >
+                <Phone className="w-4 h-4" /> Call
+              </a>
+            )}
+            {selectedSupplier.website && (
+              <a
+                href={selectedSupplier.website}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-muted border border-border text-muted-foreground font-bold text-xs active:scale-95 transition-transform"
+              >
+                <Globe className="w-4 h-4" /> Website
+              </a>
+            )}
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${selectedSupplier.coords.lat},${selectedSupplier.coords.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-primary/15 border border-primary/30 text-primary font-bold text-xs active:scale-95 transition-transform"
+            >
+              <Navigation className="w-4 h-4" /> Directions
+            </a>
           </div>
         </div>
       )}
@@ -222,7 +306,10 @@ export const OSMMap: React.FC<OSMMapProps> = ({
 
 ```tsx
 export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({
-  weatherData, loadingWeather, groupedStaff, statusPills,
+  weatherData,
+  loadingWeather,
+  groupedStaff,
+  statusPills,
 }) => {
   const [staffExpanded, setStaffExpanded] = useState(false);
   const staffCount = Object.values(groupedStaff).reduce((sum, list) => sum + list.length, 0);
@@ -233,40 +320,83 @@ export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({
         <div className="flex items-center gap-3 flex-wrap min-w-0">
           {statusPills}
           {loadingWeather ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader className="w-4 h-4 animate-spin text-primary" /> <span>Fetching weather...</span></div>
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <Loader className="w-4 h-4 animate-spin text-primary" />{" "}
+              <span>Fetching weather...</span>
+            </div>
           ) : weatherData ? (
             <>
               <div className="flex items-center gap-2 min-w-0">
-                {weatherData.condition === "Rain" ? <CloudRain className="w-5 h-5 text-muted-foreground shrink-0" /> : weatherData.condition === "Frost" ? <Snowflake className="w-5 h-5 text-muted-foreground shrink-0" /> : weatherData.condition === "Wind" ? <Wind className="w-5 h-5 text-muted-foreground shrink-0" /> : <CloudSun className="w-5 h-5 text-muted-foreground shrink-0" />}
-                <span className="text-sm font-bold text-foreground">{weatherData.temperature}°C</span>
-                <span className="text-xs text-muted-foreground truncate">{weatherData.condition}</span>
+                {weatherData.condition === "Rain" ? (
+                  <CloudRain className="w-5 h-5 text-muted-foreground shrink-0" />
+                ) : weatherData.condition === "Frost" ? (
+                  <Snowflake className="w-5 h-5 text-muted-foreground shrink-0" />
+                ) : weatherData.condition === "Wind" ? (
+                  <Wind className="w-5 h-5 text-muted-foreground shrink-0" />
+                ) : (
+                  <CloudSun className="w-5 h-5 text-muted-foreground shrink-0" />
+                )}
+                <span className="text-sm font-bold text-foreground">
+                  {weatherData.temperature}°C
+                </span>
+                <span className="text-xs text-muted-foreground truncate">
+                  {weatherData.condition}
+                </span>
               </div>
-              <span className={cn("text-[11px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0", weatherData.isImpactful ? "bg-destructive/15 text-destructive border border-destructive/20" : "bg-success/15 text-success border border-success/20")}>
+              <span
+                className={cn(
+                  "text-[11px] px-2 py-0.5 rounded-full font-bold uppercase shrink-0",
+                  weatherData.isImpactful
+                    ? "bg-destructive/15 text-destructive border border-destructive/20"
+                    : "bg-success/15 text-success border border-success/20",
+                )}
+              >
                 {weatherData.riskLevel} Risk
               </span>
             </>
-          ) : <span className="text-xs text-muted-foreground">Weather unavailable</span> }
+          ) : (
+            <span className="text-xs text-muted-foreground">Weather unavailable</span>
+          )}
         </div>
 
-        <button onClick={() => setStaffExpanded(!v)} className="flex items-center gap-2 cursor-pointer shrink-0">
+        <button
+          onClick={() => setStaffExpanded(!v)}
+          className="flex items-center gap-2 cursor-pointer shrink-0"
+        >
           <UserCheck className="w-4 h-4 text-primary" />
           <span className="text-xs font-bold text-foreground">{staffCount} active</span>
-          {staffExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+          {staffExpanded ? (
+            <ChevronUp className="w-4 h-4 text-muted-foreground" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-muted-foreground" />
+          )}
         </button>
       </div>
 
       {staffExpanded && (
         <div className="p-3">
           <div className="mt-3 space-y-4">
-            {Object.keys(groupedStaff).map(roleName => (
+            {Object.keys(groupedStaff).map((roleName) => (
               <div key={roleName} className="space-y-1.5">
-                <div className="text-[12px] text-primary font-bold uppercase tracking-wider border-b border-border pb-1">{roleName} ({groupedStaff[roleName].length})</div>
+                <div className="text-[12px] text-primary font-bold uppercase tracking-wider border-b border-border pb-1">
+                  {roleName} ({groupedStaff[roleName].length})
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  {groupedStaff[roleName].map(w => (
-                    <div key={w.id} className="bg-background border border-border rounded-lg p-2.5 flex items-center justify-between gap-2">
+                  {groupedStaff[roleName].map((w) => (
+                    <div
+                      key={w.id}
+                      className="bg-background border border-border rounded-lg p-2.5 flex items-center justify-between gap-2"
+                    >
                       <div className="min-w-0">
                         <div className="text-xs font-bold text-foreground truncate">{w.name}</div>
-                        {w.phone && <a href={`tel:${w.phone}`} className="text-[11px] text-primary hover:underline font-mono flex items-center gap-1 mt-0.5"><Phone className="w-2.5 h-2.5" /> {w.phone}</a>}
+                        {w.phone && (
+                          <a
+                            href={`tel:${w.phone}`}
+                            className="text-[11px] text-primary hover:underline font-mono flex items-center gap-1 mt-0.5"
+                          >
+                            <Phone className="w-2.5 h-2.5" /> {w.phone}
+                          </a>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -286,6 +416,7 @@ export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({
 ## EDITOR — Domain-Specific Personality Enhancements
 
 ### Color System: Concrete/Flooring Industry Palette
+
 ```css
 :root {
   --concrete-amber: #d97706;
@@ -308,9 +439,10 @@ export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({
 ### 1. PORTALLAYOUT — Site Office Navigation Shell
 
 **Sidebar: Site Office Navigation**
+
 ```tsx
 <SidebarNavigationSlim
-  items={navItems.map(item => ({ label: item.name, href: item.path, icon: item.icon }))}
+  items={navItems.map((item) => ({ label: item.name, href: item.path, icon: item.icon }))}
   footerItems={[{ label: "Legal & Privacy", href: "/portal/legal", icon: FileText }]}
   isActive={checkIsActive}
   collapsed={isSidebarCollapsed}
@@ -334,53 +466,117 @@ export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({
 ```
 
 **Nav Items — Domain Labels:**
+
 ```tsx
 const allNav = [
-  { name: "SITE DASHBOARD", path: "/portal/dashboard", icon: LayoutDashboard, roles: MANAGEMENT_ROLES },
+  {
+    name: "SITE DASHBOARD",
+    path: "/portal/dashboard",
+    icon: LayoutDashboard,
+    roles: MANAGEMENT_ROLES,
+  },
   { name: "JOB LEDGER", path: "/portal/ledger", icon: ClipboardList, roles: MANAGEMENT_ROLES },
   { name: "SITE CALENDAR", path: "/portal/roster?view=calendar", icon: Calendar, roles: ALL_ROLES },
   { name: "OPERATIVES", path: "/portal/roster?view=staff", icon: Users, roles: MANAGEMENT_ROLES },
-  { name: "DELIVERY TICKETS", path: "/portal/pipeline?view=pipeline-registry", icon: Truck, roles: MANAGEMENT_ROLES },
+  {
+    name: "DELIVERY TICKETS",
+    path: "/portal/pipeline?view=pipeline-registry",
+    icon: Truck,
+    roles: MANAGEMENT_ROLES,
+  },
   { name: "SITE RECORDS", path: "/portal/audit", icon: History, roles: ["admin"] },
   { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
 ];
 ```
 
 **Mobile Header: Site Office Header**
+
 ```tsx
 <header className="lg:hidden flex items-center justify-between h-16 bg-white dark:bg-slate-900 border-b-2 border-stone-200 dark:border-slate-700 px-4 sticky top-0 z-40">
-  <Link to="/portal/dashboard"><img src={logoSrc} alt="Opus Form" className="h-8 w-auto" /></Link>
+  <Link to="/portal/dashboard">
+    <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
+  </Link>
   <div className="flex items-center space-x-2">
-    <button onClick={toggleTheme} className="p-2 text-stone-500 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center group transition-colors">{theme === "light" ? <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform" /> : <Sun className="w-5 h-5 group-hover:rotate-45 transition-transform" />}</button>
-    {user?.email === "admin@opusform.co.uk" && <button onClick={handleLogoutClick} className="p-2 text-stone-500 dark:text-stone-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center" title="Logout"><LogOut className="w-5 h-5" /></button>}
-    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="p-2 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center">{isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}</button>
+    <button
+      onClick={toggleTheme}
+      className="p-2 text-stone-500 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center group transition-colors"
+    >
+      {theme === "light" ? (
+        <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform" />
+      ) : (
+        <Sun className="w-5 h-5 group-hover:rotate-45 transition-transform" />
+      )}
+    </button>
+    {user?.email === "admin@opusform.co.uk" && (
+      <button
+        onClick={handleLogoutClick}
+        className="p-2 text-stone-500 dark:text-stone-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+        title="Logout"
+      >
+        <LogOut className="w-5 h-5" />
+      </button>
+    )}
+    <button
+      onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+      className="p-2 text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+    >
+      {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+    </button>
   </div>
 </header>
 ```
 
 **Mobile Drawer: Site Dispatch Board**
+
 ```tsx
 <motion.div className="fixed top-0 left-0 bottom-0 w-4/5 max-w-xs bg-white dark:bg-slate-900 border-r-2 border-stone-200 dark:border-slate-700 z-50 p-6 flex flex-col shadow-2xl lg:hidden">
   <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-stone-200 dark:border-slate-700">
-    <Link to="/portal/dashboard" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center"><img src={logoSrc} alt="Opus Form" className="h-8 w-auto" /></Link>
-    <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-stone-500 dark:text-stone-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"><X className="w-6 h-6" /></button>
+    <Link
+      to="/portal/dashboard"
+      onClick={() => setIsMobileMenuOpen(false)}
+      className="flex items-center"
+    >
+      <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
+    </Link>
+    <button
+      onClick={() => setIsMobileMenuOpen(false)}
+      className="p-2 text-stone-500 dark:text-stone-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+    >
+      <X className="w-6 h-6" />
+    </button>
   </div>
 
   {/* Profile — Site ID Card */}
-  <Link to="/portal/settings" onClick={() => setIsMobileMenuOpen(false)} className="mb-6 p-3 rounded-lg bg-stone-50 dark:bg-slate-800/50 border-2 border-stone-200 dark:border-slate-700 flex items-center space-x-3 group hover:bg-stone-100 dark:hover:bg-slate-800 transition-all cursor-pointer">
-    <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarPresetClass(profile?.avatar_url)} flex items-center justify-center border-2 border-stone-200 dark:border-slate-700 shrink-0`}>
-      {profile?.full_name ? <span className="text-[11px] font-black tracking-wider text-white">{getAvatarInitials(profile.full_name)}</span> : <UserIcon className="w-5 h-5 text-stone-400 group-hover:text-white transition-colors" />}
+  <Link
+    to="/portal/settings"
+    onClick={() => setIsMobileMenuOpen(false)}
+    className="mb-6 p-3 rounded-lg bg-stone-50 dark:bg-slate-800/50 border-2 border-stone-200 dark:border-slate-700 flex items-center space-x-3 group hover:bg-stone-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+  >
+    <div
+      className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarPresetClass(profile?.avatar_url)} flex items-center justify-center border-2 border-stone-200 dark:border-slate-700 shrink-0`}
+    >
+      {profile?.full_name ? (
+        <span className="text-[11px] font-black tracking-wider text-white">
+          {getAvatarInitials(profile.full_name)}
+        </span>
+      ) : (
+        <UserIcon className="w-5 h-5 text-stone-400 group-hover:text-white transition-colors" />
+      )}
     </div>
     <div className="flex flex-col min-w-0 flex-1">
-      <span className="text-[13px] font-semibold text-stone-900 dark:text-white truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">{profile?.full_name || user?.email || "Operative"}</span>
-      <span className="text-[11px] text-emerald-600 dark:text-emerald-400 capitalize font-medium">{(role || "labourer").replace(/_/g, " ")}</span>
+      <span className="text-[13px] font-semibold text-stone-900 dark:text-white truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+        {profile?.full_name || user?.email || "Operative"}
+      </span>
+      <span className="text-[11px] text-emerald-600 dark:text-emerald-400 capitalize font-medium">
+        {(role || "labourer").replace(/_/g, " ")}
+      </span>
     </div>
   </Link>
 
   {/* Nav — Site Navigation */}
   <nav className="space-y-1.5 flex-1 overflow-y-auto" onClick={() => setIsMobileMenuOpen(false)}>
     <NavList
-      items={navItems.map(item => ({ label: item.name, href: item.path, icon: item.icon }))}
+      items={navItems.map((item) => ({ label: item.name, href: item.path, icon: item.icon }))}
       isActive={checkIsActive}
     />
   </nav>
@@ -388,14 +584,32 @@ const allNav = [
   {/* Footer — Light/Dark + Logout */}
   <div className="mt-auto pt-4 border-t-2 border-stone-200 dark:border-slate-700 space-y-2">
     <div className="flex items-center justify-between px-1 py-1.5">
-      <span className="text-[13px] font-semibold text-stone-500 dark:text-stone-400">LIGHT / DARK</span>
-      <button onClick={toggleTheme} role="switch" aria-checked={theme === "light"} className="relative w-11 h-6 shrink-0 rounded-full bg-stone-200 dark:bg-slate-700 border-2 border-stone-300 dark:border-slate-600 transition-colors cursor-pointer">
+      <span className="text-[13px] font-semibold text-stone-500 dark:text-stone-400">
+        LIGHT / DARK
+      </span>
+      <button
+        onClick={toggleTheme}
+        role="switch"
+        aria-checked={theme === "light"}
+        className="relative w-11 h-6 shrink-0 rounded-full bg-stone-200 dark:bg-slate-700 border-2 border-stone-300 dark:border-slate-600 transition-colors cursor-pointer"
+      >
         <Sun className="absolute left-1 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-500" />
         <Moon className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-500" />
-        <span className={cn("absolute top-1 left-1 w-4 h-4 rounded-full bg-amber-600 shadow transition-transform duration-200", theme === "light" && "translate-x-5")} />
+        <span
+          className={cn(
+            "absolute top-1 left-1 w-4 h-4 rounded-full bg-amber-600 shadow transition-transform duration-200",
+            theme === "light" && "translate-x-5",
+          )}
+        />
       </button>
     </div>
-    <button onClick={() => { setIsMobileMenuOpen(false); handleLogoutClick(); }} className="flex items-center justify-center space-x-3 w-full py-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg text-[13px] font-semibold text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all cursor-pointer min-h-[44px]">
+    <button
+      onClick={() => {
+        setIsMobileMenuOpen(false);
+        handleLogoutClick();
+      }}
+      className="flex items-center justify-center space-x-3 w-full py-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg text-[13px] font-semibold text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all cursor-pointer min-h-[44px]"
+    >
       <LogOut className="w-4 h-4" />
       <span>SIGN OUT</span>
     </button>
@@ -408,6 +622,7 @@ const allNav = [
 ### 2. LEGALPAGELAYOUT — Site Office Document Room
 
 **Unauthenticated Layout: Site Document Room**
+
 ```tsx
 <div className="min-h-screen font-sans relative overflow-hidden bg-formwork dark:bg-formwork-dark text-foreground">
   {/* Formwork shuttering pattern overlay — site hoarding */}
@@ -415,7 +630,7 @@ const allNav = [
     backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M 0 0 L 60 0 L 60 60' fill='none' stroke='%23${theme === "light" ? "D97706" : "FDE68A"}' stroke-width='0.4'/%3E%3Ccircle cx='0' cy='0' r='1.5' fill='%23D97706'/%3E%3C/svg%3E")`,
     opacity: theme === "light" ? 0.15 : 0.08
   }} />
-  
+
   <header className="sticky top-0 z-30 border-b backdrop-blur-md" style={{ borderColor: "var(--border)", backgroundColor: "color-mix(in srgb, var(--background) 95%, transparent)" }}>
     <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
       <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-[0.18em] transition-colors duration-200" style={{ color: "var(--primary)" }} onMouseEnter={(e) => e.currentTarget.style.color = "var(--foreground)"} onMouseLeave={(e) => e.currentTarget.style.color = "var(--primary)"} aria-label="Go back">
@@ -436,9 +651,9 @@ const allNav = [
       </div>
       <p className="text-[11px] font-mono uppercase tracking-[0.15em] text-stone-500 dark:text-stone-400">ISSUED: {lastUpdated}</p>
     </div>
-    
+
     <div className="h-px mb-8 bg-stone-200 dark:bg-slate-700" />
-    
+
     <div className="lg:grid lg:grid-cols-[200px_1fr] lg:gap-10">
       {/* TOC — Site Document Index */}
       {toc.length > 0 && (
@@ -455,10 +670,10 @@ const allNav = [
           </ul>
         </nav>
       )}
-      
+
       <div className="legal-content space-y-8 min-w-0 max-w-3xl">{stamped}</div>
     </div>
-    
+
     {/* Footer — Site Office Footer */}
     <footer className="w-full z-20 px-8 pb-7 pt-5 relative" style={{ borderTop: "1px solid var(--border)", opacity: footerVisible ? 1 : 0, transition: "opacity 500ms ease-out" }}>
       <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-x-5 gap-y-2 mb-4">
@@ -484,6 +699,7 @@ const allNav = [
 ```
 
 **Authenticated Layout: Site Document Viewer**
+
 ```tsx
 <div className="flex-1 min-h-0 bg-background text-foreground overflow-y-auto px-4 sm:px-6 py-6 pb-20">
   <div className="max-w-6xl mx-auto">
@@ -534,14 +750,19 @@ const allNav = [
 ### 3. OSMMAP — Site Location Map
 
 **Site Plan Map: Concrete Site Plan**
+
 ```tsx
-<MapContainer center={[lat, lng]} zoom={16} style={{ height: "100%", width: "100%", borderRadius: "12px" }}>
+<MapContainer
+  center={[lat, lng]}
+  zoom={16}
+  style={{ height: "100%", width: "100%", borderRadius: "12px" }}
+>
   <TileLayer
     attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
     // Or use MapTiler/Mapbox with custom construction style
   />
-  
+
   {/* Site boundary polygon */}
   <Polygon
     positions={siteBoundary}
@@ -553,7 +774,7 @@ const allNav = [
       dashArray: "10, 5",
     }}
   />
-  
+
   {/* Pour zones */}
   <Polygon
     positions={pourZone}
@@ -564,36 +785,48 @@ const allNav = [
       fillOpacity: 0.2,
     }}
   />
-  
+
   {/* Site marker — Concrete pour icon */}
-  <Marker position={[lat, lng]} icon={L.divIcon({
-    className: "site-marker",
-    html: `<div class="w-10 h-10 rounded-full bg-amber-600 flex items-center justify-center border-2 border-white shadow-lg"><Truck className="w-5 h-5 text-white" /></div>`,
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-  })}>
+  <Marker
+    position={[lat, lng]}
+    icon={L.divIcon({
+      className: "site-marker",
+      html: `<div class="w-10 h-10 rounded-full bg-amber-600 flex items-center justify-center border-2 border-white shadow-lg"><Truck className="w-5 h-5 text-white" /></div>`,
+      iconSize: [40, 40],
+      iconAnchor: [20, 40],
+    })}
+  >
     <Popup className="site-popup">
       <div className="p-2 min-w-[200px]">
-        <h3 className="font-black text-stone-900 dark:text-white uppercase tracking-wider">{siteName}</h3>
+        <h3 className="font-black text-stone-900 dark:text-white uppercase tracking-wider">
+          {siteName}
+        </h3>
         <p className="text-sm text-stone-500 dark:text-stone-400">{address}</p>
         <div className="flex items-center gap-2 mt-2 pt-2 border-t border-stone-200 dark:border-slate-700">
-          <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-xs font-black">SITE ACTIVE</span>
-          <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-black">POUR READY</span>
+          <span className="px-2 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-xs font-black">
+            SITE ACTIVE
+          </span>
+          <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full text-xs font-black">
+            POUR READY
+          </span>
         </div>
       </div>
     </Popup>
   </Marker>
-  
+
   {/* Weather overlay marker */}
   {weatherData && (
-    <Marker position={[lat, lng]} icon={L.divIcon({
-      className: "weather-marker",
-      html: `<div class="absolute -top-16 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 shadow-lg text-xs font-black uppercase">
+    <Marker
+      position={[lat, lng]}
+      icon={L.divIcon({
+        className: "weather-marker",
+        html: `<div class="absolute -top-16 left-1/2 -translate-x-1/2 px-2 py-1 rounded bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 shadow-lg text-xs font-black uppercase">
         ${weather.condition} · ${weather.riskLevel} · ${weather.temperature}°
       </div>`,
-      iconSize: [0, 0],
-      iconAnchor: [0, 0],
-    })} />
+        iconSize: [0, 0],
+        iconAnchor: [0, 0],
+      })}
+    />
   )}
 </MapContainer>
 ```
@@ -603,6 +836,7 @@ const allNav = [
 ### 4. PERSISTENTJOBHEADER — Delivery Ticket Header
 
 **Site Header: Delivery Ticket Header**
+
 ```tsx
 <div className="bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-xl divide-y divide-stone-200 dark:divide-slate-700 shadow-sm">
   <div className="p-3 flex items-center justify-between gap-3 flex-wrap">
@@ -610,49 +844,83 @@ const allNav = [
       {statusPills}
       {loadingWeather ? (
         <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
-          <Loader className="w-4 h-4 animate-spin text-amber-600" /> <span>FETCHING SITE WEATHER...</span>
+          <Loader className="w-4 h-4 animate-spin text-amber-600" />{" "}
+          <span>FETCHING SITE WEATHER...</span>
         </div>
       ) : weatherData ? (
         <>
           <div className="flex items-center gap-2 min-w-0">
-            {weatherData.condition === "Rain" ? <CloudRain className="w-5 h-5 text-stone-500 dark:text-stone-400 shrink-0" /> : weatherData.condition === "Frost" ? <Snowflake className="w-5 h-5 text-stone-500 dark:text-stone-400 shrink-0" /> : weatherData.condition === "Wind" ? <Wind className="w-5 h-5 text-stone-500 dark:text-stone-400 shrink-0" /> : <CloudSun className="w-5 h-5 text-stone-500 dark:text-stone-400 shrink-0" />}
-            <span className="text-sm font-bold text-stone-900 dark:text-white">{weatherData.temperature}°C</span>
-            <span className="text-xs text-stone-500 dark:text-stone-400 truncate">{weatherData.condition}</span>
+            {weatherData.condition === "Rain" ? (
+              <CloudRain className="w-5 h-5 text-stone-500 dark:text-stone-400 shrink-0" />
+            ) : weatherData.condition === "Frost" ? (
+              <Snowflake className="w-5 h-5 text-stone-500 dark:text-stone-400 shrink-0" />
+            ) : weatherData.condition === "Wind" ? (
+              <Wind className="w-5 h-5 text-stone-500 dark:text-stone-400 shrink-0" />
+            ) : (
+              <CloudSun className="w-5 h-5 text-stone-500 dark:text-stone-400 shrink-0" />
+            )}
+            <span className="text-sm font-bold text-stone-900 dark:text-white">
+              {weatherData.temperature}°C
+            </span>
+            <span className="text-xs text-stone-500 dark:text-stone-400 truncate">
+              {weatherData.condition}
+            </span>
           </div>
-          <span className={cn(
-            "text-[11px] px-2 py-0.5 rounded-full font-black uppercase shrink-0",
-            weatherData.isImpactful
-              ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-2 border-red-200 dark:border-red-800"
-              : "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-200 dark:border-emerald-800"
-          )}>
+          <span
+            className={cn(
+              "text-[11px] px-2 py-0.5 rounded-full font-black uppercase shrink-0",
+              weatherData.isImpactful
+                ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-2 border-red-200 dark:border-red-800"
+                : "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-2 border-emerald-200 dark:border-emerald-800",
+            )}
+          >
             {weatherData.riskLevel} RISK
           </span>
         </>
-      ) : <span className="text-xs text-stone-500 dark:text-stone-400">WEATHER UNAVAILABLE</span> }
+      ) : (
+        <span className="text-xs text-stone-500 dark:text-stone-400">WEATHER UNAVAILABLE</span>
+      )}
     </div>
 
-    <button onClick={() => setStaffExpanded(!v)} className="flex items-center gap-2 cursor-pointer shrink-0">
+    <button
+      onClick={() => setStaffExpanded(!v)}
+      className="flex items-center gap-2 cursor-pointer shrink-0"
+    >
       <Users className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-      <span className="text-xs font-bold text-stone-900 dark:text-white">{staffCount} DEPLOYED</span>
-      {staffExpanded ? <ChevronUp className="w-4 h-4 text-stone-400" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
+      <span className="text-xs font-bold text-stone-900 dark:text-white">
+        {staffCount} DEPLOYED
+      </span>
+      {staffExpanded ? (
+        <ChevronUp className="w-4 h-4 text-stone-400" />
+      ) : (
+        <ChevronDown className="w-4 h-4 text-stone-400" />
+      )}
     </button>
   </div>
 
   {staffExpanded && (
     <div className="p-3 bg-stone-50 dark:bg-slate-900/30">
       <div className="mt-3 space-y-4">
-        {Object.keys(groupedStaff).map(roleName => (
+        {Object.keys(groupedStaff).map((roleName) => (
           <div key={roleName} className="space-y-1.5">
             <div className="text-[12px] text-amber-700 dark:text-amber-300 font-black uppercase tracking-wider border-b border-stone-200 dark:border-slate-700 pb-1">
               {roleName.toUpperCase()} ({groupedStaff[roleName].length})
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {groupedStaff[roleName].map(w => (
-                <div key={w.id} className="bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-lg p-2.5 flex items-center justify-between gap-2">
+              {groupedStaff[roleName].map((w) => (
+                <div
+                  key={w.id}
+                  className="bg-white dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-lg p-2.5 flex items-center justify-between gap-2"
+                >
                   <div className="min-w-0">
-                    <div className="text-xs font-bold text-stone-900 dark:text-white truncate">{w.name}</div>
+                    <div className="text-xs font-bold text-stone-900 dark:text-white truncate">
+                      {w.name}
+                    </div>
                     {w.phone && (
-                      <a href={`tel:${w.phone}`} className="text-[11px] text-amber-600 dark:text-amber-400 hover:underline font-mono flex items-center gap-1 mt-0.5">
+                      <a
+                        href={`tel:${w.phone}`}
+                        className="text-[11px] text-amber-600 dark:text-amber-400 hover:underline font-mono flex items-center gap-1 mt-0.5"
+                      >
                         <Phone className="w-2.5 h-2.5" /> {w.phone}
                       </a>
                     )}
@@ -672,12 +940,12 @@ const allNav = [
 
 ## CRITIC FEEDBACK SUMMARY
 
-| Component | Original | Editor | Critic Assessment |
-|-----------|----------|--------|-------------------|
-| **PortalLayout** | Generic SaaS sidebar | Site office dispatch board | **Strong** — domain navigation, amber active states |
-| **LegalPageLayout** | Blueprint grid + clean typography | Formwork hoarding + site document room | **Excellent** — authentic construction site aesthetic |
-| **OSMMap** | Standard OSM | Site plan with pour zones, boundary, weather | **Excellent** — functional for concrete sites |
-| **PersistentJobHeader** | Generic card + weather chips | Delivery ticket header with risk badges | **Strong** — matches concrete paperwork |
+| Component               | Original                          | Editor                                       | Critic Assessment                                     |
+| ----------------------- | --------------------------------- | -------------------------------------------- | ----------------------------------------------------- |
+| **PortalLayout**        | Generic SaaS sidebar              | Site office dispatch board                   | **Strong** — domain navigation, amber active states   |
+| **LegalPageLayout**     | Blueprint grid + clean typography | Formwork hoarding + site document room       | **Excellent** — authentic construction site aesthetic |
+| **OSMMap**              | Standard OSM                      | Site plan with pour zones, boundary, weather | **Excellent** — functional for concrete sites         |
+| **PersistentJobHeader** | Generic card + weather chips      | Delivery ticket header with risk badges      | **Strong** — matches concrete paperwork               |
 
 ---
 

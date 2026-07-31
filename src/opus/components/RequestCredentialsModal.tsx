@@ -24,7 +24,10 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
   const [form, setForm] = useState({ selectedCerts: [] as string[], sendEmail: true });
   const [ui, setUi] = useState({ loading: false, copied: false });
   const [link, setLink] = useState<string | null>(null);
-  const [messages, setMessages] = useState({ error: null as string | null, emailError: null as string | null });
+  const [messages, setMessages] = useState({
+    error: null as string | null,
+    emailError: null as string | null,
+  });
   const [emailSent, setEmailSent] = useState(false);
 
   React.useEffect(() => {

@@ -37,9 +37,7 @@ export const AdminPolicies: React.FC = () => {
         <h2 className="text-3xl font-bold tracking-tight text-white font-archivo uppercase">
           Compliance Policies
         </h2>
-        <p className="text-muted-foreground mt-2">
-          Company policies and compliance documents.
-        </p>
+        <p className="text-muted-foreground mt-2">Company policies and compliance documents.</p>
       </div>
 
       {loading ? (

@@ -52,12 +52,15 @@ export const StaffCard: React.FC<StaffCardProps> = ({
   const SITE_CARD_ASSIGNED = "border-emerald-300 dark:border-emerald-700";
   const SITE_CARD_UNASSIGNED = "opacity-70 hover:opacity-100";
   const SITE_ROW_CARD = `py-2.5 border-b ${SITE_STONE_BORDER} last:border-0 transition-opacity`;
-  const SITE_ROW_UNASSIGNED = "opacity-75 2xl:pointer-events-auto 2xl:cursor-pointer 2xl:hover:bg-stone-100/50 dark:hover:bg-slate-800/50 2xl:-mx-2 2xl:px-2 2xl:rounded-lg";
+  const SITE_ROW_UNASSIGNED =
+    "opacity-75 2xl:pointer-events-auto 2xl:cursor-pointer 2xl:hover:bg-stone-100/50 dark:hover:bg-slate-800/50 2xl:-mx-2 2xl:px-2 2xl:rounded-lg";
   const SITE_BUTTON_PRIMARY = `flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-black uppercase tracking-wider text-[10px] transition-colors cursor-pointer shrink-0 ${SITE_AMBER}`;
   const SITE_BUTTON_SECONDARY = `flex items-center gap-1 px-2 py-1.5 rounded-lg border border-dashed ${SITE_STONE_BORDER} ${SITE_MUTED_TEXT} hover:text-foreground hover:border-amber-600 dark:hover:border-amber-400 font-black uppercase tracking-wider text-[10px] transition-colors cursor-pointer shrink-0`;
   const SITE_BUTTON_DANGER = `pointer-events-auto flex items-center px-2 py-2.5 -my-1 rounded-lg border border-dashed border-red-500/50 text-red-400 [.light-theme_&]:text-red-600 font-black uppercase tracking-wider text-[10px] whitespace-nowrap shrink-0 cursor-not-allowed`;
-  const SITE_REMOVE_BTN = "p-2.5 -m-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer shrink-0";
-  const SITE_REMOVE_BTN_DENSE = "p-1 -m-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer";
+  const SITE_REMOVE_BTN =
+    "p-2.5 -m-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer shrink-0";
+  const SITE_REMOVE_BTN_DENSE =
+    "p-1 -m-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer";
   const SITE_TAG = `flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-[10px] font-bold shrink-0 max-w-[40%]`;
   const SITE_AVATAR = `w-7 h-7 rounded-full border flex items-center justify-center font-black text-[10px] shrink-0`;
 
@@ -67,38 +70,50 @@ export const StaffCard: React.FC<StaffCardProps> = ({
         onClick={!isAssigned && !blocked ? onAssign : undefined}
         className={`${SITE_ROW_CARD} ${isAssigned ? SITE_CARD_ASSIGNED : SITE_CARD_UNASSIGNED} ${!isAssigned && onAssign && !blocked ? SITE_ROW_UNASSIGNED : ""}`}
       >
-        <div className={`w-7 h-7 rounded-full border flex items-center justify-center font-black text-[10px] shrink-0 ${roleColors.lightBg} ${roleColors.border} ${roleColors.text}`}>
+        <div
+          className={`w-7 h-7 rounded-full border flex items-center justify-center font-black text-[10px] shrink-0 ${roleColors.lightBg} ${roleColors.border} ${roleColors.text}`}
+        >
           {getInitials(worker.name)}
         </div>
         <div className="min-w-0 flex-1">
           <h4 className="font-bold text-foreground text-xs truncate" title={worker.name}>
             {worker.name}
           </h4>
-          <p className={`${SITE_MUTED_TEXT} font-bold uppercase tracking-widest text-[10px] truncate`} title={worker.role}>
+          <p
+            className={`${SITE_MUTED_TEXT} font-bold uppercase tracking-widest text-[10px] truncate`}
+            title={worker.role}
+          >
             {worker.role}
           </p>
         </div>
         {isAssigned && job && colors ? (
-          <span className={`${SITE_TAG} ${colors.border} ${colors.lightBg} ${colors.text}`} title={job.siteName}>
+          <span
+            className={`${SITE_TAG} ${colors.border} ${colors.lightBg} ${colors.text}`}
+            title={job.siteName}
+          >
             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${colors.bullet}`} />
             <span className="truncate">{job.siteName}</span>
           </span>
         ) : (
-          onAssign && (
-            blocked ? (
-              <span title={blockedTitle} className={SITE_BUTTON_DANGER}>
-                No Ticket
-              </span>
-            ) : (
-              <button type="button" onClick={onAssign} className={SITE_BUTTON_PRIMARY}>
-                <Plus className="w-3 h-3" />
-                Assign
-              </button>
-            )
-          )
+          onAssign &&
+          (blocked ? (
+            <span title={blockedTitle} className={SITE_BUTTON_DANGER}>
+              No Ticket
+            </span>
+          ) : (
+            <button type="button" onClick={onAssign} className={SITE_BUTTON_PRIMARY}>
+              <Plus className="w-3 h-3" />
+              Assign
+            </button>
+          ))
         )}
         {onRemove && shift && (
-          <button type="button" onClick={() => onRemove(shift.id)} aria-label={`Remove ${worker.name}`} className={SITE_REMOVE_BTN}>
+          <button
+            type="button"
+            onClick={() => onRemove(shift.id)}
+            aria-label={`Remove ${worker.name}`}
+            className={SITE_REMOVE_BTN}
+          >
             <X className="w-3.5 h-3.5" />
           </button>
         )}
@@ -111,19 +126,28 @@ export const StaffCard: React.FC<StaffCardProps> = ({
     if (compact || !isAssigned || !job || !colors) return null;
 
     return dense ? (
-      <div className={`flex items-center justify-between gap-2 px-2 py-1 rounded-lg border ${colors.border} ${colors.lightBg}`}>
+      <div
+        className={`flex items-center justify-between gap-2 px-2 py-1 rounded-lg border ${colors.border} ${colors.lightBg}`}
+      >
         <div className="flex items-center gap-1.5 min-w-0">
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${colors.bullet}`} />
           <span className={`text-[11px] font-bold truncate ${colors.text}`}>{job.siteName}</span>
         </div>
         {onRemove && shift && (
-          <button type="button" onClick={() => onRemove(shift.id)} aria-label={`Remove ${worker.name} from ${job.siteName}`} className={SITE_REMOVE_BTN_DENSE}>
+          <button
+            type="button"
+            onClick={() => onRemove(shift.id)}
+            aria-label={`Remove ${worker.name} from ${job.siteName}`}
+            className={SITE_REMOVE_BTN_DENSE}
+          >
             <X className="w-3 h-3" />
           </button>
         )}
       </div>
     ) : (
-      <div className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border ${colors.border} ${colors.lightBg}`}>
+      <div
+        className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border ${colors.border} ${colors.lightBg}`}
+      >
         <div className="flex items-center gap-2 min-w-0">
           <span className={`w-2 h-2 rounded-full shrink-0 ${colors.bullet}`} />
           <span className={`text-xs font-bold truncate ${colors.text}`}>{job.siteName}</span>
@@ -133,7 +157,12 @@ export const StaffCard: React.FC<StaffCardProps> = ({
             {job.jobRef.split("-").slice(0, 2).join("-")}
           </span>
           {onRemove && shift && (
-            <button type="button" onClick={() => onRemove(shift.id)} aria-label={`Remove ${worker.name} from ${job.siteName}`} className={SITE_REMOVE_BTN_DENSE}>
+            <button
+              type="button"
+              onClick={() => onRemove(shift.id)}
+              aria-label={`Remove ${worker.name} from ${job.siteName}`}
+              className={SITE_REMOVE_BTN_DENSE}
+            >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
@@ -148,21 +177,33 @@ export const StaffCard: React.FC<StaffCardProps> = ({
     >
       <div className="flex items-start justify-between gap-2.5">
         <div className="flex items-start gap-3 min-w-0">
-          <div className={`${SITE_AVATAR} ${roleColors.lightBg} ${roleColors.border} ${roleColors.text} ${dense ? "w-7 h-7 text-[10px]" : "w-9 h-9 text-[11px]"}`}>
+          <div
+            className={`${SITE_AVATAR} ${roleColors.lightBg} ${roleColors.border} ${roleColors.text} ${dense ? "w-7 h-7 text-[10px]" : "w-9 h-9 text-[11px]"}`}
+          >
             {getInitials(worker.name)}
           </div>
           <div className="min-w-0">
-            <h4 className={`font-bold text-foreground leading-tight ${dense ? "text-xs truncate whitespace-nowrap max-w-[150px]" : "text-sm break-words"}`} title={worker.name}>
+            <h4
+              className={`font-bold text-foreground leading-tight ${dense ? "text-xs truncate whitespace-nowrap max-w-[150px]" : "text-sm break-words"}`}
+              title={worker.name}
+            >
               {worker.name}
             </h4>
-            <p className={`${SITE_MUTED_TEXT} font-bold uppercase tracking-widest mt-1 ${dense ? "text-[11px]" : "text-[11px]"}`}>
+            <p
+              className={`${SITE_MUTED_TEXT} font-bold uppercase tracking-widest mt-1 ${dense ? "text-[11px]" : "text-[11px]"}`}
+            >
               {worker.role}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {compact && shift && onRemove && (
-            <button type="button" onClick={() => onRemove(shift.id)} aria-label={`Remove ${worker.name}`} className={SITE_REMOVE_BTN_DENSE}>
+            <button
+              type="button"
+              onClick={() => onRemove(shift.id)}
+              aria-label={`Remove ${worker.name}`}
+              className={SITE_REMOVE_BTN_DENSE}
+            >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
@@ -173,13 +214,20 @@ export const StaffCard: React.FC<StaffCardProps> = ({
       {renderJobAssignment()}
 
       {!compact && !isAssigned && onAssign && blocked && (
-        <span title={blockedTitle} className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-red-500/50 text-red-400 [.light-theme_&]:text-red-600 font-black uppercase tracking-wider cursor-not-allowed ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}>
+        <span
+          title={blockedTitle}
+          className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-red-500/50 text-red-400 [.light-theme_&]:text-red-600 font-black uppercase tracking-wider cursor-not-allowed ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}
+        >
           No Valid Ticket
         </span>
       )}
 
       {!compact && !isAssigned && onAssign && !blocked && (
-        <button type="button" onClick={onAssign} className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed ${SITE_STONE_BORDER} ${SITE_MUTED_TEXT} hover:text-foreground hover:border-amber-600 dark:hover:border-amber-400 font-black uppercase tracking-wider transition-colors cursor-pointer ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}>
+        <button
+          type="button"
+          onClick={onAssign}
+          className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed ${SITE_STONE_BORDER} ${SITE_MUTED_TEXT} hover:text-foreground hover:border-amber-600 dark:hover:border-amber-400 font-black uppercase tracking-wider transition-colors cursor-pointer ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}
+        >
           <Plus className={dense ? "w-3 h-3" : "w-3.5 h-3.5"} />
           {dense ? "Assign" : "Assign to Site"}
         </button>

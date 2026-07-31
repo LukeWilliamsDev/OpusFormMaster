@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState, useMemo } from "react";
-import { CardGrid } from '../components/CardGrid';
+import { CardGrid } from "../components/CardGrid";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Activity,
@@ -104,13 +104,13 @@ export const AuditLogPage: React.FC = () => {
       setSelectedLog(null);
       fetchLogs();
     } catch (err) {
-          console.error("Error restoring log:", err);
-          const { message } = handleError(err, { message: "Failed to restore log" });
-          toast.error(message);
-        } finally {
-          setRestoring(false);
-        }
-      };
+      console.error("Error restoring log:", err);
+      const { message } = handleError(err, { message: "Failed to restore log" });
+      toast.error(message);
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
@@ -147,7 +147,11 @@ export const AuditLogPage: React.FC = () => {
     setLoading(false);
   };
 
-  const getTargetDisplayName = (targetType: string, targetId: string, details?: Record<string, unknown>) => {
+  const getTargetDisplayName = (
+    targetType: string,
+    targetId: string,
+    details?: Record<string, unknown>,
+  ) => {
     if (targetType === "staff") {
       const match = staffList.find((s) => s.id === targetId);
       if (match) return match.name;
@@ -271,102 +275,104 @@ export const AuditLogPage: React.FC = () => {
       </div>
 
       {/* Timeline timeline entries layout container */}
-            <div className="flex-grow flex flex-col justify-between bg-background rounded-xl overflow-hidden min-h-[480px]">
-              <div>
-                {loading ? (
-                  <div className="py-20 text-center text-xs font-mono text-muted-foreground">
-                    Loading audit trail...
-                  </div>
-                ) : paginatedLogs.length === 0 ? (
-                  <div className="py-20 text-center text-xs font-mono text-muted-foreground">
-                    No logs matching filters.
-                  </div>
-                ) : (
-                  <CardGrid
-                    items={paginatedLogs}
-                    renderCard={(log) => {
-                      // Colored severity bullets for timeline matching 2d
-                      let bulletColor = "bg-primary";
-                      if (log.action.includes("LOGIN_SUCCESS") || log.action.includes("APPROVE")) {
-                        bulletColor = "bg-success";
-                      } else if (log.action.includes("CREATE") || log.action.includes("UPDATE")) {
-                        bulletColor = "bg-primary";
-                      } else if (
-                        log.action.includes("FAILURE") ||
-                        log.action.includes("DELETE") ||
-                        log.action.includes("REJECT")
-                      ) {
-                        bulletColor = "bg-destructive";
-                      } else {
-                        bulletColor = "bg-warning";
-                      }
+      <div className="flex-grow flex flex-col justify-between bg-background rounded-xl overflow-hidden min-h-[480px]">
+        <div>
+          {loading ? (
+            <div className="py-20 text-center text-xs font-mono text-muted-foreground">
+              Loading audit trail...
+            </div>
+          ) : paginatedLogs.length === 0 ? (
+            <div className="py-20 text-center text-xs font-mono text-muted-foreground">
+              No logs matching filters.
+            </div>
+          ) : (
+            <CardGrid
+              items={paginatedLogs}
+              renderCard={(log) => {
+                // Colored severity bullets for timeline matching 2d
+                let bulletColor = "bg-primary";
+                if (log.action.includes("LOGIN_SUCCESS") || log.action.includes("APPROVE")) {
+                  bulletColor = "bg-success";
+                } else if (log.action.includes("CREATE") || log.action.includes("UPDATE")) {
+                  bulletColor = "bg-primary";
+                } else if (
+                  log.action.includes("FAILURE") ||
+                  log.action.includes("DELETE") ||
+                  log.action.includes("REJECT")
+                ) {
+                  bulletColor = "bg-destructive";
+                } else {
+                  bulletColor = "bg-warning";
+                }
 
-                      const isRecordChange =
-                        log.action === "UPDATE" && (diffCache[log.id]?.length ?? 0) > 0;
-                      const friendlyEventName = isRecordChange
-                        ? "Record Change"
-                        : log.action === "INSPECT"
-                          ? "Record Inspection"
-                          : log.action === "CREATE"
-                            ? "Record Created"
-                            : log.action === "DELETE"
-                              ? "Record Deleted"
-                              : log.action === "APPROVE_DOCUMENT"
-                                ? "Document Approved"
-                                : log.action === "REJECT_DOCUMENT"
-                                  ? "Document Rejected"
-                                  : log.action === "SUBMIT_DOCUMENTS"
-                                    ? "Document Uploaded"
-                                    : log.action === "RESEND_DOCUMENT_REQUEST"
-                                      ? "Link Renewed"
-                                      : log.action === "UPDATE"
-                                        ? "Record Updated"
-                                        : "System Event";
+                const isRecordChange =
+                  log.action === "UPDATE" && (diffCache[log.id]?.length ?? 0) > 0;
+                const friendlyEventName = isRecordChange
+                  ? "Record Change"
+                  : log.action === "INSPECT"
+                    ? "Record Inspection"
+                    : log.action === "CREATE"
+                      ? "Record Created"
+                      : log.action === "DELETE"
+                        ? "Record Deleted"
+                        : log.action === "APPROVE_DOCUMENT"
+                          ? "Document Approved"
+                          : log.action === "REJECT_DOCUMENT"
+                            ? "Document Rejected"
+                            : log.action === "SUBMIT_DOCUMENTS"
+                              ? "Document Uploaded"
+                              : log.action === "RESEND_DOCUMENT_REQUEST"
+                                ? "Link Renewed"
+                                : log.action === "UPDATE"
+                                  ? "Record Updated"
+                                  : "System Event";
 
-                      return (
-                        <div
-                          key={log.id}
-                          onClick={() => setSelectedLog(log)}
-                          className="flex gap-4 py-4 cursor-pointer hover:bg-white/[0.02] transition-all px-2 rounded-lg"
-                        >
-                          <div className={`w-2.5 h-2.5 rounded-full ${bulletColor} mt-1.5 shrink-0`} />
-                          <div className="flex-1">
-                            <div className="text-[14px] font-semibold text-white">
-                              {friendlyEventName === "Document Approved" ? (
-                                <span>
-                                  Ticket approved for{" "}
-                                  <b>
-                                    {getTargetDisplayName(log.target_type, log.target_id, log.details)}
-                                  </b>
-                                </span>
-                              ) : friendlyEventName === "Record Created" &&
-                                log.target_type === "quotes" ? (
-                                <span>
-                                  Quote{" "}
-                                  <span className="font-mono text-primary">
-                                    {log.details?.reference || log.target_id}
-                                  </span>{" "}
-                                  saved as draft
-                                </span>
-                              ) : (
-                                <span>
-                                  {friendlyEventName} triggered on {log.target_type}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-[12px] text-muted-foreground mt-1">
-                              {log.user_email || "system"} ·{" "}
-                              {new Date(log.created_at).toLocaleString("en-GB")}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    }}
-                    emptyMessage="No logs matching filters."
-                    emptyIcon={<span className="py-20 text-center text-xs font-mono text-muted-foreground" />}
-                  />
-                )}
-              </div>
+                return (
+                  <div
+                    key={log.id}
+                    onClick={() => setSelectedLog(log)}
+                    className="flex gap-4 py-4 cursor-pointer hover:bg-white/[0.02] transition-all px-2 rounded-lg"
+                  >
+                    <div className={`w-2.5 h-2.5 rounded-full ${bulletColor} mt-1.5 shrink-0`} />
+                    <div className="flex-1">
+                      <div className="text-[14px] font-semibold text-white">
+                        {friendlyEventName === "Document Approved" ? (
+                          <span>
+                            Ticket approved for{" "}
+                            <b>
+                              {getTargetDisplayName(log.target_type, log.target_id, log.details)}
+                            </b>
+                          </span>
+                        ) : friendlyEventName === "Record Created" &&
+                          log.target_type === "quotes" ? (
+                          <span>
+                            Quote{" "}
+                            <span className="font-mono text-primary">
+                              {log.details?.reference || log.target_id}
+                            </span>{" "}
+                            saved as draft
+                          </span>
+                        ) : (
+                          <span>
+                            {friendlyEventName} triggered on {log.target_type}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[12px] text-muted-foreground mt-1">
+                        {log.user_email || "system"} ·{" "}
+                        {new Date(log.created_at).toLocaleString("en-GB")}
+                      </div>
+                    </div>
+                  </div>
+                );
+              }}
+              emptyMessage="No logs matching filters."
+              emptyIcon={
+                <span className="py-20 text-center text-xs font-mono text-muted-foreground" />
+              }
+            />
+          )}
+        </div>
 
         {/* Pagination Controls - Always Locked to the Bottom of this container */}
         <div className="border-t border-white/5 px-4 py-3 flex items-center justify-between bg-black/10 mt-auto">
@@ -546,5 +552,3 @@ export const AuditLogPage: React.FC = () => {
     </div>
   );
 };
-
-

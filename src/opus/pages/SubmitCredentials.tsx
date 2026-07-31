@@ -17,12 +17,12 @@ import {
 } from "lucide-react";
 import { ON_SITE_CERTIFICATIONS } from "../components/RosterView";
 import { usePortal } from "../context/PortalContext";
-import { 
+import {
   createDataFetchState,
   createStepperState,
   createFileUploadState,
   createUIState,
-  createAsyncState
+  createAsyncState,
 } from "../utils/stateGrouping";
 import { handleError } from "../utils/errorHandler";
 
@@ -388,12 +388,12 @@ export const SubmitCredentialsPage: React.FC = () => {
       fetchRequestDetails();
     } else {
       setErrorMsg("No upload token provided. Please use a valid submission link.");
-      setRequestFetch(prev => ({ ...prev, loading: false }));
+      setRequestFetch((prev) => ({ ...prev, loading: false }));
     }
   }, [token]);
 
   const fetchRequestDetails = async () => {
-    setRequestFetch(prev => ({ ...prev, loading: true, error: null }));
+    setRequestFetch((prev) => ({ ...prev, loading: true, error: null }));
     try {
       // Try the SECURITY DEFINER RPC first (returns worker_name via staff join)
       const { data: rpcData, error: rpcError } = await supabase.rpc(
@@ -425,7 +425,7 @@ export const SubmitCredentialsPage: React.FC = () => {
         setStaffName(fallback.staff?.name || "Staff Member");
       }
 
-      setRequestFetch(prev => ({ ...prev, data: reqData, loading: false }));
+      setRequestFetch((prev) => ({ ...prev, data: reqData, loading: false }));
 
       const certs = reqData.requested_certs;
       if (!certs || certs.length === 0) {
@@ -435,12 +435,14 @@ export const SubmitCredentialsPage: React.FC = () => {
       } else {
         const newSlots = certs.map((cert: string) => ({ ...emptySlot(), cert }));
         setSlots(newSlots);
-        setStepper(createStepperState(newSlots.map(s => s.cert.split(" ").slice(0, 2).join(" "))));
+        setStepper(
+          createStepperState(newSlots.map((s) => s.cert.split(" ").slice(0, 2).join(" "))),
+        );
       }
     } catch (err) {
       console.error("Fetch error:", err);
       const { message } = handleError(err, { message: "Failed to fetch request details" });
-      setRequestFetch(prev => ({ ...prev, loading: false, error: message }));
+      setRequestFetch((prev) => ({ ...prev, loading: false, error: message }));
       setErrorMsg(message);
     }
   };
@@ -454,21 +456,21 @@ export const SubmitCredentialsPage: React.FC = () => {
   const addSlot = () => {
     const newSlot = emptySlot();
     setSlots((prev) => [...prev, newSlot]);
-    setStepper(prev => ({
+    setStepper((prev) => ({
       ...prev,
-      stepLabels: [...prev.stepLabels, newSlot.cert.split(" ").slice(0, 2).join(" ")]
+      stepLabels: [...prev.stepLabels, newSlot.cert.split(" ").slice(0, 2).join(" ")],
     }));
   };
 
   const removeSlot = (index: number) => {
     setSlots((prev) => prev.filter((_, idx) => idx !== index));
-    setStepper(prev => ({
+    setStepper((prev) => ({
       ...prev,
-      stepLabels: prev.stepLabels.filter((_, idx) => idx !== index)
+      stepLabels: prev.stepLabels.filter((_, idx) => idx !== index),
     }));
     // Adjust current step if we removed a step before or at the current position
     if (stepper.currentStep >= slots.length - 1) {
-      setStepper(prev => ({ ...prev, currentStep: Math.max(0, slots.length - 2) }));
+      setStepper((prev) => ({ ...prev, currentStep: Math.max(0, slots.length - 2) }));
     }
   };
 
@@ -519,15 +521,17 @@ export const SubmitCredentialsPage: React.FC = () => {
   };
 
   const goNext = () => {
-    if (stepper.currentStep < totalSteps - 1) setStepper(prev => ({ ...prev, currentStep: prev.currentStep + 1 }));
+    if (stepper.currentStep < totalSteps - 1)
+      setStepper((prev) => ({ ...prev, currentStep: prev.currentStep + 1 }));
   };
 
   const goBack = () => {
-    if (stepper.currentStep > 0) setStepper(prev => ({ ...prev, currentStep: prev.currentStep - 1 }));
+    if (stepper.currentStep > 0)
+      setStepper((prev) => ({ ...prev, currentStep: prev.currentStep - 1 }));
   };
 
   const goToStep = (idx: number) => {
-    setStepper(prev => ({ ...prev, currentStep: idx }));
+    setStepper((prev) => ({ ...prev, currentStep: idx }));
   };
 
   /* ────────────────── Submit handler (uploads files now) ────────────────── */
@@ -552,7 +556,7 @@ export const SubmitCredentialsPage: React.FC = () => {
       }
     }
 
-    setSubmitState(prev => ({ ...prev, loading: true, success: false, error: null }));
+    setSubmitState((prev) => ({ ...prev, loading: true, success: false, error: null }));
 
     try {
       const uploadedTickets = [];
@@ -616,11 +620,11 @@ export const SubmitCredentialsPage: React.FC = () => {
 
       if (submitError) throw submitError;
 
-      setSubmitState(prev => ({ ...prev, loading: false, success: true }));
+      setSubmitState((prev) => ({ ...prev, loading: false, success: true }));
     } catch (err) {
       console.error("Submit error:", err);
       const { message } = handleError(err, { message: "Submission failed" });
-      setSubmitState(prev => ({ ...prev, loading: false, error: message }));
+      setSubmitState((prev) => ({ ...prev, loading: false, error: message }));
       setErrorMsg(message);
     }
   };

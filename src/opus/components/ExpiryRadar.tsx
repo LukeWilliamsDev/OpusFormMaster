@@ -1,6 +1,6 @@
 ﻿// @ts-nocheck
 import React from "react";
-import { CardGrid } from '../components/CardGrid';
+import { CardGrid } from "../components/CardGrid";
 import { AlertTriangle, ShieldCheck, HelpCircle } from "lucide-react";
 
 interface TicketInfo {
@@ -166,5 +166,7 @@ export const ExpiryRadar: React.FC<ExpiryRadarProps> = ({ expiringTickets, onSel
           emptyMessage="All active personnel are fully compliant"
           emptyIcon={<ShieldCheck className="w-8 h-8 text-emerald-500 opacity-60" />}
         />
-
-
+      </div>
+    </div>
+  );
+};

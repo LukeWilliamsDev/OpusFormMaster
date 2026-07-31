@@ -1,6 +1,6 @@
 ﻿// @ts-nocheck
 import React from "react";
-import { CardGrid } from '../components/CardGrid';
+import { CardGrid } from "../components/CardGrid";
 import { Loader, Search, PencilLine, Layers } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { AuditLogEntry } from "../types/erp";
@@ -52,45 +52,47 @@ export function HistoryTab({
             return { ...l, diff };
           })
           .filter((event) => {
-                      if (event.action === "UPDATE") {
-                        return event.diff.some((d: Record<string, unknown>) => JOB_REVERTIBLE_FIELDS.includes(d.field));
-                      }
-                      return true;
-                    })
-                    .filter((event) => {
-                      const searchLower = auditSearch.trim().toLowerCase();
-                      if (!searchLower) return true;
-                      return (event.user_email || "").toLowerCase().includes(searchLower);
-                    });
+            if (event.action === "UPDATE") {
+              return event.diff.some((d: Record<string, unknown>) =>
+                JOB_REVERTIBLE_FIELDS.includes(d.field),
+              );
+            }
+            return true;
+          })
+          .filter((event) => {
+            const searchLower = auditSearch.trim().toLowerCase();
+            if (!searchLower) return true;
+            return (event.user_email || "").toLowerCase().includes(searchLower);
+          });
 
-                  return (
-                    <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-                      <div className="relative">
-                        <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
-                        <Input
-                          value={auditSearch}
-                          onChange={(e) => setAuditSearch(e.target.value)}
-                          placeholder="Search actor..."
-                          className="pl-8"
-                        />
-                      </div>
+        return (
+          <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+              <Input
+                value={auditSearch}
+                onChange={(e) => setAuditSearch(e.target.value)}
+                placeholder="Search actor..."
+                className="pl-8"
+              />
+            </div>
 
-                      {loadingJobAuditLogs ? (
-                        <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
-                          <Loader className="w-4 h-4 animate-spin text-primary" />
-                          <span>Loading audit log...</span>
-                        </div>
-                      ) : events.length === 0 ? (
-                        <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[13px] font-bold uppercase tracking-wider">
-                          No audit history for this job
-                        </div>
-                      ) : (
-                        <CardGrid
-                          items={events}
-                          renderCard={(event) => {
-                            const diff = event.diff
-                              .filter((d: Record<string, unknown>) => JOB_REVERTIBLE_FIELDS.includes(d.field))
-                              .map((d: Record<string, unknown>) => JOB_FIELD_LABELS[d.field] || d.field);
+            {loadingJobAuditLogs ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
+                <Loader className="w-4 h-4 animate-spin text-primary" />
+                <span>Loading audit log...</span>
+              </div>
+            ) : events.length === 0 ? (
+              <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[13px] font-bold uppercase tracking-wider">
+                No audit history for this job
+              </div>
+            ) : (
+              <CardGrid
+                items={events}
+                renderCard={(event) => {
+                  const diff = event.diff
+                    .filter((d: Record<string, unknown>) => JOB_REVERTIBLE_FIELDS.includes(d.field))
+                    .map((d: Record<string, unknown>) => JOB_FIELD_LABELS[d.field] || d.field);
 
                   const pourLabel = event.details?.pour_number
                     ? `Pour #${event.details.pour_number} (${event.details.mix_type}, ${event.details.volume_m3}m³)`
@@ -201,7 +203,9 @@ export function HistoryTab({
                   );
                 }}
                 emptyMessage="No audit history for this job"
-                emptyIcon={<span className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[13px] font-bold uppercase tracking-wider" />}
+                emptyIcon={
+                  <span className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[13px] font-bold uppercase tracking-wider" />
+                }
               />
             )}
           </div>

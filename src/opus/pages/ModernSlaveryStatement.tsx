@@ -62,9 +62,7 @@ export const ModernSlaveryStatementPage: React.FC = () => (
     </Section>
 
     <Section title="5. Tell Us If You See Something">
-      <p>
-        If you see slavery or illegal hiring in our business or with our suppliers, tell us:
-      </p>
+      <p>If you see slavery or illegal hiring in our business or with our suppliers, tell us:</p>
       <p>
         <a
           href="mailto:admin@opusform.co.uk"
@@ -77,9 +75,7 @@ export const ModernSlaveryStatementPage: React.FC = () => (
     </Section>
 
     <Section title="6. We'll Keep It Current">
-      <p>
-        We review this statement when things change in our business or the law.
-      </p>
+      <p>We review this statement when things change in our business or the law.</p>
     </Section>
   </LegalPageLayout>
 );

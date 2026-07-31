@@ -53,14 +53,17 @@ interface ProjectDayListProps {
 }
 
 // Site office design constants
-const SITE_STONE_BG = "bg-stone-50 dark:bg-slate-800/50 border-2 border-stone-200 dark:border-slate-700 rounded-xl";
+const SITE_STONE_BG =
+  "bg-stone-50 dark:bg-slate-800/50 border-2 border-stone-200 dark:border-slate-700 rounded-xl";
 const SITE_DIVIDER = "bg-stone-200 dark:bg-slate-700";
 const SITE_DEPLOYED_TEXT = "text-emerald-600 dark:text-emerald-400";
 const SITE_EMPTY_TEXT = "text-stone-400 dark:text-stone-500";
 const SITE_AVAILABLE_TEXT = "text-stone-500 dark:text-stone-400";
 const SITE_HEADER_TEXT = "text-stone-500 dark:text-stone-400";
-const SITE_JOB_CARD = "border border-stone-200 dark:border-slate-700 rounded-lg bg-stone-100/50 dark:bg-slate-800/50 p-3 space-y-2";
-const SITE_ADD_STAFF = "w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-stone-200 dark:border-slate-700 text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-amber-600 dark:hover:border-amber-400 text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer";
+const SITE_JOB_CARD =
+  "border border-stone-200 dark:border-slate-700 rounded-lg bg-stone-100/50 dark:bg-slate-800/50 p-3 space-y-2";
+const SITE_ADD_STAFF =
+  "w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-stone-200 dark:border-slate-700 text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-amber-600 dark:hover:border-amber-400 text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer";
 
 export const ProjectDayList: React.FC<ProjectDayListProps> = ({
   jobs,
@@ -76,7 +79,9 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
       <div className="flex items-center gap-2 text-[11px] sm:text-xs">
         <span className={`font-bold ${SITE_HEADER_TEXT}`}>{formatDayHeading(date)}</span>
         <span className={SITE_HEADER_TEXT}>·</span>
-        <span className={`font-black ${SITE_DEPLOYED_TEXT}`}>{schedule.deployedCount} operatives deployed</span>
+        <span className={`font-black ${SITE_DEPLOYED_TEXT}`}>
+          {schedule.deployedCount} operatives deployed
+        </span>
       </div>
 
       {activeJobs.length === 0 ? (
@@ -92,13 +97,12 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
           const colors = getJobColorClasses(job.id);
 
           return (
-            <div
-              key={job.id}
-              className={SITE_JOB_CARD}
-            >
+            <div key={job.id} className={SITE_JOB_CARD}>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 ${colors.bullet}`} />
+                  <span
+                    className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 ${colors.bullet}`}
+                  />
                   <h3 className={`text-[11px] sm:text-sm font-bold truncate ${colors.text}`}>
                     {job.siteName}
                   </h3>
@@ -130,11 +134,7 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={() => onAddStaff(job)}
-                className={SITE_ADD_STAFF}
-              >
+              <button type="button" onClick={() => onAddStaff(job)} className={SITE_ADD_STAFF}>
                 <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                 ADD OPERATIVES
               </button>

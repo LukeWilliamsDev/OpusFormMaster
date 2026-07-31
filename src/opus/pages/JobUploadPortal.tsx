@@ -4,11 +4,11 @@ import { supabase } from "../../integrations/supabase/client";
 import { FileUp, Check, AlertCircle, Loader, UploadCloud } from "lucide-react";
 import { usePortal } from "../context/PortalContext";
 import { compressImageFile } from "../lib/compressImage";
-import { 
-  createDataFetchState, 
-  createFileUploadState, 
+import {
+  createDataFetchState,
+  createFileUploadState,
   createUIState,
-  createAsyncState
+  createAsyncState,
 } from "../utils/stateGrouping";
 import { handleError } from "../utils/errorHandler";
 
@@ -47,12 +47,12 @@ export const JobUploadPortalPage: React.FC = () => {
       fetchRequestDetails();
     } else {
       setErrorMsg("No upload token provided. Please use a valid submission link.");
-      setRequestFetch(prev => ({ ...prev, loading: false }));
+      setRequestFetch((prev) => ({ ...prev, loading: false }));
     }
   }, [token]);
 
   const fetchRequestDetails = async () => {
-    setRequestFetch(prev => ({ ...prev, loading: true, error: null }));
+    setRequestFetch((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const { data, error } = await supabase.rpc("get_job_document_request_details", {
         p_token: token!,
@@ -62,7 +62,7 @@ export const JobUploadPortalPage: React.FC = () => {
         throw new Error("This upload link is invalid, expired, or has already been completed.");
       }
 
-      setRequestFetch(prev => ({ ...prev, data, loading: false }));
+      setRequestFetch((prev) => ({ ...prev, data, loading: false }));
 
       // data.job is the raw jobs row (to_jsonb in the RPC) — snake_case, not
       // the camelCase Job type used everywhere else in the app. RPC returns
@@ -73,20 +73,20 @@ export const JobUploadPortalPage: React.FC = () => {
         existing_total_bytes: number;
       };
     } catch (err) {
-        console.error(err);
-        const { message } = handleError(err, { message: "Failed to fetch request details" });
-        setRequestFetch(prev => ({ ...prev, loading: false, error: message }));
-        setErrorMsg(message);
-      }
-    };
+      console.error(err);
+      const { message } = handleError(err, { message: "Failed to fetch request details" });
+      setRequestFetch((prev) => ({ ...prev, loading: false, error: message }));
+      setErrorMsg(message);
+    }
+  };
 
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
-      setUi(prev => ({ ...prev, dragActive: true }));
+      setUi((prev) => ({ ...prev, dragActive: true }));
     } else if (e.type === "dragleave") {
-      setUi(prev => ({ ...prev, dragActive: false }));
+      setUi((prev) => ({ ...prev, dragActive: false }));
     }
   };
 
@@ -108,13 +108,14 @@ export const JobUploadPortalPage: React.FC = () => {
       );
       return;
     }
-    if (candidates.length > 0) setUploadState(prev => ({ ...prev, files: [...prev.files, ...candidates] }));
+    if (candidates.length > 0)
+      setUploadState((prev) => ({ ...prev, files: [...prev.files, ...candidates] }));
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setUi(prev => ({ ...prev, dragActive: false }));
+    setUi((prev) => ({ ...prev, dragActive: false }));
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       addFiles(Array.from(e.dataTransfer.files));
@@ -128,14 +129,14 @@ export const JobUploadPortalPage: React.FC = () => {
   };
 
   const handleRemoveFile = (index: number) => {
-    setUploadState(prev => ({ ...prev, files: prev.files.filter((_, i) => i !== index) }));
+    setUploadState((prev) => ({ ...prev, files: prev.files.filter((_, i) => i !== index) }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (files.length === 0) return;
 
-    setSubmitState(prev => ({ ...prev, loading: true, error: null }));
+    setSubmitState((prev) => ({ ...prev, loading: true, error: null }));
     setErrorMsg(null);
 
     try {
@@ -171,11 +172,11 @@ export const JobUploadPortalPage: React.FC = () => {
       // Mark document request as completed
       await supabase.rpc("complete_job_document_request", { p_token: token! });
 
-      setSubmitState(prev => ({ ...prev, loading: false, success: true }));
+      setSubmitState((prev) => ({ ...prev, loading: false, success: true }));
     } catch (err) {
       console.error(err);
       const { message } = handleError(err, { message: "File upload failed" });
-      setSubmitState(prev => ({ ...prev, loading: false, error: message }));
+      setSubmitState((prev) => ({ ...prev, loading: false, error: message }));
       setErrorMsg(message);
     }
   };

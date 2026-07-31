@@ -216,10 +216,11 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
             </div>
           )}
           emptyMessage="No notes yet"
-          emptyIcon={<span className="text-xs text-muted-foreground py-8 text-center uppercase tracking-wider" />}
+          emptyIcon={
+            <span className="text-xs text-muted-foreground py-8 text-center uppercase tracking-wider" />
+          }
         />
       )}
     </div>
   );
 };
-

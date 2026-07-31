@@ -119,8 +119,8 @@ export const OSMMap: React.FC<OSMMapProps> = ({
 
     // Create marker icons with site office colors
     const selectedIcon = createCustomMarkerIcon("#10B981", "pulsing-marker-emerald"); // emerald
-    const supplierIcon = createCustomMarkerIcon("#6B7280", "pulsing-marker-stone");   // stone
-    const siteIcon = createCustomMarkerIcon("#EA580C", "pulsing-marker-amber");      // amber (site)
+    const supplierIcon = createCustomMarkerIcon("#6B7280", "pulsing-marker-stone"); // stone
+    const siteIcon = createCustomMarkerIcon("#EA580C", "pulsing-marker-amber"); // amber (site)
 
     // Add site marker
     const siteMarker = L.marker([siteCoords.lat, siteCoords.lng], { icon: siteIcon }).addTo(map);
@@ -136,17 +136,16 @@ export const OSMMap: React.FC<OSMMapProps> = ({
     suppliers.forEach((supplier) => {
       if (!isValidCoord(supplier.coords)) return;
       const isSelected = supplier.id === selectedSupplierId;
-      const marker = L.marker(
-        [supplier.coords.lat, supplier.coords.lng],
-        { icon: isSelected ? selectedIcon : supplierIcon }
-      ).addTo(map);
+      const marker = L.marker([supplier.coords.lat, supplier.coords.lng], {
+        icon: isSelected ? selectedIcon : supplierIcon,
+      }).addTo(map);
       marker.bindPopup(`
         <div class="p-2 bg-stone-50 dark:bg-slate-800/50 rounded-md border border-stone-200 dark:border-slate-700">
           <h4 class="font-bold text-stone-900 dark:text-white uppercase text-xs mb-1">${supplier.name}</h4>
-          <p class="text-sm text-stone-600 dark:text-stone-300">${supplier.businessType || 'Supplier'}</p>
+          <p class="text-sm text-stone-600 dark:text-stone-300">${supplier.businessType || "Supplier"}</p>
           <p class="text-xs text-stone-500 dark:text-stone-400">${supplier.address}</p>
-          ${supplier.phone ? `<p class="text-xs text-stone-500 dark:text-stone-400">📞 ${supplier.phone}</p>` : ''}
-          ${supplier.website ? `<p class="text-xs text-stone-500 dark:text-stone-400">🌐 ${supplier.website}</p>` : ''}
+          ${supplier.phone ? `<p class="text-xs text-stone-500 dark:text-stone-400">📞 ${supplier.phone}</p>` : ""}
+          ${supplier.website ? `<p class="text-xs text-stone-500 dark:text-stone-400">🌐 ${supplier.website}</p>` : ""}
         </div>
       `);
       markersRef.current[supplier.id] = marker;

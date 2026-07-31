@@ -10,6 +10,7 @@
 ## ORIGINAL — Current Design Patterns
 
 ### 1. **Thin Page Wrapper / Router**
+
 ```tsx
 export const PipelinePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -52,6 +53,7 @@ export const PipelinePage: React.FC = () => {
 ```
 
 ### 2. **URL-Based State Management**
+
 ```tsx
 const [searchParams, setSearchParams] = useSearchParams();
 const currentView = searchParams.get("view") || "pipeline-registry";
@@ -62,15 +64,16 @@ const quoteToLoadId = searchParams.get("quoteId");
 
 ## CRITIC FEEDBACK — Current State
 
-| Aspect | Assessment |
-|--------|------------|
-| **Visual Identity** | None — pure router, delegates all UI to children |
-| **Layout** | Standard max-w-7xl container with animate-fade-in |
-| **Domain Personality** | None visible at this level |
-| **State Management** | Clean URL-based routing (good) |
-| **Design Surface** | Minimal — delegates to PipelineRegistry & QuoteInvoiceBuilder |
+| Aspect                 | Assessment                                                    |
+| ---------------------- | ------------------------------------------------------------- |
+| **Visual Identity**    | None — pure router, delegates all UI to children              |
+| **Layout**             | Standard max-w-7xl container with animate-fade-in             |
+| **Domain Personality** | None visible at this level                                    |
+| **State Management**   | Clean URL-based routing (good)                                |
+| **Design Surface**     | Minimal — delegates to PipelineRegistry & QuoteInvoiceBuilder |
 
 **Key Insight:** This page has almost no design surface of its own. The design work belongs in:
+
 - `PipelineRegistry` (already audited)
 - `QuoteInvoiceBuilder` (already audited)
 
@@ -81,6 +84,7 @@ const quoteToLoadId = searchParams.get("quoteId");
 Since this is a thin router, the "design" is really about **how the transitions and context feel**.
 
 ### 1. **Page Header: Site Office Dispatch**
+
 ```tsx
 return (
   <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in font-sans">
@@ -99,11 +103,11 @@ return (
               </p>
             </div>
           </div>
-          
+
           {/* View indicator */}
           <div className="flex items-center gap-2 shrink-0">
             {currentView === "quote-builder" && (
-              <button 
+              <button
                 onClick={handleBackToPipeline}
                 className="px-3 py-1.5 bg-stone-100 dark:bg-slate-800 border-2 border-stone-200 dark:border-slate-700 rounded-lg text-sm font-black uppercase tracking-wider text-stone-700 dark:text-stone-300 hover:bg-stone-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5"
               >
@@ -126,6 +130,7 @@ return (
 ```
 
 ### 2. **View Transition Animation**
+
 ```tsx
 {/* Wrap the conditional in AnimatePresence for smooth transitions */}
 <AnimatePresence mode="wait">
@@ -154,21 +159,23 @@ return (
 ```
 
 ### 3. **Empty State for Pipeline View** (if PipelineRegistry returns empty)
+
 The PipelineRegistry handles its own empty state, but could add a page-level fallback.
 
 ---
 
 ## CRITIC FEEDBACK
 
-| Aspect | Original | Editor | Critic Assessment |
-|--------|----------|--------|-------------------|
-| **Visual Identity** | None (pure router) | Site Office header + transitions | **Strong improvement** — sets domain context |
-| **Layout** | Standard container | Site Office header + animated content | **Clear** — establishes domain frame |
-| **Transitions** | None | AnimatePresence slide | **Polished** — feels like app, not page reload |
-| **Terminology** | "Pipeline", "Quotes" | "Delivery Ticket Center", "Dispatch" | **Authentic** — matches concrete site language |
-| **Color Palette** | Slate/Blue | Amber/Stone | **Authentic** — concrete industry |
+| Aspect              | Original             | Editor                                | Critic Assessment                              |
+| ------------------- | -------------------- | ------------------------------------- | ---------------------------------------------- |
+| **Visual Identity** | None (pure router)   | Site Office header + transitions      | **Strong improvement** — sets domain context   |
+| **Layout**          | Standard container   | Site Office header + animated content | **Clear** — establishes domain frame           |
+| **Transitions**     | None                 | AnimatePresence slide                 | **Polished** — feels like app, not page reload |
+| **Terminology**     | "Pipeline", "Quotes" | "Delivery Ticket Center", "Dispatch"  | **Authentic** — matches concrete site language |
+| **Color Palette**   | Slate/Blue           | Amber/Stone                           | **Authentic** — concrete industry              |
 
 **Risk Areas:**
+
 - Adds ~30 lines to a previously minimal component
 - Motion/AnimatePresence adds bundle weight (mitigated by code-splitting)
 - Ensure transitions don't block user interaction
@@ -177,12 +184,12 @@ The PipelineRegistry handles its own empty state, but could add a page-level fal
 
 ## APPLY — Implementation Priority
 
-| Priority | Task | Effort |
-|----------|------|--------|
-| 1 | Add Site Office header bar with amber accent | 15 min |
-| 2 | Wrap conditional in AnimatePresence with slide transitions | 20 min |
-| 3 | Update "Back" button to "BACK TO DISPATCH" with amber styling | 5 min |
-| 4 | Add domain-appropriate page title ("DELIVERY TICKET CENTER") | 5 min |
+| Priority | Task                                                          | Effort |
+| -------- | ------------------------------------------------------------- | ------ |
+| 1        | Add Site Office header bar with amber accent                  | 15 min |
+| 2        | Wrap conditional in AnimatePresence with slide transitions    | 20 min |
+| 3        | Update "Back" button to "BACK TO DISPATCH" with amber styling | 5 min  |
+| 4        | Add domain-appropriate page title ("DELIVERY TICKET CENTER")  | 5 min  |
 
 ---
 

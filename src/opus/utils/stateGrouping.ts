@@ -4,7 +4,11 @@
  */
 
 // Profile form state pattern
-export const createProfileFormState = (profile?: { full_name?: string; phone_number?: string; avatar_url?: string }) => ({
+export const createProfileFormState = (profile?: {
+  full_name?: string;
+  phone_number?: string;
+  avatar_url?: string;
+}) => ({
   fullName: profile?.full_name || "",
   phone: profile?.phone_number || "",
   selectedAvatar: profile?.avatar_url || "slate",

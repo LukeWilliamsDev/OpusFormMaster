@@ -72,7 +72,7 @@ export const PortalLayout: React.FC = () => {
       roles: MANAGEMENT_ROLES,
     },
     {
-      name: "DELIVERY TICKETS",
+      name: "QUOTES",
       path: "/portal/pipeline?view=pipeline-registry",
       icon: Truck,
       roles: MANAGEMENT_ROLES,

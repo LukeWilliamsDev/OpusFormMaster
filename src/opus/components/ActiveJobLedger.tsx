@@ -44,7 +44,7 @@ const JobWarnings: React.FC<{ job: Job; followup: { reason: string } | null; den
         >
           <CloudSun className="w-3.5 h-3.5" />
           <span>
-            {weather.condition} ({weather.temperature}Â°C)
+            {weather.condition} ({weather.temperature}°C)
           </span>
         </span>
       )}

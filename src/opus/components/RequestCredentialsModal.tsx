@@ -29,6 +29,41 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
     emailError: null as string | null,
   });
   const [emailSent, setEmailSent] = useState(false);
+  const [customCertInput, setCustomCertInput] = useState("");
+  const [emailErrorMsg, setEmailErrorMsg] = useState<string | null>(null);
+
+  // Destructure state for convenience
+  const { selectedCerts, sendEmail } = form;
+  const { loading, copied } = ui;
+  const generatedLink = link;
+  const { error } = messages;
+
+  // Memoized state setters to prevent infinite re-renders
+  const setSelectedCerts = React.useCallback(
+    (certs: string[] | ((prev: string[]) => string[])) =>
+      setForm((prev) => ({
+        ...prev,
+        selectedCerts: typeof certs === "function" ? certs(prev.selectedCerts) : certs,
+      })),
+    []
+  );
+  const setSendEmail = React.useCallback(
+    (send: boolean) => setForm((prev) => ({ ...prev, sendEmail: send })),
+    []
+  );
+  const setLoading = React.useCallback(
+    (loading: boolean) => setUi((prev) => ({ ...prev, loading })),
+    []
+  );
+  const setCopied = React.useCallback(
+    (copied: boolean) => setUi((prev) => ({ ...prev, copied })),
+    []
+  );
+  const setGeneratedLink = React.useCallback((link: string | null) => setLink(link), []);
+  const setError = React.useCallback(
+    (error: string | null) => setMessages((prev) => ({ ...prev, error })),
+    []
+  );
 
   React.useEffect(() => {
     if (isOpen && worker) {

@@ -28,14 +28,14 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
 
   // Site office design constants
   const SITE_STONE_BG =
-    "bg-stone-50 dark:bg-slate-800/50 border-2 border-stone-200 dark:border-slate-700 rounded-xl";
-  const SITE_STONE_BORDER = "border-stone-200 dark:border-slate-700";
-  const SITE_DIVIDER = "bg-stone-200 dark:bg-slate-700";
-  const SITE_DEPLOYED_TEXT = "text-emerald-600 dark:text-emerald-400";
-  const SITE_EMPTY_TEXT = "text-stone-400 dark:text-stone-500";
-  const SITE_AVAILABLE_TEXT = "text-stone-500 dark:text-stone-400";
-  const SITE_HEADER_TEXT = "text-stone-500 dark:text-stone-400";
-  const SITE_HEADING_TEXT = "text-stone-900 dark:text-white";
+    "bg-card border-2 border-border rounded-xl";
+  const SITE_STONE_BORDER = "border-border";
+  const SITE_DIVIDER = "bg-background";
+  const SITE_DEPLOYED_TEXT = "text-success";
+  const SITE_EMPTY_TEXT = "text-muted-foreground";
+  const SITE_AVAILABLE_TEXT = "text-muted-foreground";
+  const SITE_HEADER_TEXT = "text-muted-foreground";
+  const SITE_HEADING_TEXT = "text-foreground";
 
   useEffect(() => {
     setExpanded(new Set());
@@ -68,8 +68,8 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
       </div>
 
       {assigned.length === 0 && unassigned.length === 0 ? (
-        <div className="flex flex-col items-center gap-2 py-10 text-center border-2 border-dashed border-stone-200 dark:border-slate-700 rounded-xl">
-          <Users className="w-6 h-6 text-stone-300 dark:text-stone-600" />
+        <div className="flex flex-col items-center gap-2 py-10 text-center border-2 border-dashed border-border rounded-xl">
+          <Users className="w-6 h-6 text-muted-foreground/50" />
           <span className={`text-xs font-bold uppercase tracking-wider ${SITE_EMPTY_TEXT}`}>
             No operatives scheduled
           </span>

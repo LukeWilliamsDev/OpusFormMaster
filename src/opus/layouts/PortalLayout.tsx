@@ -131,14 +131,14 @@ export const PortalLayout: React.FC = () => {
       />
 
       {/* Mobile Sticky Header */}
-      <header className="lg:hidden flex items-center justify-between h-16 bg-white/5 dark:bg-slate-900/50 border-b-2 border-stone-200 dark:border-slate-700 px-4 sticky top-0 z-40">
+      <header className="lg:hidden flex items-center justify-between h-16 bg-background border-b-2 border-border px-4 sticky top-0 z-40">
         <Link to="/portal/dashboard" className="flex items-center">
           <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
         </Link>
         <div className="flex items-center space-x-2">
           <button
             onClick={toggleTheme}
-            className="p-2 text-stone-500 dark:text-stone-400 hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center group transition-colors"
+            className="p-2 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center group transition-colors"
             aria-label="Toggle light/dark theme"
             title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
           >
@@ -151,7 +151,7 @@ export const PortalLayout: React.FC = () => {
           {user?.email === "admin@opusform.co.uk" && (
             <button
               onClick={handleLogoutClick}
-              className="p-2 text-stone-500 dark:text-stone-400 hover:text-red-600 dark:hover:text-red-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+              className="p-2 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
               title="Logout"
             >
               <LogOut className="w-5 h-5" />
@@ -183,9 +183,9 @@ export const PortalLayout: React.FC = () => {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 220 }}
-              className="fixed top-0 left-0 bottom-0 w-4/5 max-w-xs bg-white dark:bg-slate-900 border-r-2 border-stone-200 dark:border-slate-700 z-50 p-6 flex flex-col shadow-2xl lg:hidden"
+              className="fixed top-0 left-0 bottom-0 w-4/5 max-w-xs bg-background border-r-2 border-border z-50 p-6 flex flex-col shadow-2xl lg:hidden"
             >
-              <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-stone-200 dark:border-slate-700">
+              <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-border">
                 <Link
                   to="/portal/dashboard"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -195,7 +195,7 @@ export const PortalLayout: React.FC = () => {
                 </Link>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 text-stone-500 dark:text-stone-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  className="p-2 text-muted-foreground cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -205,10 +205,10 @@ export const PortalLayout: React.FC = () => {
               <Link
                 to="/portal/settings"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="mb-6 p-3 rounded-lg bg-stone-50 dark:bg-slate-800/50 border-2 border-stone-200 dark:border-slate-700 flex items-center space-x-3 group hover:bg-stone-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                className="mb-6 p-3 rounded-lg bg-muted border-2 border-border flex items-center space-x-3 group hover:bg-muted transition-all cursor-pointer"
               >
                 <div
-                  className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarPresetClass(profile?.avatar_url)} flex items-center justify-center border-2 border-stone-200 dark:border-slate-700 shrink-0`}
+                  className={`w-10 h-10 rounded-full bg-gradient-to-br ${getAvatarPresetClass(profile?.avatar_url)} flex items-center justify-center border-2 border-border shrink-0`}
                 >
                   {profile?.full_name ? (
                     <span className="text-[11px] font-black tracking-wider text-white">
@@ -219,7 +219,7 @@ export const PortalLayout: React.FC = () => {
                   )}
                 </div>
                 <div className="flex flex-col min-w-0 flex-1">
-                  <span className="text-[13px] font-semibold text-stone-900 dark:text-white truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                  <span className="text-[13px] font-semibold text-foreground truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                     {profile?.full_name || user?.email || "User"}
                   </span>
                   <span className="text-[11px] text-emerald-600 dark:text-emerald-400 capitalize font-medium">
@@ -243,9 +243,9 @@ export const PortalLayout: React.FC = () => {
                 />
               </nav>
 
-              <div className="mt-auto pt-4 border-t-2 border-stone-200 dark:border-slate-700 space-y-2">
+              <div className="mt-auto pt-4 border-t-2 border-border space-y-2">
                 <div className="flex items-center justify-between px-1 py-1.5">
-                  <span className="text-[13px] font-semibold text-stone-500 dark:text-stone-400">
+                  <span className="text-[13px] font-semibold text-muted-foreground">
                     LIGHT / DARK
                   </span>
                   <button
@@ -253,7 +253,7 @@ export const PortalLayout: React.FC = () => {
                     role="switch"
                     aria-checked={theme === "light"}
                     aria-label="Toggle light/dark theme"
-                    className="relative w-11 h-6 shrink-0 rounded-full bg-stone-200 dark:bg-slate-700 border-2 border-stone-300 dark:border-slate-600 transition-colors cursor-pointer"
+                    className="relative w-11 h-6 shrink-0 rounded-full bg-secondary border-2 border-border transition-colors cursor-pointer"
                   >
                     <Sun className="absolute left-1 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-500" />
                     <Moon className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-500" />
@@ -269,7 +269,7 @@ export const PortalLayout: React.FC = () => {
                     setIsMobileMenuOpen(false);
                     handleLogoutClick();
                   }}
-                  className="flex items-center justify-center space-x-3 w-full py-3 bg-red-50 dark:bg-red-900/20 border-2 border-red-200 dark:border-red-800 rounded-lg text-[13px] font-semibold text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 transition-all cursor-pointer min-h-[44px]"
+                  className="flex items-center justify-center space-x-3 w-full py-3 bg-destructive/10 border-2 border-destructive rounded-lg text-[13px] font-semibold text-destructive hover:bg-destructive/20 transition-all cursor-pointer min-h-[44px]"
                 >
                   <LogOut className="w-4 h-4" />
                   <span>SIGN OUT</span>

@@ -138,7 +138,7 @@ export function MediaTab({
                         >
                           <img src={p.file_url} alt="before" className="w-full h-24 object-cover" />
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
-                            <span className="text-white font-bold truncate">{p.uploaded_by}</span>
+                            <span className="text-foreground font-bold truncate">{p.uploaded_by}</span>
                             <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
                           </div>
                           <button
@@ -148,7 +148,7 @@ export function MediaTab({
                               setDeleteAttachmentTarget(p);
                             }}
                             aria-label="Delete photo"
-                            className="absolute top-1 right-1 p-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
+                            className="absolute top-1 right-1 p-1 rounded bg-black/60 text-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -202,7 +202,7 @@ export function MediaTab({
                         >
                           <img src={p.file_url} alt="after" className="w-full h-24 object-cover" />
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
-                            <span className="text-white font-bold truncate">{p.uploaded_by}</span>
+                            <span className="text-foreground font-bold truncate">{p.uploaded_by}</span>
                             <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
                           </div>
                           <button
@@ -212,7 +212,7 @@ export function MediaTab({
                               setDeleteAttachmentTarget(p);
                             }}
                             aria-label="Delete photo"
-                            className="absolute top-1 right-1 p-1 rounded bg-black/60 text-white opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
+                            className="absolute top-1 right-1 p-1 rounded bg-black/60 text-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -411,7 +411,7 @@ export function MediaTab({
                         index: (gallery.index - 1 + gallery.photos.length) % gallery.photos.length,
                       })
                     }
-                    className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors cursor-pointer"
+                    className="absolute left-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-foreground hover:bg-black/80 transition-colors cursor-pointer"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
@@ -424,7 +424,7 @@ export function MediaTab({
                         index: (gallery.index + 1) % gallery.photos.length,
                       })
                     }
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-white hover:bg-black/80 transition-colors cursor-pointer"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-black/60 text-foreground hover:bg-black/80 transition-colors cursor-pointer"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>

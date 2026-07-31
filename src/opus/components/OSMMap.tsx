@@ -125,9 +125,9 @@ export const OSMMap: React.FC<OSMMapProps> = ({
     // Add site marker
     const siteMarker = L.marker([siteCoords.lat, siteCoords.lng], { icon: siteIcon }).addTo(map);
     siteMarker.bindPopup(`
-      <div class="p-2 bg-stone-50 dark:bg-slate-800/50 rounded-md border border-stone-200 dark:border-slate-700">
-        <h4 class="font-bold text-stone-900 dark:text-white uppercase text-xs mb-1">${siteName}</h4>
-        <p class="text-sm text-stone-600 dark:text-stone-300">Active Job Site Location</p>
+      <div class="p-2 bg-card rounded-md border border-border">
+        <h4 class="font-bold text-foreground uppercase text-xs mb-1">${siteName}</h4>
+        <p class="text-sm text-muted-foreground">Active Job Site Location</p>
       </div>
     `);
     markersRef.current = { site: siteMarker };
@@ -140,12 +140,12 @@ export const OSMMap: React.FC<OSMMapProps> = ({
         icon: isSelected ? selectedIcon : supplierIcon,
       }).addTo(map);
       marker.bindPopup(`
-        <div class="p-2 bg-stone-50 dark:bg-slate-800/50 rounded-md border border-stone-200 dark:border-slate-700">
-          <h4 class="font-bold text-stone-900 dark:text-white uppercase text-xs mb-1">${supplier.name}</h4>
-          <p class="text-sm text-stone-600 dark:text-stone-300">${supplier.businessType || "Supplier"}</p>
-          <p class="text-xs text-stone-500 dark:text-stone-400">${supplier.address}</p>
-          ${supplier.phone ? `<p class="text-xs text-stone-500 dark:text-stone-400">📞 ${supplier.phone}</p>` : ""}
-          ${supplier.website ? `<p class="text-xs text-stone-500 dark:text-stone-400">🌐 ${supplier.website}</p>` : ""}
+        <div class="p-2 bg-card rounded-md border border-border">
+          <h4 class="font-bold text-foreground uppercase text-xs mb-1">${supplier.name}</h4>
+          <p class="text-sm text-muted-foreground">${supplier.businessType || "Supplier"}</p>
+          <p class="text-xs text-muted-foreground">${supplier.address}</p>
+          ${supplier.phone ? `<p class="text-xs text-muted-foreground">📞 ${supplier.phone}</p>` : ""}
+          ${supplier.website ? `<p class="text-xs text-muted-foreground">🌐 ${supplier.website}</p>` : ""}
         </div>
       `);
       markersRef.current[supplier.id] = marker;
@@ -264,13 +264,13 @@ export const OSMMap: React.FC<OSMMapProps> = ({
               {selectedSupplier.distance} from site
             </span>
           </div>
-          <div className="p-4 bg-stone-50 dark:bg-slate-800/50 border border-stone-200 dark:border-slate-700">
+          <div className="p-4 bg-background border border-border">
             {selectedSupplier.businessType && (
               <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">
                 {selectedSupplier.businessType}
               </p>
             )}
-            <p className="text-xs text-stone-900 dark:text-white leading-relaxed">
+            <p className="text-xs text-foreground leading-relaxed">
               {selectedSupplier.address}
             </p>
             {/* Full-height tap targets (not inline text links) — call/website/
@@ -291,7 +291,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
                   href={selectedSupplier.website}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-stone-100/15 border border-stone-200/30 text-stone-800 font-bold text-xs active:scale-95 transition-transform"
+                  className="flex-1 flex items-center justify-center gap-1.5 min-h-[36px] rounded-md bg-muted border border-border text-foreground font-bold text-xs active:scale-95 transition-transform"
                 >
                   <Globe className="w-4 h-4" /> Website
                 </a>

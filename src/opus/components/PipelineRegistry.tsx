@@ -532,7 +532,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               {selectedQuoteToDelete?.clientInfo?.entity}
             </span>
             ?
-            <div className="mt-3 p-4 bg-white/5 border border-white/5 rounded-lg text-xs font-medium text-red-400 leading-relaxed">
+            <div className="mt-3 p-4 bg-muted border border-border rounded-lg text-xs font-medium text-red-400 leading-relaxed">
               This action is irreversible and will permanently delete this quote.
             </div>
           </>
@@ -557,21 +557,21 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
           <>
             You are about to create a job from quote{" "}
             <span className="font-bold text-foreground">{convertingQuote?.reference}</span>.
-            <div className="mt-3 bg-white/5 border border-white/5 rounded-lg p-4 space-y-3">
+            <div className="mt-3 bg-muted border border-border rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-white/50">Main Contractor:</span>
+                <span className="text-xs font-medium text-muted-foreground">Main Contractor:</span>
                 <span className="text-sm font-semibold text-foreground">
                   {convertingQuote?.clientInfo?.entity}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-xs font-medium text-white/50">Site Name:</span>
+                <span className="text-xs font-medium text-muted-foreground">Site Name:</span>
                 <span className="text-sm font-semibold text-foreground max-w-[180px] text-right truncate">
                   {convertingQuote?.clientInfo?.site}
                 </span>
               </div>
-              <div className="flex justify-between items-center pt-2 border-t border-white/10">
-                <span className="text-xs font-medium text-white/50">Schedule Value:</span>
+              <div className="flex justify-between items-center pt-2 border-t border-border">
+                <span className="text-xs font-medium text-muted-foreground">Schedule Value:</span>
                 <span className="text-sm font-bold text-primary">
                   £
                   {(convertingQuote?.totals?.grossTotal || 0).toLocaleString(undefined, {

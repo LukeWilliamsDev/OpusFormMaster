@@ -950,7 +950,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           {/* General Info */}
           <div className="flex flex-col">
             <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
-              <div className="p-3 sm:p-4 pb-3 sm:pb-4 border-b border-white/5 bg-secondary flex items-center space-x-3 shrink-0">
+              <div className="p-3 sm:p-4 pb-3 sm:pb-4 border-b border-border/5 bg-secondary flex items-center space-x-3 shrink-0">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
                   General Information
                 </span>
@@ -1016,7 +1016,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           {/* Tickets Info */}
           <div className="flex flex-col">
             <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
-              <div className="p-3 sm:p-4 pb-3 sm:pb-4 border-b border-white/5 bg-secondary flex items-center space-x-3 shrink-0">
+              <div className="p-3 sm:p-4 pb-3 sm:pb-4 border-b border-border/5 bg-secondary flex items-center space-x-3 shrink-0">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
                   Tickets & Certifications
                 </span>
@@ -1090,7 +1090,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           </button>
           <button
             type="submit"
-            className="w-full sm:flex-1 py-3.5 bg-primary hover:bg-primary text-white transition-all rounded-xl text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20"
+            className="w-full sm:flex-1 py-3.5 bg-primary hover:bg-primary text-primary-foreground transition-all rounded-xl text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20"
           >
             Save & Apply
           </button>
@@ -1429,7 +1429,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                 onClick={() =>
                                   verifyTicket(selectedWorkerDetails.id, ticket.id, true)
                                 }
-                                className="w-full sm:w-auto px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                                className="w-full sm:w-auto px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-foreground rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                               >
                                 Approve
                               </button>
@@ -2186,7 +2186,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowReminderConfirm(true)}
-                    className="flex items-center justify-center gap-1 w-full sm:w-auto px-3 py-1.5 bg-primary hover:bg-primary text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-primary whitespace-nowrap"
+                    className="flex items-center justify-center gap-1 w-full sm:w-auto px-3 py-1.5 bg-primary hover:bg-primary text-primary-foreground rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-primary whitespace-nowrap"
                   >
                     <Send className="w-3 h-3" />
                     <span>Request Docs</span>
@@ -2321,7 +2321,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   onClick={() => setRosterMode("archived")}
                   className={`px-3.5 py-1.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
                     rosterMode === "archived"
-                      ? "bg-amber-600 border-amber-600 text-white"
+                      ? "bg-amber-600 border-amber-600 text-foreground"
                       : "bg-card/60 border-border text-muted-foreground hover:text-amber-500"
                   }`}
                 >
@@ -2477,7 +2477,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     <button
                       type="submit"
                       disabled={submittingWorker}
-                      className="px-6 py-2 bg-primary hover:bg-primary text-white text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="px-6 py-2 bg-primary hover:bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {submittingWorker ? "Registering..." : "Register"}
                     </button>

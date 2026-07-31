@@ -331,7 +331,7 @@ export const AuditLogPage: React.FC = () => {
                   <div
                     key={log.id}
                     onClick={() => setSelectedLog(log)}
-                    className="flex gap-4 py-4 cursor-pointer hover:bg-white/[0.02] transition-all px-2 rounded-lg"
+                    className="flex gap-4 py-4 cursor-pointer hover:bg-foreground/10 transition-all px-2 rounded-lg"
                   >
                     <div className={`w-2.5 h-2.5 rounded-full ${bulletColor} mt-1.5 shrink-0`} />
                     <div className="flex-1">
@@ -375,7 +375,7 @@ export const AuditLogPage: React.FC = () => {
         </div>
 
         {/* Pagination Controls - Always Locked to the Bottom of this container */}
-        <div className="border-t border-white/5 px-4 py-3 flex items-center justify-between bg-black/10 mt-auto">
+        <div className="border-t border-border px-4 py-3 flex items-center justify-between bg-muted/30 mt-auto">
           <span className="text-[10px] font-mono text-muted-foreground">
             Showing{" "}
             <span className="text-foreground">
@@ -388,7 +388,7 @@ export const AuditLogPage: React.FC = () => {
             <button
               onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="p-1.5 rounded bg-secondary border border-white/5 text-muted-foreground hover:text-white disabled:opacity-30 disabled:hover:text-muted-foreground transition-all"
+              className="p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-white disabled:opacity-30 disabled:hover:text-muted-foreground transition-all"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
@@ -398,7 +398,7 @@ export const AuditLogPage: React.FC = () => {
             <button
               onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="p-1.5 rounded bg-secondary border border-white/5 text-muted-foreground hover:text-white disabled:opacity-30 disabled:hover:text-muted-foreground transition-all"
+              className="p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-white disabled:opacity-30 disabled:hover:text-muted-foreground transition-all"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -412,10 +412,10 @@ export const AuditLogPage: React.FC = () => {
           onClick={handleBackdropClick}
           className="fixed inset-0 z-50 flex justify-end bg-black/60 backdrop-blur-sm animate-fade-in text-white"
         >
-          <div className="w-full max-w-2xl bg-card border-l border-white/5 h-full p-6 flex flex-col justify-between shadow-2xl animate-slide-in-right">
+          <div className="w-full max-w-2xl bg-card border-l border-border h-full p-6 flex flex-col justify-between shadow-2xl animate-slide-in-right">
             <div className="space-y-6 overflow-y-auto pr-1">
               {/* Drawer Header */}
-              <div className="flex items-center justify-between border-b border-white/5 pb-4">
+              <div className="flex items-center justify-between border-b border-border pb-4">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <span
@@ -453,14 +453,14 @@ export const AuditLogPage: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setSelectedLog(null)}
-                  className="p-2 hover:bg-white/5 rounded-lg text-muted-foreground hover:text-white transition-all"
+                  className="p-2 hover:bg-foreground/10 rounded-lg text-muted-foreground hover:text-white transition-all"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Meta Info */}
-              <div className="grid grid-cols-2 gap-4 bg-white/[0.02] border border-white/5 rounded-xl p-4 text-[11px] font-mono">
+              <div className="grid grid-cols-2 gap-4 bg-foreground/5 border border-border rounded-xl p-4 text-[11px] font-mono">
                 <div>
                   <p className="text-muted-foreground uppercase font-black text-[9px] tracking-wider">
                     Timestamp
@@ -510,7 +510,7 @@ export const AuditLogPage: React.FC = () => {
                     diff={computeDiff(selectedLog.details.old, selectedLog.details.new)}
                   />
                 ) : (
-                  <pre className="p-4 bg-black/20 border border-white/5 rounded-xl text-[10px] font-mono text-foreground overflow-x-auto max-h-[400px]">
+                  <pre className="p-4 bg-muted/30 border border-border rounded-xl text-[10px] font-mono text-foreground overflow-x-auto max-h-[400px]">
                     {JSON.stringify(selectedLog.details, null, 2)}
                   </pre>
                 )}
@@ -527,7 +527,7 @@ export const AuditLogPage: React.FC = () => {
               </button>
               <button
                 onClick={() => setSelectedLog(null)}
-                className="px-4 py-2 bg-secondary hover:bg-muted text-xs font-mono font-bold uppercase rounded-lg border border-white/5 transition-all text-foreground"
+                className="px-4 py-2 bg-secondary hover:bg-muted text-xs font-mono font-bold uppercase rounded-lg border border-border transition-all text-foreground"
               >
                 Close Inspector
               </button>

@@ -45,9 +45,36 @@
   --color-ring: var(--ring);
 }
 
-/* ─── DARK THEME (default) ───────────────────────────────────────────────── */
-/* Sourced from: icon bg #16171A, logo text #F7F5F2, accent dot #B5651D       */
+/* ─── LIGHT THEME (default) ──────────────────────────────────────────────── */
+/* Sourced from: icon bg #F5F1EA, logo text #2B2F33, accent dot #B5651D       */
 :root {
+  --radius: 0.625rem;
+  --background: #f5f1ea; /* Icon light background — warm cream */
+  --foreground: #2b2f33; /* Logo light-mode text — dark charcoal */
+  --card: #fdfaf5; /* Slightly lighter warm surface */
+  --card-foreground: #2b2f33;
+  --popover: #fdfaf5;
+  --popover-foreground: #2b2f33;
+  --primary: #8d4f17; /* Darkened from brand #B5651D — the lighter value fails WCAG AA (4.16:1) as text on this theme's cream surfaces; this hits ~5.7:1 */
+  --primary-foreground: #fdfaf5;
+  --secondary: #eae5dc; /* Slightly deeper cream */
+  --secondary-foreground: #2b2f33;
+  --muted: #eae5dc;
+  --muted-foreground: #5a5450; /* Warm helper text, boosted contrast for readability */
+  --accent: #8d4f17;
+  --accent-foreground: #fdfaf5;
+  --destructive: #c0392b;
+  --destructive-foreground: #fdfaf5;
+  --success: #2e7d52;
+  --warning: #a16421; /* Darkened from #C47A28 — fails WCAG AA as text on this theme's cream surfaces */
+  --border: #d9d3c7; /* Warm grey border */
+  --input: #eae5dc;
+  --ring: #8d4f17;
+}
+
+/* ─── DARK THEME ───────────────────────────────────────────────────────────── */
+/* Sourced from: icon bg #16171A, logo text #F7F5F2, accent dot #B5651D       */
+:root.dark {
   --radius: 0.625rem;
   --background: #1b1c20; /* Lifted off pure-near-black — softer, lower-glare surface */
   --foreground: #edebe6; /* Off-white instead of stark white — reduces halation on dark bg */
@@ -72,31 +99,6 @@
   --ring: #b5651d;
 }
 
-/* ─── LIGHT THEME ────────────────────────────────────────────────────────── */
-/* Sourced from: icon bg #F5F1EA, logo text #2B2F33, accent dot #B5651D       */
-.light-theme {
-  --background: #f5f1ea; /* Icon light background — warm cream */
-  --foreground: #2b2f33; /* Logo light-mode text — dark charcoal */
-  --card: #fdfaf5; /* Slightly lighter warm surface */
-  --card-foreground: #2b2f33;
-  --popover: #fdfaf5;
-  --popover-foreground: #2b2f33;
-  --primary: #8d4f17; /* Darkened from brand #B5651D — the lighter value fails WCAG AA (4.16:1) as text on this theme's cream surfaces; this hits ~5.7:1 */
-  --primary-foreground: #fdfaf5;
-  --secondary: #eae5dc; /* Slightly deeper cream */
-  --secondary-foreground: #2b2f33;
-  --muted: #eae5dc;
-  --muted-foreground: #5a5450; /* Warm helper text, boosted contrast for readability */
-  --accent: #8d4f17;
-  --accent-foreground: #fdfaf5;
-  --destructive: #c0392b;
-  --destructive-foreground: #fdfaf5;
-  --success: #2e7d52;
-  --warning: #a16421; /* Darkened from #C47A28 — fails WCAG AA as text on this theme's cream surfaces */
-  --border: #d9d3c7; /* Warm grey border */
-  --input: #eae5dc;
-  --ring: #8d4f17;
-}
 
 @layer base {
   * {

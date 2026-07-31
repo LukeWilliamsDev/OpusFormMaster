@@ -10,7 +10,7 @@ interface DayTabsProps {
 // Site office design constants
 const SITE_ACTIVE = "bg-amber-600 border-amber-600 text-white shadow-amber-600/20";
 const SITE_INACTIVE =
-  "bg-stone-100 dark:bg-slate-800 border-stone-200 dark:border-slate-700 text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:bg-stone-200 dark:hover:bg-slate-700";
+  "bg-card border-border text-muted-foreground hover:text-foreground hover:bg-background";
 
 export const DayTabs: React.FC<DayTabsProps> = ({ weekDays, selectedDate, onSelect }) => (
   <div className="grid grid-cols-5 gap-1.5">

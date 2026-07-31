@@ -11,12 +11,12 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) 
   // Site office design constants
   const SITE_AMBER = "bg-amber-600 text-white shadow-amber-600/20 hover:bg-amber-700";
   const SITE_STONE =
-    "bg-stone-100 dark:bg-slate-800 text-stone-500 hover:text-stone-700 dark:hover:text-stone-300 hover:bg-stone-200 dark:hover:bg-slate-700";
-  const SITE_BORDER = "border-stone-200 dark:border-slate-700";
+    "bg-card text-muted-foreground hover:text-foreground hover:bg-background";
+  const SITE_BORDER = "border-border";
 
   return (
     <div
-      className={`flex items-center justify-between px-3 py-2 rounded-xl border-2 ${SITE_BORDER} bg-white dark:bg-slate-900`}
+      className={`flex items-center justify-between px-3 py-2 rounded-xl border-2 ${SITE_BORDER} bg-background`}
     >
       <button
         type="button"
@@ -29,7 +29,7 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) 
 
       <div className="flex items-center gap-2">
         <CalendarIcon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-        <span className="text-[11px] font-black text-stone-900 dark:text-white uppercase tracking-widest whitespace-nowrap">
+        <span className="text-[11px] font-black text-foreground uppercase tracking-widest whitespace-nowrap">
           {formatWeekRange(weekDays)}
         </span>
       </div>

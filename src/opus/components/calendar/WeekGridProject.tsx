@@ -53,15 +53,15 @@ interface WeekGridProjectProps {
 }
 
 // Site office design constants
-const SITE_STONE_BG = "bg-stone-50 dark:bg-slate-800/50";
-const SITE_STONE_BORDER = "border-stone-200 dark:border-slate-700";
+const SITE_STONE_BG = "bg-card";
+const SITE_STONE_BORDER = "border-border";
 const SITE_BORDER_R = "border-r " + SITE_STONE_BORDER + " last:border-r-0";
-const SITE_DEPLOYED_TEXT = "text-emerald-600 dark:text-emerald-400";
-const SITE_EMPTY_TEXT = "text-stone-400 dark:text-stone-500";
+const SITE_DEPLOYED_TEXT = "text-success";
+const SITE_EMPTY_TEXT = "text-muted-foreground";
 const SITE_JOB_CARD =
-  "border border-stone-200 dark:border-slate-700 rounded-lg bg-stone-100/50 dark:bg-slate-800/50 p-2 space-y-2";
+  "border border-border rounded-lg bg-card p-2 space-y-2";
 const SITE_ADD_STAFF =
-  "w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-stone-200 dark:border-slate-700 text-stone-500 dark:text-stone-400 hover:text-stone-700 dark:hover:text-stone-300 hover:border-amber-600 dark:hover:border-amber-400 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer";
+  "w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-amber-600 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer";
 
 export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
   jobs,
@@ -81,10 +81,10 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
           <div key={day.date} className={`min-w-0 p-3 space-y-3 ${SITE_BORDER_R} ${SITE_STONE_BG}`}>
             <div className="flex items-center justify-between gap-1.5 px-0.5">
               <div className="flex items-baseline gap-1.5 min-w-0">
-                <span className="text-[11px] font-black uppercase tracking-widest text-stone-500 dark:text-stone-400">
+                <span className="text-[11px] font-black uppercase tracking-widest text-muted-foreground">
                   {day.shortName}
                 </span>
-                <span className="text-[11px] font-bold font-mono text-stone-500 dark:text-stone-400">
+                <span className="text-[11px] font-bold font-mono text-muted-foreground">
                   {day.date.split("-")[2]}
                 </span>
               </div>
@@ -113,7 +113,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                           {job.siteName}
                         </h4>
                       </div>
-                      <span className="flex items-center gap-1 text-[11px] font-black text-stone-500 dark:text-stone-400 shrink-0">
+                      <span className="flex items-center gap-1 text-[11px] font-black text-muted-foreground shrink-0">
                         <Users className="w-3 h-3" /> {crew.length}
                       </span>
                     </div>

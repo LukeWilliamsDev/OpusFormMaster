@@ -235,7 +235,7 @@ export const DashboardPage: React.FC = () => {
 
         const alertId = `${worker.id}-${ticket.id}`;
 
-        if ((isExpired || isExpiringSoon) && !snoozedAlertIds.has(alertId)) {
+        if ((isExpired || isExpiringSoon) && !snoozeState.snoozedIds.has(alertId)) {
           list.push({
             alertId,
             workerId: worker.id,
@@ -255,7 +255,7 @@ export const DashboardPage: React.FC = () => {
     });
 
     return list.sort((a, b) => a.diffDays - b.diffDays);
-  }, [workers, snoozedAlertIds]);
+  }, [workers, snoozeState.snoozedIds]);
 
   // Filter Search Assets
   const searchResults = useMemo(() => {

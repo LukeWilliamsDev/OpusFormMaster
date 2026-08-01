@@ -1,10 +1,9 @@
 const IGNORED_FIELDS = ["id", "created_at", "updated_at", "tenant_id"];
 
-export function computeDiff(
-  oldObj: Record<string, unknown> | null | undefined,
-  newObj: Record<string, unknown> | null | undefined,
-) {
-  if (!oldObj || !newObj) return [];
+export function computeDiff(oldVal: unknown, newVal: unknown) {
+  if (!oldVal || !newVal || typeof oldVal !== "object" || typeof newVal !== "object") return [];
+  const oldObj = oldVal as Record<string, unknown>;
+  const newObj = newVal as Record<string, unknown>;
 
   const allKeys = Array.from(new Set([...Object.keys(oldObj), ...Object.keys(newObj)]));
 

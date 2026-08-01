@@ -7,7 +7,6 @@ import { compressImageFile } from "../lib/compressImage";
 import {
   createDataFetchState,
   createFileUploadState,
-  createUIState,
   createAsyncState,
 } from "../utils/stateGrouping";
 import { handleError } from "../utils/errorHandler";
@@ -23,11 +22,14 @@ export const JobUploadPortalPage: React.FC = () => {
 
   /* ────────────────── State ────────────────── */
   // Request data fetching state
-  const [requestFetch, setRequestFetch] = useState(createDataFetchState());
+  const [requestFetch, setRequestFetch] =
+    useState(
+      createDataFetchState<{ jobRef: string; siteName: string; existingTotalBytes: number }>(),
+    );
   // File upload state
   const [uploadState, setUploadState] = useState(createFileUploadState());
   // UI state (drag, etc.)
-  const [ui, setUi] = useState(createUIState());
+  const [dragActive, setDragActive] = useState(false);
   // Submit state
   const [submitState, setSubmitState] = useState(createAsyncState());
   // Error state
@@ -36,7 +38,7 @@ export const JobUploadPortalPage: React.FC = () => {
   /* ────────────────── Derived ────────────────── */
   const loading = requestFetch.loading;
   const jobData = requestFetch.data;
-  const existingTotalBytes = (requestFetch.data as any)?.existing_total_bytes || 0;
+  const existingTotalBytes = requestFetch.data?.existingTotalBytes || 0;
   const files = uploadState.files;
   const uploading = submitState.loading;
   const uploadSuccess = submitState.success;
@@ -62,8 +64,6 @@ export const JobUploadPortalPage: React.FC = () => {
         throw new Error("This upload link is invalid, expired, or has already been completed.");
       }
 
-      setRequestFetch((prev) => ({ ...prev, data, loading: false }));
-
       // data.job is the raw jobs row (to_jsonb in the RPC) — snake_case, not
       // the camelCase Job type used everywhere else in the app. RPC returns
       // jsonb, so the generated type is the generic Json union; the actual
@@ -72,6 +72,15 @@ export const JobUploadPortalPage: React.FC = () => {
         job: { job_ref: string; site_name: string };
         existing_total_bytes: number;
       };
+      setRequestFetch((prev) => ({
+        ...prev,
+        data: {
+          jobRef: details.job.job_ref,
+          siteName: details.job.site_name,
+          existingTotalBytes: details.existing_total_bytes,
+        },
+        loading: false,
+      }));
     } catch (err) {
       console.error(err);
       const { message } = handleError(err, { message: "Failed to fetch request details" });
@@ -84,9 +93,9 @@ export const JobUploadPortalPage: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     if (e.type === "dragenter" || e.type === "dragover") {
-      setUi((prev) => ({ ...prev, dragActive: true }));
+      setDragActive(true);
     } else if (e.type === "dragleave") {
-      setUi((prev) => ({ ...prev, dragActive: false }));
+      setDragActive(false);
     }
   };
 
@@ -115,7 +124,7 @@ export const JobUploadPortalPage: React.FC = () => {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setUi((prev) => ({ ...prev, dragActive: false }));
+    setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       addFiles(Array.from(e.dataTransfer.files));
@@ -250,7 +259,7 @@ export const JobUploadPortalPage: React.FC = () => {
               onDragLeave={handleDrag}
               onDrop={handleDrop}
               className={`border-2 border-dashed rounded-xl p-8 text-center flex flex-col items-center justify-center transition-all cursor-pointer relative ${
-                ui.dragActive
+                dragActive
                   ? "border-primary bg-primary/10"
                   : "border-border hover:border-muted-foreground/40 bg-background"
               }`}

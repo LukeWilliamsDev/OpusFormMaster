@@ -75,22 +75,26 @@ export const AuditLogPage: React.FC = () => {
 
       if (log.action === "CREATE") {
         // Restoring a creation means deleting the record
-        const { error: err } = await supabase.from(table).delete().eq("id", targetId);
+        const { error: err } = await supabase
+          .from(table as any)
+          .delete()
+          .eq("id", targetId);
         error = err;
       } else if (log.action === "DELETE") {
         // Restoring a deletion means inserting the details payload
         const { error: err } = await supabase
-          .from(table)
-          .upsert({ ...log.details, tenant_id: profile?.tenant_id });
+          .from(table as any)
+          .upsert({ ...log.details, tenant_id: profile?.tenant_id } as any);
         error = err;
       } else if (log.action === "UPDATE") {
         // Restoring an update means applying the "old" values
-        if (!log.details?.old) {
+        const oldState = log.details?.old;
+        if (!oldState || typeof oldState !== "object") {
           throw new Error("No old state payload found in this audit log.");
         }
         const { error: err } = await supabase
-          .from(table)
-          .upsert({ ...log.details.old, tenant_id: profile?.tenant_id });
+          .from(table as any)
+          .upsert({ ...oldState, tenant_id: profile?.tenant_id } as any);
         error = err;
       }
 
@@ -134,7 +138,7 @@ export const AuditLogPage: React.FC = () => {
       const { message } = handleError(logsRes.error, { message: "Failed to fetch audit logs" });
       toast.error(message);
     } else {
-      setLogs(logsRes.data || []);
+      setLogs((logsRes.data as AuditLog[]) || []);
     }
 
     if (staffRes.error) {
@@ -150,16 +154,18 @@ export const AuditLogPage: React.FC = () => {
   const getTargetDisplayName = (
     targetType: string,
     targetId: string,
-    details?: Record<string, unknown>,
+    details?: Record<string, unknown> | null,
   ) => {
     if (targetType === "staff") {
       const match = staffList.find((s) => s.id === targetId);
       if (match) return match.name;
 
       // Fallback strategies for archived or deleted workers
-      if (details?.new?.name) return details.new.name;
-      if (details?.old?.name) return details.old.name;
-      if (details?.name) return details.name;
+      const newName = (details?.new as Record<string, unknown> | undefined)?.name;
+      if (newName) return newName as string;
+      const oldName = (details?.old as Record<string, unknown> | undefined)?.name;
+      if (oldName) return oldName as string;
+      if (details?.name) return details.name as string;
     }
     return targetId;
   };
@@ -348,7 +354,7 @@ export const AuditLogPage: React.FC = () => {
                           <span>
                             Quote{" "}
                             <span className="font-mono text-primary">
-                              {log.details?.reference || log.target_id}
+                              {(log.details?.reference as string | undefined) || log.target_id}
                             </span>{" "}
                             saved as draft
                           </span>

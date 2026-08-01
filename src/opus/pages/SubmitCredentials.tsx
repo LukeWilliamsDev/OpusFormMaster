@@ -365,13 +365,14 @@ export const SubmitCredentialsPage: React.FC = () => {
 
   /* ────────────────── State ────────────────── */
   // Request data fetching state
-  const [requestFetch, setRequestFetch] = useState(createDataFetchState());
+  const [requestFetch, setRequestFetch] =
+    useState(createDataFetchState<{ worker_name?: string; requested_certs?: string[] }>());
   // Form state
   const [staffName, setStaffName] = useState("");
   const [slots, setSlots] = useState<UploadSlot[]>([]);
   const [openEnded, setOpenEnded] = useState(false);
   // Stepper state
-  const [stepper, setStepper] = useState(() => createStepperState([]));
+  const [stepper, setStepper] = useState(() => createStepperState([] as string[]));
   // Submit state
   const [submitState, setSubmitState] = useState(createAsyncState());
   // Error state
@@ -401,14 +402,14 @@ export const SubmitCredentialsPage: React.FC = () => {
         { p_request_id: token! },
       );
 
-      let reqData: { worker_name?: string } | null = null;
+      let reqData: { worker_name?: string; requested_certs?: string[] } | null = null;
 
       if (!rpcError && rpcData) {
         // RPC succeeded — use its result. get_document_request_details returns
         // jsonb, so the generated type is the generic Json union; the actual
         // shape includes worker_name from its staff join.
-        reqData = rpcData;
-        setStaffName((rpcData as { worker_name?: string }).worker_name || "Staff Member");
+        reqData = rpcData as { worker_name?: string; requested_certs?: string[] };
+        setStaffName(reqData.worker_name || "Staff Member");
       } else {
         // Fallback: direct table query (worker name may be null due to RLS)
         const { data: fallback, error: fallbackError } = await supabase
@@ -421,7 +422,10 @@ export const SubmitCredentialsPage: React.FC = () => {
           throw new Error("Link is invalid, expired, or has already been used.");
         }
 
-        reqData = fallback;
+        reqData = {
+          worker_name: fallback.staff?.name,
+          requested_certs: fallback.requested_certs,
+        };
         setStaffName(fallback.staff?.name || "Staff Member");
       }
 
@@ -436,7 +440,9 @@ export const SubmitCredentialsPage: React.FC = () => {
         const newSlots = certs.map((cert: string) => ({ ...emptySlot(), cert }));
         setSlots(newSlots);
         setStepper(
-          createStepperState(newSlots.map((s) => s.cert.split(" ").slice(0, 2).join(" "))),
+          createStepperState(
+            newSlots.map((s: UploadSlot) => s.cert.split(" ").slice(0, 2).join(" ")),
+          ),
         );
       }
     } catch (err) {

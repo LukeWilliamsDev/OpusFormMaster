@@ -2,6 +2,7 @@
 import { Bell, Send, Loader } from "lucide-react";
 import { supabase } from "../../integrations/supabase/client";
 import { toast } from "sonner";
+import { CardGrid } from "./CardGrid";
 
 interface JobNote {
   id: string;
@@ -199,7 +200,7 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
       ) : (
         <CardGrid
           items={grouped}
-          renderCard={({ day, notes: dayNotes }) => (
+          renderCard={({ day, notes: dayNotes }: { day: string; notes: JobNote[] }) => (
             <div key={day} className="space-y-2">
               <div className="text-[12px] text-primary font-bold uppercase tracking-wider border-b border-border pb-1">
                 {formatDayHeading(day)}

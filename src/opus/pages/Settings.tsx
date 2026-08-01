@@ -4,10 +4,10 @@ import { User, Shield, Phone, Key, Check, AlertCircle } from "lucide-react";
 import {
   createProfileFormState,
   createPasswordFormState,
-  createUIState,
-  createMessageState,
   createAvatarState,
 } from "../utils/stateGrouping";
+
+type SettingsMessage = { type: "success" | "error"; text: string } | null;
 
 const AVATAR_PRESETS = [
   {
@@ -46,9 +46,12 @@ export const SettingsPage: React.FC = () => {
   // Password fields state - grouped
   const [passwordForm, setPasswordForm] = useState(createPasswordFormState());
   // UI state - grouped
-  const [ui, setUi] = useState(createUIState());
+  const [ui, setUi] = useState({ isSavingProfile: false, isUpdatingPassword: false });
   // Message state - grouped
-  const [messages, setMessages] = useState(createMessageState());
+  const [messages, setMessages] = useState<{
+    profileMessage: SettingsMessage;
+    passwordMessage: SettingsMessage;
+  }>({ profileMessage: null, passwordMessage: null });
   // Avatar state - derived
   const [avatar, setAvatar] = useState(createAvatarState(profile?.full_name, user?.email));
 

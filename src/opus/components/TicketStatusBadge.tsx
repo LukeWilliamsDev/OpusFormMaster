@@ -9,7 +9,7 @@ interface TicketStatusBadgeProps {
 
 export const TicketStatusBadge: React.FC<TicketStatusBadgeProps> = ({ ticket }) => {
   const status = getTicketStatus(ticket);
-  if (status === "ACTIVE") return null;
+  if (status === "VALID") return null;
 
   const colorClasses =
     status === "EXPIRED"

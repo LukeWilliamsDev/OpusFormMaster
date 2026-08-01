@@ -18,10 +18,10 @@ const useTableOfContents = (children: React.ReactNode) => {
   return useMemo(() => {
     const toc: { id: string; title: string }[] = [];
     const stamped = React.Children.map(children, (child) => {
-      if (!React.isValidElement(child) || !child.props?.title) return child;
+      if (!React.isValidElement<{ title?: string }>(child) || !child.props?.title) return child;
       const id = slugify(child.props.title);
       toc.push({ id, title: child.props.title });
-      return React.cloneElement(child, { id });
+      return React.cloneElement(child as React.ReactElement<{ id?: string }>, { id });
     });
     return { toc, stamped };
   }, [children]);
@@ -337,7 +337,6 @@ export const DataTable: React.FC<{ headers: string[]; rows: string[][] }> = ({ h
               className="text-left px-4 py-2.5 font-mono font-bold uppercase tracking-wider border-b"
               style={{
                 color: "var(--primary)",
-                fontSize: "10px",
                 borderColor: "var(--border)",
                 fontSize: "10px",
               }}

@@ -55,7 +55,7 @@ export const PortalAuthPage: React.FC = () => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RESET") {
+      if (event === "PASSWORD_RECOVERY") {
         setFormMode("reset");
       }
     });
@@ -168,7 +168,11 @@ export const PortalAuthPage: React.FC = () => {
     } catch (err) {
       setIsSubmitting(false);
       console.error("Recovery request error:", err);
-      setFormError(err.message || "An unexpected error occurred during password recovery.");
+      setFormError(
+        err instanceof Error
+          ? err.message
+          : "An unexpected error occurred during password recovery.",
+      );
     }
   };
 

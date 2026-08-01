@@ -120,7 +120,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
   useEffect(() => {
     if (autoOpenAddWorker) setShowAddWorkerForm(true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoOpenAddWorker]);
 
   const [newWorkerName, setNewWorkerName] = useState("");

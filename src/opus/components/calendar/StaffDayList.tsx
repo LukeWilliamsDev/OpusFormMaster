@@ -27,8 +27,7 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
   const isSearching = searchQuery.trim().length > 0;
 
   // Site office design constants
-  const SITE_STONE_BG =
-    "bg-card border-2 border-border rounded-xl";
+  const SITE_STONE_BG = "bg-card border-2 border-border rounded-xl";
   const SITE_STONE_BORDER = "border-border";
   const SITE_DIVIDER = "bg-background";
   const SITE_DEPLOYED_TEXT = "text-success";

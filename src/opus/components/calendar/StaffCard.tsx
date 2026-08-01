@@ -198,12 +198,15 @@ export const StaffCard: React.FC<StaffCardProps> = ({
     );
   }
 
-  const jobBadgeContent = job && colors && isAssigned ? (
-    <div className={`w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-[10px] font-bold overflow-hidden ${colors.border} ${colors.lightBg}`}>
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${colors.bullet}`} />
-      <span className={`flex-1 line-clamp-1 ${colors.text}`}>{job.siteName}</span>
-    </div>
-  ) : null;
+  const jobBadgeContent =
+    job && colors && isAssigned ? (
+      <div
+        className={`w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded border text-[10px] font-bold overflow-hidden ${colors.border} ${colors.lightBg}`}
+      >
+        <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${colors.bullet}`} />
+        <span className={`flex-1 line-clamp-1 ${colors.text}`}>{job.siteName}</span>
+      </div>
+    ) : null;
 
   const renderJobAssignment = () => {
     return null;
@@ -211,83 +214,83 @@ export const StaffCard: React.FC<StaffCardProps> = ({
 
   return (
     <>
-    <div
-      className={`${SITE_CARD} ${isAssigned ? SITE_CARD_ASSIGNED : SITE_CARD_UNASSIGNED} ${dense ? "p-3 space-y-2" : "p-4 space-y-3"}`}
-    >
-      <div className="flex items-start justify-between gap-2.5">
-        <div className="flex items-start gap-3 min-w-0 flex-1">
-          <div
-            className={`${SITE_AVATAR} ${roleColors.lightBg} ${roleColors.border} ${roleColors.text} ${dense ? "w-7 h-7 text-[10px]" : "w-9 h-9 text-[11px]"}`}
+      <div
+        className={`${SITE_CARD} ${isAssigned ? SITE_CARD_ASSIGNED : SITE_CARD_UNASSIGNED} ${dense ? "p-3 space-y-2" : "p-4 space-y-3"}`}
+      >
+        <div className="flex items-start justify-between gap-2.5">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <div
+              className={`${SITE_AVATAR} ${roleColors.lightBg} ${roleColors.border} ${roleColors.text} ${dense ? "w-7 h-7 text-[10px]" : "w-9 h-9 text-[11px]"}`}
+            >
+              {getInitials(worker.name)}
+            </div>
+            <div className="w-full flex-1 min-w-0">
+              <h4
+                className={`font-bold text-foreground leading-tight ${dense ? "text-xs truncate whitespace-nowrap" : "text-sm truncate"}`}
+                title={worker.name}
+              >
+                {worker.name}
+              </h4>
+              <p
+                className={`${SITE_MUTED_TEXT} font-bold uppercase tracking-widest mt-1 ${dense ? "text-[11px]" : "text-[11px]"}`}
+              >
+                {worker.role}
+              </p>
+              {jobBadgeContent && <div className="mt-2 w-full">{jobBadgeContent}</div>}
+            </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            {((!compact && isAssigned) || compact) && onRemove && shift && (
+              <button
+                type="button"
+                onClick={() => setConfirmRemove(true)}
+                aria-label={`Remove ${worker.name}`}
+                className={SITE_REMOVE_BTN_DENSE}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Job assignment display */}
+        {renderJobAssignment()}
+
+        {!compact && !isAssigned && onAssign && blocked && (
+          <span
+            title={blockedTitle}
+            className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-red-500/50 text-red-400 [.light-theme_&]:text-red-600 font-black uppercase tracking-wider cursor-not-allowed ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}
           >
-            {getInitials(worker.name)}
-          </div>
-          <div className="w-full flex-1 min-w-0">
-            <h4
-              className={`font-bold text-foreground leading-tight ${dense ? "text-xs truncate whitespace-nowrap" : "text-sm truncate"}`}
-              title={worker.name}
-            >
-              {worker.name}
-            </h4>
-            <p
-              className={`${SITE_MUTED_TEXT} font-bold uppercase tracking-widest mt-1 ${dense ? "text-[11px]" : "text-[11px]"}`}
-            >
-              {worker.role}
-            </p>
-            {jobBadgeContent && <div className="mt-2 w-full">{jobBadgeContent}</div>}
-          </div>
-        </div>
-        <div className="flex items-center gap-1 shrink-0">
-          {((!compact && isAssigned) || compact) && onRemove && shift && (
-            <button
-              type="button"
-              onClick={() => setConfirmRemove(true)}
-              aria-label={`Remove ${worker.name}`}
-              className={SITE_REMOVE_BTN_DENSE}
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          )}
-        </div>
+            No Valid Ticket
+          </span>
+        )}
+
+        {!compact && !isAssigned && onAssign && !blocked && (
+          <button
+            type="button"
+            onClick={onAssign}
+            className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed ${SITE_STONE_BORDER} ${SITE_MUTED_TEXT} hover:text-foreground hover:border-amber-600 dark:hover:border-amber-400 font-black uppercase tracking-wider transition-colors cursor-pointer ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}
+          >
+            <Plus className={dense ? "w-3 h-3" : "w-3.5 h-3.5"} />
+            {dense ? "Assign" : "Assign to Site"}
+          </button>
+        )}
       </div>
-
-      {/* Job assignment display */}
-      {renderJobAssignment()}
-
-      {!compact && !isAssigned && onAssign && blocked && (
-        <span
-          title={blockedTitle}
-          className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-red-500/50 text-red-400 [.light-theme_&]:text-red-600 font-black uppercase tracking-wider cursor-not-allowed ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}
-        >
-          No Valid Ticket
-        </span>
+      {onRemove && shift && (
+        <ConfirmDialog
+          open={confirmRemove}
+          onOpenChange={setConfirmRemove}
+          tone="destructive"
+          title={`Remove ${worker.name}?`}
+          message={
+            job
+              ? `This unassigns ${worker.name} from ${job.siteName}.`
+              : `This unassigns ${worker.name} from this shift.`
+          }
+          confirmLabel="Remove"
+          onConfirm={() => onRemove(shift.id)}
+        />
       )}
-
-      {!compact && !isAssigned && onAssign && !blocked && (
-        <button
-          type="button"
-          onClick={onAssign}
-          className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed ${SITE_STONE_BORDER} ${SITE_MUTED_TEXT} hover:text-foreground hover:border-amber-600 dark:hover:border-amber-400 font-black uppercase tracking-wider transition-colors cursor-pointer ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}
-        >
-          <Plus className={dense ? "w-3 h-3" : "w-3.5 h-3.5"} />
-          {dense ? "Assign" : "Assign to Site"}
-        </button>
-      )}
-    </div>
-    {onRemove && shift && (
-      <ConfirmDialog
-        open={confirmRemove}
-        onOpenChange={setConfirmRemove}
-        tone="destructive"
-        title={`Remove ${worker.name}?`}
-        message={
-          job
-            ? `This unassigns ${worker.name} from ${job.siteName}.`
-            : `This unassigns ${worker.name} from this shift.`
-        }
-        confirmLabel="Remove"
-        onConfirm={() => onRemove(shift.id)}
-      />
-    )}
     </>
   );
 };

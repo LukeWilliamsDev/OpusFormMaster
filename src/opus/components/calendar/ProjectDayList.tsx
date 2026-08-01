@@ -53,15 +53,13 @@ interface ProjectDayListProps {
 }
 
 // Site office design constants
-const SITE_STONE_BG =
-  "bg-card border-2 border-border rounded-xl";
+const SITE_STONE_BG = "bg-card border-2 border-border rounded-xl";
 const SITE_DIVIDER = "bg-border";
 const SITE_DEPLOYED_TEXT = "text-success";
 const SITE_EMPTY_TEXT = "text-muted-foreground";
 const SITE_AVAILABLE_TEXT = "text-muted-foreground";
 const SITE_HEADER_TEXT = "text-muted-foreground";
-const SITE_JOB_CARD =
-  "border border-border rounded-lg bg-card p-3 space-y-2";
+const SITE_JOB_CARD = "border border-border rounded-lg bg-card p-3 space-y-2";
 const SITE_ADD_STAFF =
   "w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-amber-600 text-[10px] sm:text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer";
 

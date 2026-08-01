@@ -58,8 +58,7 @@ const SITE_STONE_BORDER = "border-border";
 const SITE_BORDER_R = "border-r " + SITE_STONE_BORDER + " last:border-r-0";
 const SITE_DEPLOYED_TEXT = "text-success";
 const SITE_EMPTY_TEXT = "text-muted-foreground";
-const SITE_JOB_CARD =
-  "border border-border rounded-lg bg-card p-2 space-y-2";
+const SITE_JOB_CARD = "border border-border rounded-lg bg-card p-2 space-y-2";
 const SITE_ADD_STAFF =
   "w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-amber-600 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer";
 

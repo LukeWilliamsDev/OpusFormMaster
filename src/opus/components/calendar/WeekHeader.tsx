@@ -10,8 +10,7 @@ interface WeekHeaderProps {
 export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) => {
   // Site office design constants
   const SITE_AMBER = "bg-amber-600 text-white shadow-amber-600/20 hover:bg-amber-700";
-  const SITE_STONE =
-    "bg-card text-muted-foreground hover:text-foreground hover:bg-background";
+  const SITE_STONE = "bg-card text-muted-foreground hover:text-foreground hover:bg-background";
   const SITE_BORDER = "border-border";
 
   return (

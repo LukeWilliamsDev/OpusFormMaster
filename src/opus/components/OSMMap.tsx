@@ -270,9 +270,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
                 {selectedSupplier.businessType}
               </p>
             )}
-            <p className="text-xs text-foreground leading-relaxed">
-              {selectedSupplier.address}
-            </p>
+            <p className="text-xs text-foreground leading-relaxed">{selectedSupplier.address}</p>
             {/* Full-height tap targets (not inline text links) — call/website/
               directions are the actions staff need mid-task on a tablet/
               phone, so they get real button sizing and share the row evenly

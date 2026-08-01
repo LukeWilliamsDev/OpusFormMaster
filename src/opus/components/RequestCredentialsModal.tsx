@@ -45,24 +45,24 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
         ...prev,
         selectedCerts: typeof certs === "function" ? certs(prev.selectedCerts) : certs,
       })),
-    []
+    [],
   );
   const setSendEmail = React.useCallback(
     (send: boolean) => setForm((prev) => ({ ...prev, sendEmail: send })),
-    []
+    [],
   );
   const setLoading = React.useCallback(
     (loading: boolean) => setUi((prev) => ({ ...prev, loading })),
-    []
+    [],
   );
   const setCopied = React.useCallback(
     (copied: boolean) => setUi((prev) => ({ ...prev, copied })),
-    []
+    [],
   );
   const setGeneratedLink = React.useCallback((link: string | null) => setLink(link), []);
   const setError = React.useCallback(
     (error: string | null) => setMessages((prev) => ({ ...prev, error })),
-    []
+    [],
   );
 
   React.useEffect(() => {

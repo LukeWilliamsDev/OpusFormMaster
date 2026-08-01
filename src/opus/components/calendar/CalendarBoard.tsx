@@ -81,12 +81,10 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
 
   // --- Site Office Design Constants ---
   const SITE_AMBER = "bg-amber-600 text-white shadow-amber-600/20";
-  const SITE_STONE =
-    "bg-card text-muted-foreground hover:text-foreground hover:bg-background";
+  const SITE_STONE = "bg-card text-muted-foreground hover:text-foreground hover:bg-background";
   const SITE_BORDER = "border-border";
   const SITE_CARD = "bg-background border-2 " + SITE_BORDER;
-  const SITE_HEADER_BAR =
-    "bg-background backdrop-blur-sm border-b-2 " + SITE_BORDER;
+  const SITE_HEADER_BAR = "bg-background backdrop-blur-sm border-b-2 " + SITE_BORDER;
 
   return (
     <div className="space-y-4 font-sans">

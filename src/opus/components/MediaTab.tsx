@@ -138,7 +138,9 @@ export function MediaTab({
                         >
                           <img src={p.file_url} alt="before" className="w-full h-24 object-cover" />
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
-                            <span className="text-foreground font-bold truncate">{p.uploaded_by}</span>
+                            <span className="text-foreground font-bold truncate">
+                              {p.uploaded_by}
+                            </span>
                             <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
                           </div>
                           <button
@@ -202,7 +204,9 @@ export function MediaTab({
                         >
                           <img src={p.file_url} alt="after" className="w-full h-24 object-cover" />
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
-                            <span className="text-foreground font-bold truncate">{p.uploaded_by}</span>
+                            <span className="text-foreground font-bold truncate">
+                              {p.uploaded_by}
+                            </span>
                             <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
                           </div>
                           <button

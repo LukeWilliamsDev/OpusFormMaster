@@ -81,9 +81,9 @@ export const ALL_ROLES: AppRole[] = [
   "site_foreman",
   "labourer",
 ];
-// Full ops write access â€” mirrors private.can_write_ops() in the DB.
+// Full ops write access — mirrors private.can_write_ops() in the DB.
 export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
-// Restricted access â€” mirrors the old "operative" tier.
+// Restricted access — mirrors the old "operative" tier.
 export const FIELD_ROLES: AppRole[] = ["logistics_assistant", "site_foreman", "labourer"];
 
 // ---- Row <-> App mappers -----------------------------------------------

@@ -30,7 +30,7 @@ const JobWarnings: React.FC<{ job: Job; followup: { reason: string } | null; den
 
   if (!showWeather && !followup) {
     return dense ? null : (
-      <span className="text-[12px] text-muted-foreground font-medium">â€”</span>
+      <span className="text-[12px] text-muted-foreground font-medium">—</span>
     );
   }
 

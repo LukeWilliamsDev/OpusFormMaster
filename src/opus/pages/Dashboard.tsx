@@ -648,7 +648,7 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Operations Summary panel â€” one shell, internal hairlines instead of stacked cards */}
+      {/* Operations Summary panel — one shell, internal hairlines instead of stacked cards */}
       <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
         <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-border sm:divide-y-0 sm:divide-x sm:divide-border">
           {/* Compliance Alerts */}
@@ -838,11 +838,9 @@ export const DashboardPage: React.FC = () => {
               ))}
 
               {activeJobsFiltered.length === 0 && (
-                <div className="flex items-center gap-2 py-3 px-1">
+                <div className="flex items-center gap-2 py-3 px-6">
                   <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">
-                    No active job sites for the selected timeframe.
-                  </p>
+                  <p className="text-[11px] text-muted-foreground">No active job sites.</p>
                 </div>
               )}
             </div>
@@ -881,11 +879,9 @@ export const DashboardPage: React.FC = () => {
               ))}
 
               {crewPerSiteFiltered.length === 0 && (
-                <div className="flex items-center gap-2 py-3 px-1">
+                <div className="flex items-center gap-2 py-3 px-6">
                   <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">
-                    No active job sites for the selected timeframe.
-                  </p>
+                  <p className="text-[11px] text-muted-foreground">No crew scheduled.</p>
                 </div>
               )}
             </div>

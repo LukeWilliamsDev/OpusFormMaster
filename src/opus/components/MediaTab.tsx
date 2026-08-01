@@ -126,17 +126,26 @@ export function MediaTab({
                     />
                   </label>
                 </div>
-                <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
+                <div
+                  className={`bg-background border border-border rounded-xl min-h-[140px] p-3 ${beforePhotos.length > 0 ? "" : "flex items-center justify-center"}`}
+                >
                   {beforePhotos.length > 0 ? (
                     <CardGrid
                       items={beforePhotos}
+                      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
                       renderCard={(p, i) => (
                         <div
                           key={p.id}
                           onClick={() => setGallery({ photos: beforePhotos, index: i })}
                           className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
                         >
-                          <img src={p.file_url} alt="before" className="w-full h-24 object-cover" />
+                          <img
+                            src={p.thumb_url || p.file_url}
+                            alt="before"
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-24 object-cover"
+                          />
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
                             <span className="text-foreground font-bold truncate">
                               {p.uploaded_by}
@@ -192,17 +201,26 @@ export function MediaTab({
                     />
                   </label>
                 </div>
-                <div className="bg-background border border-border rounded-xl min-h-[140px] flex items-center justify-center p-3">
+                <div
+                  className={`bg-background border border-border rounded-xl min-h-[140px] p-3 ${afterPhotos.length > 0 ? "" : "flex items-center justify-center"}`}
+                >
                   {afterPhotos.length > 0 ? (
                     <CardGrid
                       items={afterPhotos}
+                      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
                       renderCard={(p, i) => (
                         <div
                           key={p.id}
                           onClick={() => setGallery({ photos: afterPhotos, index: i })}
                           className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
                         >
-                          <img src={p.file_url} alt="after" className="w-full h-24 object-cover" />
+                          <img
+                            src={p.thumb_url || p.file_url}
+                            alt="after"
+                            loading="lazy"
+                            decoding="async"
+                            className="w-full h-24 object-cover"
+                          />
                           <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
                             <span className="text-foreground font-bold truncate">
                               {p.uploaded_by}
@@ -315,6 +333,7 @@ export function MediaTab({
               {projectDocs.length > 0 ? (
                 <CardGrid
                   items={projectDocs}
+                  className="grid grid-cols-1 gap-1.5"
                   renderCard={(d) => (
                     <div
                       key={d.id}
@@ -437,9 +456,9 @@ export function MediaTab({
 
               <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-card">
                 <div className="min-w-0 text-[12px] text-muted-foreground truncate">
-                  {gallery.photos[gallery.index].uploaded_by} Â·{" "}
+                  {gallery.photos[gallery.index].uploaded_by} ·{" "}
                   {new Date(gallery.photos[gallery.index].uploaded_at).toLocaleDateString("en-GB")}
-                  {gallery.photos.length > 1 && ` Â· ${gallery.index + 1}/${gallery.photos.length}`}
+                  {gallery.photos.length > 1 && ` · ${gallery.index + 1}/${gallery.photos.length}`}
                 </div>
                 <div className="flex items-center gap-2">
                   <button

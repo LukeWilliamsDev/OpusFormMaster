@@ -59,7 +59,7 @@ export const QuotePdfDocument = ({ quote, terms, scaleValue = 1, isPrintTarget =
         marginBottom: `${1122 * scaleValue - 1122}px`,
       }}
     >
-      <div className="bg-slate-900 px-8 sm:px-12 py-9 flex justify-between items-center">
+      <div className="bg-[#1b1c20] px-8 sm:px-12 py-9 flex justify-between items-center">
         <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-9 sm:h-10 w-auto" />
         <div className="text-right">
           <div className="text-[26px] sm:text-[30px] font-black text-white tracking-[0.08em] leading-none mb-4">
@@ -72,14 +72,14 @@ export const QuotePdfDocument = ({ quote, terms, scaleValue = 1, isPrintTarget =
               </div>
               <div className="text-[12.5px] text-white font-black mt-0.5">#{reference}</div>
             </div>
-            <div className="w-px h-7 bg-slate-800" />
+            <div className="w-px h-7 bg-[#2b2c32]" />
             <div className="text-right">
               <div className="text-[9.5px] text-stone-500 uppercase tracking-[0.12em]">Date</div>
               <div className="text-[12.5px] text-white font-black mt-0.5">
                 {new Date().toLocaleDateString("en-GB")}
               </div>
             </div>
-            <div className="w-px h-7 bg-slate-800" />
+            <div className="w-px h-7 bg-[#2b2c32]" />
             <div className="text-right">
               <div className="text-[9.5px] text-stone-500 uppercase tracking-[0.12em]">
                 Valid Until
@@ -132,7 +132,7 @@ export const QuotePdfDocument = ({ quote, terms, scaleValue = 1, isPrintTarget =
         <div className="flex-1">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="bg-slate-900">
+              <tr className="bg-[#1b1c20]">
                 <th className="text-[11px] font-black tracking-[0.1em] uppercase text-white p-3 text-left w-[42%] whitespace-nowrap">
                   Description
                 </th>
@@ -194,7 +194,7 @@ export const QuotePdfDocument = ({ quote, terms, scaleValue = 1, isPrintTarget =
             </tbody>
           </table>
         </div>
-        <div className="flex justify-end border-t-2 border-slate-900">
+        <div className="flex justify-end border-t-2 border-[#1b1c20]">
           <div className="w-[280px]">
             <div className="flex justify-between p-2 px-3 text-xs border-b border-stone-200 text-stone-600">
               <span className="uppercase tracking-widest">NET SUBTOTAL</span>
@@ -202,7 +202,7 @@ export const QuotePdfDocument = ({ quote, terms, scaleValue = 1, isPrintTarget =
                 £{(totals?.netTotal ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
             </div>
-            <div className="flex justify-between p-3.5 px-3 bg-slate-900 text-white font-black text-[15px]">
+            <div className="flex justify-between p-3.5 px-3 bg-[#1b1c20] text-white font-black text-[15px]">
               <span className="uppercase tracking-widest">Total</span>
               <span>
                 £
@@ -257,7 +257,7 @@ export const QuotePdfDocument = ({ quote, terms, scaleValue = 1, isPrintTarget =
           </div>
         </div>
       </div>
-      <div className="bg-slate-900 px-8 sm:px-12 py-3.5 flex justify-between items-center mt-auto">
+      <div className="bg-[#1b1c20] px-8 sm:px-12 py-3.5 flex justify-between items-center mt-auto">
         <span className="text-[11px] text-stone-500 tracking-[0.1em] uppercase">
           Opus Form Ltd &middot; Company No. {COMPANY_INFO.companyNumber}
         </span>

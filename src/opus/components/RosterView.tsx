@@ -1714,7 +1714,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         } else if (action === "INSPECT") {
                           bulletColor = "bg-warning";
                           LogIcon = Eye;
-                          iconColorClass = "text-purple-400 [.light-theme_&]:text-purple-600";
+                          iconColorClass = "text-purple-600 dark:text-purple-400";
                         } else {
                           bulletColor = "bg-warning";
                           LogIcon = Send;
@@ -1762,7 +1762,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           }
                         } else if (action === "INSPECT") {
                           badgeColor =
-                            "bg-purple-500/10 border-purple-500/30 text-purple-400 [.light-theme_&]:text-purple-600";
+                            "bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400";
                           summaryText = "Staff dossier profile viewed by administrator";
                         } else if (action === "VIEW_DOCUMENT") {
                           badgeColor = "bg-primary/5 border-primary/20 text-primary";
@@ -1806,7 +1806,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
                       return (
                         <div key={event.id} className="py-2.5">
-                          <div className="flex items-center gap-2.5 px-2.5">
+                          <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-2.5 gap-y-1.5 px-2.5">
                             <div
                               className={`w-6 h-6 rounded-full ${bulletColor}/10 flex items-center justify-center shrink-0`}
                             >
@@ -1817,7 +1817,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             >
                               {headerBadgeText}
                             </span>
-                            <p className="flex-1 min-w-0 truncate text-[11px] text-foreground/90">
+                            <p className="flex-1 min-w-0 basis-full sm:basis-auto order-3 sm:order-none truncate sm:whitespace-normal text-[11px] text-foreground/90">
                               {headerSummary}
                             </p>
                             {event.type === "request" && event.details?.status === "pending" && (
@@ -2017,14 +2017,14 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             key={f.key}
                             className={`flex items-center justify-between px-4 py-2.5 ${
                               changed
-                                ? "bg-amber-500/5 border-l-2 border-amber-500/40 [.light-theme_&]:bg-amber-500/10 [.light-theme_&]:border-amber-600/50"
+                                ? "bg-amber-500/10 dark:bg-amber-500/5 border-l-2 border-amber-600/50 dark:border-amber-500/40"
                                 : ""
                             }`}
                           >
                             <span
                               className={`font-semibold uppercase tracking-wider text-[10px] ${
                                 changed
-                                  ? "text-amber-400/70 [.light-theme_&]:text-amber-800/80"
+                                  ? "text-amber-800/80 dark:text-amber-400/70"
                                   : "text-muted-foreground"
                               }`}
                             >
@@ -2037,12 +2037,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                 </span>
                               )}
                               {changed && curVal && (
-                                <span className="text-muted-foreground text-[10px]">â†’</span>
+                                <span className="text-muted-foreground text-[10px]">→</span>
                               )}
                               <span
                                 className={`font-bold ${
                                   changed
-                                    ? "text-amber-300 [.light-theme_&]:text-amber-800"
+                                    ? "text-amber-800 dark:text-amber-300"
                                     : "text-foreground"
                                 }`}
                               >

@@ -411,9 +411,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       if (data) {
         // job-attachments is a private bucket; the stored file_url is a
         // legacy public-URL-shaped path carrier that needs signing to load.
+        // raw_file_url keeps the original (unsigned) carrier around so the
+        // storage path can still be extracted after file_url is overwritten
+        // with a signed, token-bearing URL below.
         const signed = await Promise.all(
           data.map(async (a) => ({
             ...a,
+            raw_file_url: a.file_url,
             file_url: (await getSignedJobAttachmentUrl(a.file_url)) ?? a.file_url,
           })),
         );
@@ -505,6 +509,18 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         .delete()
         .eq("id", deleteAttachmentTarget.id);
       if (error) throw error;
+
+      // Delete the DB row is not enough — without this the file sits in
+      // storage forever as an orphan, still downloadable by anyone who kept
+      // the signed URL until it expires.
+      const marker = "/job-attachments/";
+      const rawUrl = deleteAttachmentTarget.raw_file_url || deleteAttachmentTarget.file_url;
+      const idx = rawUrl.indexOf(marker);
+      if (idx !== -1) {
+        const filePath = rawUrl.slice(idx + marker.length);
+        await supabase.storage.from("job-attachments").remove([filePath]);
+      }
+
       logAttachmentAudit("DELETE_ATTACHMENT", {
         attachment_type: deleteAttachmentTarget.type,
         file_name: deleteAttachmentTarget.file_name,
@@ -1316,14 +1332,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                       key={f}
                       className={`flex items-center justify-between px-4 py-2.5 ${
                         changed
-                          ? "bg-amber-500/5 border-l-2 border-amber-500/40 [.light-theme_&]:bg-amber-500/10 [.light-theme_&]:border-amber-600/50"
+                          ? "bg-amber-500/10 dark:bg-amber-500/5 border-l-2 border-amber-600/50 dark:border-amber-500/40"
                           : ""
                       }`}
                     >
                       <span
                         className={`font-semibold uppercase tracking-wider text-[12px] ${
                           changed
-                            ? "text-amber-400/70 [.light-theme_&]:text-amber-800/80"
+                            ? "text-amber-800/80 dark:text-amber-400/70"
                             : "text-muted-foreground"
                         }`}
                       >
@@ -1341,7 +1357,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                         <span
                           className={`font-bold ${
                             changed
-                              ? "text-amber-300 [.light-theme_&]:text-amber-800"
+                              ? "text-amber-800 dark:text-amber-300"
                               : "text-foreground"
                           }`}
                         >

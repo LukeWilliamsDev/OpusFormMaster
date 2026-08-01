@@ -53,14 +53,14 @@ export const PortalLayout: React.FC = () => {
 
   const allNav = [
     {
-      name: "SITE DASHBOARD",
+      name: "DASHBOARD",
       path: "/portal/dashboard",
       icon: LayoutDashboard,
       roles: MANAGEMENT_ROLES,
     },
     { name: "JOB LEDGER", path: "/portal/ledger", icon: ClipboardList, roles: MANAGEMENT_ROLES },
     {
-      name: "SITE CALENDAR",
+      name: "CALENDAR",
       path: "/portal/roster?view=calendar",
       icon: Calendar,
       roles: ALL_ROLES,

@@ -14,43 +14,43 @@ export interface JobColorClasses {
 const PALETTES: JobColorClasses[] = [
   {
     // Dusty teal
-    bg: "bg-teal-600/15 dark:bg-teal-600/10 border-teal-600/40 dark:border-teal-600/30 text-teal-700 dark:text-teal-300 hover:bg-teal-600/20 dark:hover:bg-teal-600/15 hover:border-teal-600/50 dark:hover:border-teal-600/40",
-    text: "text-teal-700 dark:text-teal-300",
-    border: "border-teal-600/40 dark:border-teal-600/30",
-    bullet: "bg-teal-600/70",
-    lightBg: "bg-teal-600/15 dark:bg-teal-600/10",
+    bg: "bg-teal-600/15 dark:bg-teal-600/15 border-teal-600/40 dark:border-teal-600/45 text-teal-700 dark:text-teal-200 hover:bg-teal-600/20 dark:hover:bg-teal-600/20 hover:border-teal-600/50 dark:hover:border-teal-600/55",
+    text: "text-teal-700 dark:text-teal-200",
+    border: "border-teal-600/40 dark:border-teal-600/45",
+    bullet: "bg-teal-600/70 dark:bg-teal-400",
+    lightBg: "bg-teal-600/15 dark:bg-teal-600/15",
   },
   {
     // Slate blue
-    bg: "bg-slate-500/15 dark:bg-slate-500/10 border-slate-500/40 dark:border-slate-500/30 text-slate-700 dark:text-slate-300 hover:bg-slate-500/20 dark:hover:bg-slate-500/15 hover:border-slate-500/50 dark:hover:border-slate-500/40",
-    text: "text-slate-700 dark:text-slate-300",
-    border: "border-slate-500/40 dark:border-slate-500/30",
-    bullet: "bg-slate-500/70",
-    lightBg: "bg-slate-500/15 dark:bg-slate-500/10",
+    bg: "bg-slate-500/15 dark:bg-slate-500/15 border-slate-500/40 dark:border-slate-500/45 text-slate-700 dark:text-slate-200 hover:bg-slate-500/20 dark:hover:bg-slate-500/20 hover:border-slate-500/50 dark:hover:border-slate-500/55",
+    text: "text-slate-700 dark:text-slate-200",
+    border: "border-slate-500/40 dark:border-slate-500/45",
+    bullet: "bg-slate-500/70 dark:bg-slate-300",
+    lightBg: "bg-slate-500/15 dark:bg-slate-500/15",
   },
   {
     // Plum
-    bg: "bg-purple-600/15 dark:bg-purple-600/10 border-purple-600/40 dark:border-purple-600/30 text-purple-700 dark:text-purple-300 hover:bg-purple-600/20 dark:hover:bg-purple-600/15 hover:border-purple-600/50 dark:hover:border-purple-600/40",
-    text: "text-purple-700 dark:text-purple-300",
-    border: "border-purple-600/40 dark:border-purple-600/30",
-    bullet: "bg-purple-600/70",
-    lightBg: "bg-purple-600/15 dark:bg-purple-600/10",
+    bg: "bg-purple-600/15 dark:bg-purple-600/15 border-purple-600/40 dark:border-purple-600/45 text-purple-700 dark:text-purple-200 hover:bg-purple-600/20 dark:hover:bg-purple-600/20 hover:border-purple-600/50 dark:hover:border-purple-600/55",
+    text: "text-purple-700 dark:text-purple-200",
+    border: "border-purple-600/40 dark:border-purple-600/45",
+    bullet: "bg-purple-600/70 dark:bg-purple-400",
+    lightBg: "bg-purple-600/15 dark:bg-purple-600/15",
   },
   {
     // Ochre
-    bg: "bg-amber-600/15 dark:bg-amber-600/10 border-amber-600/40 dark:border-amber-600/30 text-amber-700 dark:text-amber-300 hover:bg-amber-600/20 dark:hover:bg-amber-600/15 hover:border-amber-600/50 dark:hover:border-amber-600/40",
-    text: "text-amber-700 dark:text-amber-300",
-    border: "border-amber-600/40 dark:border-amber-600/30",
-    bullet: "bg-amber-600/70",
-    lightBg: "bg-amber-600/15 dark:bg-amber-600/10",
+    bg: "bg-amber-600/15 dark:bg-amber-600/15 border-amber-600/40 dark:border-amber-600/45 text-amber-700 dark:text-amber-200 hover:bg-amber-600/20 dark:hover:bg-amber-600/20 hover:border-amber-600/50 dark:hover:border-amber-600/55",
+    text: "text-amber-700 dark:text-amber-200",
+    border: "border-amber-600/40 dark:border-amber-600/45",
+    bullet: "bg-amber-600/70 dark:bg-amber-400",
+    lightBg: "bg-amber-600/15 dark:bg-amber-600/15",
   },
   {
     // Warm stone
-    bg: "bg-stone-500/15 dark:bg-stone-500/10 border-stone-500/40 dark:border-stone-500/30 text-stone-700 dark:text-stone-300 hover:bg-stone-500/20 dark:hover:bg-stone-500/15 hover:border-stone-500/50 dark:hover:border-stone-500/40",
-    text: "text-stone-700 dark:text-stone-300",
-    border: "border-stone-500/40 dark:border-stone-500/30",
-    bullet: "bg-stone-500/70",
-    lightBg: "bg-stone-500/15 dark:bg-stone-500/10",
+    bg: "bg-stone-500/15 dark:bg-stone-500/15 border-stone-500/40 dark:border-stone-500/45 text-stone-700 dark:text-stone-200 hover:bg-stone-500/20 dark:hover:bg-stone-500/20 hover:border-stone-500/50 dark:hover:border-stone-500/55",
+    text: "text-stone-700 dark:text-stone-200",
+    border: "border-stone-500/40 dark:border-stone-500/45",
+    bullet: "bg-stone-500/70 dark:bg-stone-300",
+    lightBg: "bg-stone-500/15 dark:bg-stone-500/15",
   },
 ];
 

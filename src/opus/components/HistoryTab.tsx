@@ -164,7 +164,10 @@ export function HistoryTab({
                   const isPourEvent = pourLabel !== "";
 
                   return (
-                    <div key={event.id} className="py-2.5 flex items-center gap-2.5">
+                    <div
+                      key={event.id}
+                      className="py-2.5 flex flex-wrap sm:flex-nowrap items-center gap-x-2.5 gap-y-1.5"
+                    >
                       <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                         {isPourEvent ? (
                           <Layers className="w-3.5 h-3.5 text-primary" />
@@ -177,7 +180,7 @@ export function HistoryTab({
                       >
                         {event.action?.replace(/_/g, " ")}
                       </span>
-                      <p className="flex-1 min-w-0 truncate text-[13px] text-foreground/90">
+                      <p className="flex-1 min-w-0 basis-full sm:basis-auto order-3 sm:order-none truncate sm:whitespace-normal text-[13px] text-foreground/90">
                         {summaryText}
                       </p>
                       {canRevert && (

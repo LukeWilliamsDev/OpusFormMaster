@@ -84,30 +84,9 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   const SITE_STONE = "bg-card text-muted-foreground hover:text-foreground hover:bg-background";
   const SITE_BORDER = "border-border";
   const SITE_CARD = "bg-background border-2 " + SITE_BORDER;
-  const SITE_HEADER_BAR = "bg-background backdrop-blur-sm border-b-2 " + SITE_BORDER;
 
   return (
     <div className="space-y-4 font-sans">
-      {/* Site Office Header Bar */}
-      <div className={SITE_HEADER_BAR}>
-        <div className="max-w-3xl md:max-w-none mx-auto px-4 py-3">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-2 h-8 bg-amber-600 rounded" />
-              <div>
-                <h1 className="text-xl font-black text-foreground tracking-tight">
-                  SITE DISPATCH BOARD
-                </h1>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {workers.length} operatives · {jobs.length} sites · Week of{" "}
-                  {weekDays[0]?.date.slice(5)}
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Toggle + Search + Filters */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="grid grid-cols-2 md:flex md:items-center gap-2">

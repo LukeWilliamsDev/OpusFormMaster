@@ -99,7 +99,6 @@
   --ring: #b5651d;
 }
 
-
 @layer base {
   * {
     border-color: var(--color-border);

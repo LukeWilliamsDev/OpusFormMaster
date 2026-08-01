@@ -1356,9 +1356,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                         )}
                         <span
                           className={`font-bold ${
-                            changed
-                              ? "text-amber-800 dark:text-amber-300"
-                              : "text-foreground"
+                            changed ? "text-amber-800 dark:text-amber-300" : "text-foreground"
                           }`}
                         >
                           {oldVal}

@@ -1,8 +1,9 @@
 ﻿import React, { useEffect, useState } from "react";
-import { Bell, Send, Loader } from "lucide-react";
+import { Bell, Send, Loader, Trash2 } from "lucide-react";
 import { supabase } from "../../integrations/supabase/client";
 import { toast } from "sonner";
 import { CardGrid } from "./CardGrid";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface JobNote {
   id: string;
@@ -57,6 +58,8 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
   const [wantsReminder, setWantsReminder] = useState(false);
   const [reminderAt, setReminderAt] = useState("");
   const [posting, setPosting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<JobNote | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchNotes = async () => {
     const { data, error } = await supabase
@@ -114,6 +117,35 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
       toast.error("Failed to add note");
     } finally {
       setPosting(false);
+    }
+  };
+
+  const executeDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.from("job_notes").delete().eq("id", deleteTarget.id);
+      if (error) throw error;
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      await supabase.rpc("log_anonymous_audit", {
+        p_user_email: user?.email || "admin@opusform.co.uk",
+        p_action: "DELETE_NOTE",
+        p_target_type: "jobs",
+        p_target_id: jobId,
+        p_details: { note_body: deleteTarget.body },
+      });
+
+      setDeleteTarget(null);
+      await fetchNotes();
+      toast.success("Note deleted");
+    } catch (err) {
+      console.error("Error deleting job note:", err);
+      toast.error("Failed to delete note");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -200,14 +232,25 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
       ) : (
         <CardGrid
           items={grouped}
+          className="grid grid-cols-1 gap-4"
           renderCard={({ day, notes: dayNotes }: { day: string; notes: JobNote[] }) => (
             <div key={day} className="space-y-2">
               <div className="text-[12px] text-primary font-bold uppercase tracking-wider border-b border-border pb-1">
                 {formatDayHeading(day)}
               </div>
               {dayNotes.map((n) => (
-                <div key={n.id} className="bg-card border border-border rounded-lg p-3">
-                  <p className="text-sm text-foreground leading-relaxed">{n.body}</p>
+                <div key={n.id} className="bg-card border border-border rounded-lg p-3 group">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm text-foreground leading-relaxed">{n.body}</p>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(n)}
+                      className="shrink-0 p-1 text-muted-foreground hover:text-destructive cursor-pointer"
+                      title="Delete note"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                   <div className="flex items-center justify-between mt-2 text-[11px] text-muted-foreground">
                     <span>{n.user_email}</span>
                     <span>{formatReminderTime(n.created_at)}</span>
@@ -222,6 +265,16 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
           }
         />
       )}
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        tone="destructive"
+        title="Delete this note?"
+        message="This permanently removes the note. It can't be undone, and the deletion will be recorded in this job's audit history."
+        confirmLabel={deleting ? "Deleting..." : "Delete Note"}
+        onConfirm={executeDelete}
+      />
     </div>
   );
 };

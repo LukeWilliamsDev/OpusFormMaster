@@ -55,14 +55,9 @@ const RoleGuard: React.FC<{
   allow: Array<AppRole>;
   children: React.ReactNode;
 }> = ({ allow, children }) => {
-  const { role, user, authLoading } = usePortal();
+  const { role, authLoading } = usePortal();
   if (authLoading || role === null) {
     return <div className="min-h-screen bg-background" />;
-  }
-  // admin@opusform.co.uk can ONLY see the audit trail and policies
-  if (user?.email === "admin@opusform.co.uk") {
-    // If they try to go somewhere else, send them to audit log by default
-    return <Navigate to="/portal/audit" replace />;
   }
   if (!allow.includes(role)) {
     const fallback = FIELD_ROLES.includes(role)
@@ -73,7 +68,10 @@ const RoleGuard: React.FC<{
   return <>{children}</>;
 };
 
-// Audit Log Gate - restricts the audit trail to only the specific admin email
+// Audit Log Gate - the full tenant audit trail is intentionally restricted to
+// one designated compliance account, not every admin. Job-level history (a
+// narrower view) is available to all ops roles via JobDetails' History tab,
+// backed by a separate job-scoped audit_logs RLS policy.
 const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { role, user, authLoading } = usePortal();
   if (authLoading || role === null) {
@@ -229,10 +227,7 @@ export default function App() {
 }
 
 const RoleAwareFallback: React.FC = () => {
-  const { role, user } = usePortal();
-  if (user?.email === "admin@opusform.co.uk") {
-    return <Navigate to="/portal/audit" replace />;
-  }
+  const { role } = usePortal();
   const target =
     role && FIELD_ROLES.includes(role) ? "/portal/roster?view=calendar" : "/portal/dashboard";
   return <Navigate to={target} replace />;

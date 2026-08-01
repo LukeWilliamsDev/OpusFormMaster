@@ -81,11 +81,14 @@ export const PortalLayout: React.FC = () => {
     { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
   ];
 
-  const isAdminAuditUser = user?.email === "admin@opusform.co.uk";
+  // SITE RECORDS/POLICIES (full audit trail) are restricted to the one
+  // designated compliance account, not every admin — job-level history is
+  // reached via the job's own History tab instead.
+  const isAuditAdmin = user?.email === "admin@opusform.co.uk";
   const navItems = allNav.filter((item) => {
     if (!role || !item.roles.includes(role)) return false;
-    if (isAdminAuditUser) return item.path === "/portal/audit" || item.path === "/portal/policies";
-    return item.path !== "/portal/audit" && item.path !== "/portal/policies";
+    if (item.path === "/portal/audit" || item.path === "/portal/policies") return isAuditAdmin;
+    return true;
   });
 
   const checkIsActive = (path: string) => {
@@ -148,15 +151,13 @@ export const PortalLayout: React.FC = () => {
               <Sun className="w-5 h-5 group-hover:rotate-45 transition-transform" />
             )}
           </button>
-          {user?.email === "admin@opusform.co.uk" && (
-            <button
-              onClick={handleLogoutClick}
-              className="p-2 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
-              title="Logout"
-            >
-              <LogOut className="w-5 h-5" />
-            </button>
-          )}
+          <button
+            onClick={handleLogoutClick}
+            className="p-2 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            title="Logout"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"

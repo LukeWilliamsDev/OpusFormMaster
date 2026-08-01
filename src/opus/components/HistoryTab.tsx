@@ -89,6 +89,7 @@ export function HistoryTab({
             ) : (
               <CardGrid
                 items={events}
+                className="grid grid-cols-1 gap-4"
                 renderCard={(event) => {
                   const diff = event.diff
                     .filter((d: Record<string, unknown>) => JOB_REVERTIBLE_FIELDS.includes(d.field))
@@ -104,8 +105,8 @@ export function HistoryTab({
                     badgeColor = "bg-primary/10 border-primary/20 text-primary";
                     summaryText = "Job record created";
                   } else if (event.action === "UPDATE") {
-                    summaryText = changedFields.length
-                      ? `Job Details Updated: ${changedFields.join(", ")}`
+                    summaryText = diff.length
+                      ? `Job Details Updated: ${diff.join(", ")}`
                       : "Job Details Have Been Updated";
                   } else if (event.action === "SCHEDULE_POUR") {
                     badgeColor = "bg-primary/10 border-primary/20 text-primary";
@@ -152,11 +153,14 @@ export function HistoryTab({
                   } else if (event.action === "DELETE_ATTACHMENT") {
                     badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
                     summaryText = `Deleted: ${event.details?.file_name || "attachment"}`;
+                  } else if (event.action === "DELETE_NOTE") {
+                    badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
+                    summaryText = `Note deleted: "${event.details?.note_body || ""}"`;
                   } else {
                     summaryText = event.action?.replace(/_/g, " ");
                   }
 
-                  const canRevert = event.action === "UPDATE" && changedFields.length > 0;
+                  const canRevert = event.action === "UPDATE" && diff.length > 0;
                   const isPourEvent = pourLabel !== "";
 
                   return (

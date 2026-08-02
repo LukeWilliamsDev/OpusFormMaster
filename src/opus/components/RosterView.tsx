@@ -1,5 +1,4 @@
-﻿// @ts-nocheck
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { handleError } from "../utils/errorHandler";
 import {
   Users,
@@ -30,7 +29,15 @@ import {
   Eye,
   PencilLine,
 } from "lucide-react";
-import { Worker, Ticket, Job, STAFF_ROLES, OFFICE_ROLES } from "../types/erp";
+import {
+  Worker,
+  Ticket,
+  Job,
+  STAFF_ROLES,
+  OFFICE_ROLES,
+  ScheduledShift,
+  StaffRole,
+} from "../types/erp";
 import { RoleAccordion } from "./calendar/RoleAccordion";
 import { groupWorkersByCategory } from "./calendar/roleCategories";
 import { getRoleColorClasses } from "./calendar/roleColors";
@@ -44,8 +51,9 @@ import {
   AccordionContent,
 } from "../../components/ui/accordion";
 import { supabase } from "../../integrations/supabase/client";
+import type { Json, Database } from "../../integrations/supabase/types";
 import { workerToRow, usePortal } from "../context/PortalContext";
-import { computeDiff } from "../utils/auditDiff";
+import { computeDiff, DiffEntry } from "../utils/auditDiff";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -61,6 +69,21 @@ const FIELD_LABELS: Record<string, string> = {
   phone: "Phone",
   email: "Email",
 };
+
+interface RosterEventDetails {
+  old?: Record<string, unknown>;
+  new?: Record<string, unknown>;
+  ticket_type?: string;
+  ticket_number?: string;
+  tickets_submitted?: Record<string, unknown>[];
+  requested_certs?: string[];
+  worker_name?: string;
+  job_name?: string;
+  status?: string;
+  expires_at?: string;
+  completed_at?: string | null;
+  uploadUrl?: string;
+}
 
 interface RosterViewProps {
   workers: Worker[];
@@ -123,7 +146,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   }, [autoOpenAddWorker]);
 
   const [newWorkerName, setNewWorkerName] = useState("");
-  const [newWorkerRole, setNewWorkerRole] = useState<string>("Concrete Operative");
+  const [newWorkerRole, setNewWorkerRole] = useState<StaffRole>("Concrete Operative");
   const [newWorkerPhone, setNewWorkerPhone] = useState("");
   const [newWorkerEmail, setNewWorkerEmail] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -156,7 +179,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
   const [workerToEdit, setWorkerToEdit] = useState<Worker | null>(null);
   const [editName, setEditName] = useState("");
-  const [editRole, setEditRole] = useState<string>("Concrete Operative");
+  const [editRole, setEditRole] = useState<StaffRole>("Concrete Operative");
 
   const [rosterMode, setRosterMode] = useState<"active" | "archived">("active");
   const [rosterViewMode, setRosterViewMode] = useState<"grid" | "row">("grid");
@@ -180,9 +203,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [activeDossierTab, setActiveDossierTab] = useState<"general" | "assignments" | "audit_log">(
     "general",
   );
-  const [dossierAuditLogs, setDossierAuditLogs] = useState<any[]>([]);
-  const [dossierDocRequests, setDossierDocRequests] = useState<any[]>([]);
-  const [dossierShifts, setDossierShifts] = useState<any[]>([]);
+  const [dossierAuditLogs, setDossierAuditLogs] = useState<
+    Database["public"]["Tables"]["audit_logs"]["Row"][]
+  >([]);
+  const [dossierDocRequests, setDossierDocRequests] = useState<
+    Database["public"]["Tables"]["document_requests"]["Row"][]
+  >([]);
+  const [dossierShifts, setDossierShifts] = useState<
+    { id: string; workerId: string; jobId: string; date: string }[]
+  >([]);
   const [loadingDossierShifts, setLoadingDossierShifts] = useState(false);
   const [loadingDossierLogs, setLoadingDossierLogs] = useState(false);
   const [resendingRequestMap, setResendingRequestMap] = useState<Record<string, boolean>>({});
@@ -209,9 +238,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
             p_target_id: selectedWorkerDetailsId,
             p_details: { inspected: true },
           })
-          .catch((err) => console.error("Failed to log INSPECT audit event:", err));
+          .then(({ error }) => {
+            if (error) console.error("Failed to log INSPECT audit event:", error);
+          });
       });
     }
+    // initialDossierTab seeds the tab only when a different worker is
+    // opened; re-running this on every initialDossierTab change would
+    // fight a user who's already switched tabs manually.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedWorkerDetailsId]);
 
   const fetchLogsAndRequests = async () => {
@@ -253,7 +288,16 @@ export const RosterView: React.FC<RosterViewProps> = ({
       setDossierAuditLogs([]);
       setDossierDocRequests([]);
     }
-  }, [selectedWorkerDetailsId, activeDossierTab, showReminderConfirm, workerToEdit]);
+    // fetchLogsAndRequests isn't memoized — omitted deliberately to avoid
+    // re-running on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    selectedWorkerDetailsId,
+    activeDossierTab,
+    showReminderConfirm,
+    workerToEdit,
+    canViewAuditLog,
+  ]);
 
   // Site Assignments needs a worker's full shift history — the global `shifts` list
   // is windowed to ±30 days for calendar/scheduling performance, so it can't show
@@ -279,7 +323,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           return;
         }
         setDossierShifts(
-          (data || []).map((r: Record<string, unknown>) => ({
+          (data || []).map((r) => ({
             id: r.id,
             workerId: r.worker_id,
             jobId: r.job_id,
@@ -292,7 +336,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
     };
   }, [selectedWorkerDetailsId]);
 
-  const handleResendRequest = async (request: Record<string, unknown>) => {
+  const handleResendRequest = async (request: {
+    id: string;
+    requested_certs?: string[] | null;
+  }) => {
     if (resendingRequestMap[request.id]) return;
     setResendingRequestMap((prev) => ({ ...prev, [request.id]: true }));
     const sendingToastId = toast.loading("SENDING REQUEST", {
@@ -300,7 +347,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
     });
 
     try {
-      const worker = workers.find((w) => w.id === selectedWorkerDetailsId);
+      const workerDetailsId = selectedWorkerDetailsId;
+      if (!workerDetailsId) return;
+      const worker = workers.find((w) => w.id === workerDetailsId);
       if (!worker || !worker.email) {
         toast.error("Worker email is missing", {
           id: sendingToastId,
@@ -328,7 +377,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       await supabase
         .from("document_requests")
         .update({ expires_at: new Date().toISOString() })
-        .eq("worker_id", selectedWorkerDetailsId)
+        .eq("worker_id", workerDetailsId)
         .neq("id", request.id)
         .is("completed_at", null);
 
@@ -365,13 +414,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
         supabase
           .from("document_requests")
           .select("*")
-          .eq("worker_id", selectedWorkerDetailsId)
+          .eq("worker_id", workerDetailsId)
           .order("created_at", { ascending: false }),
         supabase
           .from("audit_logs")
           .select("*")
           .eq("target_type", "staff")
-          .eq("target_id", selectedWorkerDetailsId)
+          .eq("target_id", workerDetailsId)
           .order("created_at", { ascending: false }),
       ]);
 
@@ -458,11 +507,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const executeRevertUpdate = async (oldDetails: Record<string, unknown>, workerId: string) => {
     if (!oldDetails || !workerId) return;
     try {
-      const name = oldDetails.name;
-      const role = oldDetails.role;
-      const phone = oldDetails.phone ?? null;
-      const email = oldDetails.email ?? null;
-      const postcode = oldDetails.postcode ?? null;
+      const name = oldDetails.name as string;
+      const role = oldDetails.role as StaffRole;
+      const phone = (oldDetails.phone as string | null) ?? null;
+      const email = (oldDetails.email as string | null) ?? null;
+      const postcode = (oldDetails.postcode as string | null) ?? null;
 
       // Only restore the fields the "Revert Profile" dialog actually shows the
       // admin. Reverting also wrote tickets/uploaded_certificates/is_archived
@@ -531,7 +580,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     try {
       const { error: dbError } = await supabase
         .from("staff")
-        .update({ tickets: updatedTickets })
+        .update({ tickets: updatedTickets as unknown as Json[] })
         .eq("id", workerId);
 
       if (dbError) throw dbError;
@@ -569,7 +618,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     try {
       const { error: dbError } = await supabase
         .from("staff")
-        .update({ tickets: updatedTickets })
+        .update({ tickets: updatedTickets as unknown as Json[] })
         .eq("id", workerId);
 
       if (dbError) throw dbError;
@@ -652,7 +701,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
               worker_id: newId,
               requested_certs: [],
               expires_at: expiresAt.toISOString(),
-              tenant_id: profile?.tenant_id,
+              // tenant_id is required by the DB; if profile.tenant_id is
+              // missing this insert fails at runtime and is caught below.
+              tenant_id: profile?.tenant_id as string,
             })
             .select()
             .single();
@@ -918,7 +969,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
               phone: updatedWorker.phone,
               email: updatedWorker.email,
               postcode: updatedWorker.postcode,
-              tickets: updatedWorker.tickets,
+              tickets: updatedWorker.tickets as unknown as Json[],
             })
             .eq("id", workerToEdit.id)
             .then(({ error }) => {
@@ -973,7 +1024,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   </label>
                   <select
                     value={editRole}
-                    onChange={(e) => setEditRole(e.target.value)}
+                    onChange={(e) => setEditRole(e.target.value as StaffRole)}
                     className="w-full bg-secondary border border-border rounded-xl px-3 py-2.5 text-[11px] font-medium text-foreground focus:outline-none focus:border-primary transition-colors uppercase font-bold"
                   >
                     {STAFF_ROLES.map((role) => (
@@ -1195,8 +1246,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
       // If the request was resent, expires_at is renewed to now + 48 hours.
       // So effective date of the action is expires_at - 48 hours.
       const effectiveDate = new Date(new Date(r.expires_at).getTime() - 48 * 60 * 60 * 1000);
-      const isResent = effectiveDate.getTime() > new Date(r.created_at).getTime();
-      const actionDate = isResent ? effectiveDate.toISOString() : r.created_at;
+      const isResent = effectiveDate.getTime() > new Date(r.created_at || 0).getTime();
+      const actionDate = isResent ? effectiveDate.toISOString() : r.created_at || r.expires_at;
 
       return {
         id: `req-${r.id}`,
@@ -1211,7 +1262,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           completed_at: r.completed_at,
           status,
           uploadUrl: `${window.location.origin}/#/submit-credentials?token=${r.id}`,
-        },
+        } as RosterEventDetails,
         rawRecord: r,
       };
     });
@@ -1224,7 +1275,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
         action: l.action,
         created_at: l.created_at,
         actor: l.user_email || "System / Operative",
-        details: l.details,
+        details: (l.details ?? undefined) as RosterEventDetails | undefined,
         rawRecord: l,
       }))
       .filter((event) => {
@@ -1724,7 +1775,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
                       // Compute diff & summaries
                       let summaryText = "";
-                      let diff: Record<string, unknown>[] = [];
+                      let diff: DiffEntry[] = [];
                       let badgeColor = "bg-secondary border-border text-muted-foreground";
 
                       if (event.type !== "request") {
@@ -1840,10 +1891,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                 type="button"
                                 onClick={() =>
                                   setRevertConfirmTarget({
-                                    oldDetails: event.details?.old,
-                                    currentDetails: event.details?.new,
+                                    oldDetails: event.details?.old ?? {},
+                                    currentDetails: event.details?.new ?? {},
                                     workerId:
-                                      event.rawRecord?.target_id || selectedWorkerDetailsId || "",
+                                      (event.rawRecord as { target_id?: string })?.target_id ||
+                                      selectedWorkerDetailsId ||
+                                      "",
                                   })
                                 }
                                 className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
@@ -2009,8 +2062,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     return fields
                       .filter((f) => old?.[f.key])
                       .map((f) => {
-                        const oldVal = old?.[f.key];
-                        const curVal = cur?.[f.key];
+                        const oldVal = old?.[f.key] as React.ReactNode;
+                        const curVal = cur?.[f.key] as React.ReactNode;
                         const changed = oldVal !== curVal;
                         return (
                           <div
@@ -2441,7 +2494,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     </label>
                     <select
                       value={newWorkerRole}
-                      onChange={(e) => setNewWorkerRole(e.target.value)}
+                      onChange={(e) => setNewWorkerRole(e.target.value as StaffRole)}
                       className="w-full bg-secondary border border-border rounded-lg px-3.5 py-2 text-[11px] font-bold tracking-widest text-foreground uppercase outline-none focus:border-primary transition-colors appearance-none"
                     >
                       {STAFF_ROLES.map((role) => (

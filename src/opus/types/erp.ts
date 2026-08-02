@@ -19,6 +19,8 @@ export interface Ticket {
   expiryDate: string; // YYYY-MM-DD
   ticketNumber: string;
   isValid?: boolean;
+  verified?: boolean;
+  documentUrl?: string;
 }
 
 export const STAFF_ROLES = [
@@ -119,14 +121,5 @@ export interface AuditLogEntry {
     old?: Record<string, unknown>;
     new?: Record<string, unknown>;
   };
-  [key: string]: unknown;
-}
-
-export interface Supplier {
-  id: string;
-  name: string;
-  distance?: number;
-  lat?: number;
-  lng?: number;
   [key: string]: unknown;
 }

@@ -33,7 +33,7 @@ const AVATAR_PRESETS = [
   },
 ];
 
-export const getAvatarPresetClass = (presetId: string) => {
+export const getAvatarPresetClass = (presetId: string | undefined) => {
   const preset = AVATAR_PRESETS.find((p) => p.id === presetId);
   return preset ? `${preset.colors} ${preset.text}` : "from-primary/20 to-primary/30 text-primary";
 };
@@ -61,7 +61,7 @@ export const SettingsPage: React.FC = () => {
       setProfileForm(createProfileFormState(profile));
       setAvatar(createAvatarState(profile.full_name, user?.email));
     }
-  }, [profile]);
+  }, [profile, user?.email]);
 
   const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();

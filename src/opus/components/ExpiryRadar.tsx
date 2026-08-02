@@ -1,5 +1,4 @@
-﻿// @ts-nocheck
-import React from "react";
+﻿import React from "react";
 import { CardGrid } from "../components/CardGrid";
 import { AlertTriangle, ShieldCheck, HelpCircle } from "lucide-react";
 

@@ -1,5 +1,4 @@
-﻿// @ts-nocheck
-import React from "react";
+﻿import React from "react";
 import { CardGrid } from "../components/CardGrid";
 import {
   Camera,
@@ -36,8 +35,8 @@ interface MediaTabProps {
   copiedLink: boolean;
   generateUploadLink: () => Promise<void>;
   copyToClipboard: () => void;
-  gallery: { photos: string[]; index: number } | null;
-  setGallery: (g: { photos: string[]; index: number } | null) => void;
+  gallery: { photos: Attachment[]; index: number } | null;
+  setGallery: (g: { photos: Attachment[]; index: number } | null) => void;
   viewDocTarget: Attachment | null;
   setViewDocTarget: (a: Attachment | null) => void;
   executeViewDocument: () => void;
@@ -48,15 +47,19 @@ interface MediaTabProps {
   setRenameTarget: (a: Attachment | null) => void;
   renameValue: string;
   setRenameValue: (v: string) => void;
+  executeRenameAttachment: () => Promise<void>;
 }
 
-interface Attachment {
+export interface Attachment {
   id: string;
   file_url: string;
   file_name: string;
-  type: "image_before" | "image_after" | "document";
+  type: string;
   file_size_bytes?: number;
-  uploaded_at?: string;
+  uploaded_at?: string | null;
+  uploaded_by?: string;
+  thumb_url?: string;
+  raw_file_url?: string;
 }
 
 export function MediaTab({
@@ -150,7 +153,7 @@ export function MediaTab({
                             <span className="text-foreground font-bold truncate">
                               {p.uploaded_by}
                             </span>
-                            <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
+                            <span>{new Date(p.uploaded_at || 0).toLocaleDateString("en-GB")}</span>
                           </div>
                           <button
                             type="button"
@@ -225,7 +228,7 @@ export function MediaTab({
                             <span className="text-foreground font-bold truncate">
                               {p.uploaded_by}
                             </span>
-                            <span>{new Date(p.uploaded_at).toLocaleDateString("en-GB")}</span>
+                            <span>{new Date(p.uploaded_at || 0).toLocaleDateString("en-GB")}</span>
                           </div>
                           <button
                             type="button"
@@ -351,7 +354,7 @@ export function MediaTab({
                       </button>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-[11px] text-muted-foreground font-medium">
-                          {new Date(d.uploaded_at).toLocaleDateString("en-GB")}
+                          {new Date(d.uploaded_at || 0).toLocaleDateString("en-GB")}
                         </span>
                         <button
                           type="button"
@@ -457,7 +460,9 @@ export function MediaTab({
               <div className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 bg-card">
                 <div className="min-w-0 text-[12px] text-muted-foreground truncate">
                   {gallery.photos[gallery.index].uploaded_by} ·{" "}
-                  {new Date(gallery.photos[gallery.index].uploaded_at).toLocaleDateString("en-GB")}
+                  {new Date(gallery.photos[gallery.index].uploaded_at || 0).toLocaleDateString(
+                    "en-GB",
+                  )}
                   {gallery.photos.length > 1 && ` · ${gallery.index + 1}/${gallery.photos.length}`}
                 </div>
                 <div className="flex items-center gap-2">

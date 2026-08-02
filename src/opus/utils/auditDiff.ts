@@ -1,6 +1,12 @@
 const IGNORED_FIELDS = ["id", "created_at", "updated_at", "tenant_id"];
 
-export function computeDiff(oldVal: unknown, newVal: unknown) {
+export interface DiffEntry {
+  field: string;
+  before: unknown;
+  after: unknown;
+}
+
+export function computeDiff(oldVal: unknown, newVal: unknown): DiffEntry[] {
   if (!oldVal || !newVal || typeof oldVal !== "object" || typeof newVal !== "object") return [];
   const oldObj = oldVal as Record<string, unknown>;
   const newObj = newVal as Record<string, unknown>;

@@ -305,6 +305,53 @@ export type Database = {
           },
         ];
       };
+      pours: {
+        Row: {
+          created_at: string;
+          date: string | null;
+          id: string;
+          job_id: string;
+          mix_type: string;
+          notes: string | null;
+          pour_number: number;
+          status: string;
+          tenant_id: string;
+          volume_m3: number;
+        };
+        Insert: {
+          created_at?: string;
+          date?: string | null;
+          id?: string;
+          job_id: string;
+          mix_type?: string;
+          notes?: string | null;
+          pour_number: number;
+          status?: string;
+          tenant_id?: string;
+          volume_m3?: number;
+        };
+        Update: {
+          created_at?: string;
+          date?: string | null;
+          id?: string;
+          job_id?: string;
+          mix_type?: string;
+          notes?: string | null;
+          pour_number?: number;
+          status?: string;
+          tenant_id?: string;
+          volume_m3?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "pours_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       profiles: {
         Row: {
           avatar_url: string | null;

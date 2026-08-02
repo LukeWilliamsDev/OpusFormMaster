@@ -66,7 +66,6 @@ export const createSearchState = () => ({
   query: "",
   debouncedQuery: "",
   isFocused: false,
-  results: null as any[] | null,
 });
 
 // Pagination state pattern
@@ -84,6 +83,13 @@ export const createModalState = <T>() => ({
   loading: false,
 });
 
+// Stepper/wizard state pattern
+export const createStepperState = <T extends string[]>(steps: T) => ({
+  currentStep: 0,
+  stepLabels: steps,
+  completedSteps: [] as number[],
+});
+
 // File upload state pattern
 export const createFileUploadState = () => ({
   files: [] as File[],
@@ -91,14 +97,6 @@ export const createFileUploadState = () => ({
   uploadProgress: 0,
   uploadedUrls: [] as string[],
   error: null as string | null,
-});
-
-// Stepper/wizard state pattern
-export const createStepperState = <T extends string[]>(steps: T) => ({
-  currentStep: 0,
-  stepLabels: steps as T,
-  completedSteps: [] as number[],
-  stepData: {} as Record<string, any>,
 });
 
 // Data fetching state pattern
@@ -127,12 +125,6 @@ export const createConfirmState = <T>() => ({
   isOpen: false,
   data: null as T | null,
   confirmLoading: false,
-});
-
-// Filter state pattern
-export const createFilterState = <T extends Record<string, any>>(defaults: T) => ({
-  ...defaults,
-  active: false,
 });
 
 // Avatar/initials state pattern

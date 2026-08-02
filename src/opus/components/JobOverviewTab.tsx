@@ -1,8 +1,7 @@
-// @ts-nocheck
 import React from "react";
 import { MapPin, Phone, Loader } from "lucide-react";
-import { OSMMap } from "./OSMMap";
-import { Job, Supplier } from "../types/erp";
+import { OSMMap, Supplier } from "./OSMMap";
+import { Job } from "../types/erp";
 
 interface JobOverviewTabProps {
   job: Job;

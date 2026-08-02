@@ -1,5 +1,4 @@
-﻿// @ts-nocheck
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   History,
@@ -102,10 +101,10 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         id: row.id,
         reference: row.reference,
         date: row.date,
-        clientInfo: row.client_info,
-        items: row.items,
+        clientInfo: row.client_info as Quote["clientInfo"],
+        items: row.items as unknown as MeasuredItem[],
         vatRate: Number(row.vat_rate),
-        totals: row.totals,
+        totals: row.totals as Quote["totals"],
         isSent: row.is_sent,
       }));
       setQuotes(loadedQuotes);
@@ -233,7 +232,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         // so failure doesn't roll back the job, but it must be visible —
         // silently swallowing it left broken attachments undiagnosed.
         console.error("Failed to attach quote PDF to new job", pdfErr);
-        const reason = pdfErr?.message || pdfErr?.error_description || JSON.stringify(pdfErr);
+        const err = pdfErr as { message?: string; error_description?: string };
+        const reason = err?.message || err?.error_description || JSON.stringify(pdfErr);
         toast.error(`Job created, but quote PDF failed to attach: ${reason}`);
       }
     } catch (e) {

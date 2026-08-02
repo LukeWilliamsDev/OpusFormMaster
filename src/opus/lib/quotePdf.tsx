@@ -1,9 +1,31 @@
-// @ts-nocheck
 // Standalone quote PDF template + headless generator, shared by the live
 // QuoteInvoiceBuilder editor and any code that needs a PDF from a saved
 // quote row without the editor mounted (e.g. converting a quote to a job).
 import React from "react";
 import ReactDOM from "react-dom/client";
+
+interface QuoteItem {
+  id: string;
+  description: string;
+  quantity: number;
+  unit: string;
+  rate: number | string;
+}
+
+interface Quote {
+  reference: string;
+  clientInfo?: {
+    entity?: string;
+    email?: string;
+    site?: string;
+    postcode?: string;
+  };
+  items?: QuoteItem[];
+  totals?: {
+    netTotal?: number;
+    grossTotal?: number;
+  };
+}
 
 const COMPANY_INFO = {
   companyNumber: "17228356",
@@ -13,7 +35,7 @@ const COMPANY_INFO = {
   accountNumber: "31840773",
 };
 
-export const buildDefaultTerms = (entity) =>
+export const buildDefaultTerms = (entity: string | undefined) =>
   [
     "Assumed total pours up to 1, additional pours shall be charged minimum of £3,500",
     "Cancelled pours with less than 24hrs notice shall be charged",
@@ -26,10 +48,10 @@ export const buildDefaultTerms = (entity) =>
       : t,
   );
 
-const isIncludedRate = (rate) =>
+const isIncludedRate = (rate: number | string) =>
   typeof rate === "string" && ["INCLUDED", "INCL"].includes(rate.toUpperCase());
 
-const getLineTotal = (item) => {
+const getLineTotal = (item: QuoteItem) => {
   if (isIncludedRate(item.rate)) return 0;
   let rateValue = 0;
   if (typeof item.rate === "string") {
@@ -43,7 +65,17 @@ const getLineTotal = (item) => {
 
 // Pure template: identical markup to the live QuoteInvoiceBuilder preview, but
 // driven entirely by a Quote object + terms list instead of component state.
-export const QuotePdfDocument = ({ quote, terms, scaleValue = 1, isPrintTarget = false }) => {
+export const QuotePdfDocument = ({
+  quote,
+  terms,
+  scaleValue = 1,
+  isPrintTarget = false,
+}: {
+  quote: Quote;
+  terms: string[];
+  scaleValue?: number;
+  isPrintTarget?: boolean;
+}) => {
   const { reference, clientInfo, items, totals } = quote;
   return (
     <div
@@ -151,8 +183,8 @@ export const QuotePdfDocument = ({ quote, terms, scaleValue = 1, isPrintTarget =
               </tr>
             </thead>
             <tbody>
-              {items?.length > 0 ? (
-                items.map((item, idx) => (
+              {items && items.length > 0 ? (
+                items.map((item: QuoteItem, idx: number) => (
                   <tr
                     key={item.id}
                     className={`border-b border-stone-200 ${idx % 2 === 1 ? "bg-stone-50" : ""}`}
@@ -221,7 +253,7 @@ export const QuotePdfDocument = ({ quote, terms, scaleValue = 1, isPrintTarget =
           </div>
           <ul className="space-y-1.5">
             {terms.map(
-              (term, index) =>
+              (term: string, index: number) =>
                 term.trim() && (
                   <li
                     key={index}
@@ -269,10 +301,10 @@ export const QuotePdfDocument = ({ quote, terms, scaleValue = 1, isPrintTarget =
   );
 };
 
-const stripUnsupportedColorFunctions = (cssText) =>
+const stripUnsupportedColorFunctions = (cssText: string) =>
   cssText.replace(/\b(oklch|oklab|lch|lab)\([^)]*\)/g, "#333333");
 
-const buildHtml2PdfOptions = (filename) => ({
+const buildHtml2PdfOptions = (filename: string) => ({
   margin: 0,
   filename,
   image: { type: "jpeg", quality: 0.98 },
@@ -282,7 +314,7 @@ const buildHtml2PdfOptions = (filename) => ({
     logging: false,
     scrollX: 0,
     scrollY: 0,
-    onclone: (_document, clonedElement) => {
+    onclone: (_document: Document, clonedElement: HTMLElement) => {
       const cloneDoc = clonedElement.ownerDocument;
       if (cloneDoc?.body) {
         cloneDoc.body.style.margin = "0";
@@ -299,7 +331,9 @@ const buildHtml2PdfOptions = (filename) => ({
         }
       }
       const safeCss = stripUnsupportedColorFunctions(cssText);
-      cloneDoc.querySelectorAll('link[rel="stylesheet"], style').forEach((el) => el.remove());
+      cloneDoc
+        .querySelectorAll('link[rel="stylesheet"], style')
+        .forEach((el: Element) => el.remove());
       const styleEl = cloneDoc.createElement("style");
       styleEl.textContent = safeCss;
       cloneDoc.head.appendChild(styleEl);
@@ -316,7 +350,7 @@ const buildHtml2PdfOptions = (filename) => ({
 
 // Renders a Quote off-screen (no mounted editor required) and returns the
 // generated PDF as a Blob, ready to upload.
-export async function generateQuotePdfBlob(quote) {
+export async function generateQuotePdfBlob(quote: Quote) {
   const container = document.createElement("div");
   container.style.position = "absolute";
   container.style.left = "-9999px";
@@ -338,9 +372,11 @@ export async function generateQuotePdfBlob(quote) {
 
     const { default: html2pdf } = await import("html2pdf.js");
     const filename = `Quote_${quote.reference}.pdf`;
-    const blob = await html2pdf()
-      .from(container.querySelector(".print-area"))
-      .set(buildHtml2PdfOptions(filename))
+    const printArea = container.querySelector(".print-area") as HTMLElement;
+    const worker = html2pdf();
+    const blob = await worker
+      .from(printArea)
+      .set(buildHtml2PdfOptions(filename) as unknown as Parameters<typeof worker.set>[0])
       .outputPdf("blob");
 
     return { blob, filename };

@@ -1,10 +1,24 @@
-﻿// @ts-nocheck
-import React from "react";
+﻿import React from "react";
 import { CardGrid } from "../components/CardGrid";
 import { Loader, Search, PencilLine, Layers } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { AuditLogEntry } from "../types/erp";
-import { computeDiff } from "../utils/auditDiff";
+import type { Database } from "@/integrations/supabase/types";
+import { computeDiff, DiffEntry } from "../utils/auditDiff";
+
+type AuditLogRow = Database["public"]["Tables"]["audit_logs"]["Row"];
+
+interface JobAuditDetails {
+  old?: Record<string, unknown>;
+  new?: Record<string, unknown>;
+  pour_number?: number;
+  mix_type?: string;
+  volume_m3?: number;
+  date?: string;
+  worker_name?: string;
+  attachment_type?: string;
+  file_name?: string;
+  note_body?: string;
+}
 
 // Only these job columns count as a real "job detail change" worth surfacing
 // an audit entry + Revert button for — same convention as the staff dossier.
@@ -24,12 +38,15 @@ export const JOB_FIELD_LABELS: Record<string, string> = {
 };
 
 interface HistoryTabProps {
-  jobAuditLogs: AuditLogEntry[];
+  jobAuditLogs: AuditLogRow[];
   loadingJobAuditLogs: boolean;
   auditSearch: string;
   setAuditSearch: (value: string) => void;
   formatPourDate: (date: string) => string;
-  setRevertConfirmTarget: (target: AuditLogEntry) => void;
+  setRevertConfirmTarget: (target: {
+    oldDetails: Record<string, unknown>;
+    newDetails: Record<string, unknown>;
+  }) => void;
 }
 
 export function HistoryTab({
@@ -45,17 +62,14 @@ export function HistoryTab({
       {(() => {
         const events = jobAuditLogs
           .map((l) => {
-            const diff =
-              l.action === "UPDATE" && l.details?.old
-                ? computeDiff(l.details.old, l.details.new)
-                : [];
-            return { ...l, diff };
+            const details = (l.details ?? undefined) as JobAuditDetails | undefined;
+            const diff: DiffEntry[] =
+              l.action === "UPDATE" && details?.old ? computeDiff(details.old, details.new) : [];
+            return { ...l, details, diff };
           })
           .filter((event) => {
             if (event.action === "UPDATE") {
-              return event.diff.some((d: Record<string, unknown>) =>
-                JOB_REVERTIBLE_FIELDS.includes(d.field),
-              );
+              return event.diff.some((d) => JOB_REVERTIBLE_FIELDS.includes(d.field));
             }
             return true;
           })
@@ -92,8 +106,8 @@ export function HistoryTab({
                 className="grid grid-cols-1 gap-4"
                 renderCard={(event) => {
                   const diff = event.diff
-                    .filter((d: Record<string, unknown>) => JOB_REVERTIBLE_FIELDS.includes(d.field))
-                    .map((d: Record<string, unknown>) => JOB_FIELD_LABELS[d.field] || d.field);
+                    .filter((d) => JOB_REVERTIBLE_FIELDS.includes(d.field))
+                    .map((d) => JOB_FIELD_LABELS[d.field] || d.field);
 
                   const pourLabel = event.details?.pour_number
                     ? `Pour #${event.details.pour_number} (${event.details.mix_type}, ${event.details.volume_m3}m³)`
@@ -110,7 +124,7 @@ export function HistoryTab({
                       : "Job Details Have Been Updated";
                   } else if (event.action === "SCHEDULE_POUR") {
                     badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                    summaryText = `Scheduled ${pourLabel}, expected ${formatPourDate(event.details.date)}`;
+                    summaryText = `Scheduled ${pourLabel}, expected ${formatPourDate(event.details?.date || "")}`;
                   } else if (event.action === "COMPLETE_POUR") {
                     badgeColor = "bg-success/10 border-success/20 text-success";
                     summaryText = `Marked ${pourLabel} complete`;
@@ -188,8 +202,8 @@ export function HistoryTab({
                           type="button"
                           onClick={() =>
                             setRevertConfirmTarget({
-                              oldDetails: event.details?.old,
-                              newDetails: event.details?.new,
+                              oldDetails: event.details?.old ?? {},
+                              newDetails: event.details?.new ?? {},
                             })
                           }
                           className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"

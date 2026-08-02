@@ -1,9 +1,10 @@
-﻿// @ts-nocheck
-import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+﻿import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json, Database } from "@/integrations/supabase/types";
+type StaffInsertRow = Database["public"]["Tables"]["staff"]["Insert"];
 import { Job, Worker, ScheduledShift } from "../types/erp";
 import { INITIAL_ROSTER, INITIAL_SHIFTS } from "../data/roster";
 
@@ -87,46 +88,59 @@ export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coor
 export const FIELD_ROLES: AppRole[] = ["logistics_assistant", "site_foreman", "labourer"];
 
 // ---- Row <-> App mappers -----------------------------------------------
-export const workerToRow = (w: Worker, tenantId?: string) => ({
-  id: w.id,
-  name: w.name,
-  role: w.role,
-  phone: w.phone ?? null,
-  email: w.email ?? null,
-  postcode: w.postcode ?? null,
-  is_archived: w.isArchived ?? false,
-  tickets: w.tickets ?? [],
-  uploaded_certificates: w.uploadedCertificates ?? [],
-  ...(tenantId ? { tenant_id: tenantId } : {}),
-});
-const rowToWorker = (r: Record<string, unknown>): Worker => ({
+export const workerToRow = (w: Worker, tenantId?: string) =>
+  ({
+    id: w.id,
+    name: w.name,
+    role: w.role,
+    phone: w.phone ?? null,
+    email: w.email ?? null,
+    postcode: w.postcode ?? null,
+    is_archived: w.isArchived ?? false,
+    tickets: (w.tickets ?? []) as unknown as Json[],
+    uploaded_certificates: (w.uploadedCertificates ?? []) as unknown as Json,
+    // tenant_id is required by the staff table's Insert type, but this key is
+    // intentionally omitted (not set to undefined) when tenantId is absent so
+    // Supabase's NOT NULL constraint surfaces the failure loudly at insert
+    // time rather than us silently guessing a tenant.
+    ...(tenantId ? { tenant_id: tenantId } : {}),
+  }) as StaffInsertRow;
+type StaffRow = Database["public"]["Tables"]["staff"]["Row"];
+
+const rowToWorker = (r: StaffRow): Worker => ({
   id: r.id,
   name: r.name,
-  role: r.role,
+  role: r.role as Worker["role"],
   phone: r.phone ?? undefined,
   email: r.email ?? undefined,
   postcode: r.postcode ?? undefined,
   isArchived: r.is_archived ?? false,
-  tickets: r.tickets ?? [],
-  uploadedCertificates: r.uploaded_certificates ?? [],
+  tickets: (r.tickets ?? []) as unknown as Worker["tickets"],
+  uploadedCertificates: (r.uploaded_certificates ??
+    []) as unknown as Worker["uploadedCertificates"],
 });
 
-export const jobToRow = (j: Job, tenantId?: string) => ({
-  id: j.id,
-  job_ref: j.jobRef,
-  site_name: j.siteName,
-  main_contractor: j.mainContractor ?? null,
-  postcode: j.postcode ?? null,
-  current_pours: j.currentPours ?? 0,
-  contract_max_pours: j.contractMaxPours ?? 0,
-  status: j.status,
-  schedule_value: j.scheduleValue ?? 0,
-  ...(tenantId ? { tenant_id: tenantId } : {}),
-});
+type JobInsertRow = Database["public"]["Tables"]["jobs"]["Insert"];
+
+export const jobToRow = (j: Job, tenantId?: string) =>
+  ({
+    id: j.id,
+    job_ref: j.jobRef,
+    site_name: j.siteName,
+    main_contractor: j.mainContractor ?? null,
+    postcode: j.postcode ?? null,
+    current_pours: j.currentPours ?? 0,
+    contract_max_pours: j.contractMaxPours ?? 0,
+    status: j.status,
+    schedule_value: j.scheduleValue ?? 0,
+    ...(tenantId ? { tenant_id: tenantId } : {}),
+  }) as JobInsertRow;
 const toTitleCase = (s: string) =>
   s.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
 
-const rowToJob = (r: Record<string, unknown>): Job => ({
+type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
+
+const rowToJob = (r: JobRow): Job => ({
   id: r.id,
   jobRef: r.job_ref,
   siteName: r.site_name ? toTitleCase(r.site_name) : r.site_name,
@@ -134,19 +148,24 @@ const rowToJob = (r: Record<string, unknown>): Job => ({
   postcode: r.postcode ?? "",
   currentPours: r.current_pours ?? 0,
   contractMaxPours: r.contract_max_pours ?? 0,
-  status: r.status,
+  status: r.status as Job["status"],
   scheduleValue: Number(r.schedule_value ?? 0),
   updatedAt: r.updated_at,
 });
 
-const shiftToRow = (s: ScheduledShift, tenantId?: string) => ({
-  id: s.id,
-  worker_id: s.workerId,
-  job_id: s.jobId,
-  date: s.date,
-  ...(tenantId ? { tenant_id: tenantId } : {}),
-});
-const rowToShift = (r: Record<string, unknown>): ScheduledShift => ({
+type ShiftInsertRow = Database["public"]["Tables"]["shifts"]["Insert"];
+
+const shiftToRow = (s: ScheduledShift, tenantId?: string) =>
+  ({
+    id: s.id,
+    worker_id: s.workerId,
+    job_id: s.jobId,
+    date: s.date,
+    ...(tenantId ? { tenant_id: tenantId } : {}),
+  }) as ShiftInsertRow;
+type ShiftRow = Database["public"]["Tables"]["shifts"]["Row"];
+
+const rowToShift = (r: ShiftRow): ScheduledShift => ({
   id: r.id,
   workerId: r.worker_id,
   jobId: r.job_id,
@@ -316,7 +335,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (error) {
         console.error("Failed to load profile", error);
         setRole("labourer");
-        setProfileState({ full_name: "", phone_number: "", avatar_url: "" });
+        setProfileState({ full_name: "", phone_number: "", avatar_url: "", tenant_id: "" });
       } else {
         setRole((data?.role as AppRole) ?? "labourer");
         setProfileState({
@@ -377,6 +396,10 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       cancelled = true;
     };
+    // profile.tenant_id resolves in a separate effect and is only used here
+    // to fingerprint already-loaded rows; adding it would re-run this whole
+    // fetch a second time once the profile loads.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   // Keep the roster live: anonymous submissions (e.g. the credential portal)
@@ -393,7 +416,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             payload.eventType === "DELETE"
               ? prev.filter((w) => w.id !== payload.old.id)
               : (() => {
-                  const updated = rowToWorker(payload.new);
+                  const updated = rowToWorker(payload.new as StaffRow);
                   const idx = prev.findIndex((w) => w.id === updated.id);
                   return idx === -1
                     ? [...prev, updated]
@@ -430,7 +453,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             payload.eventType === "DELETE"
               ? prev.filter((j) => j.id !== payload.old.id)
               : (() => {
-                  const updated = rowToJob(payload.new);
+                  const updated = rowToJob(payload.new as JobRow);
                   const idx = prev.findIndex((j) => j.id === updated.id);
                   return idx === -1
                     ? [...prev, updated]
@@ -466,7 +489,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             payload.eventType === "DELETE"
               ? prev.filter((s) => s.id !== payload.old.id)
               : (() => {
-                  const updated = rowToShift(payload.new);
+                  const updated = rowToShift(payload.new as ShiftRow);
                   const idx = prev.findIndex((s) => s.id === updated.id);
                   return idx === -1
                     ? [...prev, updated]
@@ -507,7 +530,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (error) console.error("delete workers", error);
       }
     })();
-  }, [workers, user]);
+  }, [workers, user, profile?.tenant_id]);
 
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
@@ -529,7 +552,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (error) console.error("delete jobs", error);
       }
     })();
-  }, [jobs, user]);
+  }, [jobs, user, profile?.tenant_id]);
 
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
@@ -551,7 +574,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (error) console.error("delete shifts", error);
       }
     })();
-  }, [shifts, user]);
+  }, [shifts, user, profile?.tenant_id]);
 
   // window.confirm can't be used here since ConfirmDialog is async/non-blocking.
   // Instead we stash the "pending confirmation" as state and render the dialog
@@ -639,7 +662,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         await supabase.from("audit_logs").insert({
           user_id: user.id,
           user_email: email,
-          tenant_id: prof?.tenant_id,
+          tenant_id: prof?.tenant_id as string,
           action: "LOGIN_SUCCESS",
           target_type: "auth",
           target_id: user.id,
@@ -658,7 +681,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       await supabase.from("audit_logs").insert({
         user_id: user.id,
         user_email: user.email,
-        tenant_id: profile?.tenant_id,
+        tenant_id: profile?.tenant_id as string,
         action: "LOGOUT",
         target_type: "auth",
         target_id: user.id,
@@ -699,7 +722,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         await supabase.from("audit_logs").insert({
           user_id: user.id,
           user_email: user.email,
-          tenant_id: profile?.tenant_id,
+          tenant_id: profile?.tenant_id as string,
           action: "PASSWORD_RESET_SUCCESS",
           target_type: "auth",
           target_id: user.id,
@@ -726,7 +749,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       await supabase.from("audit_logs").insert({
         user_id: user.id,
         user_email: user.email,
-        tenant_id: profile?.tenant_id,
+        tenant_id: profile?.tenant_id as string,
         action: "PROFILE_UPDATE",
         target_type: "auth",
         target_id: user.id,

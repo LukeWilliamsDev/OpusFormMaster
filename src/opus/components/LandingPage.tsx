@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useEffect, useState } from "react";
 import { Sun, Moon } from "lucide-react";
 import { usePortal } from "../context/PortalContext";

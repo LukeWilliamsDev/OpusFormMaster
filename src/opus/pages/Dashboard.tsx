@@ -1,5 +1,4 @@
-﻿// @ts-nocheck
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+﻿import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -41,6 +40,21 @@ function formatUKDate(isoDate: string) {
   return `${d}/${m}/${y}`;
 }
 
+interface ExpiringTicketAlert {
+  alertId: string;
+  workerId: string;
+  workerName: string;
+  workerRole: string;
+  workerPhone?: string;
+  ticketId: string;
+  ticketType: string;
+  expiryDate: string;
+  ticketNumber: string;
+  diffDays: number;
+  isExpired: boolean;
+  isExpiringSoon: boolean;
+}
+
 function formatDayCount(days: number) {
   if (days < 60) return `${days}d`;
   if (days < 730) return `${Math.round(days / 30)}mo`;
@@ -49,7 +63,7 @@ function formatDayCount(days: number) {
 
 const JobWeatherRow: React.FC<{
   job: import("../types/erp").Job;
-  timeframe: string;
+  timeframe: keyof typeof TIMEFRAME_DAYS;
   onStatusChange: (id: string, atRisk: boolean) => void;
   onSelectDate: (date: string) => void;
 }> = ({ job, timeframe, onStatusChange, onSelectDate }) => {
@@ -77,7 +91,7 @@ const JobWeatherRow: React.FC<{
 
   useEffect(() => {
     onStatusChange(job.id, !!worst);
-  }, [worst, job.id]);
+  }, [worst, job.id, onStatusChange]);
 
   if (!worst) return null;
 
@@ -114,11 +128,16 @@ export const DashboardPage: React.FC = () => {
   // Search state
   const [searchState, setSearchState] = useState(createSearchState());
   // Quotes data fetch state
-  const [quotesFetch, setQuotesFetch] = useState(createDataFetchState());
+  const [quotesFetch, setQuotesFetch] =
+    useState(
+      createDataFetchState<
+        { id: string; reference: string; clientName: string; netTotal: number; date: string }[]
+      >(),
+    );
   // Snooze state for alerts
   const [snoozeState, setSnoozeState] = useState(createSnoozeState());
   // Confirm dialog state
-  const [confirmState, setConfirmState] = useState(createConfirmState());
+  const [confirmState, setConfirmState] = useState(createConfirmState<ExpiringTicketAlert>());
   // UI state
   const [ui, setUi] = useState(createUIState());
   // Weather risk state
@@ -146,8 +165,8 @@ export const DashboardPage: React.FC = () => {
           const mappedQuotes = data.map((q) => ({
             id: q.id,
             reference: q.reference || "EST-DRAFT",
-            clientName: q.client_info?.entity || "Unknown Client",
-            netTotal: q.totals?.netTotal || 0,
+            clientName: (q.client_info as { entity?: string } | null)?.entity || "Unknown Client",
+            netTotal: (q.totals as { netTotal?: number } | null)?.netTotal || 0,
             date: q.date,
           }));
           setQuotesFetch((prev) => ({ ...prev, data: mappedQuotes, loading: false }));
@@ -185,7 +204,7 @@ export const DashboardPage: React.FC = () => {
 
   const crewPerSiteFiltered = useMemo(() => {
     const today = new Date();
-    const dates = [];
+    const dates: string[] = [];
     let limit = 1;
     if (timeframe === "weekly") limit = 7;
     if (timeframe === "monthly") limit = 30;
@@ -219,7 +238,7 @@ export const DashboardPage: React.FC = () => {
   const expiringTickets = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const list = [];
+    const list: ExpiringTicketAlert[] = [];
 
     workers.forEach((worker) => {
       if (worker.isArchived) return;
@@ -312,7 +331,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   // Inline Alert Actions
-  const handleRemindAlert = async (alert: Record<string, unknown>) => {
+  const handleRemindAlert = async (alert: ExpiringTicketAlert) => {
     const worker = workers.find((w) => w.id === alert.workerId);
     if (!worker?.email) {
       toast.warning("No email address on file for this worker");
@@ -332,7 +351,9 @@ export const DashboardPage: React.FC = () => {
           worker_id: alert.workerId,
           requested_certs: [alert.ticketType],
           expires_at: expiresAt.toISOString(),
-          tenant_id: profile?.tenant_id,
+          // tenant_id is required by the DB; if profile.tenant_id is
+          // missing this insert fails at runtime and is caught below.
+          tenant_id: profile?.tenant_id as string,
         })
         .select()
         .single();
@@ -747,7 +768,7 @@ export const DashboardPage: React.FC = () => {
               confirmLabel="Confirm Send"
               cancelLabel="Cancel"
               onConfirm={() => {
-                handleRemindAlert(confirmState.data);
+                if (confirmState.data) handleRemindAlert(confirmState.data);
                 setConfirmState((prev) => ({ ...prev, isOpen: false, data: null }));
               }}
             />

@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { Phone, Globe, Navigation } from "lucide-react";
 import { usePortal } from "../context/PortalContext";
 
-interface Supplier {
+export interface Supplier {
   id: string;
   name: string;
   address: string;
@@ -13,7 +13,6 @@ interface Supplier {
   businessType?: string;
   distance: string;
   coords: { lat: number; lng: number };
-  services: string[];
 }
 
 interface OSMMapProps {
@@ -157,6 +156,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
         mapRef.current = null;
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [siteCoords.lat, siteCoords.lng, siteName, theme]);
 
   // Sync supplier markers whenever the list changes, without touching the
@@ -207,6 +207,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
     // theme change) — that effect resets markersRef to just the site marker,
     // so without these deps here too, supplier pins would vanish on a theme
     // toggle until the suppliers array itself happened to change again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suppliers, onSelectSupplier, siteCoords.lat, siteCoords.lng, theme]);
 
   // Track selection changes: draw a route line to the selected supplier and
@@ -243,6 +244,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
     } else if (isValidCoord(center)) {
       mapRef.current.setView([center.lat, center.lng], 13, { animate: true });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSupplierId, center.lat, center.lng, siteCoords.lat, siteCoords.lng]);
 
   const selectedSupplier = suppliers.find((s) => s.id === selectedSupplierId);

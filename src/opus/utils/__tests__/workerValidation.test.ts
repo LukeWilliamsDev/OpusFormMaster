@@ -1,11 +1,11 @@
 import { describe, test, expect } from "vitest";
 import { validateWorkerForDeployment, getTicketStatus } from "../workerValidation";
-import { Worker, Ticket } from "../../types/erp";
+import { Worker, Ticket, StaffRole } from "../../types/erp";
 
-const createMockWorker = (role: string, tickets: Ticket[] = []): Worker => ({
+const createMockWorker = (role: StaffRole, tickets: Ticket[] = []): Worker => ({
   id: "worker-1",
   name: "John Doe",
-  role: role as any,
+  role,
   tickets,
   uploadedCertificates: [],
 });
@@ -57,7 +57,7 @@ describe("validateWorkerForDeployment", () => {
       expiryDate: futureStr,
       ticketNumber: "123",
     };
-    const worker = createMockWorker("Telehandler", [cscsTicket]);
+    const worker = createMockWorker("Telehandler Operator", [cscsTicket]);
     const result = validateWorkerForDeployment(worker, "Telehandler");
     expect(result.isValid).toBe(false);
     expect(result.reason).toContain("Requires active Telehandler operator ticket");
@@ -76,7 +76,7 @@ describe("validateWorkerForDeployment", () => {
       expiryDate: futureStr,
       ticketNumber: "456",
     };
-    const worker = createMockWorker("Telehandler", [cscsTicket, teleTicket]);
+    const worker = createMockWorker("Telehandler Operator", [cscsTicket, teleTicket]);
     const result = validateWorkerForDeployment(worker, "Telehandler");
     expect(result.isValid).toBe(true);
   });

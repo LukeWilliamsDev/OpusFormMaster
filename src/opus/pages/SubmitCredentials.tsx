@@ -391,6 +391,7 @@ export const SubmitCredentialsPage: React.FC = () => {
       setErrorMsg("No upload token provided. Please use a valid submission link.");
       setRequestFetch((prev) => ({ ...prev, loading: false }));
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const fetchRequestDetails = async () => {

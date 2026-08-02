@@ -88,7 +88,7 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
       setEmailSent(false);
       setEmailErrorMsg(null);
     }
-  }, [isOpen, worker]);
+  }, [isOpen, worker, setGeneratedLink, setSelectedCerts]);
 
   if (!worker) return null;
 

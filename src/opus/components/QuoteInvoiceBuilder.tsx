@@ -1,6 +1,7 @@
-// @ts-nocheck
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { handleError } from "../utils/errorHandler";
+import type { Database } from "@/integrations/supabase/types";
 import { usePortal } from "../context/PortalContext";
 import { isValidUKPostcode } from "../utils/geo";
 import { motion, AnimatePresence } from "motion/react";
@@ -31,6 +32,8 @@ import {
   ZoomOut,
   Maximize2,
 } from "lucide-react";
+
+type QuoteInsertRow = Database["public"]["Tables"]["quotes"]["Insert"];
 
 interface MeasuredItem {
   id: string;
@@ -235,9 +238,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         id: row.id,
         reference: row.reference,
         date: row.date,
-        clientInfo: row.client_info,
-        items: row.items,
-        totals: row.totals,
+        clientInfo: row.client_info as Quote["clientInfo"],
+        items: row.items as unknown as MeasuredItem[],
+        totals: row.totals as Quote["totals"],
         isSent: row.is_sent,
       }));
       setSavedQuotes(loadedQuotes);
@@ -338,7 +341,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       totals,
       is_sent: false,
       tenant_id: profile?.tenant_id,
-    };
+    } as unknown as QuoteInsertRow;
 
     try {
       const { error } = await supabase.from("quotes").upsert(newQuote);
@@ -382,9 +385,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               id: data.id,
               reference: data.reference,
               date: data.date,
-              clientInfo: data.client_info,
-              items: data.items,
-              totals: data.totals,
+              clientInfo: data.client_info as Quote["clientInfo"],
+              items: data.items as unknown as MeasuredItem[],
+              totals: data.totals as Quote["totals"],
               isSent: data.is_sent,
             };
             loadQuote(quote);
@@ -395,6 +398,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         }
       })();
     }
+    // onQuoteLoaded isn't memoized by the parent — including it would refetch
+    // on every parent render instead of only when quoteToLoadId changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quoteToLoadId]);
 
   const confirmDeleteQuote = (e: React.MouseEvent, quote: Quote) => {
@@ -425,10 +431,15 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       tempContainer = prepared.tempContainer;
 
       const { default: html2pdf } = await import("html2pdf.js");
-      await html2pdf().from(prepared.element).set(prepared.opt).save();
+      const worker = html2pdf();
+      await worker
+        .from(prepared.element)
+        .set(prepared.opt as Parameters<typeof worker.set>[0])
+        .save();
     } catch (err) {
+      const { message } = handleError(err, { message: "Error generating PDF download" });
       toast.error("PDF GENERATION FAILURE", {
-        description: "Error generating PDF download: " + err.message,
+        description: message,
       });
     } finally {
       if (tempContainer && tempContainer.parentNode) {
@@ -473,9 +484,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       const { default: html2pdf } = await import("html2pdf.js");
 
       // Generate PDF data uri
-      const pdfDataUri = await html2pdf()
+      const worker = html2pdf();
+      const pdfDataUri = await worker
         .from(prepared.element)
-        .set(prepared.opt)
+        .set(prepared.opt as Parameters<typeof worker.set>[0])
         .outputPdf("datauristring");
       const base64 = pdfDataUri.split(",")[1];
 
@@ -522,7 +534,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         totals,
         is_sent: true,
         tenant_id: profile?.tenant_id,
-      };
+      } as unknown as QuoteInsertRow;
 
       const { error: upsertError } = await supabase.from("quotes").upsert(updatedQuote);
 

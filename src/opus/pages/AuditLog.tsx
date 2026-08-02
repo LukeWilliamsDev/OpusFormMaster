@@ -20,6 +20,9 @@ import { usePortal } from "../context/PortalContext";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { handleError } from "../utils/errorHandler";
+import type { Database as SupabaseDatabase } from "@/integrations/supabase/types";
+
+type TableName = keyof SupabaseDatabase["public"]["Tables"];
 
 interface AuditLog {
   id: string;
@@ -76,15 +79,16 @@ export const AuditLogPage: React.FC = () => {
       if (log.action === "CREATE") {
         // Restoring a creation means deleting the record
         const { error: err } = await supabase
-          .from(table as any)
+          .from(table as TableName)
           .delete()
           .eq("id", targetId);
         error = err;
       } else if (log.action === "DELETE") {
         // Restoring a deletion means inserting the details payload
+        const restorePayload = { ...log.details, tenant_id: profile?.tenant_id };
         const { error: err } = await supabase
-          .from(table as any)
-          .upsert({ ...log.details, tenant_id: profile?.tenant_id } as any);
+          .from(table as TableName)
+          .upsert(restorePayload as unknown as never);
         error = err;
       } else if (log.action === "UPDATE") {
         // Restoring an update means applying the "old" values
@@ -92,9 +96,10 @@ export const AuditLogPage: React.FC = () => {
         if (!oldState || typeof oldState !== "object") {
           throw new Error("No old state payload found in this audit log.");
         }
+        const restorePayload = { ...oldState, tenant_id: profile?.tenant_id };
         const { error: err } = await supabase
-          .from(table as any)
-          .upsert({ ...oldState, tenant_id: profile?.tenant_id } as any);
+          .from(table as TableName)
+          .upsert(restorePayload as unknown as never);
         error = err;
       }
 
@@ -124,7 +129,7 @@ export const AuditLogPage: React.FC = () => {
     }
   };
 
-  const [staffList, setStaffList] = useState<any[]>([]);
+  const [staffList, setStaffList] = useState<{ id: string; name: string }[]>([]);
 
   const fetchLogs = async () => {
     setLoading(true);

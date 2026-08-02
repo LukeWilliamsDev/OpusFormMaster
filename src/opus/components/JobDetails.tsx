@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState, useEffect, useRef } from "react";
 import {
   ChevronLeft,
@@ -16,6 +15,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Job, Worker, ScheduledShift } from "../types/erp";
+import type { Database, Json } from "@/integrations/supabase/types";
 import { supabase } from "../../integrations/supabase/client";
 import { useJobForecast, getWeatherOnDate, geocodePostcode } from "../utils/weather";
 import { toLocalISODate } from "../utils/week";
@@ -26,8 +26,9 @@ import { compressImageFile } from "../lib/compressImage";
 import { getSignedJobAttachmentUrl } from "../lib/attachmentUrl";
 import { HistoryTab, JOB_REVERTIBLE_FIELDS, JOB_FIELD_LABELS } from "./HistoryTab";
 import { FeedTab } from "./FeedTab";
-import { MediaTab } from "./MediaTab";
+import { MediaTab, Attachment } from "./MediaTab";
 import { JobOverviewTab } from "./JobOverviewTab";
+import { Supplier } from "./OSMMap";
 import { PersistentJobHeader } from "./PersistentJobHeader";
 import { handleError } from "../utils/errorHandler";
 
@@ -84,24 +85,24 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [newPourDate, setNewPourDate] = useState(() => new Date().toISOString().split("T")[0]);
 
   // Attachments state
-  const [attachments, setAttachments] = useState<any[]>([]);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploadingPhotoBefore, setUploadingPhotoBefore] = useState(false);
   const [uploadingPhotoAfter, setUploadingPhotoAfter] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
-  const [viewDocTarget, setViewDocTarget] = useState<any>(null);
-  const [deleteAttachmentTarget, setDeleteAttachmentTarget] = useState<any>(null);
-  const [gallery, setGallery] = useState<{ photos: string[]; index: number } | null>(null);
-  const [renameTarget, setRenameTarget] = useState<any>(null);
+  const [viewDocTarget, setViewDocTarget] = useState<Attachment | null>(null);
+  const [deleteAttachmentTarget, setDeleteAttachmentTarget] = useState<Attachment | null>(null);
+  const [gallery, setGallery] = useState<{ photos: Attachment[]; index: number } | null>(null);
+  const [renameTarget, setRenameTarget] = useState<Attachment | null>(null);
   const [renameValue, setRenameValue] = useState("");
 
   // Weather & Suppliers state
   const { forecast, loading: loadingWeather } = useJobForecast(job.postcode);
   const weatherData = getWeatherOnDate(forecast, toLocalISODate(new Date()));
   const [siteCoords, setSiteCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
   const [loadingSuppliers, setLoadingSuppliers] = useState(false);
 
@@ -122,13 +123,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   );
 
   // Audit Log state
-  const [jobAuditLogs, setJobAuditLogs] = useState<any[]>([]);
+  const [jobAuditLogs, setJobAuditLogs] = useState<
+    Database["public"]["Tables"]["audit_logs"]["Row"][]
+  >([]);
   const [loadingJobAuditLogs, setLoadingJobAuditLogs] = useState(false);
   const [auditSearch, setAuditSearch] = useState("");
   const [revertConfirmTarget, setRevertConfirmTarget] = useState<{
     oldDetails: Record<string, unknown>;
     newDetails: Record<string, unknown>;
-    jobId: string;
   } | null>(null);
   const fetchJobAuditLogs = async () => {
     setLoadingJobAuditLogs(true);
@@ -197,13 +199,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const executeRevertJobUpdate = () => {
     if (!revertConfirmTarget) return;
     const { oldDetails } = revertConfirmTarget;
-    const revertedStatus = oldDetails.status ?? job.status;
+    const revertedStatus = (oldDetails.status as Job["status"]) ?? job.status;
     onUpdateJob({
       ...job,
-      siteName: oldDetails.site_name ?? job.siteName,
-      mainContractor: oldDetails.main_contractor ?? job.mainContractor,
-      postcode: oldDetails.postcode ?? job.postcode,
-      contractMaxPours: oldDetails.contract_max_pours ?? job.contractMaxPours,
+      siteName: (oldDetails.site_name as string) ?? job.siteName,
+      mainContractor: (oldDetails.main_contractor as string) ?? job.mainContractor,
+      postcode: (oldDetails.postcode as string) ?? job.postcode,
+      contractMaxPours: (oldDetails.contract_max_pours as number) ?? job.contractMaxPours,
       status: revertedStatus,
     });
     setStatus(revertedStatus);
@@ -252,6 +254,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     // Fetch initial details
     fetchAttachments();
     geocodeAndFetchWeatherAndSuppliers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job]);
 
   // External contributors submit documents via a separate tab/device (the
@@ -272,15 +275,16 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       window.removeEventListener("focus", onFocus);
       document.removeEventListener("visibilitychange", onVisibilityChange);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job.id]);
 
-  const rowToPourLog = (r: Record<string, unknown>): PourLog => ({
+  const rowToPourLog = (r: Database["public"]["Tables"]["pours"]["Row"]): PourLog => ({
     id: r.id,
     pourNumber: r.pour_number,
     date: r.date || "",
     mixType: r.mix_type,
     volumeM3: Number(r.volume_m3),
-    status: r.status,
+    status: r.status as PourLog["status"],
     notes: r.notes || undefined,
   });
 
@@ -312,6 +316,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     return () => {
       supabase.removeChannel(channel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job.id]);
 
   // Haversine Distance helper
@@ -353,8 +358,19 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       if (supError) throw supError;
 
       if (supData?.suppliers && Array.isArray(supData.suppliers)) {
-        const mapped = supData.suppliers
-          .map((s: Record<string, unknown>) => {
+        const mapped = (
+          supData.suppliers as {
+            id: string;
+            name: string;
+            address: string;
+            phone: string;
+            website?: string;
+            businessType?: string;
+            distanceMeters?: number;
+            coords: { lat: number; lng: number };
+          }[]
+        )
+          .map((s) => {
             const dist =
               s.distanceMeters != null
                 ? s.distanceMeters / 1609.34
@@ -387,6 +403,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   // quotes/jobs/staff/shifts do), so uploads and link generation are logged
   // manually here — same convention as logPourAudit above.
   const logAttachmentAudit = (action: string, details: Record<string, unknown>) => {
+    const jsonDetails = details as Json;
     supabase.auth.getUser().then(({ data: { user } }) => {
       supabase
         .rpc("log_anonymous_audit", {
@@ -394,7 +411,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           p_action: action,
           p_target_type: "jobs",
           p_target_id: job.id,
-          p_details: details,
+          p_details: jsonDetails,
         })
         .then(() => fetchJobAuditLogs());
     });
@@ -1322,10 +1339,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 {JOB_REVERTIBLE_FIELDS.filter(
                   (f) => revertConfirmTarget.oldDetails?.[f] !== undefined,
                 ).map((f) => {
-                  const rawOldVal = revertConfirmTarget.oldDetails?.[f];
-                  const rawNewVal = revertConfirmTarget.newDetails?.[f];
-                  const oldVal = f === "status" ? STATUS_LABELS[rawOldVal] || rawOldVal : rawOldVal;
-                  const newVal = f === "status" ? STATUS_LABELS[rawNewVal] || rawNewVal : rawNewVal;
+                  const rawOldVal = revertConfirmTarget.oldDetails?.[f] as string | undefined;
+                  const rawNewVal = revertConfirmTarget.newDetails?.[f] as string | undefined;
+                  const oldVal =
+                    f === "status" ? STATUS_LABELS[rawOldVal || ""] || rawOldVal : rawOldVal;
+                  const newVal =
+                    f === "status" ? STATUS_LABELS[rawNewVal || ""] || rawNewVal : rawNewVal;
                   const changed = rawOldVal !== rawNewVal;
                   return (
                     <div

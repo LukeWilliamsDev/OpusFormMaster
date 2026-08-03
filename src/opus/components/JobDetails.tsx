@@ -23,10 +23,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { compressImageFile } from "../lib/compressImage";
-import {
-  getSignedJobAttachmentUrl,
-  getSignedJobAttachmentUrlsBatch,
-} from "../lib/attachmentUrl";
+import { getSignedJobAttachmentUrl, getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
 import { HistoryTab, JOB_REVERTIBLE_FIELDS, JOB_FIELD_LABELS } from "./HistoryTab";
 import { FeedTab } from "./FeedTab";
 import { MediaTab, Attachment } from "./MediaTab";

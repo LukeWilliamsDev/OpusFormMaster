@@ -91,4 +91,3 @@ export async function getSignedJobAttachmentUrlsBatch(
 
   return resultMap;
 }
-

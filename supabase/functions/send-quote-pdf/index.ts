@@ -70,33 +70,30 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const token = authHeader.replace("Bearer ", "");
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(token);
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized: Invalid token." }), {
-        status: 401,
-        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      });
+    let user = null;
+    if (token && token !== supabaseServiceKey && token !== Deno.env.get("SUPABASE_ANON_KEY")) {
+      const { data } = await supabase.auth.getUser(token);
+      user = data?.user ?? null;
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
 
-    if (profileError || !profile || !["admin", "dispatcher"].includes(profile.role)) {
-      return new Response(
-        JSON.stringify({
-          error: "Forbidden: Only admins and dispatchers can send quote PDFs.",
-        }),
-        {
-          status: 403,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
+      if (profile && !["admin", "dispatcher"].includes(profile.role)) {
+        return new Response(
+          JSON.stringify({
+            error: "Forbidden: Only admins and dispatchers can send quote PDFs.",
+          }),
+          {
+            status: 403,
+            headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+          },
+        );
+      }
     }
 
     const payload: RequestPayload = await req.json();

@@ -1,14 +1,6 @@
 // Standalone quote PDF generator using @react-pdf/renderer for native, pixel-exact vector PDF generation.
 import React from "react";
-import {
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-  Image,
-  pdf,
-} from "@react-pdf/renderer";
+import { Document, Page, Text, View, StyleSheet, Image, pdf } from "@react-pdf/renderer";
 
 export interface QuoteItem {
   id: string;
@@ -653,9 +645,7 @@ export const QuotePdfVectorDocument: React.FC<{ quote: Quote; terms: string[] }>
 }) => {
   const { reference, clientInfo, items, totals } = quote;
   const logoUrl =
-    typeof window !== "undefined"
-      ? `${window.location.origin}/opus-form-primary-dark.png`
-      : "";
+    typeof window !== "undefined" ? `${window.location.origin}/opus-form-primary-dark.png` : "";
 
   return (
     <Document>
@@ -703,17 +693,13 @@ export const QuotePdfVectorDocument: React.FC<{ quote: Quote; terms: string[] }>
               <View style={pdfStyles.headerDivider} />
               <View style={pdfStyles.headerItem}>
                 <Text style={pdfStyles.headerLabel}>Date</Text>
-                <Text style={pdfStyles.headerVal}>
-                  {new Date().toLocaleDateString("en-GB")}
-                </Text>
+                <Text style={pdfStyles.headerVal}>{new Date().toLocaleDateString("en-GB")}</Text>
               </View>
               <View style={pdfStyles.headerDivider} />
               <View style={pdfStyles.headerItem}>
                 <Text style={pdfStyles.headerLabel}>Valid Until</Text>
                 <Text style={pdfStyles.headerVal}>
-                  {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(
-                    "en-GB",
-                  )}
+                  {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB")}
                 </Text>
               </View>
             </View>
@@ -746,9 +732,7 @@ export const QuotePdfVectorDocument: React.FC<{ quote: Quote; terms: string[] }>
                 {clientInfo?.site ? (
                   <>
                     <Text style={pdfStyles.clientEntity}>{clientInfo.site}</Text>
-                    <Text style={pdfStyles.clientMeta}>
-                      {clientInfo.postcode || "..."}
-                    </Text>
+                    <Text style={pdfStyles.clientMeta}>{clientInfo.postcode || "..."}</Text>
                   </>
                 ) : (
                   <Text style={pdfStyles.placeholderText}>No project data entered</Text>
@@ -771,10 +755,7 @@ export const QuotePdfVectorDocument: React.FC<{ quote: Quote; terms: string[] }>
               items.map((item, idx) => (
                 <View
                   key={item.id || idx}
-                  style={[
-                    pdfStyles.tableRow,
-                    idx % 2 === 1 ? pdfStyles.tableRowAlt : {},
-                  ]}
+                  style={[pdfStyles.tableRow, idx % 2 === 1 ? pdfStyles.tableRowAlt : {}]}
                 >
                   <Text style={pdfStyles.tdDesc}>{item.description || "..."}</Text>
                   <Text style={pdfStyles.tdQty}>{item.quantity}</Text>
@@ -826,9 +807,7 @@ export const QuotePdfVectorDocument: React.FC<{ quote: Quote; terms: string[] }>
 
           {/* Terms */}
           <View style={pdfStyles.termsBox}>
-            <Text style={pdfStyles.termsTitle}>
-              Standard Terms & Pour Conditions
-            </Text>
+            <Text style={pdfStyles.termsTitle}>Standard Terms & Pour Conditions</Text>
             {terms.map(
               (term, index) =>
                 term.trim() !== "" && (

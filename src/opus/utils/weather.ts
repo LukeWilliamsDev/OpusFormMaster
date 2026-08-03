@@ -14,7 +14,9 @@ const FORECAST_AHEAD_DAYS = 16;
 
 const geoCache = new Map<string, Promise<{ lat: number; lon: number } | null>>();
 
-export async function geocodePostcode(postcode: string): Promise<{ lat: number; lon: number } | null> {
+export async function geocodePostcode(
+  postcode: string,
+): Promise<{ lat: number; lon: number } | null> {
   const key = postcode.trim().toUpperCase();
   if (!key) return null;
   if (!geoCache.has(key)) {

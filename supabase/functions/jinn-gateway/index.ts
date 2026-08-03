@@ -89,7 +89,7 @@ class QueryBuilder {
     }
     const rows = await res.json();
     if (this.single_) {
-      return { data: Array.isArray(rows) ? rows[0] ?? null : rows, error: null };
+      return { data: Array.isArray(rows) ? (rows[0] ?? null) : rows, error: null };
     }
     return { data: rows, error: null };
   }
@@ -129,7 +129,12 @@ export class RestDb {
   private accessToken: string;
   auth: { getUser: () => Promise<{ data: { user: { id: string; email: string } | null } }> };
 
-  constructor(supabaseUrl: string, anonKey: string, accessToken: string, user: { id: string; email: string } | null) {
+  constructor(
+    supabaseUrl: string,
+    anonKey: string,
+    accessToken: string,
+    user: { id: string; email: string } | null,
+  ) {
     this.supabaseUrl = supabaseUrl;
     this.anonKey = anonKey;
     this.accessToken = accessToken;
@@ -140,7 +145,10 @@ export class RestDb {
     return new QueryBuilder(this, table);
   }
 
-  async request(path: string, opts: { method: string; body?: string; prefer?: string }): Promise<Response> {
+  async request(
+    path: string,
+    opts: { method: string; body?: string; prefer?: string },
+  ): Promise<Response> {
     const headers: Record<string, string> = {
       apikey: this.anonKey,
       Authorization: `Bearer ${this.accessToken}`,
@@ -168,7 +176,9 @@ export const ACTIONS: Record<string, Handler> = {
   listJobs: async (db) => {
     const { data, error } = await db
       .from("jobs")
-      .select("id, job_ref, site_name, status, main_contractor, postcode, schedule_value, current_pours, contract_max_pours")
+      .select(
+        "id, job_ref, site_name, status, main_contractor, postcode, schedule_value, current_pours, contract_max_pours",
+      )
       .order("updated_at", { ascending: false });
     if (error) throw error;
     return data;
@@ -184,7 +194,14 @@ export const ACTIONS: Record<string, Handler> = {
 
   updateJobDetails: async (db, params) => {
     const jobId = str(params, "jobId");
-    const allowedFields = ["site_name", "main_contractor", "postcode", "schedule_value", "current_pours", "contract_max_pours"];
+    const allowedFields = [
+      "site_name",
+      "main_contractor",
+      "postcode",
+      "schedule_value",
+      "current_pours",
+      "contract_max_pours",
+    ];
     const patch: Record<string, unknown> = {};
     for (const f of allowedFields) if (f in params) patch[f] = params[f];
     if (Object.keys(patch).length === 0) throw new Error("No editable fields supplied");
@@ -287,14 +304,19 @@ export const ACTIONS: Record<string, Handler> = {
     const jobId = str(params, "jobId");
     const staffId = str(params, "staffId");
     const date = str(params, "date");
-    const { data, error } = await db.from("shifts").insert({ job_id: jobId, staff_id: staffId, date });
+    const { data, error } = await db
+      .from("shifts")
+      .insert({ job_id: jobId, staff_id: staffId, date });
     if (error) throw error;
     return data;
   },
 
   // ---- Quotes -------------------------------------------------------------
   listQuotes: async (db) => {
-    const { data, error } = await db.from("quotes").select("*").order("created_at", { ascending: false });
+    const { data, error } = await db
+      .from("quotes")
+      .select("*")
+      .order("created_at", { ascending: false });
     if (error) throw error;
     return data;
   },
@@ -326,7 +348,6 @@ export const ACTIONS: Record<string, Handler> = {
     };
   },
 };
-
 
 // Jinn AI gateway: the ONLY door Jinn is allowed to knock on. It never sees
 // the service-role key and never runs raw SQL. Every call here signs in as
@@ -420,9 +441,12 @@ Deno.serve(async (req) => {
     const result = await handler(db, params);
     return new Response(JSON.stringify({ result }), { headers: jsonHeaders });
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err instanceof Error ? err.message : err) }), {
-      status: 400,
-      headers: jsonHeaders,
-    });
+    return new Response(
+      JSON.stringify({ error: String(err instanceof Error ? err.message : err) }),
+      {
+        status: 400,
+        headers: jsonHeaders,
+      },
+    );
   }
 });

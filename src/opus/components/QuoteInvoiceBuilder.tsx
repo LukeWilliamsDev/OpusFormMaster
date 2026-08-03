@@ -111,7 +111,9 @@ const resolveToRgb = (() => {
       ctx.fillStyle = colorFn;
       ctx.fillRect(0, 0, 1, 1);
       const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
-      return a === 255 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
+      return a === 255
+        ? `rgb(${r}, ${g}, ${b})`
+        : `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
     } catch {
       return "#333333";
     }
@@ -195,11 +197,7 @@ const preparePdfClone = (quoteReference: string) => {
         // overlap: at normal weight it drops spaces (words run together), and at bold
         // weight the overlap is dense enough to look like a solid highlighted block.
         // Force a metrically-safe system font stack for the capture only.
-        clonedElement.style.setProperty(
-          "font-family",
-          "Arial, Helvetica, sans-serif",
-          "important",
-        );
+        clonedElement.style.setProperty("font-family", "Arial, Helvetica, sans-serif", "important");
         // Tailwind's base reset sets font-family explicitly on every element, which would
         // win over the inherited value from clonedElement above — force it everywhere.
         // NOTE: deliberately NOT stripping/replacing the document's <style>/<link> tags

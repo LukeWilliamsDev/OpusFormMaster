@@ -2,7 +2,12 @@ import React, { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
 import { CalendarEvent, Job, Worker, ScheduledShift } from "../../types/erp";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { formatDayHeading, formatUKDate, parseLocalISODate, toLocalISODate } from "../../utils/week";
+import {
+  formatDayHeading,
+  formatUKDate,
+  parseLocalISODate,
+  toLocalISODate,
+} from "../../utils/week";
 import { useDaySchedule } from "../../hooks/useDaySchedule";
 import { useShiftActions } from "../../hooks/useShiftActions";
 import { useCalendarEventActions } from "../../hooks/useCalendarEventActions";

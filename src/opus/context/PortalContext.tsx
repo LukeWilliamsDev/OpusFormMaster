@@ -5,7 +5,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Json, Database } from "@/integrations/supabase/types";
 type StaffInsertRow = Database["public"]["Tables"]["staff"]["Insert"];
-import { Job, Worker, ScheduledShift } from "../types/erp";
+import { Job, Worker, ScheduledShift, CalendarEvent } from "../types/erp";
 import { INITIAL_ROSTER, INITIAL_SHIFTS } from "../data/roster";
 
 const INITIAL_JOBS: Job[] = [
@@ -172,11 +172,36 @@ const rowToShift = (r: ShiftRow): ScheduledShift => ({
   date: r.date,
 });
 
+type CalendarEventInsertRow = Database["public"]["Tables"]["calendar_events"]["Insert"];
+
+const calendarEventToRow = (e: CalendarEvent, tenantId?: string) =>
+  ({
+    id: e.id,
+    title: e.title,
+    description: e.description ?? null,
+    date: e.date,
+    job_id: e.jobId ?? null,
+    created_by_email: e.createdByEmail ?? null,
+    ...(tenantId ? { tenant_id: tenantId } : {}),
+  }) as CalendarEventInsertRow;
+type CalendarEventRow = Database["public"]["Tables"]["calendar_events"]["Row"];
+
+const rowToCalendarEvent = (r: CalendarEventRow): CalendarEvent => ({
+  id: r.id,
+  title: r.title,
+  description: r.description ?? undefined,
+  date: r.date,
+  jobId: r.job_id ?? undefined,
+  createdByEmail: r.created_by_email ?? undefined,
+});
+
 interface PortalContextType {
   workers: Worker[];
   setWorkers: React.Dispatch<React.SetStateAction<Worker[]>>;
   shifts: ScheduledShift[];
   setShifts: React.Dispatch<React.SetStateAction<ScheduledShift[]>>;
+  calendarEvents: CalendarEvent[];
+  setCalendarEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>;
   jobs: Job[];
   setJobs: React.Dispatch<React.SetStateAction<Job[]>>;
   handleReloadDemoData: () => void;
@@ -222,6 +247,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [shifts, setShifts] = useState<ScheduledShift[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
@@ -252,6 +278,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const prevWorkerIdsRef = useRef<Set<string>>(new Set());
   const prevJobIdsRef = useRef<Set<string>>(new Set());
   const prevShiftIdsRef = useRef<Set<string>>(new Set());
+  const prevCalendarEventIdsRef = useRef<Set<string>>(new Set());
   // Suppress the "sync-back" effect until we've hydrated from Supabase.
   const hydratedRef = useRef(false);
 
@@ -259,6 +286,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const lastSavedWorkersRef = useRef<string>("");
   const lastSavedJobsRef = useRef<string>("");
   const lastSavedShiftsRef = useRef<string>("");
+  const lastSavedCalendarEventsRef = useRef<string>("");
 
   // Bootstrap session + subscribe to auth changes
   useEffect(() => {
@@ -303,6 +331,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setWorkers([]);
         setJobs([]);
         setShifts([]);
+        setCalendarEvents([]);
         setDataLoading(true);
       }
     });
@@ -359,21 +388,25 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setDataLoading(true);
       const startStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
       const endStr = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-      const [wRes, jRes, sRes] = await Promise.all([
+      const [wRes, jRes, sRes, ceRes] = await Promise.all([
         supabase.from("staff").select("*"),
         supabase.from("jobs").select("*"),
         supabase.from("shifts").select("*").gte("date", startStr).lte("date", endStr),
+        supabase.from("calendar_events").select("*").gte("date", startStr).lte("date", endStr),
       ]);
       if (cancelled) return;
       if (wRes.error) console.error("load workers", wRes.error);
       if (jRes.error) console.error("load jobs", jRes.error);
       if (sRes.error) console.error("load shifts", sRes.error);
+      if (ceRes.error) console.error("load calendar events", ceRes.error);
       const wList = (wRes.data ?? []).map(rowToWorker);
       const jList = (jRes.data ?? []).map(rowToJob);
       const sList = (sRes.data ?? []).map(rowToShift);
+      const ceList = (ceRes.data ?? []).map(rowToCalendarEvent);
       prevWorkerIdsRef.current = new Set(wList.map((w) => w.id));
       prevJobIdsRef.current = new Set(jList.map((j) => j.id));
       prevShiftIdsRef.current = new Set(sList.map((s) => s.id));
+      prevCalendarEventIdsRef.current = new Set(ceList.map((e) => e.id));
 
       lastSavedWorkersRef.current = JSON.stringify(
         wList.map((w) => workerToRow(w, profile?.tenant_id)),
@@ -382,10 +415,14 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       lastSavedShiftsRef.current = JSON.stringify(
         sList.map((s) => shiftToRow(s, profile?.tenant_id)),
       );
+      lastSavedCalendarEventsRef.current = JSON.stringify(
+        ceList.map((e) => calendarEventToRow(e, profile?.tenant_id)),
+      );
 
       setWorkers(wList);
       setJobs(jList);
       setShifts(sList);
+      setCalendarEvents(ceList);
 
       // Delay enabling the sync triggers until React has flushed the state updates
       setTimeout(() => {
@@ -510,6 +547,44 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [user, profile?.tenant_id]);
 
+  // Keep generic calendar events live for the same reason shifts are
+  // subscribed above: other sessions/direct edits should reflect immediately.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`calendar-events-changes-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "calendar_events" },
+        (payload) => {
+          if (!hydratedRef.current) return;
+          setCalendarEvents((prev) => {
+            const next =
+              payload.eventType === "DELETE"
+                ? prev.filter((e) => e.id !== payload.old.id)
+                : (() => {
+                    const updated = rowToCalendarEvent(payload.new as CalendarEventRow);
+                    const idx = prev.findIndex((e) => e.id === updated.id);
+                    return idx === -1
+                      ? [...prev, updated]
+                      : prev.map((e, i) => (i === idx ? updated : e));
+                  })();
+
+            prevCalendarEventIdsRef.current = new Set(next.map((e) => e.id));
+            lastSavedCalendarEventsRef.current = JSON.stringify(
+              next.map((e) => calendarEventToRow(e, profile?.tenant_id)),
+            );
+            return next;
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, profile?.tenant_id]);
+
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
     const rows = workers.map((w) => workerToRow(w, profile?.tenant_id));
@@ -575,6 +650,28 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     })();
   }, [shifts, user, profile?.tenant_id]);
+
+  useEffect(() => {
+    if (!hydratedRef.current || !user) return;
+    const rows = calendarEvents.map((e) => calendarEventToRow(e, profile?.tenant_id));
+    const serialized = JSON.stringify(rows);
+    if (serialized === lastSavedCalendarEventsRef.current) return;
+    lastSavedCalendarEventsRef.current = serialized;
+
+    const currentIds = new Set(calendarEvents.map((e) => e.id));
+    const removed = [...prevCalendarEventIdsRef.current].filter((id) => !currentIds.has(id));
+    prevCalendarEventIdsRef.current = currentIds;
+    (async () => {
+      if (calendarEvents.length > 0) {
+        const { error } = await supabase.from("calendar_events").upsert(rows);
+        if (error) console.error("upsert calendar events", error);
+      }
+      if (removed.length > 0) {
+        const { error } = await supabase.from("calendar_events").delete().in("id", removed);
+        if (error) console.error("delete calendar events", error);
+      }
+    })();
+  }, [calendarEvents, user, profile?.tenant_id]);
 
   // window.confirm can't be used here since ConfirmDialog is async/non-blocking.
   // Instead we stash the "pending confirmation" as state and render the dialog
@@ -766,6 +863,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setWorkers,
         shifts,
         setShifts,
+        calendarEvents,
+        setCalendarEvents,
         jobs,
         setJobs,
         handleReloadDemoData,

@@ -94,7 +94,7 @@ export const QuotePdfDocument = ({
       <div className="bg-[#1b1c20] px-8 sm:px-12 py-9 flex justify-between items-center">
         <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-9 sm:h-10 w-auto" />
         <div className="text-right">
-          <div className="text-[26px] sm:text-[30px] font-black text-white tracking-[0.08em] leading-none mb-4">
+          <div className="inline-block bg-white text-[#1b1c20] text-[22px] sm:text-[26px] font-black tracking-[0.08em] leading-none mb-4 px-3 py-1.5 rounded">
             QUOTE
           </div>
           <div className="flex items-center justify-end gap-5">
@@ -102,12 +102,14 @@ export const QuotePdfDocument = ({
               <div className="text-[9.5px] text-stone-500 uppercase tracking-[0.12em]">
                 Reference
               </div>
-              <div className="text-[12.5px] text-white font-black mt-0.5">#{reference}</div>
+              <div className="inline-block bg-white text-[#1b1c20] text-[12.5px] font-black mt-0.5 px-2 py-0.5 rounded">
+                #{reference}
+              </div>
             </div>
             <div className="w-px h-7 bg-[#2b2c32]" />
             <div className="text-right">
               <div className="text-[9.5px] text-stone-500 uppercase tracking-[0.12em]">Date</div>
-              <div className="text-[12.5px] text-white font-black mt-0.5">
+              <div className="inline-block bg-white text-[#1b1c20] text-[12.5px] font-black mt-0.5 px-2 py-0.5 rounded">
                 {new Date().toLocaleDateString("en-GB")}
               </div>
             </div>
@@ -116,7 +118,7 @@ export const QuotePdfDocument = ({
               <div className="text-[9.5px] text-stone-500 uppercase tracking-[0.12em]">
                 Valid Until
               </div>
-              <div className="text-[12.5px] text-white font-black mt-0.5">
+              <div className="inline-block bg-white text-[#1b1c20] text-[12.5px] font-black mt-0.5 px-2 py-0.5 rounded">
                 {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB")}
               </div>
             </div>
@@ -177,8 +179,10 @@ export const QuotePdfDocument = ({
                 <th className="text-[11px] font-black tracking-[0.1em] uppercase text-white p-3 text-right w-[16%]">
                   Unit Rate
                 </th>
-                <th className="text-[11px] font-black tracking-[0.1em] uppercase text-white p-3 text-right w-[16%]">
-                  Net Value
+                <th className="p-3 pl-1 text-right w-[16%]">
+                  <span className="inline-block bg-white text-[#1b1c20] text-[10px] font-black uppercase px-1.5 py-1 rounded whitespace-nowrap">
+                    Net Value
+                  </span>
                 </th>
               </tr>
             </thead>
@@ -234,9 +238,9 @@ export const QuotePdfDocument = ({
                 £{(totals?.netTotal ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
             </div>
-            <div className="flex justify-between p-3.5 px-3 bg-[#1b1c20] text-white font-black text-[15px]">
+            <div className="flex justify-between items-center p-3.5 px-3 bg-[#1b1c20] text-white font-black text-[15px]">
               <span className="uppercase tracking-widest">Total</span>
-              <span>
+              <span className="inline-block bg-white text-[#1b1c20] px-2.5 py-1 rounded text-[14px]">
                 £
                 {(totals?.grossTotal ?? 0).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
@@ -301,19 +305,68 @@ export const QuotePdfDocument = ({
   );
 };
 
-const stripUnsupportedColorFunctions = (cssText: string) =>
-  cssText.replace(/\b(oklch|oklab|lch|lab)\([^)]*\)/g, "#333333");
+// html2canvas cannot parse modern CSS color functions and crashes the PDF render;
+// resolve each one to its real rgb() equivalent so text/backgrounds keep the right
+// color instead of a flat fallback. Reading `ctx.fillStyle` back after assignment
+// doesn't work here — Chrome's canvas getter echoes oklch() input verbatim rather
+// than normalizing it — so actually rasterize a pixel and read its RGBA bytes back.
+const resolveToRgb = (() => {
+  let ctx: CanvasRenderingContext2D | null = null;
+  return (colorFn: string) => {
+    if (!ctx) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1;
+      canvas.height = 1;
+      ctx = canvas.getContext("2d");
+    }
+    if (!ctx) return "#333333";
+    try {
+      ctx.fillStyle = colorFn;
+      ctx.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+      return a === 255 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
+    } catch {
+      return "#333333";
+    }
+  };
+})();
 
-const buildHtml2PdfOptions = (filename: string) => ({
+// Paren-balanced replace: color-mix(in oklab, oklch(...) 50%, white) nests functions,
+// so a non-greedy [^)]* regex would stop at the first inner ")" and mangle the value.
+const stripUnsupportedColorFunctions = (text: string) => {
+  const starters = /\b(?:oklch|oklab|lch|lab|color-mix)\(/g;
+  let result = "";
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = starters.exec(text))) {
+    const start = match.index;
+    let depth = 1;
+    let i = starters.lastIndex;
+    while (i < text.length && depth > 0) {
+      if (text[i] === "(") depth++;
+      else if (text[i] === ")") depth--;
+      i++;
+    }
+    result += text.slice(lastIndex, start) + resolveToRgb(text.slice(start, i));
+    lastIndex = i;
+    starters.lastIndex = i;
+  }
+  return result + text.slice(lastIndex);
+};
+
+const buildHtml2PdfOptions = (filename: string, originalElement: HTMLElement) => ({
   margin: 0,
   filename,
-  image: { type: "jpeg", quality: 0.98 },
+  image: { type: "png" },
   html2canvas: {
     scale: 2,
     useCORS: true,
     logging: false,
     scrollX: 0,
     scrollY: 0,
+    // html2canvas's word-spacing measurement collapses to 0 for some font/weight
+    // combos (see comment below) — per-character rendering sidesteps it entirely.
+    letterRendering: true,
     onclone: (_document: Document, clonedElement: HTMLElement) => {
       const cloneDoc = clonedElement.ownerDocument;
       if (cloneDoc?.body) {
@@ -321,22 +374,113 @@ const buildHtml2PdfOptions = (filename: string) => ({
         cloneDoc.body.style.padding = "0";
         cloneDoc.body.style.background = "transparent";
       }
-      let cssText = "";
-      for (let i = 0; i < document.styleSheets.length; i++) {
-        try {
-          const rules = document.styleSheets[i].cssRules || document.styleSheets[i].rules;
-          for (let j = 0; j < rules.length; j++) cssText += rules[j].cssText + "\n";
-        } catch (e) {
-          console.warn("Could not read stylesheet rules: ", e);
+      // html2canvas measures text with its own manual glyph-width table, which isn't
+      // calibrated for the app's variable webfont ("Public Sans") — especially at the
+      // 900 weight used for totals/dates/bank details. That mismatch makes characters
+      // overlap: at normal weight it drops spaces (words run together), and at bold
+      // weight the overlap is dense enough to look like a solid highlighted block.
+      // Force a metrically-safe system font stack for the capture only.
+      clonedElement.style.setProperty("font-family", "Arial, Helvetica, sans-serif", "important");
+
+      // NOTE: deliberately NOT stripping/replacing the document's <style>/<link> tags
+      // here. An earlier version rebuilt one flattened stylesheet from cssText, which
+      // silently destroyed Tailwind's @layer cascade order (utilities no longer reliably
+      // outrank base/component rules) — white-on-dark text fell back to the wrong
+      // inherited dark color. The inline !important overrides below are what actually
+      // neutralize oklch for html2canvas's parser; leaving the real stylesheets in place
+      // keeps every non-color style (and cascade order) correct.
+      const fontFixEl = cloneDoc.createElement("style");
+      fontFixEl.textContent =
+        "*,*::before,*::after{font-family:Arial,Helvetica,sans-serif!important;" +
+        "-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}" +
+        ".font-black,.font-black *{font-weight:700!important;}";
+      cloneDoc.head.appendChild(fontFixEl);
+
+      cloneDoc.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
+        const inline = el.getAttribute("style");
+        if (inline && /(oklch|oklab|lch|lab)\(/.test(inline)) {
+          el.setAttribute("style", stripUnsupportedColorFunctions(inline));
+        }
+      });
+
+      // Belt-and-braces sweep, same approach as the live editor's PDF path: colors
+      // reach the canvas via any computed property (color, box-shadow, gradients,
+      // ring shadows...) once resolved through var()/color-mix(), which the
+      // source-text regex above never sees. Cover ancestors too since html2canvas
+      // walks the chain up to <html>/<body> for stacking context.
+      const originalAncestors = [document.documentElement, document.body];
+      const clonedAncestors = cloneDoc ? [cloneDoc.documentElement, cloneDoc.body] : [];
+      const originalNodes = [
+        ...originalAncestors,
+        originalElement,
+        ...Array.from(originalElement.querySelectorAll<HTMLElement>("*")),
+      ];
+      const clonedNodes = [
+        ...clonedAncestors,
+        clonedElement,
+        ...Array.from(clonedElement.querySelectorAll<HTMLElement>("*")),
+      ];
+      const unsupportedColorFn = /\b(?:oklch|oklab|lch|lab|color-mix)\(/;
+      originalNodes.forEach((original, i) => {
+        const clone = clonedNodes[i];
+        if (!clone) return;
+        const computed = window.getComputedStyle(original);
+        for (let p = 0; p < computed.length; p++) {
+          const prop = computed.item(p);
+          const value = computed.getPropertyValue(prop);
+          if (value && unsupportedColorFn.test(value)) {
+            clone.style.setProperty(prop, stripUnsupportedColorFunctions(value), "important");
+          }
+        }
+      });
+
+      const cloneWin = cloneDoc?.defaultView;
+      if (cloneWin) {
+        clonedNodes.forEach((node) => {
+          const c = cloneWin.getComputedStyle(node);
+          for (let p = 0; p < c.length; p++) {
+            const prop = c.item(p);
+            const value = c.getPropertyValue(prop);
+            if (value && unsupportedColorFn.test(value)) {
+              node.style.setProperty(prop, stripUnsupportedColorFunctions(value), "important");
+            }
+          }
+        });
+      }
+
+      if (cloneDoc) {
+        let pseudoCss = "";
+        let pseudoId = 0;
+        ["::before", "::after"].forEach((pseudo) => {
+          originalNodes.forEach((original, i) => {
+            const clone = clonedNodes[i];
+            if (!clone) return;
+            const computed = window.getComputedStyle(original, pseudo);
+            const leaking: string[] = [];
+            for (let p = 0; p < computed.length; p++) {
+              const prop = computed.item(p);
+              const value = computed.getPropertyValue(prop);
+              if (value && unsupportedColorFn.test(value)) {
+                leaking.push(`${prop}: ${stripUnsupportedColorFunctions(value)} !important;`);
+              }
+            }
+            if (leaking.length > 0) {
+              let id = clone.getAttribute("data-pdf-fix");
+              if (!id) {
+                pseudoId += 1;
+                id = String(pseudoId);
+                clone.setAttribute("data-pdf-fix", id);
+              }
+              pseudoCss += `[data-pdf-fix="${id}"]${pseudo}{${leaking.join(" ")}}\n`;
+            }
+          });
+        });
+        if (pseudoCss) {
+          const pseudoStyleEl = cloneDoc.createElement("style");
+          pseudoStyleEl.textContent = pseudoCss;
+          cloneDoc.head.appendChild(pseudoStyleEl);
         }
       }
-      const safeCss = stripUnsupportedColorFunctions(cssText);
-      cloneDoc
-        .querySelectorAll('link[rel="stylesheet"], style')
-        .forEach((el: Element) => el.remove());
-      const styleEl = cloneDoc.createElement("style");
-      styleEl.textContent = safeCss;
-      cloneDoc.head.appendChild(styleEl);
     },
   },
   jsPDF: {
@@ -376,7 +520,7 @@ export async function generateQuotePdfBlob(quote: Quote) {
     const worker = html2pdf();
     const blob = await worker
       .from(printArea)
-      .set(buildHtml2PdfOptions(filename) as unknown as Parameters<typeof worker.set>[0])
+      .set(buildHtml2PdfOptions(filename, printArea) as unknown as Parameters<typeof worker.set>[0])
       .outputPdf("blob");
 
     return { blob, filename };

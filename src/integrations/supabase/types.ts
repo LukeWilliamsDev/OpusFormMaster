@@ -52,6 +52,60 @@ export type Database = {
           },
         ];
       };
+      calendar_events: {
+        Row: {
+          created_at: string;
+          created_by: string | null;
+          created_by_email: string | null;
+          date: string;
+          description: string | null;
+          id: string;
+          job_id: string | null;
+          tenant_id: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string | null;
+          created_by_email?: string | null;
+          date: string;
+          description?: string | null;
+          id?: string;
+          job_id?: string | null;
+          tenant_id?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string | null;
+          created_by_email?: string | null;
+          date?: string;
+          description?: string | null;
+          id?: string;
+          job_id?: string | null;
+          tenant_id?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "calendar_events_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "calendar_events_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       document_requests: {
         Row: {
           completed_at: string | null;

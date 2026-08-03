@@ -4,6 +4,7 @@ import {
   LayoutDashboard,
   HardHat,
   Calendar,
+  CalendarDays,
   Users,
   FileText,
   History,
@@ -59,9 +60,15 @@ export const PortalLayout: React.FC = () => {
     },
     { name: "JOB LEDGER", path: "/portal/ledger", icon: ClipboardList, roles: MANAGEMENT_ROLES },
     {
-      name: "CALENDAR",
+      name: "SITE SCHEDULE",
       path: "/portal/roster?view=calendar",
       icon: Calendar,
+      roles: ALL_ROLES,
+    },
+    {
+      name: "CALENDAR",
+      path: "/portal/calendar",
+      icon: CalendarDays,
       roles: ALL_ROLES,
     },
     {

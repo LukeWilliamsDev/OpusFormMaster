@@ -112,6 +112,15 @@ export interface ScheduledShift {
   date: string; // YYYY-MM-DD
 }
 
+export interface CalendarEvent {
+  id: string;
+  title: string;
+  description?: string;
+  date: string; // YYYY-MM-DD
+  jobId?: string;
+  createdByEmail?: string;
+}
+
 export interface AuditLogEntry {
   id: string;
   action: "UPDATE" | "CREATE" | "DELETE";

@@ -13,6 +13,7 @@ import { LandingPage } from "./components/LandingPage";
 import { PortalAuthPage } from "./pages/PortalAuth";
 import { DashboardPage } from "./pages/Dashboard";
 import { LaborRosterPage } from "./pages/LaborRoster";
+import { CalendarPage } from "./pages/CalendarPage";
 import { JobLedgerPage } from "./pages/JobLedger";
 import { PipelinePage } from "./pages/Pipeline";
 import { AuditLogPage } from "./pages/AuditLog";
@@ -138,6 +139,14 @@ export default function App() {
               element={
                 <RoleGuard allow={ALL_ROLES}>
                   <LaborRosterPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/calendar"
+              element={
+                <RoleGuard allow={ALL_ROLES}>
+                  <CalendarPage />
                 </RoleGuard>
               }
             />

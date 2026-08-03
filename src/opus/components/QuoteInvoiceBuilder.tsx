@@ -93,9 +93,53 @@ const capitalizeWords = (str: string) => {
 };
 
 // html2canvas cannot parse modern CSS color functions and crashes the PDF render;
-// strip them all to a safe hex fallback before the clone is rasterized.
-const stripUnsupportedColorFunctions = (cssText: string) =>
-  cssText.replace(/\b(oklch|oklab|lch|lab)\([^)]*\)/g, "#333333");
+// resolve each one to its real rgb() equivalent so text/backgrounds keep the right
+// color instead of a flat fallback. Reading `ctx.fillStyle` back after assignment
+// doesn't work here — Chrome's canvas getter echoes oklch() input verbatim rather
+// than normalizing it — so actually rasterize a pixel and read its RGBA bytes back.
+const resolveToRgb = (() => {
+  let ctx: CanvasRenderingContext2D | null = null;
+  return (colorFn: string) => {
+    if (!ctx) {
+      const canvas = document.createElement("canvas");
+      canvas.width = 1;
+      canvas.height = 1;
+      ctx = canvas.getContext("2d");
+    }
+    if (!ctx) return "#333333";
+    try {
+      ctx.fillStyle = colorFn;
+      ctx.fillRect(0, 0, 1, 1);
+      const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+      return a === 255 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
+    } catch {
+      return "#333333";
+    }
+  };
+})();
+
+// Paren-balanced replace: color-mix(in oklab, oklch(...) 50%, white) nests functions,
+// so a non-greedy [^)]* regex would stop at the first inner ")" and mangle the value.
+const stripUnsupportedColorFunctions = (text: string) => {
+  const starters = /\b(?:oklch|oklab|lch|lab|color-mix)\(/g;
+  let result = "";
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = starters.exec(text))) {
+    const start = match.index;
+    let depth = 1;
+    let i = starters.lastIndex;
+    while (i < text.length && depth > 0) {
+      if (text[i] === "(") depth++;
+      else if (text[i] === ")") depth--;
+      i++;
+    }
+    result += text.slice(lastIndex, start) + resolveToRgb(text.slice(start, i));
+    lastIndex = i;
+    starters.lastIndex = i;
+  }
+  return result + text.slice(lastIndex);
+};
 
 // Shared by handleDownloadPDF and handleSend: clones the live print area into an
 // off-screen container sized to exact A4 px dimensions, and builds the matching
@@ -131,7 +175,7 @@ const preparePdfClone = (quoteReference: string) => {
   const opt = {
     margin: 0,
     filename: `Quote_${quoteReference}.pdf`,
-    image: { type: "jpeg", quality: 0.98 },
+    image: { type: "png" },
     html2canvas: {
       scale: 2,
       useCORS: true,
@@ -145,24 +189,132 @@ const preparePdfClone = (quoteReference: string) => {
           cloneDoc.body.style.padding = "0";
           cloneDoc.body.style.background = "transparent";
         }
-        let cssText = "";
-        for (let i = 0; i < document.styleSheets.length; i++) {
-          const sheet = document.styleSheets[i];
-          try {
-            const rules = sheet.cssRules || sheet.rules;
-            for (let j = 0; j < rules.length; j++) {
-              cssText += rules[j].cssText + "\n";
+        // html2canvas measures text with its own manual glyph-width table, which isn't
+        // calibrated for the app's variable webfont ("Public Sans") — especially at the
+        // 900 weight used for totals/dates/bank details. That mismatch makes characters
+        // overlap: at normal weight it drops spaces (words run together), and at bold
+        // weight the overlap is dense enough to look like a solid highlighted block.
+        // Force a metrically-safe system font stack for the capture only.
+        clonedElement.style.setProperty(
+          "font-family",
+          "Arial, Helvetica, sans-serif",
+          "important",
+        );
+        // Tailwind's base reset sets font-family explicitly on every element, which would
+        // win over the inherited value from clonedElement above — force it everywhere.
+        // NOTE: deliberately NOT stripping/replacing the document's <style>/<link> tags
+        // here. An earlier version rebuilt one flattened stylesheet from cssText, which
+        // silently destroyed Tailwind's @layer cascade order (utilities no longer reliably
+        // outrank base/component rules) — white-on-dark text fell back to the wrong
+        // inherited dark color. The inline !important overrides below are what actually
+        // neutralize oklch for html2canvas's parser; leaving the real stylesheets in place
+        // keeps every non-color style (and cascade order) correct.
+        const fontFixEl = cloneDoc.createElement("style");
+        // font-weight:900 (Tailwind's font-black, used for totals/dates/headings) has no
+        // true 900 file in Arial/Helvetica — the browser synthesizes bold by double-stroking
+        // the outline, which html2canvas's canvas text renderer paints as a muddy overlap
+        // (worst on small white text over dark backgrounds). Cap at 700, a real weight both
+        // fonts ship natively — no synthesis, no dependency on "Arial Black" being installed
+        // (it isn't, in this headless capture environment, which blanked text entirely).
+        fontFixEl.textContent =
+          "*,*::before,*::after{font-family:Arial,Helvetica,sans-serif!important;" +
+          "-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}" +
+          ".font-black,.font-black *{font-weight:700!important;}";
+        cloneDoc.head.appendChild(fontFixEl);
+
+        cloneDoc.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
+          const inline = el.getAttribute("style");
+          if (inline && /(oklch|oklab|lch|lab)\(/.test(inline)) {
+            el.setAttribute("style", stripUnsupportedColorFunctions(inline));
+          }
+        });
+
+        // Belt-and-braces: colors can reach the canvas via ANY computed property (color,
+        // box-shadow, gradients, ring shadows, -webkit-text-fill-color...) once resolved
+        // through var()/color-mix(), which the source-text regex above never sees. Scan
+        // every computed property on the still-live original node and force-override any
+        // that still contain an unsupported color function.
+        // html2canvas walks the full ancestor chain up to <html>/<body> for stacking
+        // context, so those need fixing too, not just .print-area and its descendants.
+        const originalAncestors = [document.documentElement, document.body];
+        const clonedAncestors = cloneDoc ? [cloneDoc.documentElement, cloneDoc.body] : [];
+        const originalNodes = [
+          ...originalAncestors,
+          originalElement as HTMLElement,
+          ...Array.from(originalElement.querySelectorAll<HTMLElement>("*")),
+        ];
+        const clonedNodes = [
+          ...clonedAncestors,
+          clonedElement,
+          ...Array.from(clonedElement.querySelectorAll<HTMLElement>("*")),
+        ];
+        const unsupportedColorFn = /\b(?:oklch|oklab|lch|lab|color-mix)\(/;
+        originalNodes.forEach((original, i) => {
+          const clone = clonedNodes[i];
+          if (!clone) return;
+          const computed = window.getComputedStyle(original);
+          for (let p = 0; p < computed.length; p++) {
+            const prop = computed.item(p);
+            const value = computed.getPropertyValue(prop);
+            if (value && unsupportedColorFn.test(value)) {
+              clone.style.setProperty(prop, stripUnsupportedColorFunctions(value), "important");
             }
-          } catch (e) {
-            console.warn("Could not read stylesheet rules: ", e);
+          }
+        });
+
+        // Second pass, self-referential: some tokens (Tailwind's --color-* theme vars)
+        // only resurface once read back off the CLONE's own computed style post-swap,
+        // not off the original — so sweep the clone directly too.
+        const cloneWin = cloneDoc?.defaultView;
+        if (cloneWin) {
+          clonedNodes.forEach((node) => {
+            const c = cloneWin.getComputedStyle(node);
+            for (let p = 0; p < c.length; p++) {
+              const prop = c.item(p);
+              const value = c.getPropertyValue(prop);
+              if (value && unsupportedColorFn.test(value)) {
+                node.style.setProperty(prop, stripUnsupportedColorFunctions(value), "important");
+              }
+            }
+          });
+        }
+
+        // Third pass: ::before/::after pseudo-elements (bullet markers, decorative dots)
+        // can't be read via getComputedStyle(el) and can't be fixed via inline style —
+        // html2canvas renders them as real boxes, so patch via a targeted stylesheet rule.
+        if (cloneDoc) {
+          let pseudoCss = "";
+          let pseudoId = 0;
+          ["::before", "::after"].forEach((pseudo) => {
+            originalNodes.forEach((original, i) => {
+              const clone = clonedNodes[i];
+              if (!clone) return;
+              const computed = window.getComputedStyle(original, pseudo);
+              const leaking: string[] = [];
+              for (let p = 0; p < computed.length; p++) {
+                const prop = computed.item(p);
+                const value = computed.getPropertyValue(prop);
+                if (value && unsupportedColorFn.test(value)) {
+                  leaking.push(`${prop}: ${stripUnsupportedColorFunctions(value)} !important;`);
+                }
+              }
+              if (leaking.length > 0) {
+                let id = clone.getAttribute("data-pdf-fix");
+                if (!id) {
+                  pseudoId += 1;
+                  id = String(pseudoId);
+                  clone.setAttribute("data-pdf-fix", id);
+                }
+                pseudoCss += `[data-pdf-fix="${id}"]${pseudo}{${leaking.join(" ")}}\n`;
+              }
+            });
+          });
+          if (pseudoCss) {
+            const pseudoStyleEl = cloneDoc.createElement("style");
+            pseudoStyleEl.textContent = pseudoCss;
+            cloneDoc.head.appendChild(pseudoStyleEl);
           }
         }
-        const safeCss = stripUnsupportedColorFunctions(cssText);
-        const originalStyles = cloneDoc.querySelectorAll('link[rel="stylesheet"], style');
-        originalStyles.forEach((el) => el.remove());
-        const styleEl = cloneDoc.createElement("style");
-        styleEl.textContent = safeCss;
-        cloneDoc.head.appendChild(styleEl);
       },
     },
     jsPDF: {

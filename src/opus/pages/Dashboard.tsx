@@ -623,7 +623,7 @@ export const DashboardPage: React.FC = () => {
           <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
             <CalendarDays className="w-4 h-4" />
           </div>
-          <span className="text-[12px] font-bold text-foreground text-left">Calendar</span>
+          <span className="text-[12px] font-bold text-foreground text-left">Site Schedule</span>
         </button>
 
         <button

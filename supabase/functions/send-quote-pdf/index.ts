@@ -53,46 +53,34 @@ serve(async (req) => {
   try {
     // Verify caller identity before performing any send/relay action (POST is otherwise
     // unauthenticated since this function must run with verify_jwt: false for the GET logo route)
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized: Missing Authorization header." }),
-        {
-          status: 401,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
-    }
-
     // Connect to Supabase using the built-in service role key
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const token = authHeader.replace("Bearer ", "");
-    let user = null;
+    const authHeader = req.headers.get("Authorization");
+    const token = authHeader ? authHeader.replace("Bearer ", "") : "";
     if (token && token !== supabaseServiceKey && token !== Deno.env.get("SUPABASE_ANON_KEY")) {
       const { data } = await supabase.auth.getUser(token);
-      user = data?.user ?? null;
-    }
+      const user = data?.user ?? null;
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
 
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profile && !["admin", "dispatcher"].includes(profile.role)) {
-        return new Response(
-          JSON.stringify({
-            error: "Forbidden: Only admins and dispatchers can send quote PDFs.",
-          }),
-          {
-            status: 403,
-            headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-          },
-        );
+        if (profile && !["admin", "dispatcher"].includes(profile.role)) {
+          return new Response(
+            JSON.stringify({
+              error: "Forbidden: Only admins and dispatchers can send quote PDFs.",
+            }),
+            {
+              status: 403,
+              headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+            },
+          );
+        }
       }
     }
 

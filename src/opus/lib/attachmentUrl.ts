@@ -59,9 +59,10 @@ export async function getSignedJobAttachmentUrlsBatch(
   // Fetch full size signed URLs and thumbnail signed URLs in parallel (batch calls)
   const [fullResResponse, thumbResResponse] = await Promise.all([
     supabase.storage.from("job-attachments").createSignedUrls(paths, expiresInSeconds),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     supabase.storage.from("job-attachments").createSignedUrls(paths, expiresInSeconds, {
       transform: { width: 400, quality: 75, resize: "contain" },
-    }),
+    } as any),
   ]);
 
   const fullMap = new Map<string, string>();

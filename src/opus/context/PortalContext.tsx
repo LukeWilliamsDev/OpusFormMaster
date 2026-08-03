@@ -1,4 +1,4 @@
-﻿import React, { createContext, useContext, useState, useEffect, useRef } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -447,7 +447,6 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const channel = supabase
       .channel(`staff-changes-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "staff" }, (payload) => {
-        if (!hydratedRef.current) return;
         setWorkers((prev) => {
           const next =
             payload.eventType === "DELETE"
@@ -484,7 +483,6 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const channel = supabase
       .channel(`jobs-changes-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, (payload) => {
-        if (!hydratedRef.current) return;
         setJobs((prev) => {
           const next =
             payload.eventType === "DELETE"
@@ -520,7 +518,6 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const channel = supabase
       .channel(`shifts-changes-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "shifts" }, (payload) => {
-        if (!hydratedRef.current) return;
         setShifts((prev) => {
           const next =
             payload.eventType === "DELETE"
@@ -557,7 +554,6 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         "postgres_changes",
         { event: "*", schema: "public", table: "calendar_events" },
         (payload) => {
-          if (!hydratedRef.current) return;
           setCalendarEvents((prev) => {
             const next =
               payload.eventType === "DELETE"

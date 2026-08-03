@@ -25,3 +25,70 @@ export async function getSignedJobAttachmentUrl(
   if (error || !data?.signedUrl) return null;
   return data.signedUrl;
 }
+
+export interface BatchSignedUrlsResult {
+  fullUrl: string | null;
+  thumbUrl: string | null;
+}
+
+/**
+ * Batch sign multiple file URLs in 1 or 2 API calls instead of N roundtrips.
+ */
+export async function getSignedJobAttachmentUrlsBatch(
+  fileUrls: string[],
+  expiresInSeconds = 3600,
+): Promise<Map<string, BatchSignedUrlsResult>> {
+  const resultMap = new Map<string, BatchSignedUrlsResult>();
+  const marker = "/job-attachments/";
+
+  // Map input fileUrls to relative storage paths
+  const validItems: { originalUrl: string; filePath: string }[] = [];
+  for (const url of fileUrls) {
+    if (!url) continue;
+    const idx = url.indexOf(marker);
+    if (idx !== -1) {
+      const filePath = url.slice(idx + marker.length);
+      validItems.push({ originalUrl: url, filePath });
+    }
+  }
+
+  if (validItems.length === 0) return resultMap;
+
+  const paths = validItems.map((item) => item.filePath);
+
+  // Fetch full size signed URLs and thumbnail signed URLs in parallel (batch calls)
+  const [fullResResponse, thumbResResponse] = await Promise.all([
+    supabase.storage.from("job-attachments").createSignedUrls(paths, expiresInSeconds),
+    supabase.storage.from("job-attachments").createSignedUrls(paths, expiresInSeconds, {
+      transform: { width: 400, quality: 75, resize: "contain" },
+    }),
+  ]);
+
+  const fullMap = new Map<string, string>();
+  if (fullResResponse.data) {
+    for (const item of fullResResponse.data) {
+      if (item.path && item.signedUrl) {
+        fullMap.set(item.path, item.signedUrl);
+      }
+    }
+  }
+
+  const thumbMap = new Map<string, string>();
+  if (thumbResResponse.data) {
+    for (const item of thumbResResponse.data) {
+      if (item.path && item.signedUrl) {
+        thumbMap.set(item.path, item.signedUrl);
+      }
+    }
+  }
+
+  for (const item of validItems) {
+    resultMap.set(item.originalUrl, {
+      fullUrl: fullMap.get(item.filePath) || null,
+      thumbUrl: thumbMap.get(item.filePath) || fullMap.get(item.filePath) || null,
+    });
+  }
+
+  return resultMap;
+}
+

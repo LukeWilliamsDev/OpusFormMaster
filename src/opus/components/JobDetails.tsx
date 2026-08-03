@@ -23,7 +23,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { compressImageFile } from "../lib/compressImage";
-import { getSignedJobAttachmentUrl } from "../lib/attachmentUrl";
+import {
+  getSignedJobAttachmentUrl,
+  getSignedJobAttachmentUrlsBatch,
+} from "../lib/attachmentUrl";
 import { HistoryTab, JOB_REVERTIBLE_FIELDS, JOB_FIELD_LABELS } from "./HistoryTab";
 import { FeedTab } from "./FeedTab";
 import { MediaTab, Attachment } from "./MediaTab";
@@ -426,18 +429,21 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         .order("uploaded_at", { ascending: false });
 
       if (data) {
-        // job-attachments is a private bucket; the stored file_url is a
-        // legacy public-URL-shaped path carrier that needs signing to load.
-        // raw_file_url keeps the original (unsigned) carrier around so the
-        // storage path can still be extracted after file_url is overwritten
-        // with a signed, token-bearing URL below.
-        const signed = await Promise.all(
-          data.map(async (a) => ({
+        // job-attachments is a private bucket; stored file_url values are legacy
+        // public-URL-shaped paths. Use batch URL signing to fetch signed URLs
+        // and image thumbnails in 2 parallel requests instead of N roundtrips.
+        const fileUrls = data.map((a) => a.file_url).filter(Boolean);
+        const signedMap = await getSignedJobAttachmentUrlsBatch(fileUrls);
+
+        const signed = data.map((a) => {
+          const batchRes = signedMap.get(a.file_url);
+          return {
             ...a,
             raw_file_url: a.file_url,
-            file_url: (await getSignedJobAttachmentUrl(a.file_url)) ?? a.file_url,
-          })),
-        );
+            file_url: batchRes?.fullUrl ?? a.file_url,
+            thumb_url: batchRes?.thumbUrl ?? batchRes?.fullUrl ?? a.file_url,
+          };
+        });
         setAttachments(signed);
       }
     } catch (err) {

@@ -72,7 +72,7 @@ export const PortalLayout: React.FC = () => {
       roles: ALL_ROLES,
     },
     {
-      name: "OPERATIVES",
+      name: "STAFF",
       path: "/portal/roster?view=staff",
       icon: Users,
       roles: MANAGEMENT_ROLES,

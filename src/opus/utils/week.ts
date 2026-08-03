@@ -114,3 +114,19 @@ export const isValidISODate = (iso: string | null | undefined): iso is string =>
   const d = parseLocalISODate(iso);
   return toLocalISODate(d) === iso;
 };
+
+/** Format YYYY-MM-DD or ISO string as DD/MM/YYYY UK format */
+export const formatUKDate = (isoDate: string | null | undefined): string => {
+  if (!isoDate) return "";
+  if (/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+    const [y, m, d] = isoDate.split("-");
+    return `${d}/${m}/${y}`;
+  }
+  try {
+    const d = new Date(isoDate);
+    if (isNaN(d.getTime())) return isoDate;
+    return d.toLocaleDateString("en-GB");
+  } catch {
+    return isoDate;
+  }
+};

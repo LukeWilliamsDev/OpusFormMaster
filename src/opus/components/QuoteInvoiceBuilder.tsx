@@ -7,7 +7,7 @@ import { isValidUKPostcode } from "../utils/geo";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { NoticeModal } from "@/components/ui/notice-modal";
-import { QuotePdfDocument } from "../lib/quotePdf";
+import { QuotePdfDocument, generateQuotePdfBlob } from "../lib/quotePdf";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Plus,
@@ -218,8 +218,10 @@ const preparePdfClone = (quoteReference: string) => {
         // (it isn't, in this headless capture environment, which blanked text entirely).
         fontFixEl.textContent =
           "*,*::before,*::after{font-family:Arial,Helvetica,sans-serif!important;" +
+          "letter-spacing:normal!important;text-shadow:none!important;" +
           "-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}" +
-          ".font-black,.font-black *{font-weight:700!important;}";
+          ".font-black,.font-black *{font-weight:700!important;}" +
+          ".text-white,.text-white *{color:#ffffff!important;background-color:transparent!important;}";
         cloneDoc.head.appendChild(fontFixEl);
 
         cloneDoc.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
@@ -253,6 +255,10 @@ const preparePdfClone = (quoteReference: string) => {
           const clone = clonedNodes[i];
           if (!clone) return;
           const computed = window.getComputedStyle(original);
+          // Preserve text-white elements cleanly
+          if (original.classList.contains("text-white")) {
+            clone.style.setProperty("color", "#ffffff", "important");
+          }
           for (let p = 0; p < computed.length; p++) {
             const prop = computed.item(p);
             const value = computed.getPropertyValue(prop);
@@ -577,26 +583,26 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   };
 
   const handleDownloadPDF = async () => {
-    let tempContainer: HTMLElement | undefined;
     try {
-      const prepared = preparePdfClone(quoteReference);
-      tempContainer = prepared.tempContainer;
-
-      const { default: html2pdf } = await import("html2pdf.js");
-      const worker = html2pdf();
-      await worker
-        .from(prepared.element)
-        .set(prepared.opt as Parameters<typeof worker.set>[0])
-        .save();
+      const { blob, filename } = await generateQuotePdfBlob({
+        reference: quoteReference,
+        clientInfo,
+        items,
+        totals,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
     } catch (err) {
       const { message } = handleError(err, { message: "Error generating PDF download" });
       toast.error("PDF GENERATION FAILURE", {
         description: message,
       });
-    } finally {
-      if (tempContainer && tempContainer.parentNode) {
-        document.body.removeChild(tempContainer);
-      }
     }
   };
 
@@ -609,7 +615,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     if (clientInfo.postcode.trim() && !isValidUKPostcode(clientInfo.postcode)) {
       missingFields.push("Invalid Site Postcode format (e.g. M1 1AE)");
     }
-    if (items.length === 0) missingFields.push("Line Items (at least one is required)");
+    if (items.length === 0) {
+      missingFields.push("Line Items (at least one is required)");
+    } else if (items.some((i) => !i.description.trim())) {
+      missingFields.push("Line Item Description (all added items require a description)");
+    }
 
     const validTerms = terms.filter((t) => t.trim() !== "");
     if (validTerms.length === 0)
@@ -625,23 +635,24 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       description: "Generating PDF and sending to client...",
     });
 
-    let tempContainer: HTMLElement | undefined;
     try {
-      // 1 & 2. Clone the live print area (stripped of scaling transforms) into a hidden,
-      // exact-A4-sized container — same helper used by handleDownloadPDF.
-      const prepared = preparePdfClone(quoteReference);
-      tempContainer = prepared.tempContainer;
+      const { blob } = await generateQuotePdfBlob({
+        reference: quoteReference,
+        clientInfo,
+        items,
+        totals,
+      });
 
-      // Dynamically import html2pdf.js to avoid packaging issues on non-browser environments
-      const { default: html2pdf } = await import("html2pdf.js");
-
-      // Generate PDF data uri
-      const worker = html2pdf();
-      const pdfDataUri = await worker
-        .from(prepared.element)
-        .set(prepared.opt as Parameters<typeof worker.set>[0])
-        .outputPdf("datauristring");
-      const base64 = pdfDataUri.split(",")[1];
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onloadend = () => {
+          const res = reader.result as string;
+          resolve(res.split(",")[1]);
+        };
+        reader.onerror = reject;
+      });
+      reader.readAsDataURL(blob);
+      const base64 = await base64Promise;
 
       // Invoke Supabase Edge Function send-quote-pdf
       const { data, error } = await supabase.functions.invoke("send-quote-pdf", {
@@ -702,9 +713,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         description: "Email failed. Please get in contact with admin@opusform.co.uk",
       });
     } finally {
-      if (tempContainer && tempContainer.parentNode) {
-        document.body.removeChild(tempContainer);
-      }
       setIsSendingEmail(false);
     }
   };
@@ -999,17 +1007,30 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                   <div className="flex flex-col gap-2.5">
                     {/* Description */}
                     <div className="relative flex-1 pr-7">
-                      <input
-                        type="text"
-                        className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-muted-foreground font-bold tracking-wider py-1.5"
-                        value={item.description}
-                        onChange={(e) => updateItem(item.id, { description: e.target.value })}
-                        onFocus={() => setFocusedItemId(item.id)}
-                        onBlur={() => {
-                          setTimeout(() => setFocusedItemId(null), 200);
-                        }}
-                        placeholder="Description of item..."
-                      />
+                      <div
+                        className={`flex items-center rounded-lg px-2.5 transition-colors ${
+                          !item.description.trim()
+                            ? "bg-amber-500/10 border border-amber-500/40 focus-within:border-amber-500"
+                            : "bg-transparent border border-transparent focus-within:border-primary/50"
+                        }`}
+                      >
+                        <input
+                          type="text"
+                          className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-amber-500/70 font-bold tracking-wider py-1.5"
+                          value={item.description}
+                          onChange={(e) => updateItem(item.id, { description: e.target.value })}
+                          onFocus={() => setFocusedItemId(item.id)}
+                          onBlur={() => {
+                            setTimeout(() => setFocusedItemId(null), 200);
+                          }}
+                          placeholder="⚠️ Enter item description or pick suggestion below..."
+                        />
+                      </div>
+                      {!item.description.trim() && focusedItemId !== item.id && (
+                        <p className="text-[10px] font-bold text-amber-400 mt-1 uppercase tracking-wider">
+                          Description required
+                        </p>
+                      )}
                       <AnimatePresence>
                         {focusedItemId === item.id && (
                           <motion.div

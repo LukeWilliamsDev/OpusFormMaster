@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
 import { CalendarEvent, Job, Worker, ScheduledShift } from "../../types/erp";
-import { parseLocalISODate, toLocalISODate } from "../../utils/week";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { formatDayHeading, formatUKDate, parseLocalISODate, toLocalISODate } from "../../utils/week";
 import { useDaySchedule } from "../../hooks/useDaySchedule";
 import { useShiftActions } from "../../hooks/useShiftActions";
 import { useCalendarEventActions } from "../../hooks/useCalendarEventActions";
@@ -91,6 +92,8 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
   const [pickingJobFor, setPickingJobFor] = useState<string | null>(null);
   const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
   const [eventForm, setEventForm] = useState<EventFormState | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<CalendarEvent | null>(null);
+  const [shiftToRemove, setShiftToRemove] = useState<ScheduledShift | null>(null);
 
   const { assignWorker, confirmReallocate, removeShift } = useShiftActions(
     workers,
@@ -227,15 +230,16 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <div className={`min-w-[700px] border-2 ${SITE_BORDER} rounded-xl overflow-hidden`}>
+      <div className="w-full">
+        <div className={`w-full border-2 ${SITE_BORDER} rounded-xl overflow-hidden`}>
           <div className={`grid grid-cols-7 border-b-2 ${SITE_BORDER} bg-card`}>
             {WEEKDAY_LABELS.map((label) => (
               <div
                 key={label}
-                className="px-2 py-2 text-[11px] font-black uppercase tracking-widest text-muted-foreground text-center"
+                className="px-1 sm:px-2 py-2 text-[10px] sm:text-[11px] font-black uppercase tracking-widest text-muted-foreground text-center"
               >
-                {label}
+                <span className="hidden sm:inline">{label}</span>
+                <span className="sm:hidden">{label.slice(0, 1)}</span>
               </div>
             ))}
           </div>
@@ -246,26 +250,41 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
               const overflow = cellJobs.length - MAX_CHIPS_PER_CELL;
               const cellEvents = eventsByDate.get(cell.date) ?? [];
               const isToday = cell.date === todayISO;
+              const hasActivity = cellJobs.length > 0 || cellEvents.length > 0;
               return (
                 <div
                   key={cell.date}
-                  className={`min-h-[100px] p-1.5 border-b-2 ${SITE_BORDER} ${
+                  onClick={() => setDetailDate(cell.date)}
+                  className={`min-h-[70px] sm:min-h-[100px] p-1 sm:p-1.5 border-b-2 ${SITE_BORDER} ${
                     (idx + 1) % 7 !== 0 ? `border-r-2 ${SITE_BORDER}` : ""
-                  } ${cell.inMonth ? "bg-background" : "bg-card/50"} flex flex-col gap-1`}
+                  } ${cell.inMonth ? "bg-background hover:bg-card/40" : "bg-card/50"} flex flex-col gap-1 cursor-pointer transition-colors`}
                 >
-                  <span
-                    className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold ${
-                      isToday
-                        ? SITE_AMBER
-                        : cell.inMonth
-                          ? "text-foreground"
-                          : "text-muted-foreground/50"
-                    }`}
-                  >
-                    {cell.dayNum}
-                  </span>
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full text-[10px] sm:text-xs font-bold ${
+                        isToday
+                          ? SITE_AMBER
+                          : cell.inMonth
+                            ? "text-foreground"
+                            : "text-muted-foreground/50"
+                      }`}
+                    >
+                      {cell.dayNum}
+                    </span>
+                    {/* Mobile compact activity dot indicator */}
+                    {hasActivity && (
+                      <div className="flex md:hidden items-center gap-0.5">
+                        {cellJobs.length > 0 && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        )}
+                        {cellEvents.length > 0 && (
+                          <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                        )}
+                      </div>
+                    )}
+                  </div>
 
-                  <div className="flex flex-col gap-1">
+                  <div className="hidden md:flex flex-col gap-1">
                     {cellJobs.slice(0, MAX_CHIPS_PER_CELL).map((job) => {
                       const colors = getJobColorClasses(job.id);
                       return (
@@ -321,7 +340,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
-                {detailDate}
+                {formatDayHeading(detailDate)}
               </h3>
               <button
                 type="button"
@@ -359,7 +378,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                         )}
                         <button
                           type="button"
-                          onClick={() => removeShift(shift.id)}
+                          onClick={() => setShiftToRemove(shift)}
                           className="p-1 rounded-md text-muted-foreground hover:text-red-500 cursor-pointer"
                           aria-label="Remove shift"
                         >
@@ -373,9 +392,21 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
             )}
 
             <div className="space-y-2 pt-1 border-t border-border/60">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Events
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Events
+                </p>
+                {!eventForm && (
+                  <button
+                    type="button"
+                    onClick={openNewEventForm}
+                    className="flex items-center gap-1 text-[11px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-wider cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    Add Event
+                  </button>
+                )}
+              </div>
               {detailEvents.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No events.</p>
               ) : (
@@ -406,7 +437,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => deleteEvent(event.id)}
+                          onClick={() => setEventToDelete(event)}
                           className="p-1 rounded-md text-muted-foreground hover:text-red-500 cursor-pointer"
                           aria-label="Delete event"
                         >
@@ -418,7 +449,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                 </ul>
               )}
 
-              {eventForm ? (
+              {eventForm && (
                 <div className={`space-y-2 p-3 rounded-lg border ${SITE_BORDER}`}>
                   <input
                     type="text"
@@ -458,51 +489,8 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                     </button>
                   </div>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={openNewEventForm}
-                  className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-sky-600 text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  New event
-                </button>
               )}
             </div>
-
-            {pickingJobFor === detailDate ? (
-              <div className="space-y-1.5 pt-1">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Add to which site?
-                </p>
-                {activeJobs.map((job) => {
-                  const colors = getJobColorClasses(job.id);
-                  return (
-                    <button
-                      key={job.id}
-                      type="button"
-                      onClick={() => {
-                        setPickingJobFor(null);
-                        setAssignTarget({ mode: "pickWorker", job, date: detailDate });
-                      }}
-                      className={`w-full text-left text-xs font-semibold px-2.5 py-1.5 rounded-lg border ${colors.bg} cursor-pointer`}
-                    >
-                      {job.siteName}
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleAddStaffClick}
-                disabled={activeJobs.length === 0}
-                className="w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-amber-600 text-[11px] font-black uppercase tracking-wider transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add staff
-              </button>
-            )}
           </div>
         </div>
       )}
@@ -516,6 +504,48 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
           confirmReallocate(workerId, jobId, assignSheetDate, existingShiftId)
         }
         onClose={() => setAssignTarget(null)}
+      />
+
+      {/* --- CONFIRM EVENT DELETION --- */}
+      <ConfirmDialog
+        open={!!eventToDelete}
+        onOpenChange={(open) => {
+          if (!open) setEventToDelete(null);
+        }}
+        tone="destructive"
+        tag="Delete Calendar Event"
+        title="Remove Event?"
+        message={`Are you sure you want to delete "${eventToDelete?.title}" on ${formatUKDate(eventToDelete?.date)}?`}
+        confirmLabel="Delete Event"
+        cancelLabel="Keep Event"
+        onConfirm={() => {
+          if (eventToDelete) {
+            deleteEvent(eventToDelete.id);
+            setEventToDelete(null);
+          }
+        }}
+      />
+
+      {/* --- CONFIRM SHIFT REMOVAL --- */}
+      <ConfirmDialog
+        open={!!shiftToRemove}
+        onOpenChange={(open) => {
+          if (!open) setShiftToRemove(null);
+        }}
+        tone="destructive"
+        tag="Remove Shift Assignment"
+        title="Remove Shift?"
+        message={`Are you sure you want to remove this shift assignment for ${
+          workersById.get(shiftToRemove?.workerId || "")?.name ?? "Operative"
+        } on ${formatUKDate(shiftToRemove?.date)}?`}
+        confirmLabel="Remove Shift"
+        cancelLabel="Cancel"
+        onConfirm={() => {
+          if (shiftToRemove) {
+            removeShift(shiftToRemove.id);
+            setShiftToRemove(null);
+          }
+        }}
       />
     </div>
   );

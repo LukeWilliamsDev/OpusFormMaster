@@ -1,10 +1,16 @@
-// Standalone quote PDF template + headless generator, shared by the live
-// QuoteInvoiceBuilder editor and any code that needs a PDF from a saved
-// quote row without the editor mounted (e.g. converting a quote to a job).
+// Standalone quote PDF generator using @react-pdf/renderer for native, pixel-exact vector PDF generation.
 import React from "react";
-import ReactDOM from "react-dom/client";
+import {
+  Document,
+  Page,
+  Text,
+  View,
+  StyleSheet,
+  Image,
+  pdf,
+} from "@react-pdf/renderer";
 
-interface QuoteItem {
+export interface QuoteItem {
   id: string;
   description: string;
   quantity: number;
@@ -12,7 +18,7 @@ interface QuoteItem {
   rate: number | string;
 }
 
-interface Quote {
+export interface Quote {
   reference: string;
   clientInfo?: {
     entity?: string;
@@ -63,23 +69,19 @@ const getLineTotal = (item: QuoteItem) => {
   return item.quantity * rateValue;
 };
 
-// Pure template: identical markup to the live QuoteInvoiceBuilder preview, but
-// driven entirely by a Quote object + terms list instead of component state.
-export const QuotePdfDocument = ({
-  quote,
-  terms,
-  scaleValue = 1,
-  isPrintTarget = false,
-}: {
+// Pure HTML/React preview component used for live on-screen mirror
+export const QuotePdfDocument: React.FC<{
   quote: Quote;
   terms: string[];
   scaleValue?: number;
   isPrintTarget?: boolean;
-}) => {
+}> = ({ quote, terms, scaleValue = 1, isPrintTarget = false }) => {
   const { reference, clientInfo, items, totals } = quote;
   return (
     <div
-      className={`bg-white shadow-2xl text-slate-900 flex flex-col origin-top shrink-0 ${isPrintTarget ? "print-area" : ""}`}
+      className={`bg-white shadow-2xl text-slate-900 flex flex-col origin-top shrink-0 ${
+        isPrintTarget ? "print-area" : ""
+      }`}
       style={{
         width: "794px",
         height: "1122px",
@@ -92,9 +94,13 @@ export const QuotePdfDocument = ({
       }}
     >
       <div className="bg-[#1b1c20] px-8 sm:px-12 py-9 flex justify-between items-center">
-        <img src="/opus-form-primary-dark.svg" alt="Opus Form" className="h-9 sm:h-10 w-auto" />
+        <div className="flex items-center">
+          <span className="text-[#E9E6E1] text-[22px] font-black tracking-[0.14em]">OPUS</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#B5651D] mx-1.5 inline-block" />
+          <span className="text-[#E9E6E1] text-[22px] font-black tracking-[0.14em]">FORM</span>
+        </div>
         <div className="text-right">
-          <div className="inline-block bg-white text-[#1b1c20] text-[22px] sm:text-[26px] font-black tracking-[0.08em] leading-none mb-4 px-3 py-1.5 rounded">
+          <div className="text-white text-[22px] sm:text-[26px] font-black tracking-[0.08em] leading-none mb-4">
             QUOTE
           </div>
           <div className="flex items-center justify-end gap-5">
@@ -102,14 +108,12 @@ export const QuotePdfDocument = ({
               <div className="text-[9.5px] text-stone-500 uppercase tracking-[0.12em]">
                 Reference
               </div>
-              <div className="inline-block bg-white text-[#1b1c20] text-[12.5px] font-black mt-0.5 px-2 py-0.5 rounded">
-                #{reference}
-              </div>
+              <div className="text-white text-[12.5px] font-black mt-0.5">#{reference}</div>
             </div>
             <div className="w-px h-7 bg-[#2b2c32]" />
             <div className="text-right">
               <div className="text-[9.5px] text-stone-500 uppercase tracking-[0.12em]">Date</div>
-              <div className="inline-block bg-white text-[#1b1c20] text-[12.5px] font-black mt-0.5 px-2 py-0.5 rounded">
+              <div className="text-white text-[12.5px] font-black mt-0.5">
                 {new Date().toLocaleDateString("en-GB")}
               </div>
             </div>
@@ -118,25 +122,25 @@ export const QuotePdfDocument = ({
               <div className="text-[9.5px] text-stone-500 uppercase tracking-[0.12em]">
                 Valid Until
               </div>
-              <div className="inline-block bg-white text-[#1b1c20] text-[12.5px] font-black mt-0.5 px-2 py-0.5 rounded">
+              <div className="text-white text-[12.5px] font-black mt-0.5">
                 {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString("en-GB")}
               </div>
             </div>
           </div>
         </div>
       </div>
-      <div className="h-1 bg-primary" />
+      <div className="h-1 bg-[#ea580c]" />
       <div className="px-12 py-8 flex-1 flex flex-col">
         <div className="mb-7 grid grid-cols-2 gap-4">
           <div>
-            <div className="text-[11px] font-black tracking-[0.14em] uppercase text-primary mb-1.5">
+            <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#ea580c] mb-1.5">
               Client
             </div>
             <div className="border border-stone-200 p-4 min-h-[72px] text-xs">
               {clientInfo?.entity ? (
                 <div className="space-y-1">
                   <p className="font-black text-gray-900 text-sm">{clientInfo.entity}</p>
-                  <p className="text-muted-foreground tracking-wide">
+                  <p className="text-stone-500 tracking-wide">
                     {clientInfo.email ? clientInfo.email.toLowerCase() : "..."}
                   </p>
                 </div>
@@ -146,16 +150,14 @@ export const QuotePdfDocument = ({
             </div>
           </div>
           <div>
-            <div className="text-[11px] font-black tracking-[0.14em] uppercase text-primary mb-1.5">
+            <div className="text-[11px] font-black tracking-[0.14em] uppercase text-[#ea580c] mb-1.5">
               Project
             </div>
             <div className="border border-stone-200 p-4 min-h-[72px] text-xs">
               {clientInfo?.site ? (
                 <div className="space-y-1">
                   <p className="font-black text-gray-900 text-sm">{clientInfo.site}</p>
-                  <p className="text-muted-foreground tracking-wide">
-                    {clientInfo.postcode || "..."}
-                  </p>
+                  <p className="text-stone-500 tracking-wide">{clientInfo.postcode || "..."}</p>
                 </div>
               ) : (
                 <span className="text-stone-400">No project data entered</span>
@@ -163,7 +165,7 @@ export const QuotePdfDocument = ({
             </div>
           </div>
         </div>
-        <div className="flex-1">
+        <div>
           <table className="w-full border-collapse">
             <thead>
               <tr className="bg-[#1b1c20]">
@@ -180,7 +182,7 @@ export const QuotePdfDocument = ({
                   Unit Rate
                 </th>
                 <th className="p-3 pl-1 text-right w-[16%]">
-                  <span className="inline-block bg-white text-[#1b1c20] text-[10px] font-black uppercase px-1.5 py-1 rounded whitespace-nowrap">
+                  <span className="text-white text-[10px] font-black uppercase whitespace-nowrap">
                     Net Value
                   </span>
                 </th>
@@ -230,7 +232,7 @@ export const QuotePdfDocument = ({
             </tbody>
           </table>
         </div>
-        <div className="flex justify-end border-t-2 border-[#1b1c20]">
+        <div className="flex justify-end border-t-2 border-[#1b1c20] mb-6">
           <div className="w-[280px]">
             <div className="flex justify-between p-2 px-3 text-xs border-b border-stone-200 text-stone-600">
               <span className="uppercase tracking-widest">NET SUBTOTAL</span>
@@ -240,7 +242,7 @@ export const QuotePdfDocument = ({
             </div>
             <div className="flex justify-between items-center p-3.5 px-3 bg-[#1b1c20] text-white font-black text-[15px]">
               <span className="uppercase tracking-widest">Total</span>
-              <span className="inline-block bg-white text-[#1b1c20] px-2.5 py-1 rounded text-[14px]">
+              <span className="text-white text-[15px]">
                 £
                 {(totals?.grossTotal ?? 0).toLocaleString(undefined, {
                   minimumFractionDigits: 2,
@@ -249,47 +251,51 @@ export const QuotePdfDocument = ({
             </div>
           </div>
         </div>
-      </div>
-      <div className="px-12 pt-7">
-        <div className="bg-stone-50 border-l-[3px] border-primary p-4 mb-6">
-          <div className="text-[11px] font-black tracking-[0.12em] uppercase text-primary mb-2.5">
-            Standard Terms & Pour Conditions
+
+        {/* Bottom pinned Terms & Banking Details */}
+        <div className="mt-auto pt-4">
+          <div className="bg-stone-50 border-l-[3px] border-[#ea580c] p-4 mb-6">
+            <div className="text-[11px] font-black tracking-[0.12em] uppercase text-[#ea580c] mb-2.5">
+              Standard Terms & Pour Conditions
+            </div>
+            <ul className="space-y-1.5">
+              {terms.map(
+                (term: string, index: number) =>
+                  term.trim() && (
+                    <li
+                      key={index}
+                      className="text-[10.5px] text-stone-700 leading-relaxed pl-3 relative before:content-[''] before:absolute before:left-0 before:top-[6px] before:w-[5px] before:h-[5px] before:bg-[#ea580c]"
+                    >
+                      {term}
+                    </li>
+                  ),
+              )}
+            </ul>
           </div>
-          <ul className="space-y-1.5">
-            {terms.map(
-              (term: string, index: number) =>
-                term.trim() && (
-                  <li
-                    key={index}
-                    className="text-[10.5px] text-stone-700 leading-relaxed pl-3 relative before:content-[''] before:absolute before:left-0 before:top-[6px] before:w-[5px] before:h-[5px] before:bg-primary"
-                  >
-                    {term}
-                  </li>
-                ),
-            )}
-          </ul>
-        </div>
-        <div className="mb-8">
-          <div className="text-[11px] font-black tracking-[0.14em] uppercase text-stone-500 mb-2.5">
-            Banking Details
-          </div>
-          <div className="flex flex-wrap items-start gap-x-6 gap-y-3 border-t border-stone-200 pt-3.5">
-            {[
-              { label: "Bank", value: COMPANY_INFO.bank },
-              { label: "Account Name", value: COMPANY_INFO.accountName },
-              { label: "Sort Code", value: COMPANY_INFO.sortCode },
-              { label: "Account No.", value: COMPANY_INFO.accountNumber },
-            ].map((field, idx, arr) => (
-              <div key={field.label} className="flex items-start gap-6">
-                <div>
-                  <div className="text-[9.5px] text-stone-400 uppercase tracking-[0.1em]">
-                    {field.label}
+          <div className="mb-2">
+            <div className="text-[11px] font-black tracking-[0.14em] uppercase text-stone-500 mb-2.5">
+              Banking Details
+            </div>
+            <div className="flex flex-wrap items-start gap-x-6 gap-y-3 border-t border-stone-200 pt-3.5">
+              {[
+                { label: "Bank", value: COMPANY_INFO.bank },
+                { label: "Account Name", value: COMPANY_INFO.accountName },
+                { label: "Sort Code", value: COMPANY_INFO.sortCode },
+                { label: "Account No.", value: COMPANY_INFO.accountNumber },
+              ].map((field, idx, arr) => (
+                <div key={field.label} className="flex items-start gap-6">
+                  <div>
+                    <div className="text-[9.5px] text-stone-400 uppercase tracking-[0.1em]">
+                      {field.label}
+                    </div>
+                    <div className="font-black text-slate-900 text-[11px] mt-0.5">
+                      {field.value}
+                    </div>
                   </div>
-                  <div className="font-black text-slate-900 text-[11px] mt-0.5">{field.value}</div>
+                  {idx < arr.length - 1 && <div className="w-px h-7 bg-stone-200" />}
                 </div>
-                {idx < arr.length - 1 && <div className="w-px h-7 bg-stone-200" />}
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -305,227 +311,571 @@ export const QuotePdfDocument = ({
   );
 };
 
-// html2canvas cannot parse modern CSS color functions and crashes the PDF render;
-// resolve each one to its real rgb() equivalent so text/backgrounds keep the right
-// color instead of a flat fallback. Reading `ctx.fillStyle` back after assignment
-// doesn't work here — Chrome's canvas getter echoes oklch() input verbatim rather
-// than normalizing it — so actually rasterize a pixel and read its RGBA bytes back.
-const resolveToRgb = (() => {
-  let ctx: CanvasRenderingContext2D | null = null;
-  return (colorFn: string) => {
-    if (!ctx) {
-      const canvas = document.createElement("canvas");
-      canvas.width = 1;
-      canvas.height = 1;
-      ctx = canvas.getContext("2d");
-    }
-    if (!ctx) return "#333333";
-    try {
-      ctx.fillStyle = colorFn;
-      ctx.fillRect(0, 0, 1, 1);
-      const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
-      return a === 255 ? `rgb(${r}, ${g}, ${b})` : `rgba(${r}, ${g}, ${b}, ${(a / 255).toFixed(3)})`;
-    } catch {
-      return "#333333";
-    }
-  };
-})();
-
-// Paren-balanced replace: color-mix(in oklab, oklch(...) 50%, white) nests functions,
-// so a non-greedy [^)]* regex would stop at the first inner ")" and mangle the value.
-const stripUnsupportedColorFunctions = (text: string) => {
-  const starters = /\b(?:oklch|oklab|lch|lab|color-mix)\(/g;
-  let result = "";
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = starters.exec(text))) {
-    const start = match.index;
-    let depth = 1;
-    let i = starters.lastIndex;
-    while (i < text.length && depth > 0) {
-      if (text[i] === "(") depth++;
-      else if (text[i] === ")") depth--;
-      i++;
-    }
-    result += text.slice(lastIndex, start) + resolveToRgb(text.slice(start, i));
-    lastIndex = i;
-    starters.lastIndex = i;
-  }
-  return result + text.slice(lastIndex);
-};
-
-const buildHtml2PdfOptions = (filename: string, originalElement: HTMLElement) => ({
-  margin: 0,
-  filename,
-  image: { type: "png" },
-  html2canvas: {
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    scrollX: 0,
-    scrollY: 0,
-    // html2canvas's word-spacing measurement collapses to 0 for some font/weight
-    // combos (see comment below) — per-character rendering sidesteps it entirely.
-    letterRendering: true,
-    onclone: (_document: Document, clonedElement: HTMLElement) => {
-      const cloneDoc = clonedElement.ownerDocument;
-      if (cloneDoc?.body) {
-        cloneDoc.body.style.margin = "0";
-        cloneDoc.body.style.padding = "0";
-        cloneDoc.body.style.background = "transparent";
-      }
-      // html2canvas measures text with its own manual glyph-width table, which isn't
-      // calibrated for the app's variable webfont ("Public Sans") — especially at the
-      // 900 weight used for totals/dates/bank details. That mismatch makes characters
-      // overlap: at normal weight it drops spaces (words run together), and at bold
-      // weight the overlap is dense enough to look like a solid highlighted block.
-      // Force a metrically-safe system font stack for the capture only.
-      clonedElement.style.setProperty("font-family", "Arial, Helvetica, sans-serif", "important");
-
-      // NOTE: deliberately NOT stripping/replacing the document's <style>/<link> tags
-      // here. An earlier version rebuilt one flattened stylesheet from cssText, which
-      // silently destroyed Tailwind's @layer cascade order (utilities no longer reliably
-      // outrank base/component rules) — white-on-dark text fell back to the wrong
-      // inherited dark color. The inline !important overrides below are what actually
-      // neutralize oklch for html2canvas's parser; leaving the real stylesheets in place
-      // keeps every non-color style (and cascade order) correct.
-      const fontFixEl = cloneDoc.createElement("style");
-      fontFixEl.textContent =
-        "*,*::before,*::after{font-family:Arial,Helvetica,sans-serif!important;" +
-        "-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important;}" +
-        ".font-black,.font-black *{font-weight:700!important;}";
-      cloneDoc.head.appendChild(fontFixEl);
-
-      cloneDoc.querySelectorAll<HTMLElement>("[style]").forEach((el) => {
-        const inline = el.getAttribute("style");
-        if (inline && /(oklch|oklab|lch|lab)\(/.test(inline)) {
-          el.setAttribute("style", stripUnsupportedColorFunctions(inline));
-        }
-      });
-
-      // Belt-and-braces sweep, same approach as the live editor's PDF path: colors
-      // reach the canvas via any computed property (color, box-shadow, gradients,
-      // ring shadows...) once resolved through var()/color-mix(), which the
-      // source-text regex above never sees. Cover ancestors too since html2canvas
-      // walks the chain up to <html>/<body> for stacking context.
-      const originalAncestors = [document.documentElement, document.body];
-      const clonedAncestors = cloneDoc ? [cloneDoc.documentElement, cloneDoc.body] : [];
-      const originalNodes = [
-        ...originalAncestors,
-        originalElement,
-        ...Array.from(originalElement.querySelectorAll<HTMLElement>("*")),
-      ];
-      const clonedNodes = [
-        ...clonedAncestors,
-        clonedElement,
-        ...Array.from(clonedElement.querySelectorAll<HTMLElement>("*")),
-      ];
-      const unsupportedColorFn = /\b(?:oklch|oklab|lch|lab|color-mix)\(/;
-      originalNodes.forEach((original, i) => {
-        const clone = clonedNodes[i];
-        if (!clone) return;
-        const computed = window.getComputedStyle(original);
-        for (let p = 0; p < computed.length; p++) {
-          const prop = computed.item(p);
-          const value = computed.getPropertyValue(prop);
-          if (value && unsupportedColorFn.test(value)) {
-            clone.style.setProperty(prop, stripUnsupportedColorFunctions(value), "important");
-          }
-        }
-      });
-
-      const cloneWin = cloneDoc?.defaultView;
-      if (cloneWin) {
-        clonedNodes.forEach((node) => {
-          const c = cloneWin.getComputedStyle(node);
-          for (let p = 0; p < c.length; p++) {
-            const prop = c.item(p);
-            const value = c.getPropertyValue(prop);
-            if (value && unsupportedColorFn.test(value)) {
-              node.style.setProperty(prop, stripUnsupportedColorFunctions(value), "important");
-            }
-          }
-        });
-      }
-
-      if (cloneDoc) {
-        let pseudoCss = "";
-        let pseudoId = 0;
-        ["::before", "::after"].forEach((pseudo) => {
-          originalNodes.forEach((original, i) => {
-            const clone = clonedNodes[i];
-            if (!clone) return;
-            const computed = window.getComputedStyle(original, pseudo);
-            const leaking: string[] = [];
-            for (let p = 0; p < computed.length; p++) {
-              const prop = computed.item(p);
-              const value = computed.getPropertyValue(prop);
-              if (value && unsupportedColorFn.test(value)) {
-                leaking.push(`${prop}: ${stripUnsupportedColorFunctions(value)} !important;`);
-              }
-            }
-            if (leaking.length > 0) {
-              let id = clone.getAttribute("data-pdf-fix");
-              if (!id) {
-                pseudoId += 1;
-                id = String(pseudoId);
-                clone.setAttribute("data-pdf-fix", id);
-              }
-              pseudoCss += `[data-pdf-fix="${id}"]${pseudo}{${leaking.join(" ")}}\n`;
-            }
-          });
-        });
-        if (pseudoCss) {
-          const pseudoStyleEl = cloneDoc.createElement("style");
-          pseudoStyleEl.textContent = pseudoCss;
-          cloneDoc.head.appendChild(pseudoStyleEl);
-        }
-      }
-    },
+// Styles for native ReactPDF document
+const pdfStyles = StyleSheet.create({
+  page: {
+    backgroundColor: "#ffffff",
+    fontFamily: "Helvetica",
+    fontSize: 10,
+    color: "#0f172a",
+    paddingBottom: 0,
   },
-  jsPDF: {
-    unit: "px",
-    format: [794, 1122],
-    orientation: "portrait",
-    hotfixes: ["px_scaling"],
+  header: {
+    backgroundColor: "#1b1c20",
+    paddingHorizontal: 36,
+    paddingVertical: 24,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  pagebreak: { mode: "avoid" },
+  headerLeftLogo: {
+    width: 140,
+    height: 35,
+    objectFit: "contain",
+  },
+  headerRight: {
+    alignItems: "flex-end",
+  },
+  titleQuote: {
+    color: "#ffffff",
+    fontSize: 22,
+    fontWeight: "bold",
+    letterSpacing: 2,
+    marginBottom: 12,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  headerItem: {
+    alignItems: "flex-end",
+  },
+  headerLabel: {
+    color: "#78716c",
+    fontSize: 8,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  headerVal: {
+    color: "#ffffff",
+    fontSize: 10,
+    fontWeight: "bold",
+    marginTop: 2,
+  },
+  headerDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: "#2b2c32",
+    marginHorizontal: 12,
+  },
+  accentLine: {
+    height: 3,
+    backgroundColor: "#ea580c",
+  },
+  body: {
+    paddingHorizontal: 36,
+    paddingTop: 24,
+    flex: 1,
+  },
+  gridTwo: {
+    flexDirection: "row",
+    gap: 16,
+    marginBottom: 20,
+  },
+  cardCol: {
+    flex: 1,
+  },
+  cardTitle: {
+    color: "#ea580c",
+    fontSize: 9,
+    fontWeight: "bold",
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  cardBox: {
+    borderWidth: 1,
+    borderColor: "#e7e5e4",
+    padding: 10,
+    minHeight: 55,
+  },
+  clientEntity: {
+    fontSize: 11,
+    fontWeight: "bold",
+    color: "#0f172a",
+    marginBottom: 3,
+  },
+  clientMeta: {
+    fontSize: 9,
+    color: "#78716c",
+  },
+  placeholderText: {
+    color: "#a8a29e",
+    fontSize: 9,
+  },
+  table: {
+    width: "100%",
+  },
+  tableHeader: {
+    backgroundColor: "#1b1c20",
+    flexDirection: "row",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  thDesc: {
+    width: "42%",
+    color: "#ffffff",
+    fontSize: 9,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  thQty: {
+    width: "16%",
+    color: "#ffffff",
+    fontSize: 9,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    textAlign: "right",
+  },
+  thUnit: {
+    width: "10%",
+    color: "#ffffff",
+    fontSize: 9,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  thRate: {
+    width: "16%",
+    color: "#ffffff",
+    fontSize: 9,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    textAlign: "right",
+  },
+  thTotal: {
+    width: "16%",
+    color: "#ffffff",
+    fontSize: 9,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    textAlign: "right",
+  },
+  tableRow: {
+    flexDirection: "row",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e7e5e4",
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  tableRowAlt: {
+    backgroundColor: "#fafaf9",
+  },
+  tdDesc: {
+    width: "42%",
+    fontSize: 9,
+    color: "#0f172a",
+  },
+  tdQty: {
+    width: "16%",
+    fontSize: 9,
+    color: "#0f172a",
+    textAlign: "right",
+  },
+  tdUnit: {
+    width: "10%",
+    fontSize: 8,
+    color: "#a8a29e",
+    textTransform: "uppercase",
+  },
+  tdRate: {
+    width: "16%",
+    fontSize: 9,
+    color: "#0f172a",
+    textAlign: "right",
+  },
+  tdTotal: {
+    width: "16%",
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#0f172a",
+    textAlign: "right",
+  },
+  emptyRow: {
+    paddingVertical: 20,
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#e7e5e4",
+  },
+  emptyText: {
+    color: "#a8a29e",
+    fontSize: 9,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  totalsContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    borderTopWidth: 2,
+    borderTopColor: "#1b1c20",
+    marginTop: 10,
+  },
+  totalsBox: {
+    width: 220,
+  },
+  subtotalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#e7e5e4",
+  },
+  subtotalLabel: {
+    fontSize: 8,
+    color: "#57534e",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  subtotalVal: {
+    fontSize: 9,
+    fontWeight: "bold",
+    color: "#0f172a",
+  },
+  totalRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#1b1c20",
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    alignItems: "center",
+  },
+  totalLabel: {
+    fontSize: 11,
+    color: "#ffffff",
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  totalVal: {
+    fontSize: 11,
+    color: "#ffffff",
+    fontWeight: "bold",
+  },
+  termsBox: {
+    backgroundColor: "#fafaf9",
+    borderLeftWidth: 3,
+    borderLeftColor: "#ea580c",
+    padding: 12,
+    marginTop: "auto",
+    marginBottom: 16,
+  },
+  termsTitle: {
+    color: "#ea580c",
+    fontSize: 9,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  termItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 3,
+  },
+  bullet: {
+    width: 4,
+    height: 4,
+    backgroundColor: "#ea580c",
+    marginRight: 6,
+  },
+  termText: {
+    fontSize: 8,
+    color: "#44403c",
+  },
+  bankSection: {
+    marginBottom: 20,
+  },
+  bankTitle: {
+    color: "#78716c",
+    fontSize: 9,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  bankGrid: {
+    flexDirection: "row",
+    borderTopWidth: 1,
+    borderTopColor: "#e7e5e4",
+    paddingTop: 8,
+    gap: 16,
+  },
+  bankCol: {
+    marginRight: 8,
+  },
+  bankLabel: {
+    fontSize: 7,
+    color: "#a8a29e",
+    textTransform: "uppercase",
+  },
+  bankVal: {
+    fontSize: 8,
+    fontWeight: "bold",
+    color: "#0f172a",
+    marginTop: 1,
+  },
+  footer: {
+    backgroundColor: "#1b1c20",
+    paddingHorizontal: 36,
+    paddingVertical: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: "auto",
+  },
+  footerText: {
+    color: "#78716c",
+    fontSize: 8,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
 });
 
-// Renders a Quote off-screen (no mounted editor required) and returns the
-// generated PDF as a Blob, ready to upload.
+// ReactPDF Document structure
+export const QuotePdfVectorDocument: React.FC<{ quote: Quote; terms: string[] }> = ({
+  quote,
+  terms,
+}) => {
+  const { reference, clientInfo, items, totals } = quote;
+  const logoUrl =
+    typeof window !== "undefined"
+      ? `${window.location.origin}/opus-form-primary-dark.png`
+      : "";
+
+  return (
+    <Document>
+      <Page size="A4" style={pdfStyles.page}>
+        {/* Header */}
+        <View style={pdfStyles.header}>
+          <View style={{ flexDirection: "row", alignItems: "center" }}>
+            <Text
+              style={{
+                color: "#E9E6E1",
+                fontSize: 22,
+                fontWeight: "bold",
+                letterSpacing: 3,
+              }}
+            >
+              OPUS
+            </Text>
+            <View
+              style={{
+                width: 5,
+                height: 5,
+                borderRadius: 2.5,
+                backgroundColor: "#B5651D",
+                marginHorizontal: 5,
+              }}
+            />
+            <Text
+              style={{
+                color: "#E9E6E1",
+                fontSize: 22,
+                fontWeight: "bold",
+                letterSpacing: 3,
+              }}
+            >
+              FORM
+            </Text>
+          </View>
+          <View style={pdfStyles.headerRight}>
+            <Text style={pdfStyles.titleQuote}>QUOTE</Text>
+            <View style={pdfStyles.headerRow}>
+              <View style={pdfStyles.headerItem}>
+                <Text style={pdfStyles.headerLabel}>Reference</Text>
+                <Text style={pdfStyles.headerVal}>#{reference}</Text>
+              </View>
+              <View style={pdfStyles.headerDivider} />
+              <View style={pdfStyles.headerItem}>
+                <Text style={pdfStyles.headerLabel}>Date</Text>
+                <Text style={pdfStyles.headerVal}>
+                  {new Date().toLocaleDateString("en-GB")}
+                </Text>
+              </View>
+              <View style={pdfStyles.headerDivider} />
+              <View style={pdfStyles.headerItem}>
+                <Text style={pdfStyles.headerLabel}>Valid Until</Text>
+                <Text style={pdfStyles.headerVal}>
+                  {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString(
+                    "en-GB",
+                  )}
+                </Text>
+              </View>
+            </View>
+          </View>
+        </View>
+        <View style={pdfStyles.accentLine} />
+
+        {/* Body */}
+        <View style={pdfStyles.body}>
+          {/* Client & Project */}
+          <View style={pdfStyles.gridTwo}>
+            <View style={pdfStyles.cardCol}>
+              <Text style={pdfStyles.cardTitle}>Client</Text>
+              <View style={pdfStyles.cardBox}>
+                {clientInfo?.entity ? (
+                  <>
+                    <Text style={pdfStyles.clientEntity}>{clientInfo.entity}</Text>
+                    <Text style={pdfStyles.clientMeta}>
+                      {clientInfo.email ? clientInfo.email.toLowerCase() : "..."}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={pdfStyles.placeholderText}>No client data entered</Text>
+                )}
+              </View>
+            </View>
+            <View style={pdfStyles.cardCol}>
+              <Text style={pdfStyles.cardTitle}>Project</Text>
+              <View style={pdfStyles.cardBox}>
+                {clientInfo?.site ? (
+                  <>
+                    <Text style={pdfStyles.clientEntity}>{clientInfo.site}</Text>
+                    <Text style={pdfStyles.clientMeta}>
+                      {clientInfo.postcode || "..."}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={pdfStyles.placeholderText}>No project data entered</Text>
+                )}
+              </View>
+            </View>
+          </View>
+
+          {/* Line Items Table */}
+          <View style={pdfStyles.table}>
+            <View style={pdfStyles.tableHeader}>
+              <Text style={pdfStyles.thDesc}>Description</Text>
+              <Text style={pdfStyles.thQty}>Volume / Qty</Text>
+              <Text style={pdfStyles.thUnit}>Unit</Text>
+              <Text style={pdfStyles.thRate}>Unit Rate</Text>
+              <Text style={pdfStyles.thTotal}>Net Value</Text>
+            </View>
+
+            {items && items.length > 0 ? (
+              items.map((item, idx) => (
+                <View
+                  key={item.id || idx}
+                  style={[
+                    pdfStyles.tableRow,
+                    idx % 2 === 1 ? pdfStyles.tableRowAlt : {},
+                  ]}
+                >
+                  <Text style={pdfStyles.tdDesc}>{item.description || "..."}</Text>
+                  <Text style={pdfStyles.tdQty}>{item.quantity}</Text>
+                  <Text style={pdfStyles.tdUnit}>{item.unit}</Text>
+                  <Text style={pdfStyles.tdRate}>
+                    {isIncludedRate(item.rate)
+                      ? "INCLUDED"
+                      : `£${Number(item.rate || 0).toFixed(2)}`}
+                  </Text>
+                  <Text style={pdfStyles.tdTotal}>
+                    {isIncludedRate(item.rate)
+                      ? "INCLUDED"
+                      : `£${getLineTotal(item).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                        })}`}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <View style={pdfStyles.emptyRow}>
+                <Text style={pdfStyles.emptyText}>No billable items added</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Totals */}
+          <View style={pdfStyles.totalsContainer}>
+            <View style={pdfStyles.totalsBox}>
+              <View style={pdfStyles.subtotalRow}>
+                <Text style={pdfStyles.subtotalLabel}>NET SUBTOTAL</Text>
+                <Text style={pdfStyles.subtotalVal}>
+                  £
+                  {(totals?.netTotal ?? 0).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                  })}
+                </Text>
+              </View>
+              <View style={pdfStyles.totalRow}>
+                <Text style={pdfStyles.totalLabel}>Total</Text>
+                <Text style={pdfStyles.totalVal}>
+                  £
+                  {(totals?.grossTotal ?? 0).toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                  })}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Terms */}
+          <View style={pdfStyles.termsBox}>
+            <Text style={pdfStyles.termsTitle}>
+              Standard Terms & Pour Conditions
+            </Text>
+            {terms.map(
+              (term, index) =>
+                term.trim() !== "" && (
+                  <View key={index} style={pdfStyles.termItem}>
+                    <View style={pdfStyles.bullet} />
+                    <Text style={pdfStyles.termText}>{term}</Text>
+                  </View>
+                ),
+            )}
+          </View>
+
+          {/* Banking Details */}
+          <View style={pdfStyles.bankSection}>
+            <Text style={pdfStyles.bankTitle}>Banking Details</Text>
+            <View style={pdfStyles.bankGrid}>
+              {[
+                { label: "Bank", value: COMPANY_INFO.bank },
+                { label: "Account Name", value: COMPANY_INFO.accountName },
+                { label: "Sort Code", value: COMPANY_INFO.sortCode },
+                { label: "Account No.", value: COMPANY_INFO.accountNumber },
+              ].map((field) => (
+                <View key={field.label} style={pdfStyles.bankCol}>
+                  <Text style={pdfStyles.bankLabel}>{field.label}</Text>
+                  <Text style={pdfStyles.bankVal}>{field.value}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+
+        {/* Footer */}
+        <View style={pdfStyles.footer}>
+          <Text style={pdfStyles.footerText}>
+            Opus Form Ltd · Company No. {COMPANY_INFO.companyNumber}
+          </Text>
+          <Text style={pdfStyles.footerText}>billing@opusform.co.uk</Text>
+        </View>
+      </Page>
+    </Document>
+  );
+};
+
+// Generates a native vector PDF Blob
 export async function generateQuotePdfBlob(quote: Quote) {
-  const container = document.createElement("div");
-  container.style.position = "absolute";
-  container.style.left = "-9999px";
-  container.style.top = "-9999px";
-  container.style.width = "794px";
-  container.style.height = "1122px";
-  container.style.overflow = "hidden";
-  document.body.appendChild(container);
-
-  const root = ReactDOM.createRoot(container);
   const terms = buildDefaultTerms(quote.clientInfo?.entity);
-
-  try {
-    await new Promise((resolve) => {
-      root.render(<QuotePdfDocument quote={quote} terms={terms} isPrintTarget />);
-      // Two rAFs so the browser has painted before html2canvas rasterizes it.
-      requestAnimationFrame(() => requestAnimationFrame(resolve));
-    });
-
-    const { default: html2pdf } = await import("html2pdf.js");
-    const filename = `Quote_${quote.reference}.pdf`;
-    const printArea = container.querySelector(".print-area") as HTMLElement;
-    const worker = html2pdf();
-    const blob = await worker
-      .from(printArea)
-      .set(buildHtml2PdfOptions(filename, printArea) as unknown as Parameters<typeof worker.set>[0])
-      .outputPdf("blob");
-
-    return { blob, filename };
-  } finally {
-    root.unmount();
-    document.body.removeChild(container);
-  }
+  const pdfInstance = pdf(<QuotePdfVectorDocument quote={quote} terms={terms} />);
+  const blob = await pdfInstance.toBlob();
+  const filename = `Quote_${quote.reference}.pdf`;
+  return { blob, filename };
 }

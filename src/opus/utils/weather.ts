@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { WeatherRisk } from "../types/erp";
 import { parseLocalISODate, toLocalISODate } from "./week";
+import { fetchPostcodeCoordinates } from "./geo";
 
 export interface WeatherInfo extends WeatherRisk {
   temperature: number;
@@ -11,25 +12,21 @@ export interface WeatherInfo extends WeatherRisk {
 const FORECAST_WINDOW_DAYS = 14;
 const FORECAST_AHEAD_DAYS = 16;
 
-// ---- Geocoding (Nominatim/OSM — free, keyless, resolves UK postcodes) -----
 const geoCache = new Map<string, Promise<{ lat: number; lon: number } | null>>();
 
-export function geocodePostcode(postcode: string): Promise<{ lat: number; lon: number } | null> {
+export async function geocodePostcode(postcode: string): Promise<{ lat: number; lon: number } | null> {
   const key = postcode.trim().toUpperCase();
-  if (!key) return Promise.resolve(null);
+  if (!key) return null;
   if (!geoCache.has(key)) {
-    geoCache.set(
-      key,
-      fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(key)}&countrycodes=gb&limit=1`,
-        { headers: { "User-Agent": "OpusForm/1.0 (admin@opusform.co.uk)" } },
-      )
-        .then((res) => res.json())
-        .then((data) =>
-          data?.[0] ? { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) } : null,
-        )
-        .catch(() => null),
-    );
+    const promise = (async () => {
+      try {
+        const coords = await fetchPostcodeCoordinates(key);
+        return { lat: coords.lat, lon: coords.lng };
+      } catch {
+        return null;
+      }
+    })();
+    geoCache.set(key, promise);
   }
   return geoCache.get(key)!;
 }

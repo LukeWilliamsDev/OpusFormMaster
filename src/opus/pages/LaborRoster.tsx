@@ -13,7 +13,7 @@ export const LaborRosterPage: React.FC = () => {
   const selectedWorkerId = searchParams.get("workerId");
   const initialDossierTab = searchParams.get("tab") === "assignments" ? "assignments" : undefined;
   const autoOpenAddWorker = searchParams.get("addWorker") === "1";
-  const group: CalendarGroup = searchParams.get("group") === "project" ? "project" : "staff";
+  const group: CalendarGroup = searchParams.get("group") === "staff" ? "staff" : "project";
   const dateParam = searchParams.get("date");
   const selectedDate = isValidISODate(dateParam) ? dateParam : defaultSelectedDay();
 

@@ -110,7 +110,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
-            <span>OPERATIVES</span>
+            <span>STAFF</span>
           </button>
         </div>
 

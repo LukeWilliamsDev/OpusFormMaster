@@ -30,16 +30,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
       id="opus-landing-root"
       className="min-h-screen flex flex-col justify-between relative overflow-hidden font-sans bg-background"
     >
-      {/* Concrete dust aesthetic — domain-specific background */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          backgroundImage: `radial-gradient(circle at 20% 50%, rgba(181, 101, 29, 0.08) 0%, transparent 50%),
-                            radial-gradient(circle at 80% 80%, rgba(181, 101, 29, 0.06) 0%, transparent 50%)`,
-          backgroundColor: theme === "light" ? "#f8f7f3" : "#0f0f0f",
-        }}
-      />
-
       {/* Blueprint-style grid overlay, matching the portal login page */}
       <div
         className="absolute inset-0 pointer-events-none"

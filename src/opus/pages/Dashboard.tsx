@@ -8,7 +8,6 @@ import {
   TrendingUp,
   Search,
   AlertTriangle,
-  UserPlus,
   Calculator,
   CheckCircle,
   FileText,
@@ -17,6 +16,7 @@ import {
   Briefcase,
   CloudRain,
   CalendarDays,
+  CalendarRange,
 } from "lucide-react";
 import { handleError } from "../utils/errorHandler";
 import { usePortal } from "../context/PortalContext";
@@ -587,33 +587,13 @@ export const DashboardPage: React.FC = () => {
       {/* Quick Operations */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3.5">
         <button
-          onClick={() => navigate("/portal/roster?view=staff")}
+          onClick={() => navigate("/portal/calendar")}
           className="p-4 rounded-xl bg-card border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
         >
           <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
-            <UserCheck className="w-4 h-4" />
+            <CalendarRange className="w-4 h-4" />
           </div>
-          <span className="text-[12px] font-bold text-foreground text-left">Staff</span>
-        </button>
-
-        <button
-          onClick={() => navigate("/portal/roster?view=staff&addWorker=1")}
-          className="p-4 rounded-xl bg-card border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
-        >
-          <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
-            <UserPlus className="w-4 h-4" />
-          </div>
-          <span className="text-[12px] font-bold text-foreground text-left">Add New Staff</span>
-        </button>
-
-        <button
-          onClick={() => navigate("/portal/ledger")}
-          className="p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
-        >
-          <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all shrink-0">
-            <Briefcase className="w-4 h-4" />
-          </div>
-          <span className="text-[12px] font-bold text-foreground text-left">Job Ledger</span>
+          <span className="text-[12px] font-bold text-foreground text-left">Calendar</span>
         </button>
 
         <button
@@ -624,6 +604,26 @@ export const DashboardPage: React.FC = () => {
             <CalendarDays className="w-4 h-4" />
           </div>
           <span className="text-[12px] font-bold text-foreground text-left">Site Schedule</span>
+        </button>
+
+        <button
+          onClick={() => navigate("/portal/roster?view=staff")}
+          className="p-4 rounded-xl bg-card border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
+        >
+          <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
+            <UserCheck className="w-4 h-4" />
+          </div>
+          <span className="text-[12px] font-bold text-foreground text-left">Staff</span>
+        </button>
+
+        <button
+          onClick={() => navigate("/portal/ledger")}
+          className="p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
+        >
+          <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all shrink-0">
+            <Briefcase className="w-4 h-4" />
+          </div>
+          <span className="text-[12px] font-bold text-foreground text-left">Job Ledger</span>
         </button>
 
         <button

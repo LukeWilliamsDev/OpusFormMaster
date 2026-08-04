@@ -616,45 +616,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const [isDeletingJob, setIsDeletingJob] = useState(false);
-
-  const executeDeleteJob = async () => {
-    try {
-      // 1. Delete all attachments in storage
-      if (attachments.length > 0) {
-        const marker = "/job-attachments/";
-        const paths = attachments
-          .map((a) => {
-            const raw = a.raw_file_url || a.file_url;
-            const idx = raw.indexOf(marker);
-            return idx !== -1 ? raw.slice(idx + marker.length) : null;
-          })
-          .filter(Boolean) as string[];
-
-        if (paths.length > 0) {
-          await supabase.storage.from("job-attachments").remove(paths);
-        }
-        await supabase.from("job_attachments").delete().eq("job_id", job.id);
-      }
-
-      // 2. Delete pours, shifts, audit logs
-      await supabase.from("pours").delete().eq("job_id", job.id);
-      await supabase.from("shifts").delete().eq("job_id", job.id);
-
-      // 3. Delete job from Supabase
-      const { error } = await supabase.from("jobs").delete().eq("id", job.id);
-      if (error) throw error;
-
-      toast.success(`Job ${job.siteName} deleted successfully`);
-      setIsDeletingJob(false);
-      onBack();
-    } catch (err) {
-      const { message } = handleError(err, { message: "Failed to delete job" });
-      console.error("Error deleting job:", err);
-      toast.error(message);
-    }
-  };
-
   const todayISO = () => new Date().toISOString().split("T")[0];
 
   const [pendingStatus, setPendingStatus] = useState<Job["status"] | null>(null);
@@ -866,31 +827,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => setIsDeletingJob(true)}
-            className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider cursor-pointer"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            <span>Delete Job</span>
-          </Button>
           <div className="text-xs font-semibold bg-secondary border border-border text-muted-foreground px-3 py-1 rounded-md font-mono">
             {job.jobRef.replace("-X", "")}
           </div>
         </div>
       </div>
-
-      {/* Delete Job Dialog */}
-      <ConfirmDialog
-        open={isDeletingJob}
-        onOpenChange={setIsDeletingJob}
-        tone="destructive"
-        title={`Delete Job "${job.siteName}"`}
-        confirmLabel="Delete Job"
-        onConfirm={executeDeleteJob}
-        message={`Are you sure you want to permanently delete "${job.siteName}" (${job.jobRef}) along with all associated site media, attached documents, and pour records? This action cannot be undone.`}
-      />
 
       {/* Edit Job Details Dialog */}
       <ConfirmDialog

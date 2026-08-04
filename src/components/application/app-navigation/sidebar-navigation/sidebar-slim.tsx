@@ -2,7 +2,7 @@ import type { FC, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { LogOut, Moon, PanelLeftClose, PanelLeftOpen, Sun, User as UserIcon } from "lucide-react";
 import { cx } from "@/lib/utils/cx";
-import type { NavItemType } from "../config";
+import type { NavItemDividerType, NavItemType } from "../config";
 import { NavList } from "../base-components/nav-list";
 import { NavItemBase } from "../base-components/nav-item";
 
@@ -15,7 +15,7 @@ interface SidebarProfile {
 
 interface SidebarNavigationSlimProps {
   /** Primary nav items. */
-  items: (NavItemType & { icon: FC<{ className?: string }> })[];
+  items: (NavItemType | NavItemDividerType)[];
   /** Secondary/footer nav items (e.g. legal, support). */
   footerItems?: (NavItemType & { icon: FC<{ className?: string }> })[];
   /** Override active-state check per item. */

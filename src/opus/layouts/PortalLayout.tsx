@@ -52,6 +52,7 @@ export const PortalLayout: React.FC = () => {
   };
 
   const allNav = [
+    { section: "OPERATIONS" },
     {
       name: "DASHBOARD",
       path: "/portal/dashboard",
@@ -71,6 +72,7 @@ export const PortalLayout: React.FC = () => {
       icon: CalendarDays,
       roles: ALL_ROLES,
     },
+    { section: "STAFF & QUOTES" },
     {
       name: "STAFF",
       path: "/portal/roster?view=staff",
@@ -83,6 +85,7 @@ export const PortalLayout: React.FC = () => {
       icon: Truck,
       roles: MANAGEMENT_ROLES,
     },
+    { section: "ADMIN" },
     { name: "SITE RECORDS", path: "/portal/audit", icon: History, roles: ["admin"] },
     { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
   ];
@@ -91,10 +94,17 @@ export const PortalLayout: React.FC = () => {
   // designated compliance account, not every admin — job-level history is
   // reached via the job's own History tab instead.
   const isAuditAdmin = user?.email === "admin@opusform.co.uk";
-  const navItems = allNav.filter((item) => {
+  const visibleNav = allNav.filter((item) => {
+    if ("section" in item) return true;
     if (!role || !item.roles.includes(role)) return false;
     if (item.path === "/portal/audit" || item.path === "/portal/policies") return isAuditAdmin;
     return true;
+  });
+  // Drop a section header if every item under it got filtered out (e.g. ADMIN for non-admins).
+  const navItems = visibleNav.filter((item, i) => {
+    if (!("section" in item)) return true;
+    const next = visibleNav[i + 1];
+    return !!next && !("section" in next);
   });
 
   const checkIsActive = (path: string) => {
@@ -117,13 +127,20 @@ export const PortalLayout: React.FC = () => {
     return true;
   };
 
+  const toNavListItems = () =>
+    navItems.map((item) =>
+      "section" in item
+        ? { divider: true as const, label: item.section }
+        : { label: item.name, href: item.path, icon: item.icon },
+    );
+
   return (
     <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 selection:text-white flex flex-col lg:flex-row">
       {/* Desktop Sidebar */}
       <SidebarNavigationSlim
-        items={navItems.map((item) => ({ label: item.name, href: item.path, icon: item.icon }))}
+        items={toNavListItems()}
         footerItems={[{ label: "Legal & Privacy", href: "/portal/legal", icon: Shield }]}
-        isActive={(item) => checkIsActive(item.href!)}
+        isActive={(item) => (item.href ? checkIsActive(item.href) : false)}
         collapsed={isSidebarCollapsed}
         onToggleCollapse={toggleSidebar}
         logoSrc={logoSrc}
@@ -241,45 +258,33 @@ export const PortalLayout: React.FC = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <NavList
-                  items={navItems.map((item) => ({
-                    label: item.name,
-                    href: item.path,
-                    icon: item.icon,
-                  }))}
-                  isActive={(item) => checkIsActive(item.href!)}
+                  items={toNavListItems()}
+                  isActive={(item) => (item.href ? checkIsActive(item.href) : false)}
                 />
               </nav>
 
-              <div className="mt-auto pt-4 border-t-2 border-border space-y-2">
-                <div className="flex items-center justify-between px-1 py-1.5">
-                  <span className="text-[13px] font-semibold text-muted-foreground">
-                    LIGHT / DARK
-                  </span>
-                  <button
-                    onClick={toggleTheme}
-                    role="switch"
-                    aria-checked={theme === "light"}
-                    aria-label="Toggle light/dark theme"
-                    className="relative w-11 h-6 shrink-0 rounded-full bg-secondary border-2 border-border transition-colors cursor-pointer"
-                  >
-                    <Sun className="absolute left-1 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-500" />
-                    <Moon className="absolute right-1 top-1/2 -translate-y-1/2 w-3 h-3 text-stone-500" />
-                    <span
-                      className={`absolute top-1 left-1 w-4 h-4 rounded-full bg-amber-600 shadow transition-transform duration-200 ${
-                        theme === "light" ? "translate-x-5" : ""
-                      }`}
-                    />
-                  </button>
-                </div>
+              <div className="mt-auto pt-4 border-t-2 border-border flex items-center justify-between">
                 <button
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     handleLogoutClick();
                   }}
-                  className="flex items-center justify-center space-x-3 w-full py-3 bg-destructive/10 border-2 border-destructive rounded-lg text-[13px] font-semibold text-destructive hover:bg-destructive/20 transition-all cursor-pointer min-h-[44px]"
+                  className="flex items-center space-x-2 px-1 py-1.5 text-[13px] font-semibold text-destructive hover:text-destructive/80 transition-colors cursor-pointer min-h-[44px]"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>SIGN OUT</span>
+                  <span>Sign out</span>
+                </button>
+                <button
+                  onClick={toggleTheme}
+                  aria-label="Toggle light/dark theme"
+                  title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+                  className="p-2 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center group transition-colors"
+                >
+                  {theme === "dark" ? (
+                    <Sun className="w-5 h-5 group-hover:rotate-45 transition-transform" />
+                  ) : (
+                    <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform" />
+                  )}
                 </button>
               </div>
             </motion.div>

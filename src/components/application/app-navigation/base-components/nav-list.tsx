@@ -31,8 +31,14 @@ export const NavList = ({
       {items.map((item, index) => {
         if (item.divider) {
           return (
-            <li key={index} className="w-full px-0.5 py-2">
-              <hr className="h-px w-full border-none bg-border" />
+            <li key={index} className={cx("w-full px-0.5", item.label ? "pt-4 pb-1.5" : "py-2")}>
+              {item.label ? (
+                <span className="block px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {item.label}
+                </span>
+              ) : (
+                <hr className="h-px w-full border-none bg-border" />
+              )}
             </li>
           );
         }

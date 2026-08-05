@@ -411,15 +411,33 @@ Deno.serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const refreshToken = Deno.env.get("JINN_ADMIN_REFRESH_TOKEN");
-  if (!supabaseUrl || !anonKey || !refreshToken) {
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const fallbackRefreshToken = Deno.env.get("JINN_ADMIN_REFRESH_TOKEN");
+  if (!supabaseUrl || !anonKey || !serviceRoleKey || !fallbackRefreshToken) {
     return new Response(JSON.stringify({ error: "Gateway not configured" }), {
       status: 500,
       headers: jsonHeaders,
     });
   }
 
-  // Anon key + refresh token, never service-role — RLS is always active.
+  // Service-role client used ONLY to read/write the single row in
+  // jinn_admin_session — RLS on that table has zero policies, so this is
+  // the sole way to reach it. Every other query in this file goes through
+  // the anon-key + user-JWT `db` client below, RLS fully enforced.
+  const sessionTableHeaders = {
+    apikey: serviceRoleKey,
+    Authorization: `Bearer ${serviceRoleKey}`,
+    "Content-Type": "application/json",
+  };
+  const storedRes = await fetch(
+    `${supabaseUrl}/rest/v1/jinn_admin_session?select=refresh_token&id=eq.true`,
+    { headers: sessionTableHeaders },
+  );
+  const stored = storedRes.ok ? await storedRes.json() : [];
+  const refreshToken = stored[0]?.refresh_token ?? fallbackRefreshToken;
+
+  // Anon key + refresh token, never service-role for the actual data — RLS
+  // stays active for every action handler.
   const tokenRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
     method: "POST",
     headers: { apikey: anonKey, "Content-Type": "application/json" },
@@ -432,6 +450,20 @@ Deno.serve(async (req) => {
     );
   }
   const session = await tokenRes.json();
+
+  // Supabase rotates the refresh token on every exchange — persist the new
+  // one so the next invocation doesn't reuse the now-dead one we just spent.
+  if (session.refresh_token) {
+    await fetch(`${supabaseUrl}/rest/v1/jinn_admin_session`, {
+      method: "POST",
+      headers: { ...sessionTableHeaders, Prefer: "resolution=merge-duplicates" },
+      body: JSON.stringify({
+        id: true,
+        refresh_token: session.refresh_token,
+        updated_at: new Date().toISOString(),
+      }),
+    });
+  }
 
   // Scoped client: every query below carries this user's JWT, so PostgREST
   // enforces that user's RLS policies (tenant_id, role checks, etc).

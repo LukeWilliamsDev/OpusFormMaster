@@ -290,6 +290,9 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Bootstrap session + subscribe to auth changes
   useEffect(() => {
+    const LAST_LOGIN_KEY = "opus_portal_last_login";
+    const MAX_SESSION_AGE_MS = 24 * 60 * 60 * 1000;
+
     // Programmatically intercept and initialize recovery session from hash if present
     const hash = window.location.hash;
     if (hash && (hash.includes("access_token=") || hash.includes("type=recovery"))) {
@@ -317,10 +320,14 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // Register listener FIRST so we never miss an event.
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setUser(newSession?.user ?? null);
+      if (newSession && event === "SIGNED_IN") {
+        localStorage.setItem(LAST_LOGIN_KEY, String(Date.now()));
+      }
       if (!newSession) {
+        localStorage.removeItem(LAST_LOGIN_KEY);
         setRole(null);
         setProfileState(null);
         // Clear cached data on sign-out to avoid leaking one user's view.
@@ -336,8 +343,19 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     });
 
-    // Then hydrate the initial session.
+    // Then hydrate the initial session, forcing re-login if the last sign-in was too long ago.
     supabase.auth.getSession().then(({ data: { session: initial } }) => {
+      const lastLogin = Number(localStorage.getItem(LAST_LOGIN_KEY) ?? 0);
+      const isStale = !lastLogin || Date.now() - lastLogin > MAX_SESSION_AGE_MS;
+      if (initial && isStale) {
+        localStorage.removeItem(LAST_LOGIN_KEY);
+        sessionStorage.setItem("opus_portal_session_expired", "1");
+        supabase.auth.signOut();
+        setSession(null);
+        setUser(null);
+        setAuthLoading(false);
+        return;
+      }
       setSession(initial);
       setUser(initial?.user ?? null);
       setAuthLoading(false);

@@ -263,28 +263,47 @@ export const PortalLayout: React.FC = () => {
                 />
               </nav>
 
-              <div className="mt-auto pt-4 border-t-2 border-border flex items-center justify-between">
+              <div className="mt-auto pt-4 border-t-2 border-border space-y-1">
+                <Link
+                  to="/portal/legal"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer min-h-[44px]"
+                >
+                  <Shield className="w-4 h-4 shrink-0" />
+                  <span>Legal & Privacy</span>
+                </Link>
+                <div className="flex items-center justify-between rounded-lg py-2.5 px-3">
+                  <div className="flex items-center space-x-3 text-muted-foreground">
+                    {theme === "light" ? (
+                      <Sun className="w-4 h-4 shrink-0" />
+                    ) : (
+                      <Moon className="w-4 h-4 shrink-0" />
+                    )}
+                    <span className="text-[11px] font-semibold uppercase tracking-wider">
+                      Light / Dark
+                    </span>
+                  </div>
+                  <button
+                    onClick={toggleTheme}
+                    role="switch"
+                    aria-checked={theme === "light"}
+                    aria-label="Toggle light/dark theme"
+                    className="relative w-9 h-5 shrink-0 rounded-full bg-secondary border border-border transition-colors cursor-pointer"
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-primary shadow transition-transform duration-200 ${theme === "light" ? "translate-x-4" : ""}`}
+                    />
+                  </button>
+                </div>
                 <button
                   onClick={() => {
                     setIsMobileMenuOpen(false);
                     handleLogoutClick();
                   }}
-                  className="flex items-center space-x-2 px-1 py-1.5 text-[13px] font-semibold text-destructive hover:text-destructive/80 transition-colors cursor-pointer min-h-[44px]"
+                  className="flex items-center w-full space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all cursor-pointer min-h-[44px]"
                 >
-                  <LogOut className="w-4 h-4" />
-                  <span>Sign out</span>
-                </button>
-                <button
-                  onClick={toggleTheme}
-                  aria-label="Toggle light/dark theme"
-                  title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-                  className="p-2 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center group transition-colors"
-                >
-                  {theme === "dark" ? (
-                    <Sun className="w-5 h-5 group-hover:rotate-45 transition-transform" />
-                  ) : (
-                    <Moon className="w-5 h-5 group-hover:-rotate-12 transition-transform" />
-                  )}
+                  <LogOut className="w-4 h-4 shrink-0" />
+                  <span>Log Out</span>
                 </button>
               </div>
             </motion.div>

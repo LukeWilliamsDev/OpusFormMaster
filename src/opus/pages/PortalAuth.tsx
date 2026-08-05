@@ -44,6 +44,18 @@ export const PortalAuthPage: React.FC = () => {
     }
   };
 
+  // Show a notice if we just landed here because a stale (>24h) session was force-signed-out
+  useEffect(() => {
+    if (sessionStorage.getItem("opus_portal_session_expired")) {
+      sessionStorage.removeItem("opus_portal_session_expired");
+      setNotification({
+        type: "error",
+        title: "Session expired",
+        message: "For your security, please sign in again.",
+      });
+    }
+  }, []);
+
   // Check for recovery token/type in URL on mount, or listen for PASSWORD_RESET event
   useEffect(() => {
     const hash = window.location.hash;

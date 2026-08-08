@@ -418,6 +418,26 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [user]);
 
+  // Poll for account status changes (disabled/archived) so an admin action
+  // takes effect for an already-logged-in user instead of waiting for their
+  // JWT to expire.
+  useEffect(() => {
+    if (!user) return;
+    const checkStatus = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("status")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (data && data.status !== "active") {
+        await signOut();
+      }
+    };
+    checkStatus();
+    const interval = setInterval(checkStatus, 30000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   // Load operational data from Supabase whenever we have a signed-in user.
   useEffect(() => {
     if (!user) return;

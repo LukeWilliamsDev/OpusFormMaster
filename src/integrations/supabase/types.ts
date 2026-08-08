@@ -416,6 +416,7 @@ export type Database = {
           must_change_password: boolean;
           phone_number: string | null;
           role: Database["public"]["Enums"]["app_role"];
+          status: Database["public"]["Enums"]["profile_status"];
           tenant_id: string;
           updated_at: string;
         };
@@ -428,6 +429,7 @@ export type Database = {
           must_change_password?: boolean;
           phone_number?: string | null;
           role?: Database["public"]["Enums"]["app_role"];
+          status?: Database["public"]["Enums"]["profile_status"];
           tenant_id: string;
           updated_at?: string;
         };
@@ -440,6 +442,7 @@ export type Database = {
           must_change_password?: boolean;
           phone_number?: string | null;
           role?: Database["public"]["Enums"]["app_role"];
+          status?: Database["public"]["Enums"]["profile_status"];
           tenant_id?: string;
           updated_at?: string;
         };
@@ -702,6 +705,7 @@ export type Database = {
         | "logistics_assistant"
         | "site_foreman"
         | "labourer";
+      profile_status: "active" | "disabled" | "archived";
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -831,6 +835,7 @@ export const Constants = {
         "site_foreman",
         "labourer",
       ],
+      profile_status: ["active", "disabled", "archived"],
     },
   },
 } as const;

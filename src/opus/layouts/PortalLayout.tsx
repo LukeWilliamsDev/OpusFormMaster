@@ -88,7 +88,7 @@ export const PortalLayout: React.FC = () => {
     { section: "ADMIN" },
     { name: "SITE RECORDS", path: "/portal/audit", icon: History, roles: ["admin"] },
     { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
-    { name: "CREATE USER", path: "/portal/users", icon: Users, roles: ["admin"] },
+    { name: "USERS", path: "/portal/users", icon: Users, roles: ["admin"] },
   ];
 
   // SITE RECORDS/POLICIES (full audit trail) are restricted to the one

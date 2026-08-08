@@ -67,6 +67,9 @@ interface ValuationBuilderProps {
   onBack: () => void;
   quoteToLoadId?: string | null;
   onQuoteLoaded?: () => void;
+  mode?: "quote" | "invoice";
+  jobId?: string;
+  prefill?: { entity?: string; email?: string; site?: string; postcode?: string };
 }
 
 const SUGGESTED_ITEMS = [
@@ -337,13 +340,17 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   onBack,
   quoteToLoadId,
   onQuoteLoaded,
+  mode = "quote",
+  jobId,
+  prefill,
 }) => {
   const { profile } = usePortal();
+  const recordTable = mode === "invoice" ? "invoices" : "quotes";
   const [clientInfo, setClientInfo] = useState({
-    entity: "",
-    email: "",
-    site: "",
-    postcode: "",
+    entity: prefill?.entity || "",
+    email: prefill?.email || "",
+    site: prefill?.site || "",
+    postcode: prefill?.postcode || "",
   });
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -375,7 +382,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [quoteReference, setQuoteReference] = useState(
-    `JOB-${Math.floor(1000 + Math.random() * 9000)}`,
+    mode === "invoice"
+      ? `INV-${Math.floor(1000 + Math.random() * 9000)}`
+      : `JOB-${Math.floor(1000 + Math.random() * 9000)}`,
   );
   const [currentQuoteId, setCurrentQuoteId] = useState<string>(
     () => quoteToLoadId || crypto.randomUUID(),
@@ -383,6 +392,28 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
   const loadSavedQuotes = async () => {
     try {
+      if (mode === "invoice") {
+        if (!jobId) return;
+        const { data, error } = await supabase
+          .from("invoices")
+          .select("*")
+          .eq("job_id", jobId)
+          .eq("status", "draft")
+          .order("created_at", { ascending: false });
+        if (error) throw error;
+        const loadedInvoices: Quote[] = (data || []).map((row) => ({
+          id: row.id,
+          reference: row.reference,
+          date: row.date,
+          clientInfo: row.client_info as Quote["clientInfo"],
+          items: row.items as unknown as MeasuredItem[],
+          totals: row.totals as Quote["totals"],
+          isSent: row.status === "sent",
+        }));
+        setSavedQuotes(loadedInvoices);
+        return;
+      }
+
       const { data, error } = await supabase
         .from("quotes")
         .select("*")
@@ -487,22 +518,38 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     }
 
     const quoteId = currentQuoteId;
-    const newQuote = {
-      id: quoteId,
-      reference: quoteReference,
-      date: new Date().toLocaleDateString("en-GB"),
-      client_info: clientInfo,
-      items,
-      vat_rate: 0,
-      totals,
-      is_sent: false,
-      tenant_id: profile?.tenant_id,
-    } as unknown as QuoteInsertRow;
 
     try {
-      const { error } = await supabase.from("quotes").upsert(newQuote);
-
-      if (error) throw error;
+      if (mode === "invoice") {
+        if (!jobId) throw new Error("Missing job for invoice save");
+        const newInvoice = {
+          id: quoteId,
+          job_id: jobId,
+          reference: quoteReference,
+          date: new Date().toLocaleDateString("en-GB"),
+          client_info: clientInfo,
+          items,
+          vat_rate: 0,
+          totals,
+          status: "draft",
+        };
+        const { error } = await supabase.from("invoices").upsert(newInvoice as never);
+        if (error) throw error;
+      } else {
+        const newQuote = {
+          id: quoteId,
+          reference: quoteReference,
+          date: new Date().toLocaleDateString("en-GB"),
+          client_info: clientInfo,
+          items,
+          vat_rate: 0,
+          totals,
+          is_sent: false,
+          tenant_id: profile?.tenant_id,
+        } as unknown as QuoteInsertRow;
+        const { error } = await supabase.from("quotes").upsert(newQuote);
+        if (error) throw error;
+      }
 
       setLastSaved(new Date().toLocaleTimeString("en-GB"));
       loadSavedQuotes();
@@ -530,7 +577,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       (async () => {
         try {
           const { data, error } = await supabase
-            .from("quotes")
+            .from(recordTable as "quotes")
             .select("*")
             .eq("id", quoteToLoadId)
             .maybeSingle();
@@ -544,7 +591,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               clientInfo: data.client_info as Quote["clientInfo"],
               items: data.items as unknown as MeasuredItem[],
               totals: data.totals as Quote["totals"],
-              isSent: data.is_sent,
+              isSent:
+                mode === "invoice"
+                  ? (data as unknown as { status: string }).status === "sent"
+                  : (data as unknown as { is_sent: boolean }).is_sent,
             };
             loadQuote(quote);
             if (onQuoteLoaded) onQuoteLoaded();
@@ -568,7 +618,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     if (!quoteToDelete) return;
     const id = quoteToDelete.id;
     try {
-      const { error } = await supabase.from("quotes").delete().eq("id", id);
+      const { error } = await supabase
+        .from(recordTable as "quotes")
+        .delete()
+        .eq("id", id);
       if (error) throw error;
 
       setSavedQuotes(savedQuotes.filter((q) => q.id !== id));
@@ -809,19 +862,21 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               <Download className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">PDF</span>
             </button>
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={isSendingEmail}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-primary hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-4 py-1.5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
-            >
-              {isSendingEmail ? (
-                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Send className="w-3.5 h-3.5" />
-              )}
-              <span className="hidden sm:inline">{isSendingEmail ? "SENDING..." : "SEND"}</span>
-            </button>
+            {mode !== "invoice" && (
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={isSendingEmail}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-primary hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-4 py-1.5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
+              >
+                {isSendingEmail ? (
+                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+                <span className="hidden sm:inline">{isSendingEmail ? "SENDING..." : "SEND"}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

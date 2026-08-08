@@ -55,17 +55,17 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          Invoices
+          Quotes
         </h3>
         <Button size="sm" onClick={onCreateNew} className="gap-1.5">
-          <Plus className="w-3.5 h-3.5" /> New Invoice
+          <Plus className="w-3.5 h-3.5" /> New Quote
         </Button>
       </div>
 
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading...</p>
       ) : invoices.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No invoices yet for this job.</p>
+        <p className="text-sm text-muted-foreground">No quotes yet for this job.</p>
       ) : (
         <div className="divide-y border rounded-lg">
           {invoices.map((inv) => {

@@ -33,7 +33,7 @@ import { Supplier } from "./OSMMap";
 import { PersistentJobHeader } from "./PersistentJobHeader";
 import { handleError } from "../utils/errorHandler";
 import { InvoiceList } from "./billing/InvoiceList";
-import { InvoiceBuilder } from "./billing/InvoiceBuilder";
+import { QuoteInvoiceBuilder } from "./QuoteInvoiceBuilder";
 import { FinalBillBuilder } from "./billing/FinalBillBuilder";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
@@ -1343,11 +1343,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
         <TabsContent value="billing">
           {editingInvoiceId !== null ? (
-            <InvoiceBuilder
+            <QuoteInvoiceBuilder
+              onLogout={() => {}}
+              onBack={() => setEditingInvoiceId(null)}
+              mode="invoice"
               jobId={job.id}
-              invoiceId={editingInvoiceId === "new" ? undefined : editingInvoiceId}
-              onClose={() => setEditingInvoiceId(null)}
-              onSaved={() => setBillingRefreshKey((k) => k + 1)}
+              prefill={{ entity: job.mainContractor, site: job.siteName, postcode: job.postcode }}
+              quoteToLoadId={editingInvoiceId === "new" ? null : editingInvoiceId}
+              onQuoteLoaded={() => setBillingRefreshKey((k) => k + 1)}
             />
           ) : (
             <>

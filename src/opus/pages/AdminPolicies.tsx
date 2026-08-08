@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { FileText, ExternalLink } from "lucide-react";
 
 export const AdminPolicies: React.FC = () => {
@@ -32,12 +31,14 @@ export const AdminPolicies: React.FC = () => {
   }, []);
 
   return (
-    <div className="flex flex-col gap-6 max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 w-full">
-      <div>
-        <h2 className="text-3xl font-bold tracking-tight text-white font-archivo uppercase">
+    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in text-foreground flex flex-col bg-background">
+      <div className="border-b border-border pb-6">
+        <h1 className="text-2xl sm:text-3xl font-extrabold font-archivo tracking-tight">
           Compliance Policies
-        </h2>
-        <p className="text-muted-foreground mt-2">Company policies and compliance documents.</p>
+        </h1>
+        <p className="text-muted-foreground mt-1 text-sm">
+          Company policies and compliance documents.
+        </p>
       </div>
 
       {loading ? (
@@ -45,33 +46,28 @@ export const AdminPolicies: React.FC = () => {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="rounded-xl border border-border divide-y divide-border overflow-hidden">
           {policies.map((policy) => (
-            <Card key={policy.name} className="bg-card hover:border-primary/50 transition-colors">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-xs font-black uppercase tracking-wider leading-tight text-white">
-                  {policy.name}
-                </CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-between items-end mt-4">
-                  <a
-                    href={policy.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
-                  >
-                    View Document
-                    <ExternalLink className="ml-1 h-3 w-3" />
-                  </a>
-                </div>
-              </CardContent>
-            </Card>
+            <a
+              key={policy.name}
+              href={policy.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between gap-4 px-4 sm:px-6 py-4 hover:bg-muted/30 transition-colors group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-sm font-medium truncate">{policy.name}</span>
+              </div>
+              <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-primary shrink-0 group-hover:underline">
+                View Document
+                <ExternalLink className="h-3 w-3" />
+              </span>
+            </a>
           ))}
 
           {policies.length === 0 && (
-            <div className="col-span-full p-8 text-center text-muted-foreground bg-muted/20 rounded-lg border border-dashed">
+            <div className="py-20 text-center text-xs font-mono text-muted-foreground">
               No policies found. Ensure they have been uploaded to the bucket.
             </div>
           )}

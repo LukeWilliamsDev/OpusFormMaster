@@ -203,8 +203,8 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
   };
 
   return (
-    <div className="space-y-4 font-sans">
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-4 font-sans lg:h-full lg:flex lg:flex-col lg:min-h-0">
+      <div className="flex items-center justify-between gap-3 lg:shrink-0">
         <h2 className="text-lg font-black uppercase tracking-widest text-foreground">
           {MONTH_LONG[anchor.getMonth()]} {anchor.getFullYear()}
         </h2>
@@ -235,9 +235,11 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
         </div>
       </div>
 
-      <div className="w-full">
-        <div className={`w-full border-2 ${SITE_BORDER} rounded-xl overflow-hidden`}>
-          <div className={`grid grid-cols-7 border-b-2 ${SITE_BORDER} bg-card`}>
+      <div className="w-full lg:flex-1 lg:min-h-0">
+        <div
+          className={`w-full border-2 ${SITE_BORDER} rounded-xl overflow-hidden lg:h-full lg:flex lg:flex-col`}
+        >
+          <div className={`grid grid-cols-7 border-b-2 ${SITE_BORDER} bg-card lg:shrink-0`}>
             {WEEKDAY_LABELS.map((label) => (
               <div
                 key={label}
@@ -249,7 +251,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
             ))}
           </div>
 
-          <div className="grid grid-cols-7">
+          <div className="grid grid-cols-7 lg:flex-1 lg:min-h-0 lg:grid-rows-6">
             {cells.map((cell, idx) => {
               const cellJobs = jobsForDate(cell.date);
               const overflow = cellJobs.length - MAX_CHIPS_PER_CELL;
@@ -260,9 +262,9 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                 <div
                   key={cell.date}
                   onClick={() => setDetailDate(cell.date)}
-                  className={`min-h-[70px] sm:min-h-[100px] p-1 sm:p-1.5 border-b-2 ${SITE_BORDER} ${
+                  className={`min-h-[70px] sm:min-h-[100px] lg:min-h-0 p-1 sm:p-1.5 border-b-2 ${SITE_BORDER} ${
                     (idx + 1) % 7 !== 0 ? `border-r-2 ${SITE_BORDER}` : ""
-                  } ${cell.inMonth ? "bg-background hover:bg-card/40" : "bg-card/50"} flex flex-col gap-1 cursor-pointer transition-colors`}
+                  } ${cell.inMonth ? "bg-background hover:bg-card/40" : "bg-card/50"} flex flex-col gap-1 cursor-pointer transition-colors lg:overflow-hidden`}
                 >
                   <div className="flex items-center justify-between">
                     <span

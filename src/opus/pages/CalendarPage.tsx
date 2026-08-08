@@ -16,7 +16,7 @@ export const CalendarPage: React.FC = () => {
   };
 
   return (
-    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto animate-fade-in space-y-6">
+    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto animate-fade-in space-y-6 lg:h-full lg:flex lg:flex-col lg:min-h-0">
       <MonthCalendar
         jobs={jobs}
         workers={workers}

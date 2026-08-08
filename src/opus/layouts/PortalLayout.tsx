@@ -141,7 +141,7 @@ export const PortalLayout: React.FC = () => {
     );
 
   return (
-    <div className="min-h-screen bg-background text-foreground font-sans selection:bg-primary/30 selection:text-white flex flex-col lg:flex-row">
+    <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-background text-foreground font-sans selection:bg-primary/30 selection:text-white flex flex-col lg:flex-row">
       {/* Desktop Sidebar */}
       <SidebarNavigationSlim
         items={toNavListItems()}
@@ -319,7 +319,7 @@ export const PortalLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col min-h-0 bg-background">
-        <div className="flex-1 w-full relative">
+        <div className="flex-1 w-full relative lg:min-h-0 lg:overflow-y-auto">
           <Outlet />
         </div>
       </main>

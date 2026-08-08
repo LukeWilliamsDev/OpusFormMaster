@@ -18,6 +18,7 @@ import { JobLedgerPage } from "./pages/JobLedger";
 import { PipelinePage } from "./pages/Pipeline";
 import { AuditLogPage } from "./pages/AuditLog";
 import { AdminPolicies } from "./pages/AdminPolicies";
+import { AdminUsers } from "./pages/AdminUsers";
 import { SubmitCredentialsPage } from "./pages/SubmitCredentials";
 import { SettingsPage } from "./pages/Settings";
 import { JobUploadPortalPage } from "./pages/JobUploadPortal";
@@ -43,11 +44,15 @@ import { LegalHubPage } from "./pages/LegalHub";
 
 // Session gate — any /portal/* view requires a valid Supabase session.
 const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, authLoading } = usePortal();
+  const { isAuthenticated, authLoading, profile } = usePortal();
   if (authLoading) {
     return <div className="min-h-screen bg-background" />;
   }
-  return isAuthenticated ? <PortalLayout /> : <Navigate to="/portal" replace />;
+  if (!isAuthenticated) return <Navigate to="/portal" replace />;
+  // A must-change-password account has no business in the app until it changes it —
+  // send it back to the auth page, which forces the reset form for this state.
+  if (profile?.must_change_password) return <Navigate to="/portal" replace />;
+  return <PortalLayout />;
 };
 
 // Role gate — restricts a subtree to a role allowlist. Blocked users go to the
@@ -163,6 +168,14 @@ export default function App() {
               element={
                 <AuditLogGuard>
                   <AdminPolicies />
+                </AuditLogGuard>
+              }
+            />
+            <Route
+              path="/portal/users"
+              element={
+                <AuditLogGuard>
+                  <AdminUsers />
                 </AuditLogGuard>
               }
             />

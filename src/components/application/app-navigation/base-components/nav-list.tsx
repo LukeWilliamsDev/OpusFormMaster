@@ -1,3 +1,5 @@
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { cx } from "@/lib/utils/cx";
 import type { NavItemDividerType, NavItemType } from "../config";
 import { NavItemBase } from "./nav-item";
@@ -25,22 +27,71 @@ export const NavList = ({
   const activeItem = items.find(
     (item) => item.href === activeUrl || item.items?.some((subItem) => subItem.href === activeUrl),
   );
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
+    let label: string | null = null;
+    let activeLabel: string | null = null;
+    const labels: string[] = [];
+    for (const item of items) {
+      if (item.divider) {
+        label = item.label ?? null;
+        if (label) labels.push(label);
+        continue;
+      }
+      if (label && (item.href === activeUrl || item.items?.some((s) => s.href === activeUrl))) {
+        activeLabel = label;
+      }
+    }
+    return new Set(labels.filter((l) => l !== activeLabel));
+  });
+  const toggleSection = (label: string) =>
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      next.has(label) ? next.delete(label) : next.add(label);
+      return next;
+    });
+
+  // Track which labeled section the current item falls under, so it can be hidden when collapsed.
+  let currentSection: string | null = null;
 
   return (
     <ul className={cx("flex flex-col", className)}>
       {items.map((item, index) => {
         if (item.divider) {
-          return (
-            <li key={index} className={cx("w-full px-0.5", item.label ? "pt-4 pb-1.5" : "py-2")}>
-              {item.label ? (
-                <span className="block px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  {item.label}
-                </span>
-              ) : (
+          currentSection = item.label ?? null;
+          if (!item.label) {
+            return (
+              <li key={index} className="w-full px-0.5 py-2">
                 <hr className="h-px w-full border-none bg-border" />
-              )}
+              </li>
+            );
+          }
+          const collapsed = collapsedSections.has(item.label);
+          return (
+            <li key={index} className="w-full px-0.5 pt-4 pb-1.5">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleSection(item.label!);
+                }}
+                className="flex w-full items-center justify-between px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
+              >
+                <span>{item.label}</span>
+                {!iconOnly && (
+                  <ChevronDown
+                    className={cx(
+                      "h-3 w-3 transition-transform",
+                      collapsed ? "-rotate-90" : "rotate-0",
+                    )}
+                  />
+                )}
+              </button>
             </li>
           );
+        }
+
+        if (currentSection && collapsedSections.has(currentSection)) {
+          return null;
         }
 
         if (item.items?.length) {

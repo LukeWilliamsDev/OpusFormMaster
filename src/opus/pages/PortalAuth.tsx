@@ -15,7 +15,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { NoticeModal } from "@/components/ui/notice-modal";
 
 export const PortalAuthPage: React.FC = () => {
-  const { isAuthenticated, signIn, signOut, resetPassword, updatePassword, theme } = usePortal();
+  const { isAuthenticated, profile, signIn, signOut, resetPassword, updatePassword, theme } =
+    usePortal();
   const logoSrc =
     theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const navigate = useNavigate();
@@ -101,9 +102,13 @@ export const PortalAuthPage: React.FC = () => {
     const isRecovery = hash.includes("type=recovery") || search.includes("type=recovery");
 
     if (isAuthenticated && !isRecovery && formMode !== "reset" && !notification) {
+      if (profile?.must_change_password) {
+        setFormMode("reset");
+        return;
+      }
       navigate("/portal/dashboard", { replace: true });
     }
-  }, [isAuthenticated, navigate, formMode, notification]);
+  }, [isAuthenticated, navigate, formMode, notification, profile?.must_change_password]);
 
   // After repeated failed attempts, tick a countdown that keeps the form locked as defense-in-depth
   useEffect(() => {
@@ -150,7 +155,8 @@ export const PortalAuthPage: React.FC = () => {
       return;
     }
     setFailedAttempts(0);
-    navigate("/portal/dashboard");
+    // Redirect (or forced password-change) is handled by the isAuthenticated effect
+    // once the profile — including must_change_password — has loaded.
   };
 
   const handleForgot = async (e: React.FormEvent) => {

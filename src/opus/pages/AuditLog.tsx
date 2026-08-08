@@ -24,6 +24,42 @@ import type { Database as SupabaseDatabase } from "@/integrations/supabase/types
 
 type TableName = keyof SupabaseDatabase["public"]["Tables"];
 
+// Exact, plain-English label for each action code — falls back to a
+// title-cased version of the raw action for anything not explicitly mapped,
+// rather than a vague catch-all like "System Event".
+const ACTION_LABELS: Record<string, string> = {
+  LOGIN_SUCCESS: "Signed in",
+  LOGIN_FAIL: "Sign-in failed",
+  LOGOUT: "Signed out",
+  PASSWORD_RESET_REQUEST: "Password reset requested",
+  PASSWORD_RESET_SUCCESS: "Password changed",
+  PROFILE_UPDATE: "Profile updated",
+  COMPLIANCE_REMINDER_SENT: "Compliance reminder sent",
+  INSPECT: "Record viewed",
+  VIEW_DOCUMENT: "Document viewed",
+  REMOVE_DOCUMENT: "Document removed",
+  CREATE_DOCUMENT_REQUEST: "Document request created",
+  RESEND_DOCUMENT_REQUEST: "Document request resent",
+  DELETE_NOTE: "Note deleted",
+  APPROVE_DOCUMENT: "Document approved",
+  REJECT_DOCUMENT: "Document rejected",
+  SUBMIT_DOCUMENTS: "Documents submitted",
+  CREATE: "Record created",
+  UPDATE: "Record updated",
+  DELETE: "Record deleted",
+};
+
+function getEventLabel(action: string): string {
+  return (
+    ACTION_LABELS[action] ??
+    action
+      .toLowerCase()
+      .split("_")
+      .map((word) => word[0]?.toUpperCase() + word.slice(1))
+      .join(" ")
+  );
+}
+
 interface AuditLog {
   id: string;
   created_at: string;
@@ -51,17 +87,6 @@ export const AuditLogPage: React.FC = () => {
   const [restoring, setRestoring] = useState(false);
   const [restoreConfirmOpen, setRestoreConfirmOpen] = useState(false);
   const [logPendingRestore, setLogPendingRestore] = useState<AuditLog | null>(null);
-
-  // Memoize update log diffs to avoid executing computeDiff on every render for every row
-  const diffCache = useMemo(
-    () =>
-      Object.fromEntries(
-        logs
-          .filter((l) => l.action === "UPDATE")
-          .map((l) => [l.id, computeDiff(l.details?.old, l.details?.new)]),
-      ),
-    [logs],
-  );
 
   const requestRestore = (log: AuditLog) => {
     setLogPendingRestore(log);
@@ -299,6 +324,7 @@ export const AuditLogPage: React.FC = () => {
           ) : (
             <CardGrid
               items={paginatedLogs}
+              className="flex flex-col divide-y divide-border"
               renderCard={(log) => {
                 // Colored severity bullets for timeline matching 2d
                 let bulletColor = "bg-primary";
@@ -307,7 +333,7 @@ export const AuditLogPage: React.FC = () => {
                 } else if (log.action.includes("CREATE") || log.action.includes("UPDATE")) {
                   bulletColor = "bg-primary";
                 } else if (
-                  log.action.includes("FAILURE") ||
+                  log.action.includes("FAIL") ||
                   log.action.includes("DELETE") ||
                   log.action.includes("REJECT")
                 ) {
@@ -316,27 +342,7 @@ export const AuditLogPage: React.FC = () => {
                   bulletColor = "bg-warning";
                 }
 
-                const isRecordChange =
-                  log.action === "UPDATE" && (diffCache[log.id]?.length ?? 0) > 0;
-                const friendlyEventName = isRecordChange
-                  ? "Record Change"
-                  : log.action === "INSPECT"
-                    ? "Record Inspection"
-                    : log.action === "CREATE"
-                      ? "Record Created"
-                      : log.action === "DELETE"
-                        ? "Record Deleted"
-                        : log.action === "APPROVE_DOCUMENT"
-                          ? "Document Approved"
-                          : log.action === "REJECT_DOCUMENT"
-                            ? "Document Rejected"
-                            : log.action === "SUBMIT_DOCUMENTS"
-                              ? "Document Uploaded"
-                              : log.action === "RESEND_DOCUMENT_REQUEST"
-                                ? "Link Renewed"
-                                : log.action === "UPDATE"
-                                  ? "Record Updated"
-                                  : "System Event";
+                const friendlyEventName = getEventLabel(log.action);
 
                 return (
                   <div
@@ -345,17 +351,16 @@ export const AuditLogPage: React.FC = () => {
                     className="flex gap-4 py-4 cursor-pointer hover:bg-foreground/10 transition-all px-2 rounded-lg"
                   >
                     <div className={`w-2.5 h-2.5 rounded-full ${bulletColor} mt-1.5 shrink-0`} />
-                    <div className="flex-1">
-                      <div className="text-[14px] font-semibold text-white">
-                        {friendlyEventName === "Document Approved" ? (
+                    <div className="flex-1 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-x-4 gap-y-1 min-w-0">
+                      <div className="text-[14px] font-semibold text-white truncate">
+                        {log.action === "APPROVE_DOCUMENT" ? (
                           <span>
-                            Ticket approved for{" "}
+                            Approved for{" "}
                             <b>
                               {getTargetDisplayName(log.target_type, log.target_id, log.details)}
                             </b>
                           </span>
-                        ) : friendlyEventName === "Record Created" &&
-                          log.target_type === "quotes" ? (
+                        ) : log.action === "CREATE" && log.target_type === "quotes" ? (
                           <span>
                             Quote{" "}
                             <span className="font-mono text-primary">
@@ -365,11 +370,11 @@ export const AuditLogPage: React.FC = () => {
                           </span>
                         ) : (
                           <span>
-                            {friendlyEventName} triggered on {log.target_type}
+                            {friendlyEventName} · {log.target_type}
                           </span>
                         )}
                       </div>
-                      <div className="text-[12px] text-muted-foreground mt-1">
+                      <div className="text-[12px] text-muted-foreground shrink-0">
                         {log.user_email || "system"} ·{" "}
                         {new Date(log.created_at).toLocaleString("en-GB")}
                       </div>
@@ -439,27 +444,7 @@ export const AuditLogPage: React.FC = () => {
                     </span>
                   </div>
                   <h3 className="text-lg font-black font-archivo tracking-tight">
-                    {/* Expand ternary to match all action types in the drawer title */}
-                    {selectedLog.action === "UPDATE" &&
-                    computeDiff(selectedLog.details?.old, selectedLog.details?.new).length > 0
-                      ? "Record Change"
-                      : selectedLog.action === "INSPECT"
-                        ? "Record Inspection"
-                        : selectedLog.action === "CREATE"
-                          ? "Record Created"
-                          : selectedLog.action === "DELETE"
-                            ? "Record Deleted"
-                            : selectedLog.action === "APPROVE_DOCUMENT"
-                              ? "Document Approved"
-                              : selectedLog.action === "REJECT_DOCUMENT"
-                                ? "Document Rejected"
-                                : selectedLog.action === "SUBMIT_DOCUMENTS"
-                                  ? "Document Uploaded"
-                                  : selectedLog.action === "RESEND_DOCUMENT_REQUEST"
-                                    ? "Link Renewed"
-                                    : selectedLog.action === "UPDATE"
-                                      ? "Record Updated"
-                                      : "System Event"}
+                    {getEventLabel(selectedLog.action)}
                   </h3>
                 </div>
                 <button

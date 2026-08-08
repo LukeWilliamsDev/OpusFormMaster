@@ -3,6 +3,7 @@ const ALLOWED_ORIGINS = [
   "https://www.opusform.co.uk",
   "http://localhost:5173",
   "http://localhost:3000",
+  "http://localhost:8080",
 ];
 
 // Every function already requires a valid Bearer JWT, so a wrong Origin can't

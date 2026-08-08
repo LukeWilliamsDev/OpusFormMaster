@@ -88,6 +88,7 @@ export const PortalLayout: React.FC = () => {
     { section: "ADMIN" },
     { name: "SITE RECORDS", path: "/portal/audit", icon: History, roles: ["admin"] },
     { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
+    { name: "CREATE USER", path: "/portal/users", icon: Users, roles: ["admin"] },
   ];
 
   // SITE RECORDS/POLICIES (full audit trail) are restricted to the one
@@ -97,7 +98,12 @@ export const PortalLayout: React.FC = () => {
   const visibleNav = allNav.filter((item) => {
     if ("section" in item) return true;
     if (!role || !item.roles.includes(role)) return false;
-    if (item.path === "/portal/audit" || item.path === "/portal/policies") return isAuditAdmin;
+    if (
+      item.path === "/portal/audit" ||
+      item.path === "/portal/policies" ||
+      item.path === "/portal/users"
+    )
+      return isAuditAdmin;
     return true;
   });
   // Drop a section header if every item under it got filtered out (e.g. ADMIN for non-admins).

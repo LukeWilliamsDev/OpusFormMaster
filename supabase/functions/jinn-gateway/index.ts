@@ -438,11 +438,42 @@ Deno.serve(async (req) => {
 
   // Anon key + refresh token, never service-role for the actual data — RLS
   // stays active for every action handler.
-  const tokenRes = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
-    method: "POST",
-    headers: { apikey: anonKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
+  const exchangeToken = (token) =>
+    fetch(`${supabaseUrl}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      headers: { apikey: anonKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: token }),
+    });
+
+  let tokenRes = await exchangeToken(refreshToken);
+
+  // Concurrent invocations can race to consume the same stored refresh
+  // token; whichever call loses gets "already_used". Re-read the row —
+  // the winner has already persisted the newer token — and retry once.
+  if (!tokenRes.ok) {
+    const detail = await tokenRes.text();
+    if (detail.includes("refresh_token_already_used")) {
+      const retryRes = await fetch(
+        `${supabaseUrl}/rest/v1/jinn_admin_session?select=refresh_token&id=eq.true`,
+        { headers: sessionTableHeaders },
+      );
+      const retryStored = retryRes.ok ? await retryRes.json() : [];
+      const retryToken = retryStored[0]?.refresh_token;
+      if (retryToken && retryToken !== refreshToken) {
+        tokenRes = await exchangeToken(retryToken);
+      } else {
+        return new Response(
+          JSON.stringify({ error: "Failed to establish admin session", detail }),
+          { status: 502, headers: jsonHeaders },
+        );
+      }
+    } else {
+      return new Response(
+        JSON.stringify({ error: "Failed to establish admin session", detail }),
+        { status: 502, headers: jsonHeaders },
+      );
+    }
+  }
   if (!tokenRes.ok) {
     return new Response(
       JSON.stringify({ error: "Failed to establish admin session", detail: await tokenRes.text() }),

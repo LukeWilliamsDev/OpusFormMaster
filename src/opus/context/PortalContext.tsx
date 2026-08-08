@@ -8,6 +8,20 @@ type StaffInsertRow = Database["public"]["Tables"]["staff"]["Insert"];
 import { Job, Worker, ScheduledShift, CalendarEvent } from "../types/erp";
 import { INITIAL_ROSTER, INITIAL_SHIFTS } from "../data/roster";
 
+// Deep-sorts object keys before stringifying so a DB round trip (which can
+// reorder JSONB keys) doesn't look like a real change and trigger a
+// redundant upsert.
+function stableStringify(value: unknown): string {
+  if (Array.isArray(value)) return `[${value.map(stableStringify).join(",")}]`;
+  if (value && typeof value === "object") {
+    const entries = Object.entries(value as Record<string, unknown>).sort(([a], [b]) =>
+      a.localeCompare(b),
+    );
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${stableStringify(v)}`).join(",")}}`;
+  }
+  return JSON.stringify(value);
+}
+
 const INITIAL_JOBS: Job[] = [
   {
     id: "1",
@@ -135,15 +149,12 @@ export const jobToRow = (j: Job, tenantId?: string) =>
     schedule_value: j.scheduleValue ?? 0,
     ...(tenantId ? { tenant_id: tenantId } : {}),
   }) as JobInsertRow;
-const toTitleCase = (s: string) =>
-  s.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
-
 type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
 
 const rowToJob = (r: JobRow): Job => ({
   id: r.id,
   jobRef: r.job_ref,
-  siteName: r.site_name ? toTitleCase(r.site_name) : r.site_name,
+  siteName: r.site_name,
   mainContractor: r.main_contractor ?? "",
   postcode: r.postcode ?? "",
   currentPours: r.current_pours ?? 0,
@@ -216,6 +227,7 @@ interface PortalContextType {
     phone_number: string;
     avatar_url: string;
     tenant_id: string;
+    must_change_password: boolean;
   } | null;
   updateProfile: (updates: {
     full_name?: string;
@@ -242,6 +254,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     phone_number: string;
     avatar_url: string;
     tenant_id: string;
+    must_change_password: boolean;
   } | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
@@ -375,14 +388,20 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     (async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("role, full_name, phone_number, avatar_url, tenant_id")
+        .select("role, full_name, phone_number, avatar_url, tenant_id, must_change_password")
         .eq("id", user.id)
         .maybeSingle();
       if (cancelled) return;
       if (error) {
         console.error("Failed to load profile", error);
         setRole("labourer");
-        setProfileState({ full_name: "", phone_number: "", avatar_url: "", tenant_id: "" });
+        setProfileState({
+          full_name: "",
+          phone_number: "",
+          avatar_url: "",
+          tenant_id: "",
+          must_change_password: false,
+        });
       } else {
         setRole((data?.role as AppRole) ?? "labourer");
         setProfileState({
@@ -390,6 +409,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           phone_number: data?.phone_number ?? "",
           avatar_url: data?.avatar_url ?? "",
           tenant_id: data?.tenant_id ?? "",
+          must_change_password: data?.must_change_password ?? false,
         });
       }
     })();
@@ -426,14 +446,14 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       prevShiftIdsRef.current = new Set(sList.map((s) => s.id));
       prevCalendarEventIdsRef.current = new Set(ceList.map((e) => e.id));
 
-      lastSavedWorkersRef.current = JSON.stringify(
+      lastSavedWorkersRef.current = stableStringify(
         wList.map((w) => workerToRow(w, profile?.tenant_id)),
       );
-      lastSavedJobsRef.current = JSON.stringify(jList.map((j) => jobToRow(j, profile?.tenant_id)));
-      lastSavedShiftsRef.current = JSON.stringify(
+      lastSavedJobsRef.current = stableStringify(jList.map((j) => jobToRow(j, profile?.tenant_id)));
+      lastSavedShiftsRef.current = stableStringify(
         sList.map((s) => shiftToRow(s, profile?.tenant_id)),
       );
-      lastSavedCalendarEventsRef.current = JSON.stringify(
+      lastSavedCalendarEventsRef.current = stableStringify(
         ceList.map((e) => calendarEventToRow(e, profile?.tenant_id)),
       );
 
@@ -480,7 +500,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           // Mark this state as already persisted so the auto-save effect
           // below doesn't immediately echo it back as a redundant upsert.
           prevWorkerIdsRef.current = new Set(next.map((w) => w.id));
-          lastSavedWorkersRef.current = JSON.stringify(
+          lastSavedWorkersRef.current = stableStringify(
             next.map((w) => workerToRow(w, profile?.tenant_id)),
           );
           return next;
@@ -516,7 +536,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           // Mark this state as already persisted so the auto-save effect
           // below doesn't immediately echo it back as a redundant upsert.
           prevJobIdsRef.current = new Set(next.map((j) => j.id));
-          lastSavedJobsRef.current = JSON.stringify(
+          lastSavedJobsRef.current = stableStringify(
             next.map((j) => jobToRow(j, profile?.tenant_id)),
           );
           return next;
@@ -549,7 +569,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 })();
 
           prevShiftIdsRef.current = new Set(next.map((s) => s.id));
-          lastSavedShiftsRef.current = JSON.stringify(
+          lastSavedShiftsRef.current = stableStringify(
             next.map((s) => shiftToRow(s, profile?.tenant_id)),
           );
           return next;
@@ -585,7 +605,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                   })();
 
             prevCalendarEventIdsRef.current = new Set(next.map((e) => e.id));
-            lastSavedCalendarEventsRef.current = JSON.stringify(
+            lastSavedCalendarEventsRef.current = stableStringify(
               next.map((e) => calendarEventToRow(e, profile?.tenant_id)),
             );
             return next;
@@ -602,7 +622,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
     const rows = workers.map((w) => workerToRow(w, profile?.tenant_id));
-    const serialized = JSON.stringify(rows);
+    const serialized = stableStringify(rows);
     if (serialized === lastSavedWorkersRef.current) return;
     lastSavedWorkersRef.current = serialized;
 
@@ -624,7 +644,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
     const rows = jobs.map((j) => jobToRow(j, profile?.tenant_id));
-    const serialized = JSON.stringify(rows);
+    const serialized = stableStringify(rows);
     if (serialized === lastSavedJobsRef.current) return;
     lastSavedJobsRef.current = serialized;
 
@@ -646,7 +666,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
     const rows = shifts.map((s) => shiftToRow(s, profile?.tenant_id));
-    const serialized = JSON.stringify(rows);
+    const serialized = stableStringify(rows);
     if (serialized === lastSavedShiftsRef.current) return;
     lastSavedShiftsRef.current = serialized;
 
@@ -668,7 +688,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (!hydratedRef.current || !user) return;
     const rows = calendarEvents.map((e) => calendarEventToRow(e, profile?.tenant_id));
-    const serialized = JSON.stringify(rows);
+    const serialized = stableStringify(rows);
     if (serialized === lastSavedCalendarEventsRef.current) return;
     lastSavedCalendarEventsRef.current = serialized;
 
@@ -830,6 +850,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
+        await supabase.from("profiles").update({ must_change_password: false }).eq("id", user.id);
+        setProfileState((prev) => (prev ? { ...prev, must_change_password: false } : prev));
         await supabase.from("audit_logs").insert({
           user_id: user.id,
           user_email: user.email,
@@ -855,7 +877,14 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setProfileState((prev) =>
         prev
           ? { ...prev, ...updates }
-          : { full_name: "", phone_number: "", avatar_url: "", tenant_id: "", ...updates },
+          : {
+              full_name: "",
+              phone_number: "",
+              avatar_url: "",
+              tenant_id: "",
+              must_change_password: false,
+              ...updates,
+            },
       );
       await supabase.from("audit_logs").insert({
         user_id: user.id,

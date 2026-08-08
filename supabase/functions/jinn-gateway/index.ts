@@ -468,10 +468,10 @@ Deno.serve(async (req) => {
         );
       }
     } else {
-      return new Response(
-        JSON.stringify({ error: "Failed to establish admin session", detail }),
-        { status: 502, headers: jsonHeaders },
-      );
+      return new Response(JSON.stringify({ error: "Failed to establish admin session", detail }), {
+        status: 502,
+        headers: jsonHeaders,
+      });
     }
   }
   if (!tokenRes.ok) {

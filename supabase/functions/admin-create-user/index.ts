@@ -12,10 +12,13 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized: Missing Authorization header." }), {
-        status: 401,
-        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Missing Authorization header." }),
+        {
+          status: 401,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        },
+      );
     }
 
     const token = authHeader.replace("Bearer ", "");
@@ -42,9 +45,14 @@ serve(async (req) => {
       );
     }
     if (
-      !["admin", "director", "logistics_coordinator", "logistics_assistant", "site_foreman", "labourer"].includes(
-        role,
-      )
+      ![
+        "admin",
+        "director",
+        "logistics_coordinator",
+        "logistics_assistant",
+        "site_foreman",
+        "labourer",
+      ].includes(role)
     ) {
       return new Response(JSON.stringify({ error: "Invalid role." }), {
         status: 400,
@@ -58,10 +66,13 @@ serve(async (req) => {
       email_confirm: true,
     });
     if (createError || !created.user) {
-      return new Response(JSON.stringify({ error: createError?.message ?? "Failed to create user." }), {
-        status: 400,
-        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      });
+      return new Response(
+        JSON.stringify({ error: createError?.message ?? "Failed to create user." }),
+        {
+          status: 400,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        },
+      );
     }
 
     const { error: profileError } = await supabase

@@ -1,11 +1,5 @@
 import React, { useEffect, useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
+import { ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -24,7 +18,6 @@ import {
 interface InvoiceBuilderProps {
   jobId: string;
   invoiceId?: string;
-  open: boolean;
   onClose: () => void;
   onSaved: () => void;
 }
@@ -32,7 +25,6 @@ interface InvoiceBuilderProps {
 export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({
   jobId,
   invoiceId,
-  open,
   onClose,
   onSaved,
 }) => {
@@ -43,7 +35,6 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
     if (invoiceId) {
       supabase
         .from("invoices")
@@ -66,7 +57,9 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({
       setItems([]);
       setVatRate(20);
     }
-  }, [open, invoiceId]);
+  }, [invoiceId]);
+
+  const totals = computeTotals(items, vatRate);
 
   const handleSave = async () => {
     if (items.length === 0) {
@@ -97,71 +90,71 @@ export const InvoiceBuilder: React.FC<InvoiceBuilderProps> = ({
     }
   };
 
-  const totals = computeTotals(items, vatRate);
-
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {invoiceId ? "Edit Invoice" : "New Invoice"} #{reference}
-          </DialogTitle>
-        </DialogHeader>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onClose}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4" /> Back to Invoices
+        </button>
+        <h2 className="text-lg font-bold">
+          {invoiceId ? "Edit Invoice" : "New Invoice"} #{reference}
+        </h2>
+      </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            placeholder="Client name"
-            value={clientInfo.entity}
-            onChange={(e) => setClientInfo({ ...clientInfo, entity: e.target.value })}
-          />
-          <Input
-            placeholder="Client email"
-            value={clientInfo.email}
-            onChange={(e) => setClientInfo({ ...clientInfo, email: e.target.value })}
-          />
-          <Input
-            placeholder="Site"
-            value={clientInfo.site}
-            onChange={(e) => setClientInfo({ ...clientInfo, site: e.target.value })}
-          />
-          <Input
-            placeholder="Postcode"
-            value={clientInfo.postcode}
-            onChange={(e) => setClientInfo({ ...clientInfo, postcode: e.target.value })}
-          />
-        </div>
+      <div className="grid grid-cols-2 gap-3 max-w-2xl">
+        <Input
+          placeholder="Client name"
+          value={clientInfo.entity}
+          onChange={(e) => setClientInfo({ ...clientInfo, entity: e.target.value })}
+        />
+        <Input
+          placeholder="Client email"
+          value={clientInfo.email}
+          onChange={(e) => setClientInfo({ ...clientInfo, email: e.target.value })}
+        />
+        <Input
+          placeholder="Site"
+          value={clientInfo.site}
+          onChange={(e) => setClientInfo({ ...clientInfo, site: e.target.value })}
+        />
+        <Input
+          placeholder="Postcode"
+          value={clientInfo.postcode}
+          onChange={(e) => setClientInfo({ ...clientInfo, postcode: e.target.value })}
+        />
+      </div>
 
-        <BillItemsEditor items={items} onChange={setItems} />
+      <BillItemsEditor items={items} onChange={setItems} />
 
-        <div className="flex items-center justify-end gap-4 border-t pt-3">
-          <label className="flex items-center gap-2 text-sm">
-            VAT %
-            <Input
-              type="number"
-              className="w-20"
-              value={vatRate}
-              onChange={(e) => setVatRate(Number(e.target.value) || 0)}
-            />
-          </label>
-          <div className="text-right text-sm">
-            <div>
-              Net: £{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </div>
-            <div className="font-bold">
-              Gross: £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </div>
+      <div className="flex items-center justify-end gap-4 border-t pt-4">
+        <label className="flex items-center gap-2 text-sm">
+          VAT %
+          <Input
+            type="number"
+            className="w-20"
+            value={vatRate}
+            onChange={(e) => setVatRate(Number(e.target.value) || 0)}
+          />
+        </label>
+        <div className="text-right text-sm">
+          <div>Net: £{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+          <div className="font-bold">
+            Gross: £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </div>
         </div>
+      </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Invoice"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : "Save Invoice"}
+        </Button>
+      </div>
+    </div>
   );
 };

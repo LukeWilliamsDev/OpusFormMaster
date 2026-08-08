@@ -1342,44 +1342,46 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         </TabsContent>
 
         <TabsContent value="billing">
-          <InvoiceList
-            jobId={job.id}
-            refreshKey={billingRefreshKey}
-            selectedIds={selectedInvoiceIds}
-            onToggleSelect={(id) =>
-              setSelectedInvoiceIds((prev) =>
-                prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-              )
-            }
-            onSelectInvoice={(id) => setEditingInvoiceId(id)}
-            onCreateNew={() => setEditingInvoiceId("new")}
-          />
-          <Button
-            className="mt-3"
-            disabled={selectedInvoiceIds.length === 0}
-            onClick={() => setFinalBillOpen(true)}
-          >
-            Generate Final Bill ({selectedInvoiceIds.length} selected)
-          </Button>
-          <InvoiceBuilder
-            jobId={job.id}
-            invoiceId={
-              editingInvoiceId === "new" || !editingInvoiceId ? undefined : editingInvoiceId
-            }
-            open={editingInvoiceId !== null}
-            onClose={() => setEditingInvoiceId(null)}
-            onSaved={() => setBillingRefreshKey((k) => k + 1)}
-          />
-          <FinalBillBuilder
-            jobId={job.id}
-            sourceInvoiceIds={selectedInvoiceIds}
-            open={finalBillOpen}
-            onClose={() => setFinalBillOpen(false)}
-            onSaved={() => {
-              setBillingRefreshKey((k) => k + 1);
-              setSelectedInvoiceIds([]);
-            }}
-          />
+          {editingInvoiceId !== null ? (
+            <InvoiceBuilder
+              jobId={job.id}
+              invoiceId={editingInvoiceId === "new" ? undefined : editingInvoiceId}
+              onClose={() => setEditingInvoiceId(null)}
+              onSaved={() => setBillingRefreshKey((k) => k + 1)}
+            />
+          ) : (
+            <>
+              <InvoiceList
+                jobId={job.id}
+                refreshKey={billingRefreshKey}
+                selectedIds={selectedInvoiceIds}
+                onToggleSelect={(id) =>
+                  setSelectedInvoiceIds((prev) =>
+                    prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+                  )
+                }
+                onSelectInvoice={(id) => setEditingInvoiceId(id)}
+                onCreateNew={() => setEditingInvoiceId("new")}
+              />
+              <Button
+                className="mt-3"
+                disabled={selectedInvoiceIds.length === 0}
+                onClick={() => setFinalBillOpen(true)}
+              >
+                Generate Final Bill ({selectedInvoiceIds.length} selected)
+              </Button>
+              <FinalBillBuilder
+                jobId={job.id}
+                sourceInvoiceIds={selectedInvoiceIds}
+                open={finalBillOpen}
+                onClose={() => setFinalBillOpen(false)}
+                onSaved={() => {
+                  setBillingRefreshKey((k) => k + 1);
+                  setSelectedInvoiceIds([]);
+                }}
+              />
+            </>
+          )}
         </TabsContent>
       </Tabs>
 

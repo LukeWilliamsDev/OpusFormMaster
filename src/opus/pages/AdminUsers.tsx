@@ -13,20 +13,13 @@ const ROLES = [
   "labourer",
 ] as const;
 
-function generateTempPassword(): string {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%";
-  let out = "";
-  for (let i = 0; i < 14; i++) out += chars[Math.floor(Math.random() * chars.length)];
-  return out;
-}
-
 export const AdminUsers: React.FC = () => {
   const { profile } = usePortal();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState<(typeof ROLES)[number]>("labourer");
   const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<{ email: string; password: string } | null>(null);
+  const [result, setResult] = useState<{ email: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -38,26 +31,35 @@ export const AdminUsers: React.FC = () => {
       return;
     }
     setSubmitting(true);
-    const tempPassword = generateTempPassword();
     const {
       data: { session },
     } = await supabase.auth.getSession();
+    const baseUrl = window.location.origin + window.location.pathname;
     const { data, error: fnError } = await supabase.functions.invoke("admin-create-user", {
       body: {
         email: email.trim(),
-        password: tempPassword,
         full_name: fullName.trim(),
         role,
         tenant_id: profile?.tenant_id,
+        redirectTo: baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl,
       },
       headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined,
     });
     setSubmitting(false);
     if (fnError || data?.error) {
-      setError(data?.error ?? fnError?.message ?? "Failed to create user.");
+      let message = data?.error ?? fnError?.message ?? "Failed to create user.";
+      if (!data?.error && fnError && "context" in fnError) {
+        try {
+          const body = await (fnError as { context: Response }).context.json();
+          if (body?.error) message = body.error;
+        } catch {
+          // response body wasn't JSON, fall back to fnError.message
+        }
+      }
+      setError(message);
       return;
     }
-    setResult({ email: email.trim(), password: tempPassword });
+    setResult({ email: email.trim() });
     setEmail("");
     setFullName("");
     setRole("labourer");
@@ -70,7 +72,7 @@ export const AdminUsers: React.FC = () => {
           Create User
         </h2>
         <p className="text-muted-foreground mt-2">
-          Issues a temporary password. The account must change it on first login.
+          Sends an invite email. The account has no access until they set their own password.
         </p>
       </div>
 
@@ -128,20 +130,18 @@ export const AdminUsers: React.FC = () => {
               disabled={submitting}
               className="bg-primary text-primary-foreground rounded-md px-4 py-2 text-sm font-bold uppercase tracking-wider disabled:opacity-50"
             >
-              {submitting ? "Creating..." : "Create user"}
+              {submitting ? "Sending invite..." : "Create user"}
             </button>
           </form>
 
           {result && (
             <div className="mt-6 p-4 rounded-md border border-primary/40 bg-primary/5">
               <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                Account created — share these credentials securely
+                Invite sent
               </p>
               <p className="text-sm">
-                Email: <span className="font-mono">{result.email}</span>
-              </p>
-              <p className="text-sm">
-                Temp password: <span className="font-mono">{result.password}</span>
+                <span className="font-mono">{result.email}</span> will receive an email to set their
+                password before they can sign in.
               </p>
             </div>
           )}

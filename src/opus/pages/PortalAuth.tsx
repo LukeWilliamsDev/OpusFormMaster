@@ -61,7 +61,12 @@ export const PortalAuthPage: React.FC = () => {
   useEffect(() => {
     const hash = window.location.hash;
     const search = window.location.search;
-    if (hash.includes("type=recovery") || search.includes("type=recovery")) {
+    if (
+      hash.includes("type=recovery") ||
+      search.includes("type=recovery") ||
+      hash.includes("type=invite") ||
+      search.includes("type=invite")
+    ) {
       setFormMode("reset");
     }
 
@@ -101,7 +106,11 @@ export const PortalAuthPage: React.FC = () => {
   useEffect(() => {
     const hash = window.location.hash;
     const search = window.location.search;
-    const isRecovery = hash.includes("type=recovery") || search.includes("type=recovery");
+    const isRecovery =
+      hash.includes("type=recovery") ||
+      search.includes("type=recovery") ||
+      hash.includes("type=invite") ||
+      search.includes("type=invite");
 
     if (isAuthenticated && !isRecovery && formMode !== "reset" && !notification) {
       if (profile?.must_change_password) {

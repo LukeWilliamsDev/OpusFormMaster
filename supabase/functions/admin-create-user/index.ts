@@ -37,12 +37,12 @@ serve(async (req) => {
       );
     }
 
-    const { email, password, full_name, role, tenant_id } = await req.json();
-    if (!email || !password || !role || !tenant_id) {
-      return new Response(
-        JSON.stringify({ error: "email, password, role and tenant_id are required." }),
-        { status: 400, headers: { ...corsHeaders(req), "Content-Type": "application/json" } },
-      );
+    const { email, full_name, role, tenant_id, redirectTo } = await req.json();
+    if (!email || !role || !tenant_id) {
+      return new Response(JSON.stringify({ error: "email, role and tenant_id are required." }), {
+        status: 400,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
     }
     if (
       ![
@@ -60,12 +60,37 @@ serve(async (req) => {
       });
     }
 
-    const { data: created, error: createError } = await supabase.auth.admin.createUser({
+    const { data: created, error: createError } = await supabase.auth.admin.inviteUserByEmail(
       email,
-      password,
-      email_confirm: true,
-    });
+      { data: { full_name: full_name ?? "" }, redirectTo },
+    );
     if (createError || !created.user) {
+      if (createError?.message?.toLowerCase().includes("already been registered")) {
+        const { data: existingUsers } = await supabase.auth.admin.listUsers();
+        const existing = existingUsers?.users.find(
+          (u) => u.email?.toLowerCase() === email.toLowerCase(),
+        );
+        let staffLabel = email;
+        if (existing) {
+          const { data: existingProfile } = await supabase
+            .from("profiles")
+            .select("full_name, role")
+            .eq("id", existing.id)
+            .single();
+          if (existingProfile?.full_name) {
+            staffLabel = `${existingProfile.full_name} (${existingProfile.role})`;
+          }
+        }
+        return new Response(
+          JSON.stringify({
+            error: `A staff account already exists for ${email} — ${staffLabel}. Use Edit User instead of Create User.`,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+          },
+        );
+      }
       return new Response(
         JSON.stringify({ error: createError?.message ?? "Failed to create user." }),
         {

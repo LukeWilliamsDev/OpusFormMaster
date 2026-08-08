@@ -381,7 +381,9 @@ export const AuditLogPage: React.FC = () => {
                   oldVal?.is_sent === false &&
                   newVal?.is_sent === true;
                 const changeSummary =
-                  log.action === "UPDATE" && !isQuoteSent ? summarizeChangedFields(log.details) : "";
+                  log.action === "UPDATE" && !isQuoteSent
+                    ? summarizeChangedFields(log.details)
+                    : "";
 
                 return (
                   <div

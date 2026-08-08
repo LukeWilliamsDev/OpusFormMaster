@@ -33,7 +33,11 @@ import { LegalHubPage } from "./pages/LegalHub";
 (() => {
   const hash = window.location.hash;
   const search = window.location.search;
-  const isRecovery = hash.includes("type=recovery") || search.includes("type=recovery");
+  const isRecovery =
+    hash.includes("type=recovery") ||
+    search.includes("type=recovery") ||
+    hash.includes("type=invite") ||
+    search.includes("type=invite");
   if (isRecovery && !hash.startsWith("#/portal")) {
     const params = hash.startsWith("#") ? hash.substring(1) : hash;
     window.location.replace(

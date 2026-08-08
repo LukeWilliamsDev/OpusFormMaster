@@ -456,6 +456,118 @@ export type Database = {
           },
         ];
       };
+      final_bills: {
+        Row: {
+          client_info: Json;
+          created_at: string;
+          date: string;
+          id: string;
+          items: Json;
+          job_id: string;
+          reference: string;
+          sent_at: string | null;
+          source_invoice_ids: string[];
+          status: string;
+          tenant_id: string;
+          totals: Json;
+          updated_at: string;
+          vat_rate: number;
+        };
+        Insert: {
+          client_info?: Json;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          items?: Json;
+          job_id: string;
+          reference: string;
+          sent_at?: string | null;
+          source_invoice_ids?: string[];
+          status?: string;
+          tenant_id?: string;
+          totals?: Json;
+          updated_at?: string;
+          vat_rate?: number;
+        };
+        Update: {
+          client_info?: Json;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          items?: Json;
+          job_id?: string;
+          reference?: string;
+          sent_at?: string | null;
+          source_invoice_ids?: string[];
+          status?: string;
+          tenant_id?: string;
+          totals?: Json;
+          updated_at?: string;
+          vat_rate?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "final_bills_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      invoices: {
+        Row: {
+          client_info: Json;
+          created_at: string;
+          date: string;
+          id: string;
+          items: Json;
+          job_id: string;
+          reference: string;
+          status: string;
+          tenant_id: string;
+          totals: Json;
+          updated_at: string;
+          vat_rate: number;
+        };
+        Insert: {
+          client_info?: Json;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          items?: Json;
+          job_id: string;
+          reference: string;
+          status?: string;
+          tenant_id?: string;
+          totals?: Json;
+          updated_at?: string;
+          vat_rate?: number;
+        };
+        Update: {
+          client_info?: Json;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          items?: Json;
+          job_id?: string;
+          reference?: string;
+          status?: string;
+          tenant_id?: string;
+          totals?: Json;
+          updated_at?: string;
+          vat_rate?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invoices_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       quotes: {
         Row: {
           client_info: Json;

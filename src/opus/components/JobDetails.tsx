@@ -11,6 +11,7 @@ import {
   Trash2,
   LayoutGrid,
   MapPin,
+  FileText,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,9 @@ import { JobOverviewTab } from "./JobOverviewTab";
 import { Supplier } from "./OSMMap";
 import { PersistentJobHeader } from "./PersistentJobHeader";
 import { handleError } from "../utils/errorHandler";
+import { InvoiceList } from "./billing/InvoiceList";
+import { InvoiceBuilder } from "./billing/InvoiceBuilder";
+import { FinalBillBuilder } from "./billing/FinalBillBuilder";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 100 * 1024 * 1024;
@@ -90,6 +94,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [uploadingPhotoAfter, setUploadingPhotoAfter] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [billingRefreshKey, setBillingRefreshKey] = useState(0);
+  const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
+  const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
+  const [finalBillOpen, setFinalBillOpen] = useState(false);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [viewDocTarget, setViewDocTarget] = useState<Attachment | null>(null);
@@ -1014,7 +1022,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Secondary sections: Suppliers/Map, Diary+Staff, Attachments */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-5">
           <TabsTrigger
             value="overview"
             aria-label="Overview"
@@ -1046,6 +1054,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           >
             <History className="w-3.5 h-3.5 shrink-0" />{" "}
             <span className="text-[11px]">History</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="billing"
+            aria-label="Billing"
+            className="flex items-center justify-center gap-1 px-1.5"
+          >
+            <FileText className="w-3.5 h-3.5 shrink-0" />{" "}
+            <span className="text-[11px]">Billing</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1322,6 +1338,47 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             setAuditSearch={setAuditSearch}
             formatPourDate={formatPourDate}
             setRevertConfirmTarget={setRevertConfirmTarget}
+          />
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <InvoiceList
+            jobId={job.id}
+            refreshKey={billingRefreshKey}
+            selectedIds={selectedInvoiceIds}
+            onToggleSelect={(id) =>
+              setSelectedInvoiceIds((prev) =>
+                prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+              )
+            }
+            onSelectInvoice={(id) => setEditingInvoiceId(id)}
+            onCreateNew={() => setEditingInvoiceId("new")}
+          />
+          <Button
+            className="mt-3"
+            disabled={selectedInvoiceIds.length === 0}
+            onClick={() => setFinalBillOpen(true)}
+          >
+            Generate Final Bill ({selectedInvoiceIds.length} selected)
+          </Button>
+          <InvoiceBuilder
+            jobId={job.id}
+            invoiceId={
+              editingInvoiceId === "new" || !editingInvoiceId ? undefined : editingInvoiceId
+            }
+            open={editingInvoiceId !== null}
+            onClose={() => setEditingInvoiceId(null)}
+            onSaved={() => setBillingRefreshKey((k) => k + 1)}
+          />
+          <FinalBillBuilder
+            jobId={job.id}
+            sourceInvoiceIds={selectedInvoiceIds}
+            open={finalBillOpen}
+            onClose={() => setFinalBillOpen(false)}
+            onSaved={() => {
+              setBillingRefreshKey((k) => k + 1);
+              setSelectedInvoiceIds([]);
+            }}
           />
         </TabsContent>
       </Tabs>

@@ -63,7 +63,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
   onNewQuote,
   onBack,
 }) => {
-  const { jobs, setJobs, profile } = usePortal();
+  const { jobs, setJobs, profile, user } = usePortal();
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQuoteToDelete, setSelectedQuoteToDelete] = useState<Quote | null>(null);
@@ -196,6 +196,18 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
           toast.error(`Job created, but scheduled pours failed to save: ${poursError.message}`);
         }
       }
+
+      await supabase.rpc("log_anonymous_audit", {
+        p_user_email: user?.email || "admin@opusform.co.uk",
+        p_action: "QUOTE_CONVERTED_TO_JOB",
+        p_target_type: "job",
+        p_target_id: newJob.id,
+        p_details: {
+          quote_id: convertingQuote.id,
+          quote_reference: convertingQuote.reference,
+          job_ref: newJob.jobRef,
+        },
+      });
 
       const { error } = await supabase.from("quotes").delete().eq("id", convertingQuote.id);
       if (error) throw error;

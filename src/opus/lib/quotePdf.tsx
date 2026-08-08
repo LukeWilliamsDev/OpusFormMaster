@@ -639,10 +639,11 @@ const pdfStyles = StyleSheet.create({
 });
 
 // ReactPDF Document structure
-export const QuotePdfVectorDocument: React.FC<{ quote: Quote; terms: string[] }> = ({
-  quote,
-  terms,
-}) => {
+export const QuotePdfVectorDocument: React.FC<{
+  quote: Quote;
+  terms: string[];
+  documentTitle?: string;
+}> = ({ quote, terms, documentTitle = "QUOTE" }) => {
   const { reference, clientInfo, items, totals } = quote;
   const logoUrl =
     typeof window !== "undefined" ? `${window.location.origin}/opus-form-primary-dark.png` : "";
@@ -684,7 +685,7 @@ export const QuotePdfVectorDocument: React.FC<{ quote: Quote; terms: string[] }>
             </Text>
           </View>
           <View style={pdfStyles.headerRight}>
-            <Text style={pdfStyles.titleQuote}>QUOTE</Text>
+            <Text style={pdfStyles.titleQuote}>{documentTitle}</Text>
             <View style={pdfStyles.headerRow}>
               <View style={pdfStyles.headerItem}>
                 <Text style={pdfStyles.headerLabel}>Reference</Text>
@@ -856,5 +857,18 @@ export async function generateQuotePdfBlob(quote: Quote) {
   const pdfInstance = pdf(<QuotePdfVectorDocument quote={quote} terms={terms} />);
   const blob = await pdfInstance.toBlob();
   const filename = `Quote_${quote.reference}.pdf`;
+  return { blob, filename };
+}
+
+export async function generateBillPdf(
+  bill: Quote,
+  opts: { documentTitle: string; filenamePrefix: string },
+) {
+  const terms = buildDefaultTerms(bill.clientInfo?.entity);
+  const pdfInstance = pdf(
+    <QuotePdfVectorDocument quote={bill} terms={terms} documentTitle={opts.documentTitle} />,
+  );
+  const blob = await pdfInstance.toBlob();
+  const filename = `${opts.filenamePrefix}_${bill.reference}.pdf`;
   return { blob, filename };
 }

@@ -79,13 +79,15 @@ export const PortalAuthPage: React.FC = () => {
   // actually changed. If the link leaks (forwarded email, shared inbox, link-preview crawler)
   // or the user abandons the flow, sign the recovery session back out rather than leaving it live.
   const resetCompletedRef = useRef(false);
+  const signOutRef = useRef(signOut);
+  signOutRef.current = signOut;
   useEffect(() => {
     if (formMode !== "reset") return;
     resetCompletedRef.current = false;
 
     const signOutIfAbandoned = () => {
       if (!resetCompletedRef.current) {
-        signOut();
+        signOutRef.current();
       }
     };
     window.addEventListener("beforeunload", signOutIfAbandoned);
@@ -93,7 +95,7 @@ export const PortalAuthPage: React.FC = () => {
       window.removeEventListener("beforeunload", signOutIfAbandoned);
       signOutIfAbandoned();
     };
-  }, [formMode, signOut]);
+  }, [formMode]);
 
   // Redirect if already authenticated and not resetting password or showing success modal
   useEffect(() => {

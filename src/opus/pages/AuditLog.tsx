@@ -41,6 +41,8 @@ const ACTION_LABELS: Record<string, string> = {
   CREATE_DOCUMENT_REQUEST: "Document request created",
   RESEND_DOCUMENT_REQUEST: "Document request resent",
   DELETE_NOTE: "Note deleted",
+  ADD_NOTE: "Note added",
+  UPLOAD_ATTACHMENT: "Attachment uploaded",
   APPROVE_DOCUMENT: "Document approved",
   REJECT_DOCUMENT: "Document rejected",
   SUBMIT_DOCUMENTS: "Documents submitted",
@@ -48,6 +50,18 @@ const ACTION_LABELS: Record<string, string> = {
   UPDATE: "Record updated",
   DELETE: "Record deleted",
 };
+
+// Low-signal action types (page views, profile pings, reminder emails) —
+// hidden by default so the trail reads as decisions/changes, not traffic.
+const NOISE_ACTIONS = new Set(["INSPECT", "VIEW_DOCUMENT", "VIEW_ATTACHMENT", "PROFILE_UPDATE"]);
+
+function summarizeChangedFields(details: Record<string, unknown> | null | undefined): string {
+  const diff = computeDiff(details?.old, details?.new);
+  if (diff.length === 0) return "";
+  const names = diff.map((d) => d.field.replace(/_/g, " ")).slice(0, 2);
+  const rest = diff.length - names.length;
+  return `${names.join(", ")}${rest > 0 ? ` +${rest} more` : ""} changed`;
+}
 
 function getEventLabel(action: string): string {
   return (
@@ -78,6 +92,7 @@ export const AuditLogPage: React.FC = () => {
   const [search, setSearch] = useState("");
   const [actionFilter, setActionFilter] = useState("ALL");
   const [typeFilter, setTypeFilter] = useState("ALL");
+  const [showSystemEvents, setShowSystemEvents] = useState(false);
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -207,7 +222,7 @@ export const AuditLogPage: React.FC = () => {
   // Reset page when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, actionFilter, typeFilter]);
+  }, [search, actionFilter, typeFilter, showSystemEvents]);
 
   const filteredLogs = logs.filter((log) => {
     // 1. Text Search Filter
@@ -225,7 +240,10 @@ export const AuditLogPage: React.FC = () => {
     const typeMatches =
       typeFilter === "ALL" || log.target_type.toLowerCase() === typeFilter.toLowerCase();
 
-    return textMatches && actionMatches && typeMatches;
+    // 4. Hide low-signal system events unless explicitly requested
+    const noiseMatches = showSystemEvents || !NOISE_ACTIONS.has(log.action);
+
+    return textMatches && actionMatches && typeMatches && noiseMatches;
   });
 
   // Paginated Slicing
@@ -307,6 +325,16 @@ export const AuditLogPage: React.FC = () => {
           >
             Approvals
           </button>
+          <button
+            onClick={() => setShowSystemEvents((v) => !v)}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+              showSystemEvents
+                ? "bg-secondary text-foreground"
+                : "bg-card border border-border text-muted-foreground"
+            }`}
+          >
+            {showSystemEvents ? "Hide" : "Show"} System Events
+          </button>
         </div>
       </div>
 
@@ -343,6 +371,15 @@ export const AuditLogPage: React.FC = () => {
                 }
 
                 const friendlyEventName = getEventLabel(log.action);
+                const oldVal = log.details?.old as Record<string, unknown> | undefined;
+                const newVal = log.details?.new as Record<string, unknown> | undefined;
+                const isQuoteSent =
+                  log.action === "UPDATE" &&
+                  log.target_type === "quotes" &&
+                  oldVal?.is_sent === false &&
+                  newVal?.is_sent === true;
+                const changeSummary =
+                  log.action === "UPDATE" && !isQuoteSent ? summarizeChangedFields(log.details) : "";
 
                 return (
                   <div
@@ -367,6 +404,19 @@ export const AuditLogPage: React.FC = () => {
                               {(log.details?.reference as string | undefined) || log.target_id}
                             </span>{" "}
                             saved as draft
+                          </span>
+                        ) : isQuoteSent ? (
+                          <span>
+                            Quote{" "}
+                            <span className="font-mono text-primary">
+                              {(newVal?.reference as string | undefined) || log.target_id}
+                            </span>{" "}
+                            sent to client
+                          </span>
+                        ) : changeSummary ? (
+                          <span>
+                            {getTargetDisplayName(log.target_type, log.target_id, log.details)} ·{" "}
+                            {changeSummary}
                           </span>
                         ) : (
                           <span>

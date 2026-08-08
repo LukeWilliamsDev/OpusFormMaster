@@ -107,6 +107,13 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
         reminder_at: wantsReminder && reminderAt ? new Date(reminderAt).toISOString() : null,
       });
       if (error) throw error;
+      await supabase.rpc("log_anonymous_audit", {
+        p_user_email: user?.email || "admin@opusform.co.uk",
+        p_action: "ADD_NOTE",
+        p_target_type: "jobs",
+        p_target_id: jobId,
+        p_details: { note_body: body.trim() },
+      });
       setBody("");
       setWantsReminder(false);
       setReminderAt("");

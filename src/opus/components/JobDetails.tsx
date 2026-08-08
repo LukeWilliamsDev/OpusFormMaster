@@ -1048,20 +1048,20 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             <span className="text-[11px]">Suppliers</span>
           </TabsTrigger>
           <TabsTrigger
-            value="history"
-            aria-label="History"
-            className="flex items-center justify-center gap-1 px-1.5"
-          >
-            <History className="w-3.5 h-3.5 shrink-0" />{" "}
-            <span className="text-[11px]">History</span>
-          </TabsTrigger>
-          <TabsTrigger
             value="billing"
             aria-label="Billing"
             className="flex items-center justify-center gap-1 px-1.5"
           >
             <FileText className="w-3.5 h-3.5 shrink-0" />{" "}
             <span className="text-[11px]">Billing</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="history"
+            aria-label="History"
+            className="flex items-center justify-center gap-1 px-1.5"
+          >
+            <History className="w-3.5 h-3.5 shrink-0" />{" "}
+            <span className="text-[11px]">History</span>
           </TabsTrigger>
         </TabsList>
 

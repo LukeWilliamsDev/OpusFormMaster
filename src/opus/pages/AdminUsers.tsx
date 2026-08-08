@@ -5,7 +5,18 @@ import { CardGrid } from "../components/CardGrid";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { NoticeModal } from "@/components/ui/notice-modal";
 import { toast } from "sonner";
-import { UserPlus, Pencil, Ban, Archive, RotateCcw, X, Loader2, Trash2 } from "lucide-react";
+import {
+  UserPlus,
+  Pencil,
+  Ban,
+  Archive,
+  RotateCcw,
+  X,
+  Loader2,
+  Trash2,
+  Search,
+  Users2,
+} from "lucide-react";
 
 const ROLES = [
   "admin",
@@ -25,9 +36,9 @@ type ProfileRow = {
 };
 
 const STATUS_STYLE: Record<ProfileRow["status"], string> = {
-  active: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-  disabled: "bg-amber-500/10 text-amber-400 border-amber-500/20",
-  archived: "bg-red-500/10 text-red-400 border-red-500/20",
+  active: "bg-success/10 text-success border-success/20",
+  disabled: "bg-warning/10 text-warning border-warning/20",
+  archived: "bg-destructive/10 text-destructive border-destructive/20",
 };
 
 const inputClass =
@@ -64,11 +75,11 @@ const Modal: React.FC<{ title: string; onClose: () => void; children: React.Reac
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
     <div className="bg-card border border-border rounded-xl w-full max-w-md">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-        <h3 className="text-xs font-black uppercase tracking-wider text-white">{title}</h3>
+        <h3 className="text-xs font-black uppercase tracking-wider text-foreground">{title}</h3>
         <button
           type="button"
           onClick={onClose}
-          className="text-muted-foreground hover:text-white transition-colors"
+          className="text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
@@ -361,6 +372,9 @@ export const AdminUsers: React.FC = () => {
     user: ProfileRow;
     action: StatusAction;
   } | null>(null);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState<"all" | (typeof ROLES)[number]>("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | ProfileRow["status"]>("all");
 
   const loadUsers = async () => {
     setLoading(true);
@@ -392,76 +406,95 @@ export const AdminUsers: React.FC = () => {
     }
   };
 
+  const filteredUsers = users.filter((u) => {
+    const term = search.trim().toLowerCase();
+    const matchesSearch =
+      !term ||
+      u.email.toLowerCase().includes(term) ||
+      (u.full_name ?? "").toLowerCase().includes(term);
+    const matchesRole = roleFilter === "all" || u.role === roleFilter;
+    const matchesStatus = statusFilter === "all" || u.status === statusFilter;
+    return matchesSearch && matchesRole && matchesStatus;
+  });
+
   return (
     <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in text-foreground flex flex-col bg-background">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-4">
-        <div>
+      <div className="flex items-center gap-3 border-b border-border pb-6">
+        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+          <Users2 className="w-5 h-5 text-primary" />
+        </div>
+        <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-extrabold font-archivo tracking-tight">Users</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Create, edit, disable, or archive accounts. All actions are logged in the audit trail.
+          <p className="text-sm text-muted-foreground sm:whitespace-nowrap">
+            Create, edit, disable, or archive accounts. All actions are logged in the site log.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => setShowCreate(true)}
-          className="flex items-center gap-2 bg-primary text-primary-foreground rounded-lg px-4 py-2 text-xs font-bold uppercase tracking-wider self-start sm:self-auto"
-        >
-          <UserPlus className="h-4 w-4" />
-          New user
-        </button>
       </div>
 
       {actionError && <p className="text-sm text-red-500">{actionError}</p>}
 
-      <div className="flex-grow bg-background rounded-xl overflow-hidden">
+      <div className="flex-grow bg-card border border-border rounded-xl overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 border-b border-border bg-secondary/50">
+          <div className="relative flex-1 min-w-0">
+            <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name or email..."
+              className="w-full bg-background border border-border rounded-lg pl-8 pr-3 py-2 text-[13px] focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
+              className="min-w-0 bg-background border border-border rounded-lg px-2.5 py-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+            >
+              <option value="all">All roles</option>
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r.replace(/_/g, " ")}
+                </option>
+              ))}
+            </select>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+              className="min-w-0 bg-background border border-border rounded-lg px-2.5 py-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer"
+            >
+              <option value="all">All statuses</option>
+              <option value="active">Active</option>
+              <option value="disabled">Disabled</option>
+              <option value="archived">Archived</option>
+            </select>
+            <button
+              type="button"
+              onClick={() => setShowCreate(true)}
+              className="flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-lg px-3.5 py-2 text-xs font-bold uppercase tracking-wider shrink-0 hover:opacity-90 transition-opacity"
+            >
+              <UserPlus className="h-4 w-4" />
+              <span className="hidden sm:inline">New user</span>
+            </button>
+          </div>
+        </div>
         {loading ? (
           <div className="py-20 text-center text-xs font-mono text-muted-foreground">
             Loading users...
           </div>
         ) : (
           <CardGrid
-            items={users}
-            className="flex flex-col gap-2"
-            emptyMessage="No users found."
-            renderCard={(u) => (
-              <div
-                key={u.id}
-                className={`flex flex-col lg:flex-row lg:items-center gap-3 p-3 rounded-lg border border-border bg-card/40 hover:bg-foreground/5 transition-all duration-300 ${
-                  busy?.id === u.id ? "opacity-50" : "opacity-100"
-                }`}
-              >
-                <div className="min-w-0 flex-1 flex flex-col gap-y-0.5 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_140px] lg:items-center lg:gap-x-6">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-[14px] font-semibold text-white truncate">
-                      {u.full_name || u.email}
-                    </span>
-                    <span
-                      key={u.status}
-                      className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0 animate-in fade-in zoom-in-95 duration-300 ${STATUS_STYLE[u.status]} lg:hidden`}
-                    >
-                      {u.status}
-                    </span>
-                  </div>
-                  <div className="text-[12px] lg:text-[13px] text-muted-foreground truncate flex items-center gap-1 min-w-0">
-                    <span className="truncate">{u.email}</span>
-                    <span className="font-mono shrink-0 lg:hidden">· {u.role}</span>
-                  </div>
-                  <div className="hidden lg:flex items-center gap-2">
-                    <span className="text-[13px] font-mono text-muted-foreground">{u.role}</span>
-                    <span
-                      className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0 ${STATUS_STYLE[u.status]}`}
-                    >
-                      {u.status}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex gap-1 shrink-0 self-end lg:self-auto lg:w-[168px] lg:justify-end">
+            items={filteredUsers}
+            className="divide-y divide-border px-4"
+            emptyMessage="No users match your search."
+            renderCard={(u) => {
+              const actionButtons = (
+                <>
                   <button
                     type="button"
                     title="Edit"
                     onClick={() => setEditingUser(u)}
                     disabled={!!busy}
-                    className="p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-white disabled:opacity-30 transition-all"
+                    className="p-1.5 sm:p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-foreground disabled:opacity-30 transition-all min-w-[38px] min-h-[38px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
@@ -473,7 +506,7 @@ export const AdminUsers: React.FC = () => {
                         title="Disable"
                         onClick={() => setPendingAction({ user: u, action: "disable" })}
                         disabled={!!busy}
-                        className="p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-white disabled:opacity-30 transition-all"
+                        className="p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-foreground disabled:opacity-30 transition-all"
                       >
                         {busy?.id === u.id && busy.action === "disable" ? (
                           <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -488,7 +521,7 @@ export const AdminUsers: React.FC = () => {
                       title="Archive"
                       onClick={() => setPendingAction({ user: u, action: "archive" })}
                       disabled={!!busy}
-                      className="p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-white disabled:opacity-30 transition-all"
+                      className="p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-foreground disabled:opacity-30 transition-all"
                     >
                       {busy?.id === u.id && busy.action === "archive" ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -503,7 +536,7 @@ export const AdminUsers: React.FC = () => {
                       title="Reactivate"
                       onClick={() => setPendingAction({ user: u, action: "reactivate" })}
                       disabled={!!busy}
-                      className="p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-white disabled:opacity-30 transition-all"
+                      className="p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-foreground disabled:opacity-30 transition-all"
                     >
                       {busy?.id === u.id && busy.action === "reactivate" ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -518,7 +551,7 @@ export const AdminUsers: React.FC = () => {
                       title="Delete permanently"
                       onClick={() => setPendingAction({ user: u, action: "delete" })}
                       disabled={!!busy}
-                      className="p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-red-400 disabled:opacity-30 transition-all"
+                      className="p-1.5 rounded bg-secondary border border-border text-muted-foreground hover:text-red-400 disabled:opacity-30 transition-all min-w-[38px] min-h-[38px] sm:min-w-0 sm:min-h-0 flex items-center justify-center"
                     >
                       {busy?.id === u.id && busy.action === "delete" ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -527,9 +560,72 @@ export const AdminUsers: React.FC = () => {
                       )}
                     </button>
                   )}
+                </>
+              );
+
+              return (
+                <div
+                  key={u.id}
+                  className={`py-3.5 transition-opacity ${busy?.id === u.id ? "opacity-50" : "opacity-100"}`}
+                >
+                  {/* Desktop / tablet row */}
+                  <div className="hidden sm:flex sm:items-center gap-3">
+                    <div className="min-w-0 flex-1 grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_100px] items-center gap-x-6">
+                      <div className="min-w-0">
+                        <div className="text-[14px] font-semibold text-foreground truncate">
+                          {u.full_name || u.email}
+                        </div>
+                        {u.full_name && (
+                          <div className="text-[12px] text-muted-foreground truncate">
+                            {u.email}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-[12px] font-mono text-muted-foreground truncate">
+                        {u.role.replace(/_/g, " ")}
+                      </div>
+                      <span
+                        key={u.status}
+                        className={`inline-flex w-fit text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0 animate-in fade-in zoom-in-95 duration-300 ${STATUS_STYLE[u.status]}`}
+                      >
+                        {u.status}
+                      </span>
+                    </div>
+                    <div className="flex gap-1 shrink-0 w-[168px] justify-end">{actionButtons}</div>
+                  </div>
+
+                  {/* Mobile row */}
+                  <div className="flex sm:hidden flex-col gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[14px] font-semibold text-foreground truncate">
+                          {u.full_name || u.email}
+                        </div>
+                        {u.full_name && (
+                          <div className="text-[12px] text-muted-foreground truncate">
+                            {u.email}
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        key={u.status}
+                        className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0 ${STATUS_STYLE[u.status]}`}
+                      >
+                        {u.status}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[11px] font-mono text-muted-foreground truncate min-w-0 flex-1">
+                        {u.role.replace(/_/g, " ")}
+                      </span>
+                      <div className="flex flex-wrap justify-end gap-1.5 shrink-0">
+                        {actionButtons}
+                      </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            }}
           />
         )}
       </div>

@@ -13,6 +13,16 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  LogIn,
+  LogOut,
+  KeyRound,
+  UserX,
+  PencilLine,
+  Plus,
+  CheckCircle2,
+  XCircle,
+  Send,
+  Eye,
 } from "lucide-react";
 import { computeDiff } from "../utils/auditDiff";
 import { AuditDiffTable } from "../components/AuditDiffTable";
@@ -277,12 +287,12 @@ export const AuditLogPage: React.FC = () => {
   };
 
   return (
-    <div className="pt-24 pb-12 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-8 animate-fade-in text-foreground flex flex-col min-h-[calc(100vh-4rem)] bg-background">
+    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in text-foreground flex flex-col bg-background">
       {/* Header matching 2d */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-border pb-6">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold font-archivo tracking-tight">
-            Audit Trail
+            Site Log
           </h1>
         </div>
 
@@ -341,7 +351,7 @@ export const AuditLogPage: React.FC = () => {
       </div>
 
       {/* Timeline timeline entries layout container */}
-      <div className="flex-grow flex flex-col justify-between bg-background rounded-xl overflow-hidden min-h-[480px]">
+      <div className="flex-grow flex flex-col justify-between bg-card border border-border rounded-xl overflow-hidden">
         <div>
           {loading ? (
             <div className="py-20 text-center text-xs font-mono text-muted-foreground">
@@ -354,22 +364,63 @@ export const AuditLogPage: React.FC = () => {
           ) : (
             <CardGrid
               items={paginatedLogs}
-              className="flex flex-col divide-y divide-border"
+              className="divide-y divide-border px-4"
               renderCard={(log) => {
-                // Colored severity bullets for timeline matching 2d
-                let bulletColor = "bg-primary";
-                if (log.action.includes("LOGIN_SUCCESS") || log.action.includes("APPROVE")) {
-                  bulletColor = "bg-success";
-                } else if (log.action.includes("CREATE") || log.action.includes("UPDATE")) {
-                  bulletColor = "bg-primary";
-                } else if (
-                  log.action.includes("FAIL") ||
-                  log.action.includes("DELETE") ||
-                  log.action.includes("REJECT")
-                ) {
-                  bulletColor = "bg-destructive";
+                // Icon + color matching the event's action, same convention as the staff dossier
+                let badgeColor = "bg-secondary border-border text-muted-foreground";
+                let iconBg = "bg-primary/10";
+                let iconColor = "text-primary";
+                let LogIcon = Activity;
+                if (log.action === "LOGIN_SUCCESS") {
+                  badgeColor = "bg-success/10 border-success/20 text-success";
+                  iconBg = "bg-success/10";
+                  iconColor = "text-success";
+                  LogIcon = LogIn;
+                } else if (log.action === "LOGOUT") {
+                  iconBg = "bg-secondary";
+                  iconColor = "text-muted-foreground";
+                  LogIcon = LogOut;
+                } else if (log.action.includes("PASSWORD")) {
+                  badgeColor = "bg-warning/10 border-warning/20 text-warning";
+                  iconBg = "bg-warning/10";
+                  iconColor = "text-warning";
+                  LogIcon = KeyRound;
+                } else if (log.action.includes("LOGIN_FAIL")) {
+                  badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
+                  iconBg = "bg-destructive/10";
+                  iconColor = "text-destructive";
+                  LogIcon = XCircle;
+                } else if (log.action === "USER_DELETED" || log.action.includes("DELETE")) {
+                  badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
+                  iconBg = "bg-destructive/10";
+                  iconColor = "text-destructive";
+                  LogIcon = UserX;
+                } else if (log.action.includes("REJECT")) {
+                  badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
+                  iconBg = "bg-destructive/10";
+                  iconColor = "text-destructive";
+                  LogIcon = XCircle;
+                } else if (log.action.includes("APPROVE")) {
+                  badgeColor = "bg-success/10 border-success/20 text-success";
+                  iconBg = "bg-success/10";
+                  iconColor = "text-success";
+                  LogIcon = CheckCircle2;
+                } else if (log.action === "CREATE") {
+                  badgeColor = "bg-primary/10 border-primary/20 text-primary";
+                  iconBg = "bg-primary/10";
+                  iconColor = "text-primary";
+                  LogIcon = Plus;
+                } else if (log.action === "UPDATE") {
+                  badgeColor = "bg-primary/10 border-primary/20 text-primary";
+                  iconBg = "bg-primary/10";
+                  iconColor = "text-primary";
+                  LogIcon = PencilLine;
+                } else if (log.action === "INSPECT") {
+                  iconBg = "bg-purple-500/10";
+                  iconColor = "text-purple-600 dark:text-purple-400";
+                  LogIcon = Eye;
                 } else {
-                  bulletColor = "bg-warning";
+                  LogIcon = Send;
                 }
 
                 const friendlyEventName = getEventLabel(log.action);
@@ -389,50 +440,62 @@ export const AuditLogPage: React.FC = () => {
                   <div
                     key={log.id}
                     onClick={() => setSelectedLog(log)}
-                    className="flex gap-4 py-4 cursor-pointer hover:bg-foreground/10 transition-all px-2 rounded-lg"
+                    className="flex flex-wrap sm:flex-nowrap items-center gap-x-2.5 gap-y-1.5 py-2.5 px-2.5 -mx-2.5 cursor-pointer hover:bg-foreground/5 transition-colors"
                   >
-                    <div className={`w-2.5 h-2.5 rounded-full ${bulletColor} mt-1.5 shrink-0`} />
-                    <div className="flex-1 flex flex-col sm:flex-row sm:items-baseline sm:justify-between gap-x-4 gap-y-1 min-w-0">
-                      <div className="text-[14px] font-semibold text-white truncate">
-                        {log.action === "APPROVE_DOCUMENT" ? (
-                          <span>
-                            Approved for{" "}
-                            <b>
-                              {getTargetDisplayName(log.target_type, log.target_id, log.details)}
-                            </b>
-                          </span>
-                        ) : log.action === "CREATE" && log.target_type === "quotes" ? (
-                          <span>
-                            Quote{" "}
-                            <span className="font-mono text-primary">
-                              {(log.details?.reference as string | undefined) || log.target_id}
-                            </span>{" "}
-                            saved as draft
-                          </span>
-                        ) : isQuoteSent ? (
-                          <span>
-                            Quote{" "}
-                            <span className="font-mono text-primary">
-                              {(newVal?.reference as string | undefined) || log.target_id}
-                            </span>{" "}
-                            sent to client
-                          </span>
-                        ) : changeSummary ? (
-                          <span>
-                            {getTargetDisplayName(log.target_type, log.target_id, log.details)} ·{" "}
-                            {changeSummary}
-                          </span>
-                        ) : (
-                          <span>
-                            {friendlyEventName} · {log.target_type}
-                          </span>
-                        )}
-                      </div>
-                      <div className="text-[12px] text-muted-foreground shrink-0">
-                        {log.user_email || "system"} ·{" "}
-                        {new Date(log.created_at).toLocaleString("en-GB")}
-                      </div>
+                    <div
+                      className={`w-6 h-6 rounded-full ${iconBg} flex items-center justify-center shrink-0`}
+                    >
+                      <LogIcon className={`w-3.5 h-3.5 ${iconColor}`} />
                     </div>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shrink-0 ${badgeColor}`}
+                    >
+                      {friendlyEventName}
+                    </span>
+                    <p className="flex-1 min-w-0 basis-full sm:basis-auto order-3 sm:order-none truncate sm:whitespace-normal text-[13px] text-foreground/90">
+                      {log.action === "APPROVE_DOCUMENT" ? (
+                        <span>
+                          Approved for{" "}
+                          <b>{getTargetDisplayName(log.target_type, log.target_id, log.details)}</b>
+                        </span>
+                      ) : log.action === "CREATE" && log.target_type === "quotes" ? (
+                        <span>
+                          Quote{" "}
+                          <span className="font-mono text-primary">
+                            {(log.details?.reference as string | undefined) || log.target_id}
+                          </span>{" "}
+                          saved as draft
+                        </span>
+                      ) : isQuoteSent ? (
+                        <span>
+                          Quote{" "}
+                          <span className="font-mono text-primary">
+                            {(newVal?.reference as string | undefined) || log.target_id}
+                          </span>{" "}
+                          sent to client
+                        </span>
+                      ) : changeSummary ? (
+                        <span>
+                          {getTargetDisplayName(log.target_type, log.target_id, log.details)} ·{" "}
+                          {changeSummary}
+                        </span>
+                      ) : log.details?.target_email ? (
+                        <span>
+                          {friendlyEventName}: <b>{log.details.target_email as string}</b>
+                        </span>
+                      ) : log.target_type === "auth" ? (
+                        <span>{friendlyEventName}</span>
+                      ) : (
+                        <span>
+                          {friendlyEventName} ·{" "}
+                          {getTargetDisplayName(log.target_type, log.target_id, log.details)}
+                        </span>
+                      )}
+                    </p>
+                    <span className="text-[12px] text-muted-foreground shrink-0">
+                      {log.user_email || "system"} ·{" "}
+                      {new Date(log.created_at).toLocaleString("en-GB")}
+                    </span>
                   </div>
                 );
               }}

@@ -86,9 +86,9 @@ export const PortalLayout: React.FC = () => {
       roles: MANAGEMENT_ROLES,
     },
     { section: "ADMIN" },
-    { name: "SITE RECORDS", path: "/portal/audit", icon: History, roles: ["admin"] },
-    { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
+    { name: "SITE LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
     { name: "USERS", path: "/portal/users", icon: Users, roles: ["admin"] },
+    { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
   ];
 
   // SITE RECORDS/POLICIES (full audit trail) are restricted to the one

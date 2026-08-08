@@ -1,11 +1,13 @@
 # Lead Management Feature Specification
 
 ## Overview
+
 A modern, responsive Lead Management CRM component designed for React, TypeScript, and Tailwind CSS (Shadcn UI). It features a master-detail list layout with a slide-over side panel for lead details and timestamped activity logs. Built with self-contained client-side state (`localStorage`) so it starts with a clean empty state and can easily be exported to Lovable or connected to backend tables later.
 
 ---
 
 ## Technical Stack & Compatibility
+
 - **Framework**: React 19 + TypeScript
 - **Styling**: Tailwind CSS, Lucide Icons, Shadcn UI primitives (`Sheet`, `Dialog`, `Select`, `Button`, `Input`, `Badge`, `Textarea`, `Table`)
 - **State Management**: Self-contained React state + `localStorage` persistence
@@ -16,9 +18,10 @@ A modern, responsive Lead Management CRM component designed for React, TypeScrip
 ## Data Model
 
 ```typescript
-export type LeadStatus = 'New' | 'Contacted' | 'Qualified' | 'Proposal Sent' | 'Won' | 'Lost';
+export type LeadStatus = "New" | "Contacted" | "Qualified" | "Proposal Sent" | "Won" | "Lost";
 
-export type LeadSource = 'Website' | 'Referral' | 'Cold Outreach' | 'Social Media' | 'Event' | 'Other';
+export type LeadSource =
+  "Website" | "Referral" | "Cold Outreach" | "Social Media" | "Event" | "Other";
 
 export interface LeadNote {
   id: string;
@@ -46,6 +49,7 @@ export interface Lead {
 ## Layout & Components Architecture
 
 ### 1. Main View (`LeadManagement.tsx`)
+
 - **Header Toolbar**:
   - Title & subtitle ("Lead Management — Track and manage client leads").
   - Search Bar (filters by Name, Company, Email).
@@ -60,6 +64,7 @@ export interface Lead {
   - Icon graphic, friendly title ("No leads yet"), descriptive text, and "Add Your First Lead" CTA button when lead array is empty.
 
 ### 2. Slide-Over Side Panel (`LeadDetailPanel.tsx`)
+
 - Appears on the right side of the screen when a lead is selected.
 - **Header**: Lead name, company, quick status selector, delete action, close button.
 - **Contact Details Card**:
@@ -71,11 +76,13 @@ export interface Lead {
   - Notes are sorted chronologically with newest notes at the top.
 
 ### 3. Add Lead Modal (`AddLeadModal.tsx`)
+
 - Dialog overlay with form inputs for: Name, Company, Email, Phone, Source dropdown, initial Status dropdown, and optional initial note.
 
 ---
 
 ## Routing Integration
+
 - Route: `/portal/leads`
 - Navigation item added to portal sidebar/header with icon (`Users` / `UserCheck`).
 
@@ -87,6 +94,7 @@ export interface Lead {
 Build a modern Lead Management CRM component in React, TypeScript, and Tailwind CSS using Shadcn UI primitives and Lucide icons.
 
 ### Key Requirements:
+
 1. **Layout**:
    - Master-detail view: Responsive table/list of leads on the main screen.
    - Slide-over Side Panel (Drawer/Sheet): Clicking any lead opens a slide-over panel on the right with full lead details and activity log.

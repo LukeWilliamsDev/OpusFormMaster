@@ -1,4 +1,4 @@
-# Session Snapshot — 2026-08-08 12:58
+# Session Snapshot — 2026-08-08 13:00
 
 ## Files Changed
 - .claude/sessions/snapshot.md
@@ -8,11 +8,11 @@
 - supabase/functions/jinn-gateway/index.ts
 
 ## Recent Commits
+- 99ef03a fix(lint): resolve CI eslint/prettier errors in edge functions and nav-list
 - cb0ad8a chore: update session snapshot
 - 84e90fc feat(auth): force password change for admin-created accounts, plus fixes
 - 95f68b0 docs: add design spec for lead management feature
 - f4f81b0 fix(jinn): persist rotated Supabase refresh token to survive rotation
-- eb0224f feat(auth): match mobile nav footer to desktop, enforce 24h session expiry
 
 ## Token Estimate
 ~? tokens in auto-loaded files

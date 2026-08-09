@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Plus, FileText, Loader } from "lucide-react";
+import { Plus, FileText, Loader, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "sonner";
 import { supabase } from "../../../integrations/supabase/client";
-import { BillItem, computeTotals } from "../../lib/billing";
+import { BillItem, BillClientInfo, computeTotals } from "../../lib/billing";
+import { generateQuotePdfBlob } from "../../lib/quotePdf";
 
 export interface InvoiceRow {
   id: string;
@@ -12,6 +14,7 @@ export interface InvoiceRow {
   status: string;
   items: BillItem[];
   vat_rate: number;
+  client_info: BillClientInfo;
 }
 
 interface InvoiceListProps {
@@ -20,6 +23,8 @@ interface InvoiceListProps {
   selectedIds: string[];
   onToggleSelect: (id: string) => void;
   onCreateNew: () => void;
+  onCreateInvoice: () => void;
+  embedded?: boolean;
 }
 
 const STATUS_BADGE: Record<string, string> = {
@@ -34,6 +39,8 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   selectedIds,
   onToggleSelect,
   onCreateNew,
+  onCreateInvoice,
+  embedded = false,
 }) => {
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +51,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
     setLoading(true);
     supabase
       .from("invoices")
-      .select("id, reference, date, status, items, vat_rate")
+      .select("id, reference, date, status, items, vat_rate, client_info")
       .eq("job_id", jobId)
       .order("created_at", { ascending: false })
       .then(({ data, error }) => {
@@ -57,15 +64,59 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
     };
   }, [jobId, refreshKey]);
 
-  return (
-    <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h3 className="text-[13px] font-bold uppercase tracking-wider text-muted-foreground">
-          Quotes
-        </h3>
-        <Button size="sm" onClick={onCreateNew} className="gap-1.5">
-          <Plus className="w-3.5 h-3.5" /> New Quote
-        </Button>
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const downloadPdf = async (invoice: InvoiceRow) => {
+    setDownloadingPdf(true);
+    try {
+      const totals = computeTotals(invoice.items || [], invoice.vat_rate);
+      const { blob, filename } = await generateQuotePdfBlob({
+        reference: invoice.reference,
+        clientInfo: invoice.client_info,
+        items: invoice.items,
+        totals,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      toast.error("Couldn't generate PDF", {
+        description: err instanceof Error ? err.message : undefined,
+      });
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  const content = (
+    <>
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-bold text-foreground leading-tight">Quotes</h3>
+          <p className="text-xs text-muted-foreground leading-tight">
+            Select any not yet billed to create an invoice
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {selectedIds.length > 0 && (
+            <>
+              <span className="text-xs text-muted-foreground font-medium hidden sm:inline">
+                {selectedIds.length} selected
+              </span>
+              <Button size="sm" onClick={onCreateInvoice} className="gap-1.5 shrink-0">
+                Create Invoice
+              </Button>
+            </>
+          )}
+          <Button size="sm" onClick={onCreateNew} variant="secondary" className="gap-1.5 shrink-0">
+            <Plus className="w-3.5 h-3.5" /> New Quote
+          </Button>
+        </div>
       </div>
 
       {loading ? (
@@ -74,7 +125,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
           <span>Loading quotes...</span>
         </div>
       ) : invoices.length === 0 ? (
-        <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[13px] font-bold uppercase tracking-wider">
+        <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-sm font-semibold">
           No quotes yet for this job
         </div>
       ) : (
@@ -85,35 +136,36 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
             return (
               <div
                 key={inv.id}
-                className="py-2.5 flex flex-wrap sm:flex-nowrap items-center gap-x-2.5 gap-y-1.5 cursor-pointer hover:bg-accent/40 -mx-4 px-4"
+                className="py-2.5 grid grid-cols-[24px_24px_88px_auto_1fr_100px_100px] items-center gap-x-2.5 cursor-pointer hover:bg-accent/40 -mx-4 px-4"
                 onClick={() => setPreviewInvoice(inv)}
               >
                 <label
-                  className={`shrink-0 -m-2 p-2 flex items-center ${
-                    inv.status === "draft" ? "cursor-pointer" : "cursor-not-allowed"
+                  className={`w-6 h-6 flex items-center justify-center ${
+                    inv.status === "billed" ? "cursor-not-allowed" : "cursor-pointer"
                   }`}
                   onClick={(e) => e.stopPropagation()}
-                  title={inv.status !== "draft" ? "Already billed" : undefined}
+                  title={inv.status === "billed" ? "Already billed" : undefined}
                 >
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(inv.id)}
-                    disabled={inv.status !== "draft"}
+                    disabled={inv.status === "billed"}
                     onChange={() => onToggleSelect(inv.id)}
-                    className="shrink-0 w-4 h-4 disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="w-5 h-5 disabled:opacity-40 disabled:cursor-not-allowed"
                   />
                 </label>
-                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
                   <FileText className="w-3.5 h-3.5 text-primary" />
                 </div>
                 <span
-                  className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shrink-0 ${badgeColor}`}
+                  className={`w-fit px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize border ${badgeColor}`}
                 >
                   {inv.status}
                 </span>
-                <span className="text-sm font-semibold flex-1 min-w-[90px]">#{inv.reference}</span>
+                <span className="text-sm font-semibold truncate">#{inv.reference}</span>
+                <span aria-hidden />
                 <span className="text-xs text-muted-foreground">{inv.date}</span>
-                <span className="text-sm font-bold">
+                <span className="text-sm font-bold text-right">
                   £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
@@ -121,16 +173,36 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
           })}
         </div>
       )}
+    </>
+  );
+
+  return (
+    <div
+      className={embedded ? "space-y-4" : "bg-card border border-border rounded-xl p-4 space-y-4"}
+    >
+      {content}
 
       <Dialog open={!!previewInvoice} onOpenChange={(next) => !next && setPreviewInvoice(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="lg:max-w-lg">
           {previewInvoice && (
             <>
               <DialogHeader>
                 <DialogTitle>#{previewInvoice.reference}</DialogTitle>
               </DialogHeader>
-              <div className="text-xs text-muted-foreground -mt-2">
-                {previewInvoice.date} · {previewInvoice.status.toUpperCase()}
+              <div className="flex items-center justify-between gap-3 -mt-2">
+                <span className="text-xs text-muted-foreground">
+                  {previewInvoice.date} · {previewInvoice.status.toUpperCase()}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 shrink-0"
+                  disabled={downloadingPdf}
+                  onClick={() => downloadPdf(previewInvoice)}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  PDF
+                </Button>
               </div>
               <div className="divide-y border rounded-lg">
                 {(previewInvoice.items || []).map((item, i) => (

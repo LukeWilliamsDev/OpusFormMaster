@@ -357,6 +357,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   });
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isAlreadySent, setIsAlreadySent] = useState(false);
+  const [showSendConfirm, setShowSendConfirm] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [unitFocusedItemId, setUnitFocusedItemId] = useState<string | null>(null);
@@ -958,6 +959,34 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         onBack();
         return;
       }
+      // Attach the PDF to the job's documents, mirroring the final-bill attach
+      // so it's visible under Media too.
+      if (jobId) {
+        try {
+          const label = mode === "invoice" ? "Invoice" : "Quote";
+          const filePath = `jobs/${jobId}/${Date.now()}-OpusForm_${label}_${quoteReference}.pdf`;
+          const { error: uploadError } = await supabase.storage
+            .from("job-attachments")
+            .upload(filePath, blob, { contentType: "application/pdf" });
+          if (uploadError) throw uploadError;
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("job-attachments").getPublicUrl(filePath);
+
+          const { error: attachError } = await supabase.from("job_attachments").insert({
+            job_id: jobId,
+            type: "document",
+            file_name: `OpusForm_${label}_${quoteReference}.pdf`,
+            file_url: publicUrl,
+            file_size_bytes: blob.size,
+            uploaded_by: `System (${label} Sent)`,
+          });
+          if (attachError) throw attachError;
+        } catch (attachErr) {
+          console.error("Failed to attach PDF to job", attachErr);
+        }
+      }
 
       loadSavedQuotes();
       toast.success("EMAIL SENT", { id: sendingToastId, description: "Email sent successfully." });
@@ -1072,7 +1101,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             </button>
             <button
               type="button"
-              onClick={handleSend}
+              onClick={() => (mode === "finalBill" ? setShowSendConfirm(true) : handleSend())}
               disabled={isSendingEmail || isAlreadySent}
               className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-primary hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-4 py-1.5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
             >
@@ -1470,21 +1499,29 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 <Plus className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <div className="flex flex-col gap-1.5">
               {terms.map((term, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between gap-3 bg-background border border-border rounded-xl p-3"
+                  className="flex items-center justify-between gap-3 bg-background border border-border rounded-lg px-3 py-1.5"
                 >
                   <textarea
+                    ref={(el) => {
+                      if (el) {
+                        el.style.height = "auto";
+                        el.style.height = `${el.scrollHeight}px`;
+                      }
+                    }}
                     value={term}
                     onChange={(e) => {
                       const newTerms = [...terms];
                       newTerms[index] = e.target.value;
                       setTerms(newTerms);
+                      e.target.style.height = "auto";
+                      e.target.style.height = `${e.target.scrollHeight}px`;
                     }}
-                    rows={2}
-                    className="w-full bg-transparent border-none outline-none text-[11px] text-foreground leading-relaxed resize-none min-h-0 font-medium"
+                    rows={1}
+                    className="w-full bg-transparent border-none outline-none text-[11px] text-foreground leading-relaxed resize-none min-h-0 font-medium overflow-hidden"
                     placeholder="Enter condition..."
                   />
                   <button
@@ -1633,6 +1670,33 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         }
         confirmLabel="Delete Quote"
         onConfirm={deleteQuote}
+      />
+
+      {/* --- SEND INVOICE CONFIRMATION --- */}
+      <ConfirmDialog
+        open={showSendConfirm}
+        onOpenChange={setShowSendConfirm}
+        tone="neutral"
+        tag="Please Confirm"
+        title="Send Invoice to Client"
+        message={
+          <>
+            This will email the invoice to{" "}
+            <span className="font-bold text-foreground">
+              {clientInfo.email || clientInfo.entity}
+            </span>{" "}
+            and lock the source quotes so they can't be billed again.
+            <div className="mt-3 p-4 bg-white/5 border border-white/5 rounded-lg text-xs font-medium text-muted-foreground leading-relaxed">
+              Double-check the line items and totals before sending — once sent, this cannot be
+              recalled.
+            </div>
+          </>
+        }
+        confirmLabel="Send Invoice"
+        onConfirm={() => {
+          setShowSendConfirm(false);
+          handleSend();
+        }}
       />
     </div>
   );

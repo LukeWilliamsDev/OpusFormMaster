@@ -33,6 +33,7 @@ import { Supplier } from "./OSMMap";
 import { PersistentJobHeader } from "./PersistentJobHeader";
 import { handleError } from "../utils/errorHandler";
 import { InvoiceList } from "./billing/InvoiceList";
+import { FinalBillList } from "./billing/FinalBillList";
 import { QuoteInvoiceBuilder } from "./QuoteInvoiceBuilder";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
@@ -1381,25 +1382,24 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               onQuoteLoaded={() => setBillingRefreshKey((k) => k + 1)}
             />
           ) : (
-            <div className="space-y-3">
-              <InvoiceList
-                jobId={job.id}
-                refreshKey={billingRefreshKey}
-                selectedIds={selectedInvoiceIds}
-                onToggleSelect={(id) =>
-                  setSelectedInvoiceIds((prev) =>
-                    prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-                  )
-                }
-                onCreateNew={() => setEditingInvoiceId("new")}
-              />
-              <div className="flex justify-end">
-                <Button
-                  disabled={selectedInvoiceIds.length === 0}
-                  onClick={() => setEditingFinalBillId("new")}
-                >
-                  Create Invoice ({selectedInvoiceIds.length} selected)
-                </Button>
+            <div className="bg-card border border-border rounded-xl p-4 divide-y divide-border">
+              <div className="pb-4">
+                <InvoiceList
+                  jobId={job.id}
+                  refreshKey={billingRefreshKey}
+                  selectedIds={selectedInvoiceIds}
+                  onToggleSelect={(id) =>
+                    setSelectedInvoiceIds((prev) =>
+                      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+                    )
+                  }
+                  onCreateNew={() => setEditingInvoiceId("new")}
+                  onCreateInvoice={() => setEditingFinalBillId("new")}
+                  embedded
+                />
+              </div>
+              <div className="pt-4">
+                <FinalBillList jobId={job.id} refreshKey={billingRefreshKey} embedded />
               </div>
             </div>
           )}

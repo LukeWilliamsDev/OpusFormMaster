@@ -250,7 +250,7 @@ export const OSMMap: React.FC<OSMMapProps> = ({
   const selectedSupplier = suppliers.find((s) => s.id === selectedSupplierId);
 
   return (
-    <div className="relative w-full h-full">
+    <div className="relative isolate w-full h-full">
       <div
         ref={mapContainerRef}
         className="w-full h-full rounded-b-xl"
@@ -258,30 +258,40 @@ export const OSMMap: React.FC<OSMMapProps> = ({
       />
       {selectedSupplier && (
         <div className="absolute bottom-3 left-3 right-3 z-[400] bg-card border border-border rounded-lg p-2.5 shadow-lg">
-          <div className="flex justify-between items-start gap-2">
-            <h4 className="text-xs font-extrabold uppercase tracking-wide text-foreground truncate">
-              {selectedSupplier.name}
-            </h4>
-            <span className="text-[10px] font-bold text-primary whitespace-nowrap shrink-0">
-              {selectedSupplier.distance} from site
-            </span>
-          </div>
-          <div className="p-2 bg-background border border-border rounded-md mt-1.5">
-            {selectedSupplier.businessType && (
-              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider">
-                {selectedSupplier.businessType}
-              </p>
-            )}
-            <p className="text-[11px] text-foreground leading-snug">{selectedSupplier.address}</p>
-            {/* Full-height tap targets (not inline text links) — call/website/
-              directions are the actions staff need mid-task on a tablet/
-              phone, so they get real button sizing and share the row evenly
-              whichever of the three actually exist for this supplier. */}
-            <div className="flex gap-1.5 pt-2">
+          <div className="flex items-center gap-2.5">
+            {/* Info column: name, distance, business type, address.
+              Actions column: Directions primary on top, Call/Website
+              beneath — kept side by side so the card reads as two
+              zones instead of a header row plus a separate box. */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-baseline gap-1.5 min-w-0">
+                <h4 className="text-xs font-extrabold uppercase tracking-wide text-foreground truncate">
+                  {selectedSupplier.name}
+                </h4>
+                <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap shrink-0">
+                  {selectedSupplier.distance}
+                </span>
+              </div>
+              {selectedSupplier.businessType && (
+                <p className="text-[10px] text-amber-600 dark:text-amber-400 font-bold uppercase tracking-wider mt-1">
+                  {selectedSupplier.businessType}
+                </p>
+              )}
+              <p className="text-[11px] text-foreground leading-snug">{selectedSupplier.address}</p>
+            </div>
+            <div className="flex flex-col gap-1.5 w-[110px] shrink-0">
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${selectedSupplier.coords.lat},${selectedSupplier.coords.lng}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center justify-center gap-1.5 min-h-[28px] rounded-md bg-primary text-primary-foreground font-bold text-[11px] active:scale-95 transition-transform"
+              >
+                <Navigation className="w-3.5 h-3.5" /> Directions
+              </a>
               {selectedSupplier.phone && (
                 <a
                   href={`tel:${selectedSupplier.phone.replace(/\s+/g, "")}`}
-                  className="flex-1 flex items-center justify-center gap-1 min-h-[28px] rounded-md bg-amber-600/15 border border-amber-600/30 text-amber-600 font-bold text-[11px] active:scale-95 transition-transform"
+                  className="flex items-center justify-center gap-1.5 min-h-[26px] rounded-md bg-muted border border-border text-foreground font-bold text-[11px] active:scale-95 transition-transform"
                 >
                   <Phone className="w-3.5 h-3.5" /> Call
                 </a>
@@ -291,19 +301,11 @@ export const OSMMap: React.FC<OSMMapProps> = ({
                   href={selectedSupplier.website}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex-1 flex items-center justify-center gap-1 min-h-[28px] rounded-md bg-muted border border-border text-foreground font-bold text-[11px] active:scale-95 transition-transform"
+                  className="flex items-center justify-center gap-1.5 min-h-[26px] rounded-md bg-muted border border-border text-foreground font-bold text-[11px] active:scale-95 transition-transform"
                 >
                   <Globe className="w-3.5 h-3.5" /> Website
                 </a>
               )}
-              <a
-                href={`https://www.google.com/maps/dir/?api=1&destination=${selectedSupplier.coords.lat},${selectedSupplier.coords.lng}`}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 flex items-center justify-center gap-1 min-h-[28px] rounded-md bg-primary/15 border border-primary/30 text-primary font-bold text-[11px] active:scale-95 transition-transform"
-              >
-                <Navigation className="w-3.5 h-3.5" /> Directions
-              </a>
             </div>
           </div>
         </div>

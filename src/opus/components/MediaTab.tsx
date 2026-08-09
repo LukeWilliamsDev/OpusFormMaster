@@ -1,4 +1,4 @@
-﻿import React from "react";
+﻿import React, { useState } from "react";
 import { CardGrid } from "../components/CardGrid";
 import {
   Camera,
@@ -13,6 +13,10 @@ import {
   PencilLine,
   Trash2,
   Download,
+  Receipt,
+  FileCheck,
+  Wallet,
+  Folder,
 } from "lucide-react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -62,6 +66,13 @@ export interface Attachment {
   raw_file_url?: string;
 }
 
+const DOC_GROUPS: { label: string; match: RegExp }[] = [
+  { label: "Invoices", match: /invoice/i },
+  { label: "Quotes", match: /quote/i },
+  { label: "Expenses", match: /expense/i },
+  { label: "Other Documents", match: /^(?!.*(invoice|quote|expense)).*$/i },
+];
+
 export function MediaTab({
   beforePhotos,
   afterPhotos,
@@ -89,182 +100,144 @@ export function MediaTab({
   setRenameValue,
   executeRenameAttachment,
 }: MediaTabProps) {
+  // Before/after now share one grid (see below) — newest first, each
+  // thumbnail carries its own Before/After badge instead of a toggle
+  // gating which set is visible, since the wider column has room for both.
+  const allPhotos = [...beforePhotos, ...afterPhotos].sort(
+    (a, b) => new Date(b.uploaded_at || 0).getTime() - new Date(a.uploaded_at || 0).getTime(),
+  );
+
+  // Doc grouping is filename-based (see DOC_GROUPS), so before uploading we
+  // ask which bucket the file belongs to and prefix the name to match —
+  // no schema change needed, keeps the existing regex grouping working.
+  const [pendingDocFile, setPendingDocFile] = useState<File | null>(null);
+  const chooseDocCategory = (prefix: string | null) => {
+    if (!pendingDocFile) return;
+    const file = prefix
+      ? new File([pendingDocFile], `${prefix}-${pendingDocFile.name}`, {
+          type: pendingDocFile.type,
+        })
+      : pendingDocFile;
+    uploadAttachment(file, "document");
+    setPendingDocFile(null);
+  };
+
   return (
     <>
       <div className="space-y-6">
         {/* Attachments Section: Photos and Documents */}
-        <div className="grid grid-cols-1 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 bg-card border border-border rounded-xl overflow-hidden">
           {/* Before & After Photo Gallery */}
-          <div className="bg-card border border-border rounded-xl p-4 space-y-4">
-            <div className="flex justify-between items-center border-b border-border pb-3">
+          <div className="p-4 space-y-4 md:border-r border-border">
+            <div className="flex flex-wrap justify-between items-center gap-3 border-b border-border pb-3">
               <div className="flex items-center gap-2">
-                <Camera className="w-4 h-4 text-primary" />
+                <Camera className="w-4 h-4 text-muted-foreground" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                  Before & After Site Media
+                  Site Before & After
                 </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                {[
+                  {
+                    view: "before" as const,
+                    label: "Before",
+                    type: "image_before" as const,
+                    count: beforePhotos.length,
+                    uploading: uploadingPhotoBefore,
+                  },
+                  {
+                    view: "after" as const,
+                    label: "After",
+                    type: "image_after" as const,
+                    count: afterPhotos.length,
+                    uploading: uploadingPhotoAfter,
+                  },
+                ].map(({ view, label, type, count, uploading }) => (
+                  <Button key={view} size="sm" variant="outline" className="gap-1.5" asChild>
+                    <label className="cursor-pointer">
+                      {uploading ? (
+                        <Loader className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Plus className="w-3.5 h-3.5" />
+                      )}
+                      {label} <span className="opacity-70">{count}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) =>
+                          e.target.files?.[0] && uploadAttachment(e.target.files[0], type)
+                        }
+                        className="hidden"
+                        disabled={uploading}
+                      />
+                    </label>
+                  </Button>
+                ))}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-4">
-              {/* Before Section */}
-              <div className="space-y-2">
-                <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
-                  <span>Before</span>
-                  <label className="text-[12px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
-                    {uploadingPhotoBefore ? (
-                      <Loader className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <>
-                        <Plus className="w-3 h-3" /> Add Photo
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) =>
-                        e.target.files?.[0] && uploadAttachment(e.target.files[0], "image_before")
-                      }
-                      className="hidden"
-                      disabled={uploadingPhotoBefore}
-                    />
-                  </label>
-                </div>
-                <div
-                  className={`bg-background border border-border rounded-xl min-h-[140px] p-3 ${beforePhotos.length > 0 ? "" : "flex items-center justify-center"}`}
-                >
-                  {beforePhotos.length > 0 ? (
-                    <CardGrid
-                      items={beforePhotos}
-                      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
-                      renderCard={(p, i) => (
-                        <div
-                          key={p.id}
-                          onClick={() => setGallery({ photos: beforePhotos, index: i })}
-                          className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
-                        >
-                          <img
-                            src={p.thumb_url || p.file_url}
-                            alt="before"
-                            loading="lazy"
-                            decoding="async"
-                            className="w-full h-24 object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
-                            <span className="text-foreground font-bold truncate">
-                              {p.uploaded_by}
-                            </span>
-                            <span>{new Date(p.uploaded_at || 0).toLocaleDateString("en-GB")}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteAttachmentTarget(p);
-                            }}
-                            aria-label="Delete photo"
-                            className="absolute top-1 right-1 p-1 rounded bg-black/60 text-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
-                      emptyMessage="No Media"
-                      emptyIcon={
-                        <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold" />
-                      }
-                    />
-                  ) : (
-                    <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
-                      No Media
-                    </span>
+            <div
+              className={`bg-background border border-border rounded-xl min-h-[140px] p-3 ${allPhotos.length > 0 ? "" : "flex items-center justify-center"}`}
+            >
+              {allPhotos.length > 0 ? (
+                <CardGrid
+                  items={allPhotos}
+                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+                  renderCard={(p, i) => (
+                    <div
+                      key={p.id}
+                      onClick={() => setGallery({ photos: allPhotos, index: i })}
+                      className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
+                    >
+                      <img
+                        src={p.thumb_url || p.file_url}
+                        alt={p.type === "image_before" ? "before" : "after"}
+                        loading="lazy"
+                        decoding="async"
+                        className="w-full aspect-[4/3] object-cover"
+                      />
+                      <span
+                        className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${p.type === "image_before" ? "bg-black/60 text-foreground" : "bg-primary/80 text-primary-foreground"}`}
+                      >
+                        {p.type === "image_before" ? "Before" : "After"}
+                      </span>
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
+                        <span className="text-foreground font-bold truncate">{p.uploaded_by}</span>
+                        <span>{new Date(p.uploaded_at || 0).toLocaleDateString("en-GB")}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDeleteAttachmentTarget(p);
+                        }}
+                        aria-label="Delete photo"
+                        className="absolute top-1 right-1 p-1 rounded bg-black/60 text-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
                   )}
-                </div>
-              </div>
-
-              {/* After Section */}
-              <div className="space-y-2">
-                <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider flex justify-between items-center">
-                  <span>After</span>
-                  <label className="text-[12px] text-primary hover:underline cursor-pointer flex items-center gap-1 font-bold">
-                    {uploadingPhotoAfter ? (
-                      <Loader className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <>
-                        <Plus className="w-3 h-3" /> Add Photo
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) =>
-                        e.target.files?.[0] && uploadAttachment(e.target.files[0], "image_after")
-                      }
-                      className="hidden"
-                      disabled={uploadingPhotoAfter}
-                    />
-                  </label>
-                </div>
-                <div
-                  className={`bg-background border border-border rounded-xl min-h-[140px] p-3 ${afterPhotos.length > 0 ? "" : "flex items-center justify-center"}`}
-                >
-                  {afterPhotos.length > 0 ? (
-                    <CardGrid
-                      items={afterPhotos}
-                      className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
-                      renderCard={(p, i) => (
-                        <div
-                          key={p.id}
-                          onClick={() => setGallery({ photos: afterPhotos, index: i })}
-                          className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
-                        >
-                          <img
-                            src={p.thumb_url || p.file_url}
-                            alt="after"
-                            loading="lazy"
-                            decoding="async"
-                            className="w-full h-24 object-cover"
-                          />
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-all flex flex-col justify-end p-1.5 text-[10px] text-muted-foreground">
-                            <span className="text-foreground font-bold truncate">
-                              {p.uploaded_by}
-                            </span>
-                            <span>{new Date(p.uploaded_at || 0).toLocaleDateString("en-GB")}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDeleteAttachmentTarget(p);
-                            }}
-                            aria-label="Delete photo"
-                            className="absolute top-1 right-1 p-1 rounded bg-black/60 text-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
-                        </div>
-                      )}
-                      emptyMessage="No Media"
-                      emptyIcon={
-                        <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold" />
-                      }
-                    />
-                  ) : (
-                    <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
-                      No Media
-                    </span>
-                  )}
-                </div>
-              </div>
+                  emptyMessage="No Media"
+                  emptyIcon={
+                    <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold" />
+                  }
+                />
+              ) : (
+                <span className="text-[12px] text-muted-foreground uppercase tracking-widest font-semibold">
+                  No Media
+                </span>
+              )}
             </div>
           </div>
 
           {/* Project Documents & Drag-and-Drop */}
-          <div className="bg-card border border-border rounded-xl p-4 space-y-4">
+          <div className="p-4 space-y-4">
             <div className="flex justify-between items-center border-b border-border pb-3">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary" />
+                <FileText className="w-4 h-4 text-muted-foreground" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                  Project Documents
+                  Project Attachments
                 </h2>
               </div>
               <button
@@ -282,96 +255,101 @@ export function MediaTab({
               </button>
             </div>
 
-            {/* Generated request link alert */}
+            {/* Generated request link alert — auto-copied on generate, so this
+                is just a confirmation line; raw URL only shows if copy failed. */}
             {generatedLink && (
-              <div className="bg-secondary border border-border rounded-xl p-3.5 flex items-center justify-between gap-3 animate-fade-in">
-                <div className="space-y-0.5 max-w-[75%]">
-                  <div className="text-[12px] font-bold text-foreground uppercase tracking-wider">
-                    Secure Upload Link Generated
-                  </div>
-                  <div className="text-[13px] text-muted-foreground truncate font-mono">
-                    {generatedLink}
-                  </div>
-                </div>
-                <button
+              <div className="flex items-center gap-2 text-xs text-muted-foreground animate-fade-in">
+                {copiedLink ? (
+                  <>
+                    <Check className="w-3.5 h-3.5 text-success shrink-0" />
+                    <span className="font-bold text-foreground">Link copied to clipboard</span>
+                  </>
+                ) : (
+                  <>
+                    <LinkIcon className="w-3.5 h-3.5 text-primary shrink-0" />
+                    <span className="truncate font-mono">{generatedLink}</span>
+                  </>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="gap-1.5 shrink-0 ml-auto"
                   onClick={copyToClipboard}
-                  className="px-3 py-1.5 bg-card border border-border text-foreground hover:bg-secondary rounded-lg text-[12px] font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
-                  {copiedLink ? (
-                    <Check className="w-3.5 h-3.5 text-success" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5" />
-                  )}
-                  <span>{copiedLink ? "Copied" : "Copy"}</span>
-                </button>
+                  <Copy className="w-3.5 h-3.5" />
+                  Copy again
+                </Button>
               </div>
             )}
 
             {/* Drag and drop zone */}
-            <div className="border border-dashed border-border hover:border-muted-foreground/40 rounded-xl p-6 bg-background text-center relative transition-all">
+            <div className="border border-dashed border-border hover:border-muted-foreground/40 rounded-lg py-4 px-4 bg-background text-center relative transition-all">
               <input
                 type="file"
-                onChange={(e) =>
-                  e.target.files?.[0] && uploadAttachment(e.target.files[0], "document")
-                }
+                onChange={(e) => {
+                  if (e.target.files?.[0]) setPendingDocFile(e.target.files[0]);
+                  e.target.value = "";
+                }}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                 disabled={uploadingDoc}
               />
-              <div className="flex flex-col items-center gap-2">
-                <FileText className="w-8 h-8 text-muted-foreground" />
-                <div className="text-xs font-bold text-foreground">
-                  {uploadingDoc ? "Uploading..." : "Drop files here or click to upload"}
+              <div className="flex flex-col items-center justify-center gap-1 text-muted-foreground">
+                <div className="flex items-center gap-2 text-[13px]">
+                  <FileText className="w-4 h-4 shrink-0" />
+                  <span className="font-bold text-foreground">
+                    {uploadingDoc ? "Uploading..." : "Drop files or click to upload"}
+                  </span>
                 </div>
-                <div className="text-[12px] text-muted-foreground">
-                  PDF, Excel, Word, or CAD Drawings
-                </div>
-                <div className="text-[11px] text-muted-foreground">
-                  10MB per file, 100MB total per job
-                </div>
+                <div className="text-[11px]">PDF, Excel, Word, CAD · 10MB/file</div>
               </div>
             </div>
 
-            {/* Documents List */}
-            <div className="space-y-1.5 max-h-[140px] overflow-y-auto pr-1">
+            {/* Documents List, grouped by type */}
+            <div className="space-y-3">
               {projectDocs.length > 0 ? (
-                <CardGrid
-                  items={projectDocs}
-                  className="grid grid-cols-1 gap-1.5"
-                  renderCard={(d) => (
-                    <div
-                      key={d.id}
-                      className="flex justify-between items-center p-2.5 bg-background border border-border rounded-lg hover:border-muted-foreground/40 transition-all"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setViewDocTarget(d)}
-                        className="flex items-center gap-2 truncate max-w-[70%] cursor-pointer"
-                      >
-                        <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                        <span className="text-xs text-foreground hover:text-primary truncate font-mono">
-                          {d.file_name}
+                DOC_GROUPS.map(({ label, match }) => {
+                  const docs = projectDocs.filter((d) => match.test(d.file_name));
+                  if (docs.length === 0) return null;
+                  return (
+                    <div key={label} className="space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                          {label}
                         </span>
-                      </button>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[11px] text-muted-foreground font-medium">
-                          {new Date(d.uploaded_at || 0).toLocaleDateString("en-GB")}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteAttachmentTarget(d)}
-                          className="p-1 rounded text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                          aria-label={`Delete ${d.file_name}`}
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        <span className="flex-1 h-px bg-border" />
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {docs.map((d) => (
+                          <div
+                            key={d.id}
+                            className="group relative flex flex-col gap-1.5 p-2.5 bg-background border border-border rounded-lg hover:border-muted-foreground/40 transition-all"
+                          >
+                            <button
+                              type="button"
+                              onClick={() => setDeleteAttachmentTarget(d)}
+                              aria-label={`Delete ${d.file_name}`}
+                              className="absolute top-1.5 right-1.5 p-1 rounded text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setViewDocTarget(d)}
+                              className="flex flex-col items-start gap-1.5 text-left cursor-pointer min-w-0"
+                            >
+                              <span className="text-xs text-foreground hover:text-primary truncate font-mono w-full">
+                                {d.file_name}
+                              </span>
+                            </button>
+                            <span className="text-[10.5px] text-muted-foreground font-medium">
+                              {new Date(d.uploaded_at || 0).toLocaleDateString("en-GB")}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  )}
-                  emptyMessage="No documents uploaded yet"
-                  emptyIcon={
-                    <span className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold" />
-                  }
-                />
+                  );
+                })
               ) : (
                 <div className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold">
                   No documents uploaded yet
@@ -381,6 +359,45 @@ export function MediaTab({
           </div>
         </div>
       </div>
+
+      {/* Document category picker — shown before every doc upload */}
+      <Dialog open={!!pendingDocFile} onOpenChange={(open) => !open && setPendingDocFile(null)}>
+        <DialogContent className="lg:max-w-[380px]">
+          <div className="flex items-center gap-[9px] text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+            <span>Sort document</span>
+          </div>
+          <div>
+            <h2 className="mb-2 text-[13.5px] font-semibold uppercase tracking-[0.02em]">
+              What type of document is this?
+            </h2>
+            <div className="mb-3 flex min-w-0 items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5">
+              <FileText className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
+              <span className="min-w-0 flex-1 truncate text-[11.5px] font-mono text-foreground">
+                {pendingDocFile?.name}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { label: "Invoice", prefix: "Invoice", icon: Receipt },
+                { label: "Quote", prefix: "Quote", icon: FileCheck },
+                { label: "Expense", prefix: "Expense", icon: Wallet },
+                { label: "Other", prefix: null, icon: Folder },
+              ].map(({ label, prefix, icon: Icon }) => (
+                <button
+                  key={label}
+                  type="button"
+                  onClick={() => chooseDocCategory(prefix)}
+                  className="flex flex-col items-center gap-1 rounded-lg border border-border bg-background py-2.5 text-[10.5px] font-bold text-foreground transition-colors hover:border-primary/40 hover:bg-primary/10 hover:text-primary cursor-pointer"
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* View document warning */}
       <ConfirmDialog

@@ -50,6 +50,25 @@ interface HistoryTabProps {
   }) => void;
 }
 
+const getInitials = (fullName: string | null | undefined, email?: string | null): string => {
+  if (fullName && fullName.trim()) {
+    return fullName
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((word) => word[0]?.toUpperCase())
+      .join("");
+  }
+  if (email) {
+    const [name] = email.split("@");
+    const parts = name.split(/[._-]/);
+    return parts
+      .slice(0, 2)
+      .map((p) => p[0]?.toUpperCase())
+      .join("");
+  }
+  return "SYS";
+};
+
 export function HistoryTab({
   jobAuditLogs,
   loadingJobAuditLogs,
@@ -185,50 +204,40 @@ export function HistoryTab({
                   const isPourEvent = pourLabel !== "";
 
                   return (
-                    <div
-                      key={event.id}
-                      className="py-2.5 flex flex-wrap sm:flex-nowrap items-center gap-x-2.5 gap-y-1.5"
-                    >
-                      <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        {event.action === "INVOICE_SENT" || event.action === "QUOTE_SENT" ? (
-                          <FileCheck2 className="w-3.5 h-3.5 text-primary" />
-                        ) : isPourEvent ? (
-                          <Layers className="w-3.5 h-3.5 text-primary" />
-                        ) : (
-                          <PencilLine className="w-3.5 h-3.5 text-primary" />
+                    <div key={event.id} className="space-y-1.5">
+                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-2.5 gap-y-1.5">
+                        <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                          {event.action === "INVOICE_SENT" || event.action === "QUOTE_SENT" ? (
+                            <FileCheck2 className="w-3.5 h-3.5 text-primary" />
+                          ) : isPourEvent ? (
+                            <Layers className="w-3.5 h-3.5 text-primary" />
+                          ) : (
+                            <PencilLine className="w-3.5 h-3.5 text-primary" />
+                          )}
+                        </div>
+                        <span
+                          className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shrink-0 ${badgeColor}`}
+                        >
+                          {event.action?.replace(/_/g, " ")}
+                        </span>
+                        <p className="flex-1 min-w-0 basis-full sm:basis-auto order-3 sm:order-none truncate sm:whitespace-normal text-[13px] text-foreground/90">
+                          {summaryText}
+                        </p>
+                        {canRevert && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRevertConfirmTarget({
+                                oldDetails: event.details?.old ?? {},
+                                newDetails: event.details?.new ?? {},
+                              })
+                            }
+                            className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
+                          >
+                            Revert
+                          </button>
                         )}
                       </div>
-                      <span
-                        className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shrink-0 ${badgeColor}`}
-                      >
-                        {event.action?.replace(/_/g, " ")}
-                      </span>
-                      <p className="flex-1 min-w-0 basis-full sm:basis-auto order-3 sm:order-none truncate sm:whitespace-normal text-[13px] text-foreground/90">
-                        {summaryText}
-                      </p>
-                      {canRevert && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setRevertConfirmTarget({
-                              oldDetails: event.details?.old ?? {},
-                              newDetails: event.details?.new ?? {},
-                            })
-                          }
-                          className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                        >
-                          Revert
-                        </button>
-                      )}
-                      <span className="text-[12px] text-muted-foreground shrink-0">
-                        {new Date(event.created_at).toLocaleString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </span>
                     </div>
                   );
                 }}

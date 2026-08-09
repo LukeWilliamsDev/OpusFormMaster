@@ -28,6 +28,9 @@ export const NavList = ({
     (item) => item.href === activeUrl || item.items?.some((subItem) => subItem.href === activeUrl),
   );
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(() => {
+    const stored = localStorage.getItem("portal-nav-collapsed-sections");
+    if (stored) return new Set(JSON.parse(stored) as string[]);
+
     let label: string | null = null;
     let activeLabel: string | null = null;
     const labels: string[] = [];
@@ -51,6 +54,7 @@ export const NavList = ({
       } else {
         next.add(label);
       }
+      localStorage.setItem("portal-nav-collapsed-sections", JSON.stringify([...next]));
       return next;
     });
 

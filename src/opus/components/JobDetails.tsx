@@ -613,6 +613,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       const link = `${window.location.origin}${window.location.pathname}#/job-upload/${token}`;
       setGeneratedLink(link);
       logAttachmentAudit("GENERATE_UPLOAD_LINK", {});
+      try {
+        await navigator.clipboard.writeText(link);
+        setCopiedLink(true);
+        setTimeout(() => setCopiedLink(false), 2000);
+      } catch {
+        // Clipboard write can fail (permissions, insecure context) — the
+        // link is still shown in the UI with a manual Copy button as fallback.
+      }
     } catch (err) {
       const { message } = handleError(err, { message: "Failed to generate upload link" });
       console.error("Error generating link:", err);
@@ -1056,11 +1064,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           </TabsTrigger>
           <TabsTrigger
             value="media"
-            aria-label="Media"
+            aria-label="Attachments"
             className="flex items-center justify-center gap-1 px-1.5"
           >
             <Paperclip className="w-3.5 h-3.5 shrink-0" />{" "}
-            <span className="text-[11px]">Media</span>
+            <span className="text-[11px]">Attachments</span>
           </TabsTrigger>
           <TabsTrigger
             value="suppliers"

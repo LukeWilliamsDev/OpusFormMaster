@@ -1,5 +1,5 @@
 import React from "react";
-import { MapPin, Phone, Loader } from "lucide-react";
+import { MapPin, Loader } from "lucide-react";
 import { OSMMap, Supplier } from "./OSMMap";
 import { Job } from "../types/erp";
 
@@ -103,18 +103,6 @@ export function JobOverviewTab({
                         {s.distance}
                       </span>
                     </div>
-
-                    {/* Actions always visible, not hover-dependent */}
-                    {s.phone && (
-                      <div className="flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
-                        <a
-                          href={`tel:${s.phone}`}
-                          className="flex items-center gap-1.5 text-[12px] font-bold text-foreground border border-border px-2 py-1 rounded-md hover:bg-secondary transition-colors"
-                        >
-                          <Phone className="w-3 h-3" /> Call
-                        </a>
-                      </div>
-                    )}
                   </div>
                 ))}
               </div>

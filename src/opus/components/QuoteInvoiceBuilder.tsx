@@ -8,7 +8,12 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { NoticeModal } from "@/components/ui/notice-modal";
 import { QuotePdfDocument, generateQuotePdfBlob, generateBillPdf } from "../lib/quotePdf";
-import { computeDocumentLabel, documentPdfFilename, DocumentKind } from "../lib/documentNaming";
+import {
+  computeDocumentLabel,
+  computeDocSequenceLabel,
+  documentPdfFilename,
+  DocumentKind,
+} from "../lib/documentNaming";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Plus,
@@ -69,7 +74,7 @@ interface ValuationBuilderProps {
   onBack: () => void;
   quoteToLoadId?: string | null;
   onQuoteLoaded?: () => void;
-  mode?: "quote" | "invoice" | "finalBill";
+  mode?: "quote" | "extraQuote" | "finalBill";
   jobId?: string;
   sourceInvoiceIds?: string[];
   prefill?: { entity?: string; email?: string; site?: string; postcode?: string };
@@ -352,7 +357,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 }) => {
   const { profile, user } = usePortal();
   const recordTable =
-    mode === "invoice" ? "invoices" : mode === "finalBill" ? "final_bills" : "quotes";
+    mode === "finalBill" ? "final_bills" : mode === "extraQuote" ? "invoices" : "quotes";
   const [clientInfo, setClientInfo] = useState({
     entity: prefill?.entity || "",
     email: prefill?.email || "",
@@ -391,18 +396,38 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [quoteReference, setQuoteReference] = useState(
-    mode === "invoice" || mode === "finalBill"
+    mode === "finalBill"
       ? `INV-${Math.floor(1000 + Math.random() * 9000)}`
-      : `JOB-${Math.floor(1000 + Math.random() * 9000)}`,
+      : jobRef || `OP-${Math.floor(1000 + Math.random() * 9000)}`,
   );
-  const [jobRefValue, setJobRefValue] = useState<string>(() =>
-    mode === "quote" ? `OP-${Math.floor(1000 + Math.random() * 9000)}-X` : jobRef || "",
+  const [jobRefValue, setJobRefValue] = useState<string>(
+    () => jobRef || (mode === "quote" ? `OP-${Math.floor(1000 + Math.random() * 9000)}-X` : ""),
   );
-  const effectiveJobRef = mode === "quote" ? jobRefValue : jobRef || "";
+  const effectiveJobRef = jobRef || (mode === "quote" ? jobRefValue : "");
   const [docSequence, setDocSequence] = useState<number>(1);
   const [currentQuoteId, setCurrentQuoteId] = useState<string>(
     () => quoteToLoadId || crypto.randomUUID(),
   );
+
+  // Standalone quotes (Quotes Management, no job) get a random REF that doesn't
+  // collide with any reference already in use.
+  useEffect(() => {
+    if (mode !== "quote" || quoteToLoadId) return;
+    let cancelled = false;
+    const pickUniqueReference = async () => {
+      const { data } = await supabase.from("quotes").select("reference");
+      const used = new Set((data || []).map((row) => row.reference));
+      let candidate = "";
+      do {
+        candidate = `OP-${Math.floor(1000 + Math.random() * 9000)}`;
+      } while (used.has(candidate));
+      if (!cancelled) setQuoteReference(candidate);
+    };
+    pickUniqueReference();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, quoteToLoadId]);
 
   useEffect(() => {
     const computeSequence = async () => {
@@ -411,6 +436,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         return;
       }
       if (!jobId) return;
+      const kind: DocumentKind = mode === "finalBill" ? "invoice" : "quote";
       const table = mode === "finalBill" ? "final_bills" : "invoices";
       if (quoteToLoadId) {
         const { data: selfRow } = await supabase
@@ -431,7 +457,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           .from(table)
           .select("*", { count: "exact", head: true })
           .eq("job_id", jobId);
-        setDocSequence((count || 0) + 1);
+        const sequence = (count || 0) + 1;
+        setDocSequence(sequence);
+        setQuoteReference(computeDocSequenceLabel(kind, sequence));
       }
     };
     computeSequence();
@@ -439,10 +467,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
   const loadSavedQuotes = async () => {
     try {
-      if (mode === "invoice" || mode === "finalBill") {
+      if (mode === "finalBill" || mode === "extraQuote") {
         if (!jobId) return;
         const { data, error } = await supabase
-          .from(recordTable as "invoices")
+          .from(recordTable as "final_bills")
           .select("*")
           .eq("job_id", jobId)
           .eq("status", "draft")
@@ -567,22 +595,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     const quoteId = currentQuoteId;
 
     try {
-      if (mode === "invoice") {
-        if (!jobId) throw new Error("Missing job for invoice save");
-        const newInvoice = {
-          id: quoteId,
-          job_id: jobId,
-          reference: quoteReference,
-          date: new Date().toLocaleDateString("en-GB"),
-          client_info: clientInfo,
-          items,
-          vat_rate: 0,
-          totals,
-          status: "draft",
-        };
-        const { error } = await supabase.from("invoices").upsert(newInvoice as never);
-        if (error) throw error;
-      } else if (mode === "finalBill") {
+      if (mode === "finalBill") {
         if (!jobId) throw new Error("Missing job for invoice save");
         const newFinalBill = {
           id: quoteId,
@@ -635,7 +648,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     setQuoteReference(quote.reference);
     setCurrentQuoteId(quote.id);
     setIsAlreadySent(!!quote.isSent);
-    if (mode === "quote" && quote.job_ref) setJobRefValue(quote.job_ref);
+    if (mode !== "finalBill" && quote.job_ref) setJobRefValue(quote.job_ref);
     setShowSavedQuotes(false);
   };
 
@@ -741,7 +754,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       });
       const { blob, filename } = await generateQuotePdfBlob(
         {
-          reference: quoteReference,
+          reference: computeDocSequenceLabel(downloadKind, docSequence),
+          jobRef: effectiveJobRef,
           clientInfo,
           items,
           totals,
@@ -809,15 +823,17 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         kind: docKind,
         sequence: docSequence,
       });
+      const docRef = computeDocSequenceLabel(docKind, docSequence);
       const { blob } =
-        mode === "finalBill" || mode === "invoice"
+        mode === "finalBill"
           ? await generateBillPdf(
-              { reference: quoteReference, clientInfo, items, totals },
+              { reference: docRef, jobRef: effectiveJobRef, clientInfo, items, totals },
               { documentTitle: "INVOICE", label: docLabel },
             )
           : await generateQuotePdfBlob(
               {
-                reference: quoteReference,
+                reference: docRef,
+                jobRef: effectiveJobRef,
                 clientInfo,
                 items,
                 totals,
@@ -932,7 +948,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             p_target_type: "jobs",
             p_target_id: jobId,
             p_details: {
-              reference: quoteReference,
+              reference: docRef,
               netTotal: totals.netTotal,
               grossTotal: totals.grossTotal,
             },
@@ -986,7 +1002,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       // Update this quote/invoice in database to mark it as sent
       const quoteId = currentQuoteId;
       const updatedQuote =
-        mode === "invoice"
+        mode === "extraQuote"
           ? {
               id: quoteId,
               job_id: jobId,
@@ -997,7 +1013,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               vat_rate: 0,
               totals,
               status: "sent",
-              tenant_id: profile?.tenant_id,
             }
           : {
               id: quoteId,
@@ -1013,7 +1028,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             };
 
       const { error: upsertError } = await supabase
-        .from(mode === "invoice" ? "invoices" : "quotes")
+        .from(recordTable as "quotes")
         .upsert(updatedQuote as never);
 
       if (upsertError) {
@@ -1029,7 +1044,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       // so it's visible under Media too.
       if (jobId) {
         try {
-          const attachLabel = mode === "invoice" ? "Invoice" : "Quote";
+          const attachLabel = "Quote";
           const filePath = `jobs/${jobId}/${Date.now()}-${documentPdfFilename(docLabel)}`;
           const { error: uploadError } = await supabase.storage
             .from("job-attachments")
@@ -1053,7 +1068,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           console.error("Failed to attach PDF to job", attachErr);
         }
 
-        if (mode === "invoice") {
+        if (mode === "extraQuote") {
           try {
             await supabase.rpc("log_anonymous_audit", {
               p_user_email: user?.email || "admin@opusform.co.uk",
@@ -1061,7 +1076,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               p_target_type: "jobs",
               p_target_id: jobId,
               p_details: {
-                reference: quoteReference,
+                reference: docRef,
                 netTotal: totals.netTotal,
                 grossTotal: totals.grossTotal,
               },
@@ -1124,7 +1139,13 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
   const pdfDocument = (scaleValue: number, isPrintTarget = false) => (
     <QuotePdfDocument
-      quote={{ reference: quoteReference, clientInfo, items, totals }}
+      quote={{
+        reference: computeDocSequenceLabel(mode === "finalBill" ? "invoice" : "quote", docSequence),
+        jobRef: effectiveJobRef,
+        clientInfo,
+        items,
+        totals,
+      }}
       terms={terms}
       documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
       scaleValue={scaleValue}

@@ -97,6 +97,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [billingRefreshKey, setBillingRefreshKey] = useState(0);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
+  const [newQuoteNonce, setNewQuoteNonce] = useState(0);
   const [editingFinalBillId, setEditingFinalBillId] = useState<string | "new" | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -806,18 +807,19 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
   return (
     <div className="space-y-6 font-sans text-foreground p-4 md:p-6 max-w-7xl mx-auto bg-background min-h-screen">
-      {/* Header: back button, title, and job ref all in one compact row */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1 text-muted-foreground hover:text-foreground font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer mb-2"
-          >
-            <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-            <span>{backLabel}</span>
-          </button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-extrabold text-foreground tracking-tight">
+      <button
+        onClick={onBack}
+        className="group flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer ml-1"
+      >
+        <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+        <span>{backLabel}</span>
+      </button>
+
+      {/* Header: title and job ref */}
+      <div className="bg-card border border-border rounded-xl p-6 md:p-8 flex items-stretch justify-between gap-8">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-3xl font-extrabold text-foreground tracking-tight truncate">
               {job.siteName}
             </h1>
             <button
@@ -835,14 +837,20 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               <PencilLine className="w-4 h-4" />
             </button>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mt-2">
             {job.mainContractor} · <span className="font-mono">{job.postcode}</span>
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="text-xs font-semibold bg-secondary border border-border text-muted-foreground px-3 py-1 rounded-md font-mono">
+
+        <div className="w-px bg-border shrink-0" />
+
+        <div className="flex flex-col items-end justify-center gap-1.5 shrink-0">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+            Job Reference
+          </span>
+          <span className="text-xl font-bold font-mono text-foreground">
             {job.jobRef.replace("-X", "")}
-          </div>
+          </span>
         </div>
       </div>
 
@@ -1374,9 +1382,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             />
           ) : editingInvoiceId !== null ? (
             <QuoteInvoiceBuilder
+              key={editingInvoiceId === "new" ? `new-${newQuoteNonce}` : editingInvoiceId}
               onLogout={() => {}}
               onBack={() => setEditingInvoiceId(null)}
-              mode="invoice"
+              mode="extraQuote"
               jobId={job.id}
               jobRef={job.jobRef}
               prefill={{ entity: job.mainContractor, site: job.siteName, postcode: job.postcode }}
@@ -1396,7 +1405,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
                     )
                   }
-                  onCreateNew={() => setEditingInvoiceId("new")}
+                  onCreateNew={() => {
+                    setNewQuoteNonce((n) => n + 1);
+                    setEditingInvoiceId("new");
+                  }}
                   onCreateInvoice={() => setEditingFinalBillId("new")}
                   embedded
                 />

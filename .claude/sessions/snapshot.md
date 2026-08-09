@@ -1,4 +1,4 @@
-# Session Snapshot — 2026-08-09 10:47
+# Session Snapshot — 2026-08-09 16:02
 
 ## Files Changed
 - .claude/sessions/snapshot.md
@@ -7,17 +7,17 @@
 - src/opus/components/JobDetails.tsx
 - src/opus/components/PipelineRegistry.tsx
 - src/opus/components/QuoteInvoiceBuilder.tsx
-- src/opus/components/RosterView.tsx
 - src/opus/components/billing/FinalBillBuilder.tsx
-- src/opus/components/billing/InvoiceBuilder.tsx
+- src/opus/components/billing/FinalBillList.tsx
 - src/opus/components/billing/InvoiceList.tsx
+- src/opus/lib/documentNaming.ts
 
 ## Recent Commits
+- 33ceca6 feat(billing): sequential Quote-##/Invoice-##_JobRef document naming
+- 1a57307 style(map): shrink supplier detail card, drop orange accent bar
+- 9b62961 feat(billing): redesign job-ledger billing tab, mark-paid flow, PDF downloads
+- a9d496f feat(billing): job-scoped invoice send/PDF fixes, staff sort order, OpusForm PDF naming
 - 3dbf468 refactor(billing): reuse Quote builder for invoice creation
-- 6cffb36 refactor(billing): invoice creation as full page instead of modal
-- 2283bd3 style(job-details): put Billing tab before History
-- bea41c4 feat(billing): add job-scoped invoice + final bill UI
-- 6a8f1e4 fix(send-final-bill): inline shared cors/email-theme for single-file deploy
 
 ## Token Estimate
 ~? tokens in auto-loaded files

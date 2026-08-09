@@ -13,6 +13,7 @@ export interface QuoteItem {
 
 export interface Quote {
   reference: string;
+  jobRef?: string;
   clientInfo?: {
     entity?: string;
     email?: string;
@@ -70,7 +71,7 @@ export const QuotePdfDocument: React.FC<{
   isPrintTarget?: boolean;
   documentTitle?: string;
 }> = ({ quote, terms, scaleValue = 1, isPrintTarget = false, documentTitle = "QUOTE" }) => {
-  const { reference, clientInfo, items, totals } = quote;
+  const { reference, jobRef, clientInfo, items, totals } = quote;
   return (
     <div
       className={`bg-white shadow-2xl text-slate-900 flex flex-col origin-top shrink-0 ${
@@ -98,11 +99,22 @@ export const QuotePdfDocument: React.FC<{
             {documentTitle}
           </div>
           <div className="flex items-center justify-end gap-5">
+            {jobRef && (
+              <>
+                <div className="text-right">
+                  <div className="text-[9.5px] text-stone-500 uppercase tracking-[0.12em]">
+                    Job Ref
+                  </div>
+                  <div className="text-white text-[12.5px] font-black mt-0.5">{jobRef}</div>
+                </div>
+                <div className="w-px h-7 bg-[#2b2c32]" />
+              </>
+            )}
             <div className="text-right">
               <div className="text-[9.5px] text-stone-500 uppercase tracking-[0.12em]">
                 Reference
               </div>
-              <div className="text-white text-[12.5px] font-black mt-0.5">#{reference}</div>
+              <div className="text-white text-[12.5px] font-black mt-0.5">{reference}</div>
             </div>
             <div className="w-px h-7 bg-[#2b2c32]" />
             <div className="text-right">
@@ -646,7 +658,7 @@ export const QuotePdfVectorDocument: React.FC<{
   terms: string[];
   documentTitle?: string;
 }> = ({ quote, terms, documentTitle = "QUOTE" }) => {
-  const { reference, clientInfo, items, totals } = quote;
+  const { reference, jobRef, clientInfo, items, totals } = quote;
   const logoUrl =
     typeof window !== "undefined" ? `${window.location.origin}/opus-form-primary-dark.png` : "";
 
@@ -689,9 +701,18 @@ export const QuotePdfVectorDocument: React.FC<{
           <View style={pdfStyles.headerRight}>
             <Text style={pdfStyles.titleQuote}>{documentTitle}</Text>
             <View style={pdfStyles.headerRow}>
+              {jobRef && (
+                <>
+                  <View style={pdfStyles.headerItem}>
+                    <Text style={pdfStyles.headerLabel}>Job Ref</Text>
+                    <Text style={pdfStyles.headerVal}>{jobRef}</Text>
+                  </View>
+                  <View style={pdfStyles.headerDivider} />
+                </>
+              )}
               <View style={pdfStyles.headerItem}>
                 <Text style={pdfStyles.headerLabel}>Reference</Text>
-                <Text style={pdfStyles.headerVal}>#{reference}</Text>
+                <Text style={pdfStyles.headerVal}>{reference}</Text>
               </View>
               <View style={pdfStyles.headerDivider} />
               <View style={pdfStyles.headerItem}>

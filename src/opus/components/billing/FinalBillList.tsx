@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "../../../integrations/supabase/client";
 import { BillItem, BillClientInfo, computeTotals } from "../../lib/billing";
 import { generateBillPdf } from "../../lib/quotePdf";
-import { computeDocumentLabel } from "../../lib/documentNaming";
+import { computeDocumentLabel, computeDocSequenceLabel } from "../../lib/documentNaming";
 
 export interface FinalBillRow {
   id: string;
@@ -42,6 +42,7 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
   const [loading, setLoading] = useState(true);
   const [previewBill, setPreviewBill] = useState<FinalBillRow | null>(null);
   const [previewLabel, setPreviewLabel] = useState<string>("");
+  const [previewShortRef, setPreviewShortRef] = useState<string>("");
   const [markingPaid, setMarkingPaid] = useState(false);
   const [billToMarkPaid, setBillToMarkPaid] = useState<FinalBillRow | null>(null);
 
@@ -74,12 +75,12 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
 
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  const downloadPdf = async (bill: FinalBillRow, label: string) => {
+  const downloadPdf = async (bill: FinalBillRow, label: string, shortRef: string) => {
     setDownloadingPdf(true);
     try {
       const totals = computeTotals(bill.items || [], bill.vat_rate);
       const { blob, filename } = await generateBillPdf(
-        { reference: bill.reference, clientInfo: bill.client_info, items: bill.items, totals },
+        { reference: shortRef, jobRef, clientInfo: bill.client_info, items: bill.items, totals },
         { documentTitle: "INVOICE", label },
       );
       const url = URL.createObjectURL(blob);
@@ -136,35 +137,36 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
           {bills.map((bill, index) => {
             const totals = computeTotals(bill.items || [], bill.vat_rate);
             const badgeColor = STATUS_BADGE[bill.status] || STATUS_BADGE.draft;
-            const label = computeDocumentLabel({
-              jobRef,
-              kind: "invoice",
-              sequence: bills.length - index,
-            });
+            const sequence = bills.length - index;
+            const label = computeDocumentLabel({ jobRef, kind: "invoice", sequence });
+            const shortRef = computeDocSequenceLabel("invoice", sequence);
             return (
               <div
                 key={bill.id}
-                className="py-2.5 grid grid-cols-[24px_24px_88px_auto_1fr_100px_100px] items-center gap-x-2.5 cursor-pointer hover:bg-muted/30 transition-colors -mx-4 px-4"
+                className="flex flex-wrap items-center gap-y-1.5 gap-x-3 py-2.5 cursor-pointer hover:bg-muted/30 transition-colors -mx-4 px-4"
                 onClick={() => {
                   setPreviewBill(bill);
                   setPreviewLabel(label);
+                  setPreviewShortRef(shortRef);
                 }}
               >
-                <span aria-hidden className="w-6 h-6" />
-                <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
-                  <FileText className="w-3.5 h-3.5 text-primary" />
+                <div className="flex items-center gap-2.5 min-w-0 flex-1 basis-40">
+                  <div className="w-6 h-6 shrink-0 rounded-full bg-primary/10 flex items-center justify-center">
+                    <FileText className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <span
+                    className={`shrink-0 w-fit px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize border ${badgeColor}`}
+                  >
+                    {bill.status}
+                  </span>
+                  <span className="text-sm font-semibold truncate">{label}</span>
                 </div>
-                <span
-                  className={`w-fit px-2 py-0.5 rounded-full text-[11px] font-semibold capitalize border ${badgeColor}`}
-                >
-                  {bill.status}
-                </span>
-                <span className="text-sm font-semibold truncate">{label}</span>
-                <span aria-hidden />
-                <span className="text-xs text-muted-foreground">{bill.date}</span>
-                <span className="text-sm font-bold text-right">
-                  £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                </span>
+                <div className="flex items-center gap-4 shrink-0 ml-auto">
+                  <span className="text-xs text-muted-foreground">{bill.date}</span>
+                  <span className="text-sm font-bold text-right w-20">
+                    £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
               </div>
             );
           })}
@@ -196,7 +198,7 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
                     variant="outline"
                     className="gap-1.5 shrink-0"
                     disabled={downloadingPdf}
-                    onClick={() => downloadPdf(previewBill, previewLabel)}
+                    onClick={() => downloadPdf(previewBill, previewLabel, previewShortRef)}
                   >
                     <Download className="w-3.5 h-3.5" />
                     PDF

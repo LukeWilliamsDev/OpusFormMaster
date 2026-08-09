@@ -285,7 +285,7 @@ serve(async (req) => {
       escapeHtml(clientName || "Valued Client") +
       ",</p>";
     bodyHtml +=
-      '      <p class="text-secondary" style="margin: 0 0 24px;">Please find attached the final bill <strong class="text-title">#' +
+      '      <p class="text-secondary" style="margin: 0 0 24px;">Please find attached the invoice <strong class="text-title">#' +
       escapeHtml(billRef) +
       "</strong> for the concrete works at " +
       escapeHtml(siteName || "Site") +
@@ -315,10 +315,10 @@ serve(async (req) => {
     bodyHtml +=
       '      <p class="text-secondary" style="margin: 0 0 24px;">The attached PDF includes the full breakdown of invoiced works, our standard terms and conditions, and banking details for payment.</p>';
     bodyHtml +=
-      '      <p class="text-secondary" style="margin: 0 0 24px;">Should you have any questions regarding this final bill, please do not hesitate to get in touch.</p>';
+      '      <p class="text-secondary" style="margin: 0 0 24px;">Should you have any questions regarding this invoice, please do not hesitate to get in touch.</p>';
 
     const emailHtml = emailShell({
-      eyebrow: "Final Bill",
+      eyebrow: "Invoice",
       bodyHtml,
       footerName: "Opus Form Billing",
       footerEmail: "billing@opusform.co.uk",
@@ -337,7 +337,7 @@ serve(async (req) => {
         from: "Opus Form Billing <" + sender + ">",
         to: [OVERRIDE_TO_EMAIL],
         subject:
-          "Final Bill #" +
+          "Invoice #" +
           billRef +
           " | " +
           (siteName || "Project") +
@@ -348,7 +348,7 @@ serve(async (req) => {
         attachments: [
           {
             content: pdfBase64,
-            filename: "FinalBill_" + billRef + ".pdf",
+            filename: "Invoice_" + billRef + ".pdf",
           },
         ],
       }),

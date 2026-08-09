@@ -1,6 +1,6 @@
 ﻿import React from "react";
 import { CardGrid } from "../components/CardGrid";
-import { Loader, Search, PencilLine, Layers } from "lucide-react";
+import { Loader, Search, PencilLine, Layers, FileCheck2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { Database } from "@/integrations/supabase/types";
 import { computeDiff, DiffEntry } from "../utils/auditDiff";
@@ -18,6 +18,7 @@ interface JobAuditDetails {
   attachment_type?: string;
   file_name?: string;
   note_body?: string;
+  reference?: string;
 }
 
 // Only these job columns count as a real "job detail change" worth surfacing
@@ -155,6 +156,9 @@ export function HistoryTab({
                           ? "After photo"
                           : "Before photo";
                     summaryText = `${attachmentLabel} uploaded: ${event.details?.file_name || ""}`;
+                  } else if (event.action === "INVOICE_SENT") {
+                    badgeColor = "bg-success/10 border-success/20 text-success";
+                    summaryText = `Invoice #${event.details?.reference || ""} sent to client`;
                   } else if (event.action === "GENERATE_UPLOAD_LINK") {
                     badgeColor = "bg-secondary border-border text-muted-foreground";
                     summaryText = "External upload link generated";
@@ -183,7 +187,9 @@ export function HistoryTab({
                       className="py-2.5 flex flex-wrap sm:flex-nowrap items-center gap-x-2.5 gap-y-1.5"
                     >
                       <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        {isPourEvent ? (
+                        {event.action === "INVOICE_SENT" ? (
+                          <FileCheck2 className="w-3.5 h-3.5 text-primary" />
+                        ) : isPourEvent ? (
                           <Layers className="w-3.5 h-3.5 text-primary" />
                         ) : (
                           <PencilLine className="w-3.5 h-3.5 text-primary" />

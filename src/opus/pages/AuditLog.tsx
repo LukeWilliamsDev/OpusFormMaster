@@ -122,6 +122,11 @@ export const AuditLogPage: React.FC = () => {
 
   const handleRestore = async (log: AuditLog) => {
     setRestoring(true);
+    if (!profile?.tenant_id) {
+      toast.error("Your profile is still loading. Please try again in a moment.");
+      setRestoring(false);
+      return;
+    }
     try {
       const table = log.target_type;
       const targetId = log.target_id;

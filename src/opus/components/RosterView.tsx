@@ -85,6 +85,14 @@ interface RosterEventDetails {
   uploadUrl?: string;
 }
 
+const STAFF_PRIORITY_ORDER = [
+  "Toby Green",
+  "Roya Nasimi",
+  "Luke Williams",
+  "Anais Baker",
+  "Liam Baker",
+];
+
 interface RosterViewProps {
   workers: Worker[];
   setWorkers: React.Dispatch<React.SetStateAction<Worker[]>>;
@@ -663,6 +671,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
       setFormError("Please enter worker name");
       return;
     }
+    if (!profile?.tenant_id) {
+      setFormError("Your profile is still loading. Please try again in a moment.");
+      return;
+    }
 
     const newId = `worker-${Date.now()}`;
     const trimmedEmail = newWorkerEmail.trim();
@@ -779,7 +791,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
       const matchesMode = rosterMode === "active" ? !w.isArchived : w.isArchived;
       return matchesSearch && matchesMode;
     })
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => {
+      const priorityIndex = (name: string) => {
+        const idx = STAFF_PRIORITY_ORDER.indexOf(name);
+        return idx === -1 ? STAFF_PRIORITY_ORDER.length : idx;
+      };
+      const priorityDiff = priorityIndex(a.name) - priorityIndex(b.name);
+      if (priorityDiff !== 0) return priorityDiff;
+      return a.name.localeCompare(b.name);
+    });
 
   const selectedWorkerDetails = workers.find((w) => w.id === selectedWorkerDetailsId) || null;
   const anchorDate = (() => {

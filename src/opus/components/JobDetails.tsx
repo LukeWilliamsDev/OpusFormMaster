@@ -34,7 +34,6 @@ import { PersistentJobHeader } from "./PersistentJobHeader";
 import { handleError } from "../utils/errorHandler";
 import { InvoiceList } from "./billing/InvoiceList";
 import { QuoteInvoiceBuilder } from "./QuoteInvoiceBuilder";
-import { FinalBillBuilder } from "./billing/FinalBillBuilder";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 100 * 1024 * 1024;
@@ -97,7 +96,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [billingRefreshKey, setBillingRefreshKey] = useState(0);
   const [selectedInvoiceIds, setSelectedInvoiceIds] = useState<string[]>([]);
   const [editingInvoiceId, setEditingInvoiceId] = useState<string | null>(null);
-  const [finalBillOpen, setFinalBillOpen] = useState(false);
+  const [editingFinalBillId, setEditingFinalBillId] = useState<string | "new" | null>(null);
   const [generatingLink, setGeneratingLink] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [viewDocTarget, setViewDocTarget] = useState<Attachment | null>(null);
@@ -126,6 +125,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [editSiteName, setEditSiteName] = useState(job.siteName);
   const [editMainContractor, setEditMainContractor] = useState(job.mainContractor);
   const [editPostcode, setEditPostcode] = useState(job.postcode);
+  const [editEmail, setEditEmail] = useState(job.email || "");
   const [editContractMaxPours, setEditContractMaxPours] = useState(
     String(job.contractMaxPours || 0),
   );
@@ -228,6 +228,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     { label: "Site Name", before: job.siteName, after: editSiteName },
     { label: "Main Contractor", before: job.mainContractor, after: editMainContractor },
     { label: "Postcode", before: job.postcode, after: editPostcode },
+    { label: "Email", before: job.email || "", after: editEmail },
     {
       label: "Contract Max Pours",
       before: job.contractMaxPours,
@@ -241,6 +242,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       siteName: editSiteName,
       mainContractor: editMainContractor,
       postcode: editPostcode,
+      email: editEmail || undefined,
       contractMaxPours: Number(editContractMaxPours) || 0,
     });
     setContractMaxPours(Number(editContractMaxPours) || 0);
@@ -257,6 +259,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     setEditSiteName(job.siteName);
     setEditMainContractor(job.mainContractor);
     setEditPostcode(job.postcode);
+    setEditEmail(job.email || "");
     setEditContractMaxPours(String(job.contractMaxPours || 0));
 
     // Fetch initial details
@@ -822,6 +825,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 setEditSiteName(job.siteName);
                 setEditMainContractor(job.mainContractor);
                 setEditPostcode(job.postcode);
+                setEditEmail(job.email || "");
                 setEditContractMaxPours(String(job.contractMaxPours || 0));
                 setIsEditingJob(true);
               }}
@@ -874,6 +878,16 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 Postcode
               </label>
               <Input value={editPostcode} onChange={(e) => setEditPostcode(e.target.value)} />
+            </div>
+            <div>
+              <label className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
+                Email
+              </label>
+              <Input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+              />
             </div>
             <div>
               <label className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -1342,7 +1356,21 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         </TabsContent>
 
         <TabsContent value="billing">
-          {editingInvoiceId !== null ? (
+          {editingFinalBillId !== null ? (
+            <QuoteInvoiceBuilder
+              onLogout={() => {}}
+              onBack={() => {
+                setEditingFinalBillId(null);
+                setSelectedInvoiceIds([]);
+              }}
+              mode="finalBill"
+              jobId={job.id}
+              sourceInvoiceIds={selectedInvoiceIds}
+              prefill={{ entity: job.mainContractor, site: job.siteName, postcode: job.postcode }}
+              quoteToLoadId={editingFinalBillId === "new" ? null : editingFinalBillId}
+              onQuoteLoaded={() => setBillingRefreshKey((k) => k + 1)}
+            />
+          ) : editingInvoiceId !== null ? (
             <QuoteInvoiceBuilder
               onLogout={() => {}}
               onBack={() => setEditingInvoiceId(null)}
@@ -1353,7 +1381,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               onQuoteLoaded={() => setBillingRefreshKey((k) => k + 1)}
             />
           ) : (
-            <>
+            <div className="space-y-3">
               <InvoiceList
                 jobId={job.id}
                 refreshKey={billingRefreshKey}
@@ -1363,27 +1391,17 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                     prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
                   )
                 }
-                onSelectInvoice={(id) => setEditingInvoiceId(id)}
                 onCreateNew={() => setEditingInvoiceId("new")}
               />
-              <Button
-                className="mt-3"
-                disabled={selectedInvoiceIds.length === 0}
-                onClick={() => setFinalBillOpen(true)}
-              >
-                Generate Final Bill ({selectedInvoiceIds.length} selected)
-              </Button>
-              <FinalBillBuilder
-                jobId={job.id}
-                sourceInvoiceIds={selectedInvoiceIds}
-                open={finalBillOpen}
-                onClose={() => setFinalBillOpen(false)}
-                onSaved={() => {
-                  setBillingRefreshKey((k) => k + 1);
-                  setSelectedInvoiceIds([]);
-                }}
-              />
-            </>
+              <div className="flex justify-end">
+                <Button
+                  disabled={selectedInvoiceIds.length === 0}
+                  onClick={() => setEditingFinalBillId("new")}
+                >
+                  Create Invoice ({selectedInvoiceIds.length} selected)
+                </Button>
+              </div>
+            </div>
           )}
         </TabsContent>
       </Tabs>

@@ -89,7 +89,7 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
         (invoices[0]?.client_info as unknown as BillClientInfo) || emptyClientInfo();
 
       setFinalBillId(undefined);
-      setReference(generateBillReference("BILL"));
+      setReference(generateBillReference("INV"));
       setClientInfo(firstClientInfo);
       setItems(mergedItems);
       setVatRate(20);
@@ -123,10 +123,10 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
     setSaving(true);
     try {
       await saveDraft();
-      toast.success("Final bill draft saved");
+      toast.success("Invoice draft saved");
       onSaved();
     } catch (err) {
-      const { message } = handleError(err, { message: "Failed to save final bill" });
+      const { message } = handleError(err, { message: "Failed to save invoice" });
       toast.error("SAVE FAILED", { description: message });
     } finally {
       setSaving(false);
@@ -135,7 +135,7 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
 
   const handleSend = async () => {
     if (!clientInfo.email.trim()) {
-      toast.error("Client email is required to send the final bill.");
+      toast.error("Client email is required to send the invoice.");
       return;
     }
     if (items.length === 0) {
@@ -143,7 +143,7 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
       return;
     }
     setSending(true);
-    const sendingToastId = toast.loading("SENDING FINAL BILL", {
+    const sendingToastId = toast.loading("SENDING INVOICE", {
       description: "Generating PDF and sending...",
     });
     try {
@@ -151,7 +151,7 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
 
       const { blob } = await generateBillPdf(
         { reference, clientInfo, items, totals },
-        { documentTitle: "FINAL BILL", filenamePrefix: "FinalBill" },
+        { documentTitle: "INVOICE", filenamePrefix: "Invoice" },
       );
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
@@ -184,14 +184,14 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
         throw new Error(errMsg);
       }
 
-      toast.success("FINAL BILL SENT", {
+      toast.success("INVOICE SENT", {
         id: sendingToastId,
         description: "Email sent successfully.",
       });
       onSaved();
       onClose();
     } catch (err) {
-      const { message } = handleError(err, { message: "Failed to send final bill" });
+      const { message } = handleError(err, { message: "Failed to send invoice" });
       toast.error("SEND FAILED", { id: sendingToastId, description: message });
     } finally {
       setSending(false);
@@ -202,7 +202,7 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Final Bill #{reference}</DialogTitle>
+          <DialogTitle>Invoice #{reference}</DialogTitle>
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-3">
@@ -258,7 +258,7 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
             {saving ? "Saving..." : "Save Draft"}
           </Button>
           <Button onClick={handleSend} disabled={saving || sending}>
-            {sending ? "Sending..." : "Send Final Bill"}
+            {sending ? "Sending..." : "Send Invoice"}
           </Button>
         </DialogFooter>
       </DialogContent>

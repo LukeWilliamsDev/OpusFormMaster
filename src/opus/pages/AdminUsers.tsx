@@ -108,6 +108,10 @@ const CreateUserModal: React.FC<{ onClose: () => void; onCreated: () => void }> 
       setError("Email is required.");
       return;
     }
+    if (!profile?.tenant_id) {
+      setError("Your profile is still loading. Please try again in a moment.");
+      return;
+    }
     setSubmitting(true);
     const {
       data: { session },

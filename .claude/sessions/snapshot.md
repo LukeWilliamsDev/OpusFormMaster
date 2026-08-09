@@ -1,23 +1,23 @@
-# Session Snapshot — 2026-08-08 19:36
+# Session Snapshot — 2026-08-09 10:47
 
 ## Files Changed
 - .claude/sessions/snapshot.md
-- .husky/pre-commit
-- package-lock.json
-- package.json
 - src/integrations/supabase/types.ts
-- src/opus/App.tsx
-- src/opus/context/PortalContext.tsx
-- src/opus/layouts/PortalLayout.tsx
-- src/opus/pages/AdminUsers.tsx
-- src/opus/pages/AuditLog.tsx
+- src/opus/components/HistoryTab.tsx
+- src/opus/components/JobDetails.tsx
+- src/opus/components/PipelineRegistry.tsx
+- src/opus/components/QuoteInvoiceBuilder.tsx
+- src/opus/components/RosterView.tsx
+- src/opus/components/billing/FinalBillBuilder.tsx
+- src/opus/components/billing/InvoiceBuilder.tsx
+- src/opus/components/billing/InvoiceList.tsx
 
 ## Recent Commits
-- 93f6bee fix(lint): format AuditLog.tsx ternary, add husky pre-commit lint-staged
-- 8c6aa7f Merge branch 'claude/epic-wozniak-5ad412' into dev
-- c9dddbb feat(audit): simplify audit trail to one-line entries, log note creation
-- ff598c4 feat(audit): log ticket expiry and quote-to-job conversion events
-- b7b570d fix(auth): stop infinite signOut loop on password reset page
+- 3dbf468 refactor(billing): reuse Quote builder for invoice creation
+- 6cffb36 refactor(billing): invoice creation as full page instead of modal
+- 2283bd3 style(job-details): put Billing tab before History
+- bea41c4 feat(billing): add job-scoped invoice + final bill UI
+- 6a8f1e4 fix(send-final-bill): inline shared cors/email-theme for single-file deploy
 
 ## Token Estimate
 ~? tokens in auto-loaded files

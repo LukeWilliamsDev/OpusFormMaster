@@ -337,6 +337,10 @@ export const DashboardPage: React.FC = () => {
       toast.warning("No email address on file for this worker");
       return;
     }
+    if (!profile?.tenant_id) {
+      toast.error("Your profile is still loading. Please try again in a moment.");
+      return;
+    }
 
     setConfirmState((prev) => ({ ...prev, confirmLoading: true }));
     const sendingToastId = toast.loading("SENDING REMINDER", {

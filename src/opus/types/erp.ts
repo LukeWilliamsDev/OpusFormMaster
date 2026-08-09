@@ -6,6 +6,7 @@ export interface Job {
   siteName: string;
   mainContractor: string;
   postcode: string;
+  email?: string;
   currentPours: number;
   contractMaxPours: number;
   status: "active" | "completed" | "on-hold" | "pending" | "in-progress";

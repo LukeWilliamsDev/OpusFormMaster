@@ -143,6 +143,7 @@ export const jobToRow = (j: Job, tenantId?: string) =>
     site_name: j.siteName,
     main_contractor: j.mainContractor ?? null,
     postcode: j.postcode ?? null,
+    email: j.email ?? null,
     current_pours: j.currentPours ?? 0,
     contract_max_pours: j.contractMaxPours ?? 0,
     status: j.status,
@@ -157,6 +158,7 @@ const rowToJob = (r: JobRow): Job => ({
   siteName: r.site_name,
   mainContractor: r.main_contractor ?? "",
   postcode: r.postcode ?? "",
+  email: r.email ?? undefined,
   currentPours: r.current_pours ?? 0,
   contractMaxPours: r.contract_max_pours ?? 0,
   status: r.status as Job["status"],
@@ -640,7 +642,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [user, profile?.tenant_id]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id) return;
     const rows = workers.map((w) => workerToRow(w, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedWorkersRef.current) return;
@@ -662,7 +664,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [workers, user, profile?.tenant_id]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id) return;
     const rows = jobs.map((j) => jobToRow(j, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedJobsRef.current) return;
@@ -684,7 +686,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [jobs, user, profile?.tenant_id]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id) return;
     const rows = shifts.map((s) => shiftToRow(s, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedShiftsRef.current) return;
@@ -706,7 +708,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [shifts, user, profile?.tenant_id]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id) return;
     const rows = calendarEvents.map((e) => calendarEventToRow(e, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedCalendarEventsRef.current) return;

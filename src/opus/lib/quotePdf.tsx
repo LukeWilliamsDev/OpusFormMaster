@@ -67,7 +67,8 @@ export const QuotePdfDocument: React.FC<{
   terms: string[];
   scaleValue?: number;
   isPrintTarget?: boolean;
-}> = ({ quote, terms, scaleValue = 1, isPrintTarget = false }) => {
+  documentTitle?: string;
+}> = ({ quote, terms, scaleValue = 1, isPrintTarget = false, documentTitle = "QUOTE" }) => {
   const { reference, clientInfo, items, totals } = quote;
   return (
     <div
@@ -93,7 +94,7 @@ export const QuotePdfDocument: React.FC<{
         </div>
         <div className="text-right">
           <div className="text-white text-[22px] sm:text-[26px] font-black tracking-[0.08em] leading-none mb-4">
-            QUOTE
+            {documentTitle}
           </div>
           <div className="flex items-center justify-end gap-5">
             <div className="text-right">
@@ -856,7 +857,7 @@ export async function generateQuotePdfBlob(quote: Quote) {
   const terms = buildDefaultTerms(quote.clientInfo?.entity);
   const pdfInstance = pdf(<QuotePdfVectorDocument quote={quote} terms={terms} />);
   const blob = await pdfInstance.toBlob();
-  const filename = `Quote_${quote.reference}.pdf`;
+  const filename = `OpusForm_Quote_${quote.reference}.pdf`;
   return { blob, filename };
 }
 
@@ -869,6 +870,6 @@ export async function generateBillPdf(
     <QuotePdfVectorDocument quote={bill} terms={terms} documentTitle={opts.documentTitle} />,
   );
   const blob = await pdfInstance.toBlob();
-  const filename = `${opts.filenamePrefix}_${bill.reference}.pdf`;
+  const filename = `OpusForm_${opts.filenamePrefix}_${bill.reference}.pdf`;
   return { blob, filename };
 }

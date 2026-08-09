@@ -148,6 +148,10 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
   const handleConvertToJob = async () => {
     if (!convertingQuote) return;
+    if (!profile?.tenant_id) {
+      toast.error("Your profile is still loading. Please try again in a moment.");
+      return;
+    }
 
     const derivedPours = derivePoursFromQuote(convertingQuote.items || []);
 
@@ -195,6 +199,21 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
           console.error("Failed to insert derived pours", poursError);
           toast.error(`Job created, but scheduled pours failed to save: ${poursError.message}`);
         }
+      }
+
+      const { error: invoiceError } = await supabase.from("invoices").insert({
+        job_id: newJob.id,
+        reference: convertingQuote.reference,
+        date: new Date().toLocaleDateString("en-GB"),
+        client_info: convertingQuote.clientInfo,
+        items: convertingQuote.items,
+        vat_rate: convertingQuote.vatRate ?? 0,
+        totals: convertingQuote.totals,
+        status: "draft",
+      } as never);
+      if (invoiceError) {
+        console.error("Failed to create draft invoice from quote", invoiceError);
+        toast.error(`Job created, but draft invoice failed to save: ${invoiceError.message}`);
       }
 
       await supabase.rpc("log_anonymous_audit", {

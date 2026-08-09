@@ -7,7 +7,7 @@ import { isValidUKPostcode } from "../utils/geo";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { NoticeModal } from "@/components/ui/notice-modal";
-import { QuotePdfDocument, generateQuotePdfBlob } from "../lib/quotePdf";
+import { QuotePdfDocument, generateQuotePdfBlob, generateBillPdf } from "../lib/quotePdf";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Plus,
@@ -67,8 +67,9 @@ interface ValuationBuilderProps {
   onBack: () => void;
   quoteToLoadId?: string | null;
   onQuoteLoaded?: () => void;
-  mode?: "quote" | "invoice";
+  mode?: "quote" | "invoice" | "finalBill";
   jobId?: string;
+  sourceInvoiceIds?: string[];
   prefill?: { entity?: string; email?: string; site?: string; postcode?: string };
 }
 
@@ -179,7 +180,7 @@ const preparePdfClone = (quoteReference: string) => {
 
   const opt = {
     margin: 0,
-    filename: `Quote_${quoteReference}.pdf`,
+    filename: `OpusForm_Quote_${quoteReference}.pdf`,
     image: { type: "png" },
     html2canvas: {
       scale: 2,
@@ -342,10 +343,12 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   onQuoteLoaded,
   mode = "quote",
   jobId,
+  sourceInvoiceIds,
   prefill,
 }) => {
-  const { profile } = usePortal();
-  const recordTable = mode === "invoice" ? "invoices" : "quotes";
+  const { profile, user } = usePortal();
+  const recordTable =
+    mode === "invoice" ? "invoices" : mode === "finalBill" ? "final_bills" : "quotes";
   const [clientInfo, setClientInfo] = useState({
     entity: prefill?.entity || "",
     email: prefill?.email || "",
@@ -353,6 +356,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     postcode: prefill?.postcode || "",
   });
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [isAlreadySent, setIsAlreadySent] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [unitFocusedItemId, setUnitFocusedItemId] = useState<string | null>(null);
@@ -382,7 +386,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [quoteReference, setQuoteReference] = useState(
-    mode === "invoice"
+    mode === "invoice" || mode === "finalBill"
       ? `INV-${Math.floor(1000 + Math.random() * 9000)}`
       : `JOB-${Math.floor(1000 + Math.random() * 9000)}`,
   );
@@ -392,10 +396,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
   const loadSavedQuotes = async () => {
     try {
-      if (mode === "invoice") {
+      if (mode === "invoice" || mode === "finalBill") {
         if (!jobId) return;
         const { data, error } = await supabase
-          .from("invoices")
+          .from(recordTable as "invoices")
           .select("*")
           .eq("job_id", jobId)
           .eq("status", "draft")
@@ -535,7 +539,24 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         };
         const { error } = await supabase.from("invoices").upsert(newInvoice as never);
         if (error) throw error;
+      } else if (mode === "finalBill") {
+        if (!jobId) throw new Error("Missing job for invoice save");
+        const newFinalBill = {
+          id: quoteId,
+          job_id: jobId,
+          reference: quoteReference,
+          date: new Date().toLocaleDateString("en-GB"),
+          client_info: clientInfo,
+          items,
+          source_invoice_ids: sourceInvoiceIds || [],
+          vat_rate: 0,
+          totals,
+          status: "draft",
+        };
+        const { error } = await supabase.from("final_bills").upsert(newFinalBill as never);
+        if (error) throw error;
       } else {
+        if (!profile?.tenant_id) throw new Error("Profile still loading — try again in a moment.");
         const newQuote = {
           id: quoteId,
           reference: quoteReference,
@@ -569,6 +590,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     setItems(quote.items);
     setQuoteReference(quote.reference);
     setCurrentQuoteId(quote.id);
+    setIsAlreadySent(!!quote.isSent);
     setShowSavedQuotes(false);
   };
 
@@ -592,9 +614,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               items: data.items as unknown as MeasuredItem[],
               totals: data.totals as Quote["totals"],
               isSent:
-                mode === "invoice"
-                  ? (data as unknown as { status: string }).status === "sent"
-                  : (data as unknown as { is_sent: boolean }).is_sent,
+                mode === "quote"
+                  ? (data as unknown as { is_sent: boolean }).is_sent
+                  : (data as unknown as { status: string }).status === "sent",
             };
             loadQuote(quote);
             if (onQuoteLoaded) onQuoteLoaded();
@@ -608,6 +630,36 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     // on every parent render instead of only when quoteToLoadId changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [quoteToLoadId]);
+
+  // Final bill created fresh (no existing draft to load): merge line items
+  // and client info from the selected source invoices so the user starts
+  // from a populated preview instead of a blank builder.
+  useEffect(() => {
+    if (mode !== "finalBill" || quoteToLoadId || !sourceInvoiceIds?.length) return;
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("invoices")
+          .select("client_info, items")
+          .in("id", sourceInvoiceIds);
+        if (error) throw error;
+        if (!data || data.length === 0) return;
+
+        const mergedItems: MeasuredItem[] = data.flatMap((inv) =>
+          ((inv.items as unknown as MeasuredItem[]) || []).map((item) => ({
+            ...item,
+            id: crypto.randomUUID(),
+          })),
+        );
+        setItems(mergedItems);
+        const firstClientInfo = data[0]?.client_info as Quote["clientInfo"] | undefined;
+        if (firstClientInfo) setClientInfo(firstClientInfo);
+      } catch (e) {
+        console.error("Failed to merge source invoices into final bill", e);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, sourceInvoiceIds]);
 
   const confirmDeleteQuote = (e: React.MouseEvent, quote: Quote) => {
     e.stopPropagation();
@@ -658,6 +710,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   };
 
   const handleSend = async () => {
+    if (isAlreadySent) return;
+
     // Validation checks before sending
     const missingFields: string[] = [];
     if (!clientInfo.entity.trim()) missingFields.push("Client Name");
@@ -681,18 +735,31 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       return;
     }
 
+    if (!profile?.tenant_id) {
+      toast.error("NOT READY", {
+        description: "Your profile is still loading. Please wait a moment and try again.",
+      });
+      return;
+    }
+
     setIsSendingEmail(true);
     const sendingToastId = toast.loading("SENDING EMAIL", {
       description: "Generating PDF and sending to client...",
     });
 
     try {
-      const { blob } = await generateQuotePdfBlob({
-        reference: quoteReference,
-        clientInfo,
-        items,
-        totals,
-      });
+      const { blob } =
+        mode === "finalBill" || mode === "invoice"
+          ? await generateBillPdf(
+              { reference: quoteReference, clientInfo, items, totals },
+              { documentTitle: "INVOICE", filenamePrefix: "Invoice" },
+            )
+          : await generateQuotePdfBlob({
+              reference: quoteReference,
+              clientInfo,
+              items,
+              totals,
+            });
 
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
@@ -704,6 +771,120 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       });
       reader.readAsDataURL(blob);
       const base64 = await base64Promise;
+
+      if (mode === "finalBill") {
+        if (!jobId) throw new Error("Missing job for invoice send");
+
+        const { error: fnError } = await supabase.functions.invoke("send-final-bill", {
+          body: {
+            finalBillId: currentQuoteId,
+            clientName: clientInfo.entity,
+            siteName: clientInfo.site,
+            postcode: clientInfo.postcode,
+            billRef: quoteReference,
+            pdfBase64: base64,
+            netTotal: totals.netTotal,
+            grossTotal: totals.grossTotal,
+          },
+        });
+        if (fnError) {
+          let errMsg = fnError.message;
+          try {
+            const errBody = await fnError.context?.json();
+            if (errBody && errBody.error) errMsg = errBody.error;
+          } catch (_) {
+            // Fallback to default message
+          }
+          throw new Error(errMsg);
+        }
+
+        const { error: upsertError } = await supabase.from("final_bills").upsert({
+          id: currentQuoteId,
+          job_id: jobId,
+          reference: quoteReference,
+          date: new Date().toLocaleDateString("en-GB"),
+          client_info: clientInfo,
+          items,
+          source_invoice_ids: sourceInvoiceIds || [],
+          vat_rate: 0,
+          totals,
+          status: "sent",
+        } as never);
+
+        if (upsertError) {
+          console.error("Invoice sent but failed to update database:", upsertError);
+          toast.warning("EMAIL SENT", {
+            id: sendingToastId,
+            description: "Email sent, but the invoice status couldn't be saved. Please refresh.",
+          });
+          onBack();
+          return;
+        }
+
+        // Lock the source invoices so they can't be selected into another
+        // invoice — prevents double-billing the same line items.
+        if (sourceInvoiceIds?.length) {
+          const { error: billedError } = await supabase
+            .from("invoices")
+            .update({ status: "billed" })
+            .in("id", sourceInvoiceIds);
+          if (billedError) {
+            console.error("Failed to mark source invoices as billed", billedError);
+          }
+        }
+
+        // Attach the invoice PDF to the job's documents, mirroring the
+        // quote-conversion attach so it's visible under Media too.
+        try {
+          const filePath = `jobs/${jobId}/${Date.now()}-OpusForm_Invoice_${quoteReference}.pdf`;
+          const { error: uploadError } = await supabase.storage
+            .from("job-attachments")
+            .upload(filePath, blob, { contentType: "application/pdf" });
+          if (uploadError) throw uploadError;
+
+          const {
+            data: { publicUrl },
+          } = supabase.storage.from("job-attachments").getPublicUrl(filePath);
+
+          const { error: attachError } = await supabase.from("job_attachments").insert({
+            job_id: jobId,
+            type: "document",
+            file_name: `OpusForm_Invoice_${quoteReference}.pdf`,
+            file_url: publicUrl,
+            file_size_bytes: blob.size,
+            uploaded_by: "System (Invoice Sent)",
+          });
+          if (attachError) throw attachError;
+        } catch (attachErr) {
+          console.error("Failed to attach invoice PDF to job", attachErr);
+        }
+
+        // Log to job history so it shows up in the History tab.
+        try {
+          await supabase.rpc("log_anonymous_audit", {
+            p_user_email: user?.email || "admin@opusform.co.uk",
+            p_action: "INVOICE_SENT",
+            p_target_type: "jobs",
+            p_target_id: jobId,
+            p_details: {
+              reference: quoteReference,
+              netTotal: totals.netTotal,
+              grossTotal: totals.grossTotal,
+            },
+          });
+        } catch (auditErr) {
+          console.error("Failed to log invoice-sent audit entry", auditErr);
+        }
+
+        setIsAlreadySent(true);
+        loadSavedQuotes();
+        toast.success("EMAIL SENT", {
+          id: sendingToastId,
+          description: "Email sent successfully.",
+        });
+        onBack();
+        return;
+      }
 
       // Invoke Supabase Edge Function send-quote-pdf
       const { data, error } = await supabase.functions.invoke("send-quote-pdf", {
@@ -736,23 +917,47 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         throw new Error(errMsg);
       }
 
-      // Update this quote in database to mark it as sent
+      // Update this quote/invoice in database to mark it as sent
       const quoteId = currentQuoteId;
-      const updatedQuote = {
-        id: quoteId,
-        reference: quoteReference,
-        date: new Date().toLocaleDateString("en-GB"),
-        client_info: clientInfo,
-        items,
-        vat_rate: 0,
-        totals,
-        is_sent: true,
-        tenant_id: profile?.tenant_id,
-      } as unknown as QuoteInsertRow;
+      const updatedQuote =
+        mode === "invoice"
+          ? {
+              id: quoteId,
+              job_id: jobId,
+              reference: quoteReference,
+              date: new Date().toLocaleDateString("en-GB"),
+              client_info: clientInfo,
+              items,
+              vat_rate: 0,
+              totals,
+              status: "sent",
+              tenant_id: profile?.tenant_id,
+            }
+          : {
+              id: quoteId,
+              reference: quoteReference,
+              date: new Date().toLocaleDateString("en-GB"),
+              client_info: clientInfo,
+              items,
+              vat_rate: 0,
+              totals,
+              is_sent: true,
+              tenant_id: profile?.tenant_id,
+            };
 
-      const { error: upsertError } = await supabase.from("quotes").upsert(updatedQuote);
+      const { error: upsertError } = await supabase
+        .from(mode === "invoice" ? "invoices" : "quotes")
+        .upsert(updatedQuote as never);
 
-      if (upsertError) throw upsertError;
+      if (upsertError) {
+        console.error("Quote sent but failed to update database:", upsertError);
+        toast.warning("EMAIL SENT", {
+          id: sendingToastId,
+          description: "Email sent, but the quote status couldn't be saved. Please refresh.",
+        });
+        onBack();
+        return;
+      }
 
       loadSavedQuotes();
       toast.success("EMAIL SENT", { id: sendingToastId, description: "Email sent successfully." });
@@ -808,6 +1013,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     <QuotePdfDocument
       quote={{ reference: quoteReference, clientInfo, items, totals }}
       terms={terms}
+      documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
       scaleValue={scaleValue}
       isPrintTarget={isPrintTarget}
     />
@@ -848,13 +1054,15 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               <Eye className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Preview</span>
             </button>
-            <button
-              onClick={handleSaveDraft}
-              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
-            >
-              <Save className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{lastSaved ? "SAVED" : "SAVE"}</span>
-            </button>
+            {mode === "quote" && (
+              <button
+                onClick={handleSaveDraft}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
+              >
+                <Save className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{lastSaved ? "SAVED" : "SAVE"}</span>
+              </button>
+            )}
             <button
               onClick={handleDownloadPDF}
               className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
@@ -862,21 +1070,21 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               <Download className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">PDF</span>
             </button>
-            {mode !== "invoice" && (
-              <button
-                type="button"
-                onClick={handleSend}
-                disabled={isSendingEmail}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-primary hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-4 py-1.5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
-              >
-                {isSendingEmail ? (
-                  <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <Send className="w-3.5 h-3.5" />
-                )}
-                <span className="hidden sm:inline">{isSendingEmail ? "SENDING..." : "SEND"}</span>
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={handleSend}
+              disabled={isSendingEmail || isAlreadySent}
+              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-primary hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-4 py-1.5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
+            >
+              {isSendingEmail ? (
+                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Send className="w-3.5 h-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {isSendingEmail ? "SENDING..." : isAlreadySent ? "SENT" : "SEND"}
+              </span>
+            </button>
           </div>
         </div>
       </div>
@@ -886,66 +1094,68 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         {/* -- LEFT PANEL: Form -- */}
         <div className="flex flex-col gap-5 flex-1 min-w-0">
           {/* SAVED HISTORY (collapsed accordion) */}
-          <div className="bg-card border border-border rounded-xl overflow-hidden">
-            <button
-              type="button"
-              onClick={() => setShowHistory((h) => !h)}
-              className="w-full flex items-center justify-between p-4 text-[11px] font-black tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <History className="w-3.5 h-3.5" />
-                Saved History ({savedQuotes.length})
-              </div>
-              {showHistory ? (
-                <ChevronUp className="w-4 h-4" />
-              ) : (
-                <ChevronDown className="w-4 h-4" />
-              )}
-            </button>
-            {showHistory && (
-              <div className="px-4 pb-4 flex flex-col gap-[5px] max-h-52 overflow-y-auto custom-scrollbar">
-                {savedQuotes.length === 0 ? (
-                  <div className="bg-background border border-dashed border-border rounded-lg p-6 text-center">
-                    <div className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
-                      No saved quotes found
-                    </div>
-                  </div>
+          {mode === "quote" && (
+            <div className="bg-card border border-border rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowHistory((h) => !h)}
+                className="w-full flex items-center justify-between p-4 text-[11px] font-black tracking-widest uppercase text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <History className="w-3.5 h-3.5" />
+                  Saved History ({savedQuotes.length})
+                </div>
+                {showHistory ? (
+                  <ChevronUp className="w-4 h-4" />
                 ) : (
-                  savedQuotes.map((q) => (
-                    <div
-                      key={q.id}
-                      onClick={() => loadQuote(q)}
-                      className="flex items-center justify-between bg-background border border-border rounded-lg p-2.5 px-3 hover:border-primary/30 cursor-pointer transition-all duration-200"
-                    >
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/85">
-                            {q.reference}
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
+              {showHistory && (
+                <div className="px-4 pb-4 flex flex-col gap-[5px] max-h-52 overflow-y-auto custom-scrollbar">
+                  {savedQuotes.length === 0 ? (
+                    <div className="bg-background border border-dashed border-border rounded-lg p-6 text-center">
+                      <div className="text-[11px] font-black tracking-widest text-muted-foreground uppercase">
+                        No saved quotes found
+                      </div>
+                    </div>
+                  ) : (
+                    savedQuotes.map((q) => (
+                      <div
+                        key={q.id}
+                        onClick={() => loadQuote(q)}
+                        className="flex items-center justify-between bg-background border border-border rounded-lg p-2.5 px-3 hover:border-primary/30 cursor-pointer transition-all duration-200"
+                      >
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/85">
+                              {q.reference}
+                            </span>
+                            <span className="text-[11px] text-muted-foreground">{q.date}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-[11px] font-mono font-black uppercase tracking-widest text-muted-foreground">
+                            £
+                            {q.totals?.grossTotal?.toLocaleString(undefined, {
+                              maximumFractionDigits: 0,
+                            }) || "0"}
                           </span>
-                          <span className="text-[11px] text-muted-foreground">{q.date}</span>
+                          <button
+                            onClick={(e) => confirmDeleteQuote(e, q)}
+                            className="bg-transparent border-none cursor-pointer text-muted-foreground p-0.5 flex items-center hover:text-red-500 transition-colors"
+                            title="Delete saved quote"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2.5">
-                        <span className="text-[11px] font-mono font-black uppercase tracking-widest text-muted-foreground">
-                          £
-                          {q.totals?.grossTotal?.toLocaleString(undefined, {
-                            maximumFractionDigits: 0,
-                          }) || "0"}
-                        </span>
-                        <button
-                          onClick={(e) => confirmDeleteQuote(e, q)}
-                          className="bg-transparent border-none cursor-pointer text-muted-foreground p-0.5 flex items-center hover:text-red-500 transition-colors"
-                          title="Delete saved quote"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* CLIENT DETAILS */}
           <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-3 sm:space-y-4">

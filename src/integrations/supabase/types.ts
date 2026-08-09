@@ -311,6 +311,7 @@ export type Database = {
           contract_max_pours: number;
           created_at: string;
           current_pours: number;
+          email: string | null;
           id: string;
           job_ref: string;
           main_contractor: string | null;
@@ -325,6 +326,7 @@ export type Database = {
           contract_max_pours?: number;
           created_at?: string;
           current_pours?: number;
+          email?: string | null;
           id: string;
           job_ref: string;
           main_contractor?: string | null;
@@ -339,6 +341,7 @@ export type Database = {
           contract_max_pours?: number;
           created_at?: string;
           current_pours?: number;
+          email?: string | null;
           id?: string;
           job_ref?: string;
           main_contractor?: string | null;

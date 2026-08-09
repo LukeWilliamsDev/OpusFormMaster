@@ -19,6 +19,7 @@ import { usePortal, jobToRow } from "../context/PortalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { generateQuotePdfBlob } from "../lib/quotePdf";
+import { computeDocumentLabel } from "../lib/documentNaming";
 import { toast } from "sonner";
 import { derivePoursFromQuote } from "../utils/pourDerivation";
 
@@ -50,6 +51,7 @@ interface Quote {
   };
   isSavedLocal?: boolean;
   isSent?: boolean;
+  job_ref?: string | null;
 }
 
 interface PipelineRegistryProps {
@@ -106,6 +108,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         vatRate: Number(row.vat_rate),
         totals: row.totals as Quote["totals"],
         isSent: row.is_sent,
+        job_ref: (row as unknown as { job_ref?: string | null }).job_ref,
       }));
       setQuotes(loadedQuotes);
     } catch (e) {
@@ -158,7 +161,9 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
     // Create a new active Job object
     const newJob: Job = {
       id: Math.random().toString(36).substr(2, 9),
-      jobRef: convertingQuote.reference.replace("QTE", "OP").replace("JOB", "OP"),
+      jobRef:
+        convertingQuote.job_ref ??
+        convertingQuote.reference.replace("QTE", "OP").replace("JOB", "OP"),
       siteName: convertingQuote.clientInfo.site || "New Unassigned Site",
       mainContractor: convertingQuote.clientInfo.entity || "Contractor",
       postcode: convertingQuote.clientInfo.postcode || "N/A",
@@ -237,7 +242,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
       toast.success(`Converted ${convertingQuote.reference} to Active Job ${newJob.jobRef}`);
 
       try {
-        const { blob, filename } = await generateQuotePdfBlob(convertingQuote);
+        const label = computeDocumentLabel({ jobRef: newJob.jobRef, kind: "quote", sequence: 1 });
+        const { blob, filename } = await generateQuotePdfBlob(convertingQuote, { label });
         const filePath = `jobs/${newJob.id}/${Date.now()}-${filename}`;
 
         const { error: uploadError } = await supabase.storage

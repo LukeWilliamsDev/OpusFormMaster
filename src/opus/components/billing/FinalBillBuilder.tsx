@@ -151,7 +151,7 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
 
       const { blob } = await generateBillPdf(
         { reference, clientInfo, items, totals },
-        { documentTitle: "INVOICE", filenamePrefix: "Invoice" },
+        { documentTitle: "INVOICE", label: `Invoice-01_${reference}` },
       );
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {

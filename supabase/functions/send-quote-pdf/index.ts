@@ -22,6 +22,7 @@ interface RequestPayload {
   siteName?: string;
   postcode?: string;
   quoteRef: string;
+  label?: string;
   pdfBase64?: string; // Base64 encoded string from frontend
   pdfUrl?: string; // Public URL pointer to PDF
   logoUrl?: string; // Absolute URL of corporate SVG logo
@@ -91,6 +92,7 @@ serve(async (req) => {
       siteName,
       postcode,
       quoteRef,
+      label,
       pdfBase64,
       pdfUrl,
       logoUrl,
@@ -261,8 +263,7 @@ serve(async (req) => {
         from: "Opus Form Billing <" + sender + ">",
         to: [toEmail],
         subject:
-          "Quote #" +
-          quoteRef +
+          (label || "Quote #" + quoteRef) +
           " | " +
           (siteName || "Project") +
           (postcode ? ", " + postcode : "") +
@@ -272,7 +273,7 @@ serve(async (req) => {
         attachments: [
           {
             content: attachmentContent,
-            filename: "Quote_" + quoteRef + ".pdf",
+            filename: (label ? "OpusForm_" + label : "Quote_" + quoteRef) + ".pdf",
           },
         ],
       }),

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { NoticeModal } from "@/components/ui/notice-modal";
 import { QuotePdfDocument, generateQuotePdfBlob, generateBillPdf } from "../lib/quotePdf";
+import { computeDocumentLabel, documentPdfFilename, DocumentKind } from "../lib/documentNaming";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Plus,
@@ -60,6 +61,7 @@ interface Quote {
   };
   isSavedLocal?: boolean;
   isSent?: boolean;
+  job_ref?: string | null;
 }
 
 interface ValuationBuilderProps {
@@ -71,6 +73,7 @@ interface ValuationBuilderProps {
   jobId?: string;
   sourceInvoiceIds?: string[];
   prefill?: { entity?: string; email?: string; site?: string; postcode?: string };
+  jobRef?: string;
 }
 
 const SUGGESTED_ITEMS = [
@@ -345,6 +348,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   jobId,
   sourceInvoiceIds,
   prefill,
+  jobRef,
 }) => {
   const { profile, user } = usePortal();
   const recordTable =
@@ -391,9 +395,47 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       ? `INV-${Math.floor(1000 + Math.random() * 9000)}`
       : `JOB-${Math.floor(1000 + Math.random() * 9000)}`,
   );
+  const [jobRefValue, setJobRefValue] = useState<string>(() =>
+    mode === "quote" ? `OP-${Math.floor(1000 + Math.random() * 9000)}-X` : jobRef || "",
+  );
+  const effectiveJobRef = mode === "quote" ? jobRefValue : jobRef || "";
+  const [docSequence, setDocSequence] = useState<number>(1);
   const [currentQuoteId, setCurrentQuoteId] = useState<string>(
     () => quoteToLoadId || crypto.randomUUID(),
   );
+
+  useEffect(() => {
+    const computeSequence = async () => {
+      if (mode === "quote") {
+        setDocSequence(1);
+        return;
+      }
+      if (!jobId) return;
+      const table = mode === "finalBill" ? "final_bills" : "invoices";
+      if (quoteToLoadId) {
+        const { data: selfRow } = await supabase
+          .from(table)
+          .select("created_at")
+          .eq("id", quoteToLoadId)
+          .maybeSingle();
+        if (selfRow) {
+          const { count } = await supabase
+            .from(table)
+            .select("*", { count: "exact", head: true })
+            .eq("job_id", jobId)
+            .lte("created_at", selfRow.created_at);
+          setDocSequence(count || 1);
+        }
+      } else {
+        const { count } = await supabase
+          .from(table)
+          .select("*", { count: "exact", head: true })
+          .eq("job_id", jobId);
+        setDocSequence((count || 0) + 1);
+      }
+    };
+    computeSequence();
+  }, [mode, jobId, quoteToLoadId]);
 
   const loadSavedQuotes = async () => {
     try {
@@ -567,6 +609,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           vat_rate: 0,
           totals,
           is_sent: false,
+          job_ref: jobRefValue,
           tenant_id: profile?.tenant_id,
         } as unknown as QuoteInsertRow;
         const { error } = await supabase.from("quotes").upsert(newQuote);
@@ -592,6 +635,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     setQuoteReference(quote.reference);
     setCurrentQuoteId(quote.id);
     setIsAlreadySent(!!quote.isSent);
+    if (mode === "quote" && quote.job_ref) setJobRefValue(quote.job_ref);
     setShowSavedQuotes(false);
   };
 
@@ -618,6 +662,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 mode === "quote"
                   ? (data as unknown as { is_sent: boolean }).is_sent
                   : (data as unknown as { status: string }).status === "sent",
+              job_ref: (data as unknown as { job_ref?: string | null }).job_ref,
             };
             loadQuote(quote);
             if (onQuoteLoaded) onQuoteLoaded();
@@ -688,12 +733,21 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
   const handleDownloadPDF = async () => {
     try {
-      const { blob, filename } = await generateQuotePdfBlob({
-        reference: quoteReference,
-        clientInfo,
-        items,
-        totals,
+      const downloadKind: DocumentKind = mode === "finalBill" ? "invoice" : "quote";
+      const downloadLabel = computeDocumentLabel({
+        jobRef: effectiveJobRef,
+        kind: downloadKind,
+        sequence: docSequence,
       });
+      const { blob, filename } = await generateQuotePdfBlob(
+        {
+          reference: quoteReference,
+          clientInfo,
+          items,
+          totals,
+        },
+        { label: downloadLabel },
+      );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -749,18 +803,27 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     });
 
     try {
+      const docKind: DocumentKind = mode === "finalBill" ? "invoice" : "quote";
+      const docLabel = computeDocumentLabel({
+        jobRef: effectiveJobRef,
+        kind: docKind,
+        sequence: docSequence,
+      });
       const { blob } =
         mode === "finalBill" || mode === "invoice"
           ? await generateBillPdf(
               { reference: quoteReference, clientInfo, items, totals },
-              { documentTitle: "INVOICE", filenamePrefix: "Invoice" },
+              { documentTitle: "INVOICE", label: docLabel },
             )
-          : await generateQuotePdfBlob({
-              reference: quoteReference,
-              clientInfo,
-              items,
-              totals,
-            });
+          : await generateQuotePdfBlob(
+              {
+                reference: quoteReference,
+                clientInfo,
+                items,
+                totals,
+              },
+              { label: docLabel },
+            );
 
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
@@ -783,6 +846,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             siteName: clientInfo.site,
             postcode: clientInfo.postcode,
             billRef: quoteReference,
+            label: docLabel,
             pdfBase64: base64,
             netTotal: totals.netTotal,
             grossTotal: totals.grossTotal,
@@ -837,7 +901,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         // Attach the invoice PDF to the job's documents, mirroring the
         // quote-conversion attach so it's visible under Media too.
         try {
-          const filePath = `jobs/${jobId}/${Date.now()}-OpusForm_Invoice_${quoteReference}.pdf`;
+          const filePath = `jobs/${jobId}/${Date.now()}-${documentPdfFilename(docLabel)}`;
           const { error: uploadError } = await supabase.storage
             .from("job-attachments")
             .upload(filePath, blob, { contentType: "application/pdf" });
@@ -850,7 +914,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           const { error: attachError } = await supabase.from("job_attachments").insert({
             job_id: jobId,
             type: "document",
-            file_name: `OpusForm_Invoice_${quoteReference}.pdf`,
+            file_name: documentPdfFilename(docLabel),
             file_url: publicUrl,
             file_size_bytes: blob.size,
             uploaded_by: "System (Invoice Sent)",
@@ -895,6 +959,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           siteName: clientInfo.site,
           postcode: clientInfo.postcode,
           quoteRef: quoteReference,
+          label: docLabel,
           pdfBase64: base64,
           logoUrl:
             typeof window !== "undefined"
@@ -943,6 +1008,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               vat_rate: 0,
               totals,
               is_sent: true,
+              job_ref: jobRefValue,
               tenant_id: profile?.tenant_id,
             };
 
@@ -963,8 +1029,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       // so it's visible under Media too.
       if (jobId) {
         try {
-          const label = mode === "invoice" ? "Invoice" : "Quote";
-          const filePath = `jobs/${jobId}/${Date.now()}-OpusForm_${label}_${quoteReference}.pdf`;
+          const attachLabel = mode === "invoice" ? "Invoice" : "Quote";
+          const filePath = `jobs/${jobId}/${Date.now()}-${documentPdfFilename(docLabel)}`;
           const { error: uploadError } = await supabase.storage
             .from("job-attachments")
             .upload(filePath, blob, { contentType: "application/pdf" });
@@ -977,14 +1043,32 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           const { error: attachError } = await supabase.from("job_attachments").insert({
             job_id: jobId,
             type: "document",
-            file_name: `OpusForm_${label}_${quoteReference}.pdf`,
+            file_name: documentPdfFilename(docLabel),
             file_url: publicUrl,
             file_size_bytes: blob.size,
-            uploaded_by: `System (${label} Sent)`,
+            uploaded_by: `System (${attachLabel} Sent)`,
           });
           if (attachError) throw attachError;
         } catch (attachErr) {
           console.error("Failed to attach PDF to job", attachErr);
+        }
+
+        if (mode === "invoice") {
+          try {
+            await supabase.rpc("log_anonymous_audit", {
+              p_user_email: user?.email || "admin@opusform.co.uk",
+              p_action: "QUOTE_SENT",
+              p_target_type: "jobs",
+              p_target_id: jobId,
+              p_details: {
+                reference: quoteReference,
+                netTotal: totals.netTotal,
+                grossTotal: totals.grossTotal,
+              },
+            });
+          } catch (auditErr) {
+            console.error("Failed to log quote-sent audit entry", auditErr);
+          }
         }
       }
 
@@ -1158,7 +1242,13 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         <div>
                           <div className="flex items-center gap-1.5">
                             <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/85">
-                              {q.reference}
+                              {q.job_ref
+                                ? computeDocumentLabel({
+                                    jobRef: q.job_ref,
+                                    kind: "quote",
+                                    sequence: 1,
+                                  })
+                                : q.reference}
                             </span>
                             <span className="text-[11px] text-muted-foreground">{q.date}</span>
                           </div>

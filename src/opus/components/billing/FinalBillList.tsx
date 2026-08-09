@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "../../../integrations/supabase/client";
 import { BillItem, BillClientInfo, computeTotals } from "../../lib/billing";
 import { generateBillPdf } from "../../lib/quotePdf";
+import { computeDocumentLabel } from "../../lib/documentNaming";
 
 export interface FinalBillRow {
   id: string;
@@ -20,6 +21,7 @@ export interface FinalBillRow {
 
 interface FinalBillListProps {
   jobId: string;
+  jobRef: string;
   refreshKey: number;
   embedded?: boolean;
 }
@@ -32,12 +34,14 @@ const STATUS_BADGE: Record<string, string> = {
 
 export const FinalBillList: React.FC<FinalBillListProps> = ({
   jobId,
+  jobRef,
   refreshKey,
   embedded = false,
 }) => {
   const [bills, setBills] = useState<FinalBillRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewBill, setPreviewBill] = useState<FinalBillRow | null>(null);
+  const [previewLabel, setPreviewLabel] = useState<string>("");
   const [markingPaid, setMarkingPaid] = useState(false);
   const [billToMarkPaid, setBillToMarkPaid] = useState<FinalBillRow | null>(null);
 
@@ -55,19 +59,28 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
     setBills((prev) => prev.map((b) => (b.id === bill.id ? { ...b, status: "paid" } : b)));
     setPreviewBill((prev) => (prev && prev.id === bill.id ? { ...prev, status: "paid" } : prev));
     toast.success("Marked as paid");
+
+    const { data } = await supabase.auth.getUser();
+    supabase.rpc("log_anonymous_audit", {
+      p_user_email: data.user?.email || "admin@opusform.co.uk",
+      p_action: "INVOICE_MARKED_PAID",
+      p_target_type: "jobs",
+      p_target_id: jobId,
+      p_details: { reference: bill.reference },
+    });
   };
 
   const confirmMarkAsPaid = (bill: FinalBillRow) => setBillToMarkPaid(bill);
 
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  const downloadPdf = async (bill: FinalBillRow) => {
+  const downloadPdf = async (bill: FinalBillRow, label: string) => {
     setDownloadingPdf(true);
     try {
       const totals = computeTotals(bill.items || [], bill.vat_rate);
       const { blob, filename } = await generateBillPdf(
         { reference: bill.reference, clientInfo: bill.client_info, items: bill.items, totals },
-        { documentTitle: "INVOICE", filenamePrefix: "Invoice" },
+        { documentTitle: "INVOICE", label },
       );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -120,14 +133,22 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
         </div>
       ) : (
         <div className="divide-y divide-border">
-          {bills.map((bill) => {
+          {bills.map((bill, index) => {
             const totals = computeTotals(bill.items || [], bill.vat_rate);
             const badgeColor = STATUS_BADGE[bill.status] || STATUS_BADGE.draft;
+            const label = computeDocumentLabel({
+              jobRef,
+              kind: "invoice",
+              sequence: bills.length - index,
+            });
             return (
               <div
                 key={bill.id}
-                className="py-2.5 grid grid-cols-[24px_24px_88px_auto_1fr_100px_100px] items-center gap-x-2.5 cursor-pointer hover:bg-accent/40 -mx-4 px-4"
-                onClick={() => setPreviewBill(bill)}
+                className="py-2.5 grid grid-cols-[24px_24px_88px_auto_1fr_100px_100px] items-center gap-x-2.5 cursor-pointer hover:bg-muted/30 transition-colors -mx-4 px-4"
+                onClick={() => {
+                  setPreviewBill(bill);
+                  setPreviewLabel(label);
+                }}
               >
                 <span aria-hidden className="w-6 h-6" />
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
@@ -138,7 +159,7 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
                 >
                   {bill.status}
                 </span>
-                <span className="text-sm font-semibold truncate">#{bill.reference}</span>
+                <span className="text-sm font-semibold truncate">{label}</span>
                 <span aria-hidden />
                 <span className="text-xs text-muted-foreground">{bill.date}</span>
                 <span className="text-sm font-bold text-right">
@@ -163,7 +184,7 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
           {previewBill && (
             <>
               <DialogHeader>
-                <DialogTitle>#{previewBill.reference}</DialogTitle>
+                <DialogTitle>{previewLabel}</DialogTitle>
               </DialogHeader>
               <div className="flex items-center justify-between gap-3 -mt-2">
                 <span className="text-xs text-muted-foreground">
@@ -175,7 +196,7 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
                     variant="outline"
                     className="gap-1.5 shrink-0"
                     disabled={downloadingPdf}
-                    onClick={() => downloadPdf(previewBill)}
+                    onClick={() => downloadPdf(previewBill, previewLabel)}
                   >
                     <Download className="w-3.5 h-3.5" />
                     PDF

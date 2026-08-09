@@ -578,6 +578,7 @@ export type Database = {
           date: string;
           id: string;
           is_sent: boolean;
+          job_ref: string | null;
           items: Json;
           reference: string;
           tenant_id: string;
@@ -592,6 +593,7 @@ export type Database = {
           id?: string;
           is_sent?: boolean;
           items: Json;
+          job_ref?: string | null;
           reference: string;
           tenant_id: string;
           totals: Json;
@@ -606,6 +608,7 @@ export type Database = {
           is_sent?: boolean;
           items?: Json;
           reference?: string;
+          job_ref?: string | null;
           tenant_id?: string;
           totals?: Json;
           updated_at?: string;

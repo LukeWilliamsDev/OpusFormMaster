@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { supabase } from "../../../integrations/supabase/client";
 import { BillItem, BillClientInfo, computeTotals } from "../../lib/billing";
 import { generateQuotePdfBlob } from "../../lib/quotePdf";
+import { computeDocumentLabel } from "../../lib/documentNaming";
 
 export interface InvoiceRow {
   id: string;
@@ -19,6 +20,7 @@ export interface InvoiceRow {
 
 interface InvoiceListProps {
   jobId: string;
+  jobRef: string;
   refreshKey: number;
   selectedIds: string[];
   onToggleSelect: (id: string) => void;
@@ -35,6 +37,7 @@ const STATUS_BADGE: Record<string, string> = {
 
 export const InvoiceList: React.FC<InvoiceListProps> = ({
   jobId,
+  jobRef,
   refreshKey,
   selectedIds,
   onToggleSelect,
@@ -45,6 +48,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
   const [invoices, setInvoices] = useState<InvoiceRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [previewInvoice, setPreviewInvoice] = useState<InvoiceRow | null>(null);
+  const [previewLabel, setPreviewLabel] = useState<string>("");
 
   useEffect(() => {
     let cancelled = false;
@@ -66,16 +70,19 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
 
   const [downloadingPdf, setDownloadingPdf] = useState(false);
 
-  const downloadPdf = async (invoice: InvoiceRow) => {
+  const downloadPdf = async (invoice: InvoiceRow, label: string) => {
     setDownloadingPdf(true);
     try {
       const totals = computeTotals(invoice.items || [], invoice.vat_rate);
-      const { blob, filename } = await generateQuotePdfBlob({
-        reference: invoice.reference,
-        clientInfo: invoice.client_info,
-        items: invoice.items,
-        totals,
-      });
+      const { blob, filename } = await generateQuotePdfBlob(
+        {
+          reference: invoice.reference,
+          clientInfo: invoice.client_info,
+          items: invoice.items,
+          totals,
+        },
+        { label },
+      );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -130,14 +137,22 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
         </div>
       ) : (
         <div className="divide-y divide-border">
-          {invoices.map((inv) => {
+          {invoices.map((inv, index) => {
             const totals = computeTotals(inv.items || [], inv.vat_rate);
             const badgeColor = STATUS_BADGE[inv.status] || STATUS_BADGE.draft;
+            const label = computeDocumentLabel({
+              jobRef,
+              kind: "quote",
+              sequence: invoices.length - index,
+            });
             return (
               <div
                 key={inv.id}
-                className="py-2.5 grid grid-cols-[24px_24px_88px_auto_1fr_100px_100px] items-center gap-x-2.5 cursor-pointer hover:bg-accent/40 -mx-4 px-4"
-                onClick={() => setPreviewInvoice(inv)}
+                className="py-2.5 grid grid-cols-[24px_24px_88px_auto_1fr_100px_100px] items-center gap-x-2.5 cursor-pointer hover:bg-muted/30 hover:shadow-[0_0_16px_rgba(255,255,255,0.06)] transition-colors -mx-4 px-4"
+                onClick={() => {
+                  setPreviewInvoice(inv);
+                  setPreviewLabel(label);
+                }}
               >
                 <label
                   className={`w-6 h-6 flex items-center justify-center ${
@@ -162,7 +177,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                 >
                   {inv.status}
                 </span>
-                <span className="text-sm font-semibold truncate">#{inv.reference}</span>
+                <span className="text-sm font-semibold truncate">{label}</span>
                 <span aria-hidden />
                 <span className="text-xs text-muted-foreground">{inv.date}</span>
                 <span className="text-sm font-bold text-right">
@@ -187,7 +202,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
           {previewInvoice && (
             <>
               <DialogHeader>
-                <DialogTitle>#{previewInvoice.reference}</DialogTitle>
+                <DialogTitle>{previewLabel}</DialogTitle>
               </DialogHeader>
               <div className="flex items-center justify-between gap-3 -mt-2">
                 <span className="text-xs text-muted-foreground">
@@ -198,7 +213,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                   variant="outline"
                   className="gap-1.5 shrink-0"
                   disabled={downloadingPdf}
-                  onClick={() => downloadPdf(previewInvoice)}
+                  onClick={() => downloadPdf(previewInvoice, previewLabel)}
                 >
                   <Download className="w-3.5 h-3.5" />
                   PDF

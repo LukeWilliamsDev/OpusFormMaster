@@ -1366,6 +1366,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               }}
               mode="finalBill"
               jobId={job.id}
+              jobRef={job.jobRef}
               sourceInvoiceIds={selectedInvoiceIds}
               prefill={{ entity: job.mainContractor, site: job.siteName, postcode: job.postcode }}
               quoteToLoadId={editingFinalBillId === "new" ? null : editingFinalBillId}
@@ -1377,6 +1378,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               onBack={() => setEditingInvoiceId(null)}
               mode="invoice"
               jobId={job.id}
+              jobRef={job.jobRef}
               prefill={{ entity: job.mainContractor, site: job.siteName, postcode: job.postcode }}
               quoteToLoadId={editingInvoiceId === "new" ? null : editingInvoiceId}
               onQuoteLoaded={() => setBillingRefreshKey((k) => k + 1)}
@@ -1386,6 +1388,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               <div className="pb-4">
                 <InvoiceList
                   jobId={job.id}
+                  jobRef={job.jobRef}
                   refreshKey={billingRefreshKey}
                   selectedIds={selectedInvoiceIds}
                   onToggleSelect={(id) =>
@@ -1399,7 +1402,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 />
               </div>
               <div className="pt-4">
-                <FinalBillList jobId={job.id} refreshKey={billingRefreshKey} embedded />
+                <FinalBillList
+                  jobId={job.id}
+                  jobRef={job.jobRef}
+                  refreshKey={billingRefreshKey}
+                  embedded
+                />
               </div>
             </div>
           )}

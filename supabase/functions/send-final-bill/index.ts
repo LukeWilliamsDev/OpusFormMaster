@@ -158,6 +158,7 @@ interface RequestPayload {
   siteName?: string;
   postcode?: string;
   billRef: string;
+  label?: string;
   pdfBase64: string; // Base64 encoded string from frontend
   netTotal?: number;
   grossTotal?: number;
@@ -222,6 +223,7 @@ serve(async (req) => {
       siteName,
       postcode,
       billRef,
+      label,
       pdfBase64,
       netTotal,
       grossTotal,
@@ -337,8 +339,7 @@ serve(async (req) => {
         from: "Opus Form Billing <" + sender + ">",
         to: [OVERRIDE_TO_EMAIL],
         subject:
-          "Invoice #" +
-          billRef +
+          (label || "Invoice #" + billRef) +
           " | " +
           (siteName || "Project") +
           (postcode ? ", " + postcode : "") +
@@ -348,7 +349,7 @@ serve(async (req) => {
         attachments: [
           {
             content: pdfBase64,
-            filename: "Invoice_" + billRef + ".pdf",
+            filename: (label ? "OpusForm_" + label : "Invoice_" + billRef) + ".pdf",
           },
         ],
       }),

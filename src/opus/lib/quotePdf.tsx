@@ -1,6 +1,7 @@
 // Standalone quote PDF generator using @react-pdf/renderer for native, pixel-exact vector PDF generation.
 import React from "react";
 import { Document, Page, Text, View, StyleSheet, Image, pdf } from "@react-pdf/renderer";
+import { documentPdfFilename } from "./documentNaming";
 
 export interface QuoteItem {
   id: string;
@@ -853,23 +854,20 @@ export const QuotePdfVectorDocument: React.FC<{
 };
 
 // Generates a native vector PDF Blob
-export async function generateQuotePdfBlob(quote: Quote) {
+export async function generateQuotePdfBlob(quote: Quote, opts: { label: string }) {
   const terms = buildDefaultTerms(quote.clientInfo?.entity);
   const pdfInstance = pdf(<QuotePdfVectorDocument quote={quote} terms={terms} />);
   const blob = await pdfInstance.toBlob();
-  const filename = `OpusForm_Quote_${quote.reference}.pdf`;
+  const filename = documentPdfFilename(opts.label);
   return { blob, filename };
 }
 
-export async function generateBillPdf(
-  bill: Quote,
-  opts: { documentTitle: string; filenamePrefix: string },
-) {
+export async function generateBillPdf(bill: Quote, opts: { documentTitle: string; label: string }) {
   const terms = buildDefaultTerms(bill.clientInfo?.entity);
   const pdfInstance = pdf(
     <QuotePdfVectorDocument quote={bill} terms={terms} documentTitle={opts.documentTitle} />,
   );
   const blob = await pdfInstance.toBlob();
-  const filename = `OpusForm_${opts.filenamePrefix}_${bill.reference}.pdf`;
+  const filename = documentPdfFilename(opts.label);
   return { blob, filename };
 }

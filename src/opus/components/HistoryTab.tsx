@@ -159,6 +159,9 @@ export function HistoryTab({
                   } else if (event.action === "INVOICE_SENT") {
                     badgeColor = "bg-success/10 border-success/20 text-success";
                     summaryText = `Invoice #${event.details?.reference || ""} sent to client`;
+                  } else if (event.action === "QUOTE_SENT") {
+                    badgeColor = "bg-success/10 border-success/20 text-success";
+                    summaryText = `Quote #${event.details?.reference || ""} sent to client`;
                   } else if (event.action === "GENERATE_UPLOAD_LINK") {
                     badgeColor = "bg-secondary border-border text-muted-foreground";
                     summaryText = "External upload link generated";
@@ -187,7 +190,7 @@ export function HistoryTab({
                       className="py-2.5 flex flex-wrap sm:flex-nowrap items-center gap-x-2.5 gap-y-1.5"
                     >
                       <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        {event.action === "INVOICE_SENT" ? (
+                        {event.action === "INVOICE_SENT" || event.action === "QUOTE_SENT" ? (
                           <FileCheck2 className="w-3.5 h-3.5 text-primary" />
                         ) : isPourEvent ? (
                           <Layers className="w-3.5 h-3.5 text-primary" />

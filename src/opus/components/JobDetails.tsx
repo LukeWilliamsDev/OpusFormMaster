@@ -850,10 +850,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         onClick={() => setStatusMenuOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={statusMenuOpen}
-        className={`w-full grid grid-cols-[12px_1fr_12px] items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${currentStatusOption.activeClasses}`}
+        className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-md border text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${currentStatusOption.activeClasses}`}
       >
-        <span />
-        <span className="flex items-center justify-center gap-1.5">
+        <span className="flex items-center gap-1.5">
           <CurrentStatusIcon className="w-3.5 h-3.5 shrink-0" />
           {currentStatusOption.label}
         </span>

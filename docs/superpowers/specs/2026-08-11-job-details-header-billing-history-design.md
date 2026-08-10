@@ -1,4 +1,4 @@
-# Job Details: header + billing/history visual alignment
+# Job Details: header + non-overview tab visual alignment
 
 Date: 2026-08-11
 
@@ -9,9 +9,9 @@ Date: 2026-08-11
 ## Scope
 
 1. Header restructure so the title reliably fits one line.
-2. Visual-only alignment pass on Billing (`InvoiceList.tsx`, `FinalBillList.tsx`) and History (`HistoryTab.tsx`) panels to match Overview's card language. No behavior/functional changes.
+2. Visual-only alignment pass on every non-Overview panel — Attachments (`MediaTab.tsx`), Suppliers (`JobOverviewTab.tsx`), Billing (`InvoiceList.tsx`, `FinalBillList.tsx`), and History (`HistoryTab.tsx`) — to match Overview's card language. No behavior/functional changes.
 
-Out of scope: tabs row (kept as-is, already responsive), Overview/Attachments/Suppliers panels (no known issues raised), any data/query changes.
+Out of scope: tabs row (kept as-is, already responsive), Overview panel (already redesigned, no known issues), any data/query changes.
 
 ## Design
 
@@ -30,14 +30,14 @@ Replace the 3-column-with-dividers flex row with a two-row stack inside the same
 
 No change. Icon-only grid below `sm` stays as-is per existing pattern.
 
-### 3. Billing / History visual alignment (`InvoiceList.tsx`, `FinalBillList.tsx`, `HistoryTab.tsx`)
+### 3. Non-Overview tab visual alignment (`MediaTab.tsx`, `JobOverviewTab.tsx`, `InvoiceList.tsx`, `FinalBillList.tsx`, `HistoryTab.tsx`)
 
-Purely a spacing/typography/card-shell consistency pass — bring these three components in line with the conventions already established in the Overview panel (`Scheduled Pours` / `Staff On Site` cards in `JobDetails.tsx`):
+Purely a spacing/typography/card-shell consistency pass — bring every non-Overview panel in line with the conventions already established in the Overview panel (`Scheduled Pours` / `Staff On Site` cards in `JobDetails.tsx`):
 
-- Section heading style: `text-sm font-bold text-foreground` for titles, `text-xs text-muted-foreground` for subtext/help copy — verify all three components use this exact scale (InvoiceList already does at line 110-113; audit FinalBillList and HistoryTab headings against it).
-- Card shell: `bg-card border border-border rounded-xl p-4` wrapper, `space-y-4` internal rhythm — confirm consistent when each panel renders standalone (non-`embedded`) inside its `TabsContent`.
-- List row rhythm: adopt InvoiceList's row pattern as the reference (`py-2.5`, primary text `text-sm font-semibold`, meta text `text-xs text-muted-foreground`, status badges as `rounded-full` pills) — apply the same row height/type-scale to History's audit log rows.
-- No changes to data fetching, filtering, revert logic, or any other behavior — this is presentation-layer only.
+- Section heading style: `text-sm font-bold text-foreground` for titles, `text-xs text-muted-foreground` for subtext/help copy — verify all five components use this exact scale (InvoiceList already does at line 110-113; audit the rest against it).
+- Card shell: `bg-card border border-border rounded-xl p-4` wrapper, `space-y-4` internal rhythm — confirm consistent when each panel renders standalone inside its `TabsContent`. Where a panel has side-by-side sections (e.g. MediaTab's before/after photo columns, Suppliers' map+list), use this codebase's established unified-card pattern — one outer `bg-card border border-border rounded-xl overflow-hidden` wrapping a grid, columns as plain divs with `md:border-r border-border` as the divider — not separate bordered cards side by side with a gap (MediaTab already follows this for its photo columns per a prior fix; verify Suppliers/JobOverviewTab does too and there's no regression).
+- List row rhythm: adopt InvoiceList's row pattern as the reference (`py-2.5`, primary text `text-sm font-semibold`, meta text `text-xs text-muted-foreground`, status badges as `rounded-full` pills) — apply the same row height/type-scale to History's audit log rows and any list rows in MediaTab (document lists) and Suppliers (supplier list items).
+- No changes to data fetching, filtering, revert/upload/delete logic, dialogs, or any other behavior — this is presentation-layer only. Any dialog max-width overrides touched in passing must stay scoped to `lg:` per this codebase's DialogContent convention (unconditional `max-w-*` breaks the mobile bottom-sheet).
 
 ## Testing
 
@@ -45,4 +45,4 @@ Manual verification in browser at desktop, tablet, and mobile widths (per projec
 
 - Long site name stays on one line at desktop/tablet widths; header doesn't overflow or clip at mobile width.
 - Status/weather/risk chips wrap sensibly under the metadata row on narrow viewports.
-- Billing and History panels visually match Overview's spacing/type scale when tabbed between.
+- Attachments, Suppliers, Billing, and History panels all visually match Overview's spacing/type scale when tabbed between.

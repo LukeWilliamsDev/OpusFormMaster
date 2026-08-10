@@ -1,10 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   ChevronLeft,
+  ChevronDown,
   Check,
   Circle,
   Clock,
   AlertCircle,
+  CloudRain,
+  CloudSun,
+  Snowflake,
+  Wind,
+  Loader,
+  Mail,
   Paperclip,
   History,
   PencilLine,
@@ -640,6 +647,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const todayISO = () => new Date().toISOString().split("T")[0];
 
   const [pendingStatus, setPendingStatus] = useState<Job["status"] | null>(null);
+  const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
   const executeStatusChange = () => {
     if (!pendingStatus) return;
@@ -813,52 +821,188 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     groupedStaff[w.role].push(w);
   });
 
-  return (
-    <div className="space-y-6 font-sans text-foreground p-4 md:p-6 max-w-7xl mx-auto bg-background min-h-screen">
+  const STATUS_OPTIONS = [
+    {
+      key: "pending",
+      label: "Pending",
+      Icon: Circle,
+      activeClasses: "bg-warning/15 text-warning border-warning/30",
+    },
+    {
+      key: "in-progress",
+      label: "In Progress",
+      Icon: Clock,
+      activeClasses: "bg-primary/15 text-primary border-primary/30",
+    },
+    {
+      key: "completed",
+      label: "Completed",
+      Icon: Check,
+      activeClasses: "bg-success/15 text-success border-success/30",
+    },
+  ] as const;
+  const currentStatusOption = STATUS_OPTIONS.find((o) => o.key === status) ?? STATUS_OPTIONS[0];
+  const CurrentStatusIcon = currentStatusOption.Icon;
+  const statusDropdown = (
+    <div className="relative w-full">
       <button
-        onClick={onBack}
-        className="group flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer ml-1"
+        type="button"
+        onClick={() => setStatusMenuOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={statusMenuOpen}
+        className={`w-full flex items-center justify-between gap-1.5 px-2.5 py-1.5 rounded-md border text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${currentStatusOption.activeClasses}`}
       >
-        <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-        <span>{backLabel}</span>
+        <span className="flex items-center gap-1.5">
+          <CurrentStatusIcon className="w-3.5 h-3.5 shrink-0" />
+          {currentStatusOption.label}
+        </span>
+        <ChevronDown className="w-3 h-3 shrink-0 opacity-70" />
       </button>
 
-      {/* Header: title and job ref */}
-      <div className="bg-card border border-border rounded-xl p-6 md:p-8 flex items-stretch justify-between gap-8">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-3xl font-extrabold text-foreground tracking-tight truncate">
-              {job.siteName}
-            </h1>
-            <button
-              aria-label="Edit job details"
-              onClick={() => {
-                setEditSiteName(job.siteName);
-                setEditMainContractor(job.mainContractor);
-                setEditPostcode(job.postcode);
-                setEditEmail(job.email || "");
-                setEditContractMaxPours(String(job.contractMaxPours || 0));
-                setIsEditingJob(true);
-              }}
-              className="text-muted-foreground hover:text-foreground hover:bg-secondary p-1.5 rounded-lg transition-colors cursor-pointer"
-            >
-              <PencilLine className="w-4 h-4" />
-            </button>
+      {statusMenuOpen && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setStatusMenuOpen(false)} />
+          <div
+            role="listbox"
+            className="absolute top-full left-0 mt-1 z-20 w-full min-w-[140px] bg-card border border-border rounded-lg shadow-lg py-1 overflow-hidden"
+          >
+            {STATUS_OPTIONS.map(({ key: s, label, Icon, activeClasses }) => (
+              <button
+                key={s}
+                type="button"
+                role="option"
+                aria-selected={status === s}
+                onClick={() => {
+                  setStatusMenuOpen(false);
+                  if (s !== status) setPendingStatus(s);
+                }}
+                className={`w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${
+                  status === s
+                    ? activeClasses
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5 shrink-0" />
+                {label}
+              </button>
+            ))}
           </div>
-          <p className="text-sm text-muted-foreground mt-2">
-            {job.mainContractor} · <span className="font-mono">{job.postcode}</span>
-          </p>
-        </div>
+        </>
+      )}
+    </div>
+  );
 
-        <div className="w-px bg-border shrink-0" />
+  return (
+    <div className="space-y-6 font-sans text-foreground p-4 md:p-6 max-w-7xl mx-auto bg-background min-h-screen">
+      <div className="flex items-center justify-between">
+        <button
+          onClick={onBack}
+          className="group flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer ml-1"
+        >
+          <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+          <span>{backLabel}</span>
+        </button>
+        <button
+          aria-label="Edit job details"
+          onClick={() => {
+            setEditSiteName(job.siteName);
+            setEditMainContractor(job.mainContractor);
+            setEditPostcode(job.postcode);
+            setEditEmail(job.email || "");
+            setEditContractMaxPours(String(job.contractMaxPours || 0));
+            setIsEditingJob(true);
+          }}
+          className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer mr-1"
+        >
+          <PencilLine className="w-3.5 h-3.5" />
+          <span>Edit</span>
+        </button>
+      </div>
 
-        <div className="flex flex-col items-end justify-center gap-1.5 shrink-0">
+      {/* Header: job ref, title and status */}
+      <div className="bg-card border border-border rounded-xl p-6 md:p-8 flex flex-col sm:flex-row items-start sm:items-stretch justify-between gap-4 sm:gap-8">
+        <div className="flex flex-col items-start justify-center gap-1.5 shrink-0 order-1">
           <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             Job Reference
           </span>
-          <span className="text-xl font-bold font-mono text-foreground">
+          <span className="text-xl font-bold font-mono text-primary bg-primary/10 border border-primary/20 rounded-md px-2.5 py-1.5">
             {job.jobRef.replace("-X", "")}
           </span>
+        </div>
+
+        <div className="hidden sm:block w-px bg-border shrink-0 order-2" />
+
+        <div className="flex-1 min-w-0 order-3 sm:order-3">
+          <h1
+            className="text-xl md:text-3xl font-extrabold text-foreground tracking-tight break-words line-clamp-2"
+            title={job.siteName}
+          >
+            {job.siteName}
+          </h1>
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
+              <span className="text-foreground">{job.mainContractor}</span>
+              <span className="text-muted-foreground">·</span>
+              <span className="font-mono normal-case tracking-normal text-muted-foreground">
+                {job.postcode}
+              </span>
+            </div>
+            {job.email && (
+              <a
+                href={`mailto:${job.email}`}
+                className="inline-flex items-center gap-1.5 text-[11px] font-bold normal-case tracking-normal bg-secondary/50 border border-border rounded-md px-2.5 py-1.5 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Mail className="w-3.5 h-3.5 shrink-0" />
+                {job.email}
+              </a>
+            )}
+          </div>
+        </div>
+
+        <div className="hidden sm:block w-px bg-border shrink-0 order-4" />
+
+        <div className="flex flex-col items-start justify-center w-full sm:w-[150px] shrink-0 order-5">
+          <div className="flex flex-col items-start gap-1.5 w-full">
+            {statusDropdown}
+            {loadingWeather ? (
+              <div className="w-full flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
+                <Loader className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+                Loading
+              </div>
+            ) : weatherData ? (
+              <>
+                <div className="w-full flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
+                  {weatherData.condition === "Rain" ? (
+                    <CloudRain className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  ) : weatherData.condition === "Frost" ? (
+                    <Snowflake className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  ) : weatherData.condition === "Wind" ? (
+                    <Wind className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  ) : (
+                    <CloudSun className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                  )}
+                  <span className="text-foreground">{weatherData.temperature}°C</span>
+                  <span className="text-muted-foreground normal-case font-medium tracking-normal">
+                    {weatherData.condition}
+                  </span>
+                </div>
+                <span
+                  className={`w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[11px] font-bold uppercase tracking-wider ${
+                    weatherData.isImpactful
+                      ? "bg-destructive/15 text-destructive border-destructive/30"
+                      : "bg-success/15 text-success border-success/30"
+                  }`}
+                >
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  {weatherData.riskLevel} Risk
+                </span>
+              </>
+            ) : (
+              <span className="w-full text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
+                Weather unavailable
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1052,269 +1196,224 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       />
 
       {/* Secondary sections: Suppliers/Map, Diary+Staff, Attachments */}
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full grid grid-cols-5">
+      <Tabs defaultValue="overview" className="w-full -mt-3">
+        <TabsList className="w-full h-auto grid grid-cols-5">
           <TabsTrigger
             value="overview"
             aria-label="Overview"
-            className="flex items-center justify-center gap-1 px-1.5"
+            className="flex w-full h-full items-center justify-center gap-1.5 px-1.5 py-2"
           >
-            <LayoutGrid className="w-3.5 h-3.5 shrink-0" />{" "}
-            <span className="text-[11px]">Overview</span>
+            <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline text-[11px] whitespace-nowrap">Overview</span>
           </TabsTrigger>
           <TabsTrigger
             value="media"
             aria-label="Attachments"
-            className="flex items-center justify-center gap-1 px-1.5"
+            className="flex w-full h-full items-center justify-center gap-1.5 px-1.5 py-2"
           >
-            <Paperclip className="w-3.5 h-3.5 shrink-0" />{" "}
-            <span className="text-[11px]">Attachments</span>
+            <Paperclip className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline text-[11px] whitespace-nowrap">Attachments</span>
           </TabsTrigger>
           <TabsTrigger
             value="suppliers"
             aria-label="Local Suppliers"
-            className="flex items-center justify-center gap-1 px-1.5"
+            className="flex w-full h-full items-center justify-center gap-1.5 px-1.5 py-2"
           >
-            <MapPin className="w-3.5 h-3.5 shrink-0" />{" "}
-            <span className="text-[11px]">Suppliers</span>
+            <MapPin className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline text-[11px] whitespace-nowrap">Suppliers</span>
           </TabsTrigger>
           <TabsTrigger
             value="billing"
             aria-label="Billing"
-            className="flex items-center justify-center gap-1 px-1.5"
+            className="flex w-full h-full items-center justify-center gap-1.5 px-1.5 py-2"
           >
-            <FileText className="w-3.5 h-3.5 shrink-0" />{" "}
-            <span className="text-[11px]">Billing</span>
+            <FileText className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline text-[11px] whitespace-nowrap">Billing</span>
           </TabsTrigger>
           <TabsTrigger
             value="history"
             aria-label="History"
-            className="flex items-center justify-center gap-1 px-1.5"
+            className="flex w-full h-full items-center justify-center gap-1.5 px-1.5 py-2"
           >
-            <History className="w-3.5 h-3.5 shrink-0" />{" "}
-            <span className="text-[11px]">History</span>
+            <History className="w-3.5 h-3.5 shrink-0" />
+            <span className="hidden sm:inline text-[11px] whitespace-nowrap">History</span>
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <PersistentJobHeader
-            weatherData={weatherData}
-            loadingWeather={loadingWeather}
-            groupedStaff={groupedStaff}
-            statusPills={
-              <div className="flex flex-wrap items-center gap-1.5">
-                {(
-                  [
-                    {
-                      key: "pending",
-                      label: "Pending",
-                      Icon: Circle,
-                      activeClasses: "bg-warning/15 text-warning border-warning/30",
-                    },
-                    {
-                      key: "in-progress",
-                      label: "In Progress",
-                      Icon: Clock,
-                      activeClasses: "bg-primary/15 text-primary border-primary/30",
-                    },
-                    {
-                      key: "completed",
-                      label: "Completed",
-                      Icon: Check,
-                      activeClasses: "bg-success/15 text-success border-success/30",
-                    },
-                  ] as const
-                ).map(({ key: s, label, Icon, activeClasses }) => {
-                  const isActive = status === s;
-                  return (
-                    <button
-                      key={s}
-                      onClick={() => !isActive && setPendingStatus(s)}
-                      aria-pressed={isActive}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                        isActive
-                          ? activeClasses
-                          : "border-transparent text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
-                      <Icon className="w-3.5 h-3.5 shrink-0" />
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
-            }
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 items-start">
+            <div className="bg-card border border-border rounded-xl p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-base font-bold text-foreground">Scheduled Pours</h2>
 
-          <div className="bg-card border border-border rounded-xl p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-bold text-foreground">Scheduled Pours</h2>
-
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setIsAddingPour(!isAddingPour)}
-                  className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border bg-card border-border hover:bg-secondary text-foreground"
-                >
-                  {isAddingPour ? "Cancel" : "+ Schedule Pour"}
-                </button>
-              </div>
-            </div>
-
-            {isAddingPour && (
-              <form
-                onSubmit={handleAddPourSubmit}
-                className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4"
-              >
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                      Expected Date
-                    </label>
-                    <input
-                      type="date"
-                      required
-                      value={newPourDate}
-                      onChange={(e) => setNewPourDate(e.target.value)}
-                      className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                      Mix Type
-                    </label>
-                    <select
-                      value={newPourMix}
-                      onChange={(e) => setNewPourMix(e.target.value)}
-                      className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none cursor-pointer"
-                    >
-                      <option value="C28/35">C28/35</option>
-                      <option value="C32/40">C32/40</option>
-                      <option value="C35/45">C35/45</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                      Volume (m³)
-                    </label>
-                    <input
-                      type="number"
-                      required
-                      min="1"
-                      value={newPourVolume}
-                      onChange={(e) => setNewPourVolume(e.target.value)}
-                      className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
-                    Pour Notes
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Notes..."
-                    value={newPourNotes}
-                    onChange={(e) => setNewPourNotes(e.target.value)}
-                    className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none"
-                  />
-                </div>
-
-                <div className="flex justify-end">
+                <div className="flex items-center gap-3">
                   <button
-                    type="submit"
-                    className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg text-xs cursor-pointer"
+                    onClick={() => setIsAddingPour(!isAddingPour)}
+                    className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border bg-card border-border hover:bg-secondary text-foreground"
                   >
-                    Schedule Pour
+                    {isAddingPour ? "Cancel" : "+ Schedule Pour"}
                   </button>
                 </div>
-              </form>
-            )}
+              </div>
 
-            <div className="space-y-2.5">
-              {pourLogs.map((log) => {
-                const isCompleted = log.status === "completed";
-                return (
-                  <div
-                    key={log.id}
-                    className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-xl transition-all ${
-                      isCompleted
-                        ? "bg-card border-border hover:bg-secondary"
-                        : "bg-warning/5 border-warning/20 hover:bg-warning/10"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <button
-                        type="button"
-                        aria-label={
-                          isCompleted
-                            ? `Mark pour ${log.pourNumber} as scheduled`
-                            : `Mark pour ${log.pourNumber} complete`
-                        }
-                        onClick={() => setPourToggleTarget(log)}
-                        className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
-                          isCompleted
-                            ? "bg-success/15 border-success/30 text-success hover:bg-success/25"
-                            : "border-border text-transparent hover:border-primary hover:bg-primary/10"
-                        }`}
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                      <div className="space-y-1 min-w-0">
-                        <div className="text-sm font-bold text-foreground flex items-center flex-wrap gap-x-2 gap-y-1">
-                          Pour #{log.pourNumber}
-                          {!isCompleted && (
-                            <span className="text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
-                              Scheduled
-                            </span>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {log.mixType} · {log.volumeM3}m³
-                        </div>
-                        {log.notes && (
-                          <div className="text-[13px] text-muted-foreground/80 italic truncate max-w-[280px]">
-                            {log.notes}
-                          </div>
-                        )}
-                      </div>
+              {isAddingPour && (
+                <form
+                  onSubmit={handleAddPourSubmit}
+                  className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4"
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                        Expected Date
+                      </label>
+                      <input
+                        type="date"
+                        required
+                        value={newPourDate}
+                        onChange={(e) => setNewPourDate(e.target.value)}
+                        className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
+                      />
                     </div>
-                    <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
-                      {isCompleted && (
-                        <div className="text-xs text-muted-foreground font-semibold">
-                          {formatPourDate(log.date)}
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        aria-label={`Edit notes for pour ${log.pourNumber}`}
-                        onClick={() => {
-                          setEditNoteText(log.notes || "");
-                          setPourNoteTarget(log);
-                        }}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                    <div>
+                      <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                        Mix Type
+                      </label>
+                      <select
+                        value={newPourMix}
+                        onChange={(e) => setNewPourMix(e.target.value)}
+                        className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none cursor-pointer"
                       >
-                        <PencilLine className="w-4 h-4" />
-                      </button>
-                      <button
-                        type="button"
-                        aria-label={`Remove pour ${log.pourNumber}`}
-                        onClick={() => setPourToRemove(log)}
-                        className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                        <option value="C28/35">C28/35</option>
+                        <option value="C32/40">C32/40</option>
+                        <option value="C35/45">C35/45</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                        Volume (m³)
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min="1"
+                        value={newPourVolume}
+                        onChange={(e) => setNewPourVolume(e.target.value)}
+                        className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none font-mono"
+                      />
                     </div>
                   </div>
-                );
-              })}
 
-              {pourLogs.length === 0 && (
-                <div className="py-8 text-center text-xs text-muted-foreground uppercase tracking-wider">
-                  No pours logged yet
-                </div>
+                  <div>
+                    <label className="text-[12px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">
+                      Pour Notes
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Notes..."
+                      value={newPourNotes}
+                      onChange={(e) => setNewPourNotes(e.target.value)}
+                      className="w-full bg-card border border-border text-xs text-foreground rounded-lg px-3 py-2 outline-none"
+                    />
+                  </div>
+
+                  <div className="flex justify-end">
+                    <button
+                      type="submit"
+                      className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-lg text-xs cursor-pointer"
+                    >
+                      Schedule Pour
+                    </button>
+                  </div>
+                </form>
               )}
+
+              <div className="space-y-2.5">
+                {pourLogs.map((log) => {
+                  const isCompleted = log.status === "completed";
+                  return (
+                    <div
+                      key={log.id}
+                      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-xl transition-all ${
+                        isCompleted
+                          ? "bg-card border-border hover:bg-secondary"
+                          : "bg-warning/5 border-warning/20 hover:bg-warning/10"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <button
+                          type="button"
+                          aria-label={
+                            isCompleted
+                              ? `Mark pour ${log.pourNumber} as scheduled`
+                              : `Mark pour ${log.pourNumber} complete`
+                          }
+                          onClick={() => setPourToggleTarget(log)}
+                          className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                            isCompleted
+                              ? "bg-success/15 border-success/30 text-success hover:bg-success/25"
+                              : "border-border text-transparent hover:border-primary hover:bg-primary/10"
+                          }`}
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="space-y-1 min-w-0">
+                          <div className="text-sm font-bold text-foreground flex items-center flex-wrap gap-x-2 gap-y-1">
+                            Pour #{log.pourNumber}
+                            {!isCompleted && (
+                              <span className="text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
+                                Scheduled
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {log.mixType} · {log.volumeM3}m³
+                          </div>
+                          {log.notes && (
+                            <div className="text-[13px] text-muted-foreground/80 italic truncate max-w-[280px]">
+                              {log.notes}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+                        {isCompleted && (
+                          <div className="text-xs text-muted-foreground font-semibold">
+                            {formatPourDate(log.date)}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          aria-label={`Edit notes for pour ${log.pourNumber}`}
+                          onClick={() => {
+                            setEditNoteText(log.notes || "");
+                            setPourNoteTarget(log);
+                          }}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                        >
+                          <PencilLine className="w-4 h-4" />
+                        </button>
+                        <button
+                          type="button"
+                          aria-label={`Remove pour ${log.pourNumber}`}
+                          onClick={() => setPourToRemove(log)}
+                          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {pourLogs.length === 0 && (
+                  <div className="py-8 text-center text-xs text-muted-foreground uppercase tracking-wider">
+                    No pours logged yet
+                  </div>
+                )}
+              </div>
             </div>
+
+            <PersistentJobHeader groupedStaff={groupedStaff} />
           </div>
 
           <FeedTab jobId={job.id} />

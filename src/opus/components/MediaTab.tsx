@@ -111,6 +111,8 @@ export function MediaTab({
   // ask which bucket the file belongs to and prefix the name to match —
   // no schema change needed, keeps the existing regex grouping working.
   const [pendingDocFile, setPendingDocFile] = useState<File | null>(null);
+  const [docDragActive, setDocDragActive] = useState(false);
+  const docFileInputRef = React.useRef<HTMLInputElement>(null);
   const chooseDocCategory = (prefix: string | null) => {
     if (!pendingDocFile) return;
     const file = prefix
@@ -128,7 +130,7 @@ export function MediaTab({
         {/* Attachments Section: Photos and Documents */}
         <div className="grid grid-cols-1 md:grid-cols-2 bg-card border border-border rounded-xl overflow-hidden">
           {/* Before & After Photo Gallery */}
-          <div className="p-4 space-y-4 md:border-r border-border">
+          <div className="p-3 space-y-3 md:border-r border-border">
             <div className="flex flex-wrap justify-between items-center gap-3 border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <Camera className="w-4 h-4 text-muted-foreground" />
@@ -176,13 +178,18 @@ export function MediaTab({
               </div>
             </div>
 
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground/70 -mt-2">
+              <Camera className="w-3 h-3" />
+              Newest uploads first · click a photo to view
+            </p>
+
             <div
-              className={`bg-background border border-border rounded-xl min-h-[140px] p-3 ${allPhotos.length > 0 ? "" : "flex items-center justify-center"}`}
+              className={`bg-background border border-border rounded-xl min-h-[140px] p-2 ${allPhotos.length > 0 ? "" : "flex items-center justify-center"}`}
             >
               {allPhotos.length > 0 ? (
                 <CardGrid
                   items={allPhotos}
-                  className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3"
+                  className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(110px,1fr))]"
                   renderCard={(p, i) => (
                     <div
                       key={p.id}
@@ -197,7 +204,7 @@ export function MediaTab({
                         className="w-full aspect-[4/3] object-cover"
                       />
                       <span
-                        className={`absolute top-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${p.type === "image_before" ? "bg-black/60 text-foreground" : "bg-primary/80 text-primary-foreground"}`}
+                        className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded shadow-sm text-[9px] font-bold uppercase tracking-wider ${p.type === "image_before" ? "bg-black/80 text-white" : "bg-primary text-primary-foreground"}`}
                       >
                         {p.type === "image_before" ? "Before" : "After"}
                       </span>
@@ -205,17 +212,6 @@ export function MediaTab({
                         <span className="text-foreground font-bold truncate">{p.uploaded_by}</span>
                         <span>{new Date(p.uploaded_at || 0).toLocaleDateString("en-GB")}</span>
                       </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeleteAttachmentTarget(p);
-                        }}
-                        aria-label="Delete photo"
-                        className="absolute top-1 right-1 p-1 rounded bg-black/60 text-foreground opacity-0 group-hover:opacity-100 hover:bg-destructive transition-all cursor-pointer"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
                     </div>
                   )}
                   emptyMessage="No Media"
@@ -231,29 +227,79 @@ export function MediaTab({
             </div>
           </div>
 
-          {/* Project Documents & Drag-and-Drop */}
-          <div className="p-4 space-y-4">
-            <div className="flex justify-between items-center border-b border-border pb-3">
+          {/* Project Documents — whole column is the drop zone */}
+          <div
+            className={`p-4 space-y-4 relative transition-colors ${docDragActive ? "bg-primary/5" : ""}`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDocDragActive(true);
+            }}
+            onDragLeave={() => setDocDragActive(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDocDragActive(false);
+              const file = e.dataTransfer.files?.[0];
+              if (file) setPendingDocFile(file);
+            }}
+          >
+            {docDragActive && (
+              <div className="absolute inset-2 z-10 flex items-center justify-center rounded-lg border-2 border-dashed border-primary bg-background/90 pointer-events-none">
+                <span className="text-[13px] font-bold uppercase tracking-wider text-primary">
+                  Drop to upload
+                </span>
+              </div>
+            )}
+            <input
+              ref={docFileInputRef}
+              type="file"
+              onChange={(e) => {
+                if (e.target.files?.[0]) setPendingDocFile(e.target.files[0]);
+                e.target.value = "";
+              }}
+              className="hidden"
+              disabled={uploadingDoc}
+            />
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b border-border pb-3">
               <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-muted-foreground" />
+                <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
                   Project Attachments
                 </h2>
               </div>
-              <button
-                onClick={generateUploadLink}
-                disabled={generatingLink}
-                className="text-[12px] text-primary hover:text-primary font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
-              >
-                {generatingLink ? (
-                  <Loader className="w-3 h-3 animate-spin" />
-                ) : (
-                  <>
-                    <LinkIcon className="w-3 h-3" /> Request Link
-                  </>
-                )}
-              </button>
+              <div className="flex items-center gap-3 shrink-0">
+                <button
+                  onClick={() => docFileInputRef.current?.click()}
+                  disabled={uploadingDoc}
+                  className="text-[12px] text-muted-foreground hover:text-foreground font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                >
+                  {uploadingDoc ? (
+                    <Loader className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <>
+                      <Plus className="w-3 h-3" /> Upload
+                    </>
+                  )}
+                </button>
+                <span className="w-px h-3 bg-border" />
+                <button
+                  onClick={generateUploadLink}
+                  disabled={generatingLink}
+                  className="text-[12px] text-primary hover:text-primary font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                >
+                  {generatingLink ? (
+                    <Loader className="w-3 h-3 animate-spin" />
+                  ) : (
+                    <>
+                      <LinkIcon className="w-3 h-3" /> Request Link
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground/70 -mt-2">
+              <Folder className="w-3 h-3" />
+              Drag files anywhere in this panel to upload
+            </p>
 
             {/* Generated request link alert — auto-copied on generate, so this
                 is just a confirmation line; raw URL only shows if copy failed. */}
@@ -282,28 +328,6 @@ export function MediaTab({
               </div>
             )}
 
-            {/* Drag and drop zone */}
-            <div className="border border-dashed border-border hover:border-muted-foreground/40 rounded-lg py-4 px-4 bg-background text-center relative transition-all">
-              <input
-                type="file"
-                onChange={(e) => {
-                  if (e.target.files?.[0]) setPendingDocFile(e.target.files[0]);
-                  e.target.value = "";
-                }}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                disabled={uploadingDoc}
-              />
-              <div className="flex flex-col items-center justify-center gap-1 text-muted-foreground">
-                <div className="flex items-center gap-2 text-[13px]">
-                  <FileText className="w-4 h-4 shrink-0" />
-                  <span className="font-bold text-foreground">
-                    {uploadingDoc ? "Uploading..." : "Drop files or click to upload"}
-                  </span>
-                </div>
-                <div className="text-[11px]">PDF, Excel, Word, CAD · 10MB/file</div>
-              </div>
-            </div>
-
             {/* Documents List, grouped by type */}
             <div className="space-y-3">
               {projectDocs.length > 0 ? (
@@ -318,30 +342,22 @@ export function MediaTab({
                         </span>
                         <span className="flex-1 h-px bg-border" />
                       </div>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+                      <div className="flex flex-col gap-1.5">
                         {docs.map((d) => (
                           <div
                             key={d.id}
-                            className="group relative flex flex-col gap-1.5 p-2.5 bg-background border border-border rounded-lg hover:border-muted-foreground/40 transition-all"
+                            className="group relative flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-lg hover:border-muted-foreground/40 transition-all"
                           >
                             <button
                               type="button"
-                              onClick={() => setDeleteAttachmentTarget(d)}
-                              aria-label={`Delete ${d.file_name}`}
-                              className="absolute top-1.5 right-1.5 p-1 rounded text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive hover:bg-destructive/10 transition-all cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
                               onClick={() => setViewDocTarget(d)}
-                              className="flex flex-col items-start gap-1.5 text-left cursor-pointer min-w-0"
+                              className="text-left cursor-pointer min-w-0"
                             >
-                              <span className="text-xs text-foreground hover:text-primary truncate font-mono w-full">
+                              <span className="text-xs text-foreground hover:text-primary truncate font-mono block">
                                 {d.file_name}
                               </span>
                             </button>
-                            <span className="text-[10.5px] text-muted-foreground font-medium">
+                            <span className="text-[10.5px] text-muted-foreground font-medium shrink-0">
                               {new Date(d.uploaded_at || 0).toLocaleDateString("en-GB")}
                             </span>
                           </div>
@@ -352,7 +368,7 @@ export function MediaTab({
                 })
               ) : (
                 <div className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold">
-                  No documents uploaded yet
+                  No documents · drag files here or click Upload
                 </div>
               )}
             </div>
@@ -399,22 +415,42 @@ export function MediaTab({
         </DialogContent>
       </Dialog>
 
-      {/* View document warning */}
-      <ConfirmDialog
-        open={!!viewDocTarget}
-        onOpenChange={(open) => {
-          if (!open) setViewDocTarget(null);
-        }}
-        tone="neutral"
-        tag="External file"
-        title="Open This Document?"
-        confirmLabel="View Document"
-        onConfirm={executeViewDocument}
-        message={
-          viewDocTarget &&
-          `This opens "${viewDocTarget.file_name}" in a new tab. This access is recorded in the job's audit log.`
-        }
-      />
+      {/* Manage document — view or delete */}
+      <Dialog open={!!viewDocTarget} onOpenChange={(open) => !open && setViewDocTarget(null)}>
+        <DialogContent className="lg:max-w-[400px]">
+          <div className="flex items-center gap-[9px] text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+            <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+            <span>External file</span>
+          </div>
+          <div>
+            <h2 className="mb-2 text-[15px] font-semibold uppercase tracking-[0.02em]">
+              Manage Document
+            </h2>
+            <p className="mb-3 text-[13.5px] text-muted-foreground truncate font-mono">
+              {viewDocTarget?.file_name}
+            </p>
+            <p className="text-[13.5px] text-muted-foreground">
+              Viewing opens this file in a new tab and is recorded in the job's audit log.
+            </p>
+          </div>
+          <div className="flex gap-2.5">
+            <Button
+              variant="outline"
+              className="text-destructive hover:text-destructive hover:bg-destructive/10 hover:border-destructive/40"
+              onClick={() => {
+                const target = viewDocTarget;
+                setViewDocTarget(null);
+                if (target) setDeleteAttachmentTarget(target);
+              }}
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Delete
+            </Button>
+            <Button className="flex-1" onClick={executeViewDocument}>
+              View Document
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete attachment warning */}
       <ConfirmDialog
@@ -483,6 +519,14 @@ export function MediaTab({
                   {gallery.photos.length > 1 && ` · ${gallery.index + 1}/${gallery.photos.length}`}
                 </div>
                 <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    aria-label="Delete photo"
+                    onClick={() => setDeleteAttachmentTarget(gallery.photos[gallery.index])}
+                    className="p-2 bg-card border border-border text-muted-foreground hover:text-destructive hover:border-destructive/40 hover:bg-destructive/10 rounded-lg transition-colors cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => {

@@ -919,20 +919,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         </button>
       </div>
 
-      {/* Header: job ref, title and status */}
+      {/* Header: title and status */}
       <div className="bg-card border border-border rounded-xl p-6 md:p-8 flex flex-col sm:flex-row items-start sm:items-stretch justify-between gap-4 sm:gap-6">
-        <div className="flex flex-col items-start justify-center gap-1.5 shrink-0 order-1">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-            Job Reference
-          </span>
-          <span className="text-base font-bold font-mono text-foreground bg-secondary border border-border rounded-md px-2 py-1">
-            {job.jobRef.replace("-X", "")}
-          </span>
-        </div>
-
-        <div className="hidden sm:block w-px bg-border shrink-0 order-2" />
-
-        <div className="flex-1 min-w-0 order-3 sm:order-3">
+        <div className="flex-1 min-w-0 order-1">
           <h1
             className="text-xl md:text-3xl font-extrabold text-foreground tracking-tight break-words line-clamp-2"
             title={job.siteName}
@@ -959,10 +948,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           </div>
         </div>
 
-        <div className="hidden sm:block w-px bg-border shrink-0 order-4" />
+        <div className="hidden sm:block w-px bg-border shrink-0 order-2" />
 
-        <div className="flex flex-col items-start justify-center w-full sm:w-[130px] shrink-0 order-5">
+        <div className="flex flex-col items-start justify-center w-full sm:w-[130px] shrink-0 order-3">
           <div className="flex flex-col items-start gap-1.5 w-full">
+            <span className="w-full font-mono text-[11px] font-bold text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5 text-center">
+              {job.jobRef.replace("-X", "")}
+            </span>
             {statusDropdown}
             {loadingWeather ? (
               <div className="w-full flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">

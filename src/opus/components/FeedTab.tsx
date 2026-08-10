@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useState } from "react";
-import { Bell, Send, Loader, Trash2 } from "lucide-react";
+import { Send, Loader, Trash2 } from "lucide-react";
 import { supabase } from "../../integrations/supabase/client";
 import { toast } from "sonner";
 import { CardGrid } from "./CardGrid";
@@ -9,7 +9,6 @@ interface JobNote {
   id: string;
   created_at: string;
   body: string;
-  reminder_at: string | null;
   user_email: string | null;
 }
 
@@ -28,21 +27,21 @@ export function groupNotesByDay(notes: JobNote[]): { day: string; notes: JobNote
     }));
 }
 
-export function sortUpcomingReminders(notes: JobNote[], now: Date): JobNote[] {
-  return notes
-    .filter((n) => n.reminder_at && new Date(n.reminder_at).getTime() > now.getTime())
-    .sort((a, b) => new Date(a.reminder_at!).getTime() - new Date(b.reminder_at!).getTime());
-}
-
 function formatDayHeading(day: string): string {
   const d = new Date(`${day}T00:00:00`);
   if (isNaN(d.getTime())) return day;
   return d.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "short" });
 }
 
-function formatReminderTime(iso: string): string {
+function formatRelativeTime(iso: string): string {
   const d = new Date(iso);
   if (isNaN(d.getTime())) return "TBC";
+  const diffMs = Date.now() - d.getTime();
+  const diffMin = Math.round(diffMs / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.round(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
   return d.toLocaleString("en-GB", {
     day: "numeric",
     month: "short",
@@ -51,15 +50,20 @@ function formatReminderTime(iso: string): string {
   });
 }
 
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "?";
+}
+
 export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
   const [notes, setNotes] = useState<JobNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [body, setBody] = useState("");
-  const [wantsReminder, setWantsReminder] = useState(false);
-  const [reminderAt, setReminderAt] = useState("");
+  const [composerOpen, setComposerOpen] = useState(false);
   const [posting, setPosting] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<JobNote | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [namesByEmail, setNamesByEmail] = useState<Record<string, string>>({});
 
   const fetchNotes = async () => {
     const { data, error } = await supabase
@@ -75,6 +79,19 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
     setNotes(data || []);
     setLoading(false);
   };
+
+  useEffect(() => {
+    supabase
+      .from("profiles")
+      .select("email, full_name")
+      .then(({ data }) => {
+        const map: Record<string, string> = {};
+        for (const p of data || []) {
+          if (p.email && p.full_name) map[p.email] = p.full_name;
+        }
+        setNamesByEmail(map);
+      });
+  }, []);
 
   useEffect(() => {
     fetchNotes();
@@ -104,7 +121,6 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
         user_id: user?.id ?? null,
         user_email: user?.email ?? "admin@opusform.co.uk",
         body: body.trim(),
-        reminder_at: wantsReminder && reminderAt ? new Date(reminderAt).toISOString() : null,
       });
       if (error) throw error;
       await supabase.rpc("log_anonymous_audit", {
@@ -115,8 +131,7 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
         p_details: { note_body: body.trim() },
       });
       setBody("");
-      setWantsReminder(false);
-      setReminderAt("");
+      setComposerOpen(false);
       await fetchNotes();
       toast.success("Note added");
     } catch (err) {
@@ -156,122 +171,109 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
     }
   };
 
-  const upcoming = sortUpcomingReminders(notes, new Date());
   const grouped = groupNotesByDay(notes);
+  const skipDayHeadings = grouped.length === 1 && notes.length <= 5;
 
   return (
-    <div className="space-y-4">
-      <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-        <label
-          htmlFor="job-note-body"
-          className="text-xs font-bold uppercase tracking-wider text-foreground"
-        >
-          Add a note
-        </label>
-        <textarea
-          id="job-note-body"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          placeholder="What happened, what's next..."
-          className="w-full min-h-[72px] rounded-lg border border-border bg-background p-3 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground"
-        />
-        <div className="flex flex-wrap items-center gap-3">
-          <label className="flex items-center gap-2 text-xs font-bold text-foreground cursor-pointer">
-            <input
-              type="checkbox"
-              checked={wantsReminder}
-              onChange={(e) => setWantsReminder(e.target.checked)}
+    <div className="bg-card border border-border rounded-xl overflow-hidden">
+      <div className="p-3">
+        {composerOpen ? (
+          <div className="relative">
+            <textarea
+              id="job-note-body"
+              autoFocus
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              onBlur={() => {
+                if (!body.trim()) setComposerOpen(false);
+              }}
+              placeholder="What happened, what's next..."
+              className="w-full min-h-[72px] rounded-lg border border-border bg-background p-3 pr-12 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30"
             />
-            <Bell className="w-4 h-4" /> Remind me
-          </label>
-          {wantsReminder && (
-            <input
-              type="datetime-local"
-              value={reminderAt}
-              onChange={(e) => setReminderAt(e.target.value)}
-              className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground"
-            />
-          )}
+            <button
+              type="button"
+              onClick={handlePost}
+              disabled={posting || !body.trim()}
+              aria-label="Post note"
+              className={`absolute bottom-3 right-3 w-7 h-7 rounded-full flex items-center justify-center transition-colors cursor-pointer disabled:cursor-default ${
+                body.trim()
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-transparent text-muted-foreground border border-border"
+              }`}
+            >
+              {posting ? (
+                <Loader className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Send className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
-            onClick={handlePost}
-            disabled={posting || !body.trim()}
-            className="ml-auto flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-bold bg-primary text-primary-foreground disabled:opacity-50 cursor-pointer"
+            onClick={() => setComposerOpen(true)}
+            className="w-full text-left rounded-lg border border-border bg-background px-3 py-2 text-sm text-muted-foreground hover:border-foreground/30 cursor-pointer transition-colors"
           >
-            {posting ? (
-              <Loader className="w-3.5 h-3.5 animate-spin" />
-            ) : (
-              <Send className="w-3.5 h-3.5" />
-            )}
-            Post
+            Add a note...
           </button>
-        </div>
+        )}
       </div>
 
-      {upcoming.length > 0 && (
-        <div className="bg-warning/5 border border-warning/20 rounded-xl p-4 space-y-2">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-foreground">
-            <Bell className="w-4 h-4 text-warning" /> Upcoming reminders
+      <div className="border-t border-border">
+        {loading ? (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground py-4 px-4">
+            <Loader className="w-4 h-4 animate-spin text-primary" />
+            <span>Loading feed...</span>
           </div>
-          {upcoming.map((n) => (
-            <div
-              key={n.id}
-              className="text-sm text-foreground flex items-center justify-between gap-2"
-            >
-              <span className="truncate">{n.body}</span>
-              <span className="text-xs text-muted-foreground shrink-0">
-                {formatReminderTime(n.reminder_at!)}
-              </span>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
-          <Loader className="w-4 h-4 animate-spin text-primary" />
-          <span>Loading feed...</span>
-        </div>
-      ) : grouped.length === 0 ? (
-        <div className="text-xs text-muted-foreground py-8 text-center uppercase tracking-wider">
-          No notes yet
-        </div>
-      ) : (
-        <CardGrid
-          items={grouped}
-          className="grid grid-cols-1 gap-4"
-          renderCard={({ day, notes: dayNotes }: { day: string; notes: JobNote[] }) => (
-            <div key={day} className="space-y-2">
-              <div className="text-[12px] text-primary font-bold uppercase tracking-wider border-b border-border pb-1">
-                {formatDayHeading(day)}
+        ) : grouped.length === 0 ? (
+          <div className="text-xs text-muted-foreground py-8 px-4 text-center">
+            No notes yet — log site progress, issues, or handover info.
+          </div>
+        ) : (
+          <CardGrid
+            items={grouped}
+            className="divide-y divide-border"
+            renderCard={({ day, notes: dayNotes }: { day: string; notes: JobNote[] }) => (
+              <div key={day} className="px-3 py-2.5 space-y-2.5">
+                {!skipDayHeadings && (
+                  <div className="text-[11px] text-primary font-bold uppercase tracking-wider">
+                    {formatDayHeading(day)}
+                  </div>
+                )}
+                {dayNotes.map((n) => {
+                  const displayName =
+                    (n.user_email && namesByEmail[n.user_email]) || n.user_email || "?";
+                  return (
+                    <div key={n.id} className="flex items-start gap-2.5 group">
+                      <div className="w-7 h-7 rounded-full bg-secondary text-foreground text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                        {initials(displayName)}
+                      </div>
+                      <div className="min-w-0 flex-1 flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-sm text-foreground leading-relaxed">{n.body}</p>
+                          <div className="text-[11px] text-muted-foreground mt-0.5">
+                            {displayName} · {formatRelativeTime(n.created_at)}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTarget(n)}
+                          className="shrink-0 p-1 text-muted-foreground hover:text-destructive cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                          title="Delete note"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-              {dayNotes.map((n) => (
-                <div key={n.id} className="bg-card border border-border rounded-lg p-3 group">
-                  <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm text-foreground leading-relaxed">{n.body}</p>
-                    <button
-                      type="button"
-                      onClick={() => setDeleteTarget(n)}
-                      className="shrink-0 p-1 text-muted-foreground hover:text-destructive cursor-pointer"
-                      title="Delete note"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between mt-2 text-[11px] text-muted-foreground">
-                    <span>{n.user_email}</span>
-                    <span>{formatReminderTime(n.created_at)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-          emptyMessage="No notes yet"
-          emptyIcon={
-            <span className="text-xs text-muted-foreground py-8 text-center uppercase tracking-wider" />
-          }
-        />
-      )}
+            )}
+            emptyMessage="No notes yet — log site progress, issues, or handover info."
+            emptyIcon={<span className="text-xs text-muted-foreground py-8 text-center" />}
+          />
+        )}
+      </div>
 
       <ConfirmDialog
         open={!!deleteTarget}

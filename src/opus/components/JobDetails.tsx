@@ -925,7 +925,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             Job Reference
           </span>
-          <span className="text-xl font-bold font-mono text-primary bg-primary/10 border border-primary/20 rounded-md px-2.5 py-1.5">
+          <span className="text-xl font-bold font-mono text-foreground bg-secondary border border-border rounded-md px-2.5 py-1.5">
             {job.jobRef.replace("-X", "")}
           </span>
         </div>
@@ -1241,10 +1241,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-4 items-start">
-            <div className="bg-card border border-border rounded-xl p-4">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-bold text-foreground">Scheduled Pours</h2>
+          <div className="bg-card border border-border rounded-xl overflow-hidden grid grid-cols-1 lg:grid-cols-[1fr_360px] divide-y lg:divide-y-0 lg:divide-x divide-border">
+            <div className="p-4">
+              <div className="h-8 flex items-center justify-between mb-3">
+                <h2 className="text-sm font-bold text-foreground">Scheduled Pours</h2>
 
                 <div className="flex items-center gap-3">
                   <button
@@ -1327,17 +1327,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 </form>
               )}
 
-              <div className="space-y-2.5">
+              <div className="space-y-2 max-h-[248px] overflow-y-auto pr-0.5">
                 {pourLogs.map((log) => {
                   const isCompleted = log.status === "completed";
                   return (
                     <div
                       key={log.id}
-                      className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-xl transition-all ${
-                        isCompleted
-                          ? "bg-card border-border hover:bg-secondary"
-                          : "bg-warning/5 border-warning/20 hover:bg-warning/10"
-                      }`}
+                      className="min-h-14 flex items-center justify-between gap-2 p-2.5 border bg-background border-border hover:border-primary/30 rounded-lg transition-all"
                     >
                       <div className="flex items-center gap-3 min-w-0">
                         <button
@@ -1348,7 +1344,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                               : `Mark pour ${log.pourNumber} complete`
                           }
                           onClick={() => setPourToggleTarget(log)}
-                          className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                          className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
                             isCompleted
                               ? "bg-success/15 border-success/30 text-success hover:bg-success/25"
                               : "border-border text-transparent hover:border-primary hover:bg-primary/10"
@@ -1356,26 +1352,17 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                         >
                           <Check className="w-3.5 h-3.5" />
                         </button>
-                        <div className="space-y-1 min-w-0">
-                          <div className="text-sm font-bold text-foreground flex items-center flex-wrap gap-x-2 gap-y-1">
+                        <div className="min-w-0">
+                          <div className="text-xs font-bold text-foreground">
                             Pour #{log.pourNumber}
-                            {!isCompleted && (
-                              <span className="text-[11px] font-bold uppercase tracking-wider text-warning bg-warning/10 border border-warning/20 rounded px-1.5 py-0.5">
-                                Scheduled
-                              </span>
-                            )}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-[11px] text-muted-foreground truncate mt-0.5">
                             {log.mixType} · {log.volumeM3}m³
+                            {log.notes && ` · ${log.notes}`}
                           </div>
-                          {log.notes && (
-                            <div className="text-[13px] text-muted-foreground/80 italic truncate max-w-[280px]">
-                              {log.notes}
-                            </div>
-                          )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 self-end sm:self-auto shrink-0">
+                      <div className="flex items-center gap-3 shrink-0">
                         {isCompleted && (
                           <div className="text-xs text-muted-foreground font-semibold">
                             {formatPourDate(log.date)}

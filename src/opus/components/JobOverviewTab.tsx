@@ -28,9 +28,7 @@ export function JobOverviewTab({
           <div className="p-4 border-b border-border flex justify-between items-center">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-destructive" />
-              <span className="text-xs font-bold uppercase tracking-wider text-foreground">
-                Live Site Proximity Matrix
-              </span>
+              <span className="text-sm font-bold text-foreground">Site Proximity Map</span>
             </div>
             <div className="flex items-center gap-3 text-[12px] text-muted-foreground">
               <span className="flex items-center gap-1.5">
@@ -63,9 +61,7 @@ export function JobOverviewTab({
         {/* Local Suppliers List — stretches to match the map column's
             height, scrolling internally instead of pushing the page down */}
         <div className="p-4 flex flex-col h-full lg:min-h-[420px] max-h-[70vh]">
-          <div className="text-[12px] text-muted-foreground font-bold uppercase tracking-wider mb-4">
-            Closest Local Suppliers
-          </div>
+          <div className="text-sm font-bold text-foreground mb-4">Closest Local Suppliers</div>
           <div className="flex-1 flex flex-col min-h-0">
             {loadingSuppliers ? (
               <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">

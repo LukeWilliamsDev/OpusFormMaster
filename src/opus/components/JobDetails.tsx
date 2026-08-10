@@ -920,12 +920,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       </div>
 
       {/* Header: job ref, title and status */}
-      <div className="bg-card border border-border rounded-xl p-6 md:p-8 flex flex-col sm:flex-row items-start sm:items-stretch justify-between gap-4 sm:gap-8">
+      <div className="bg-card border border-border rounded-xl p-6 md:p-8 flex flex-col sm:flex-row items-start sm:items-stretch justify-between gap-4 sm:gap-6">
         <div className="flex flex-col items-start justify-center gap-1.5 shrink-0 order-1">
           <span className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
             Job Reference
           </span>
-          <span className="text-xl font-bold font-mono text-foreground bg-secondary border border-border rounded-md px-2.5 py-1.5">
+          <span className="text-base font-bold font-mono text-foreground bg-secondary border border-border rounded-md px-2 py-1">
             {job.jobRef.replace("-X", "")}
           </span>
         </div>
@@ -961,7 +961,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
         <div className="hidden sm:block w-px bg-border shrink-0 order-4" />
 
-        <div className="flex flex-col items-start justify-center w-full sm:w-[150px] shrink-0 order-5">
+        <div className="flex flex-col items-start justify-center w-full sm:w-[130px] shrink-0 order-5">
           <div className="flex flex-col items-start gap-1.5 w-full">
             {statusDropdown}
             {loadingWeather ? (

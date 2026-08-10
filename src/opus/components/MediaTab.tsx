@@ -134,9 +134,7 @@ export function MediaTab({
             <div className="flex flex-wrap justify-between items-center gap-3 border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <Camera className="w-4 h-4 text-muted-foreground" />
-                <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                  Site Before & After
-                </h2>
+                <h2 className="text-sm font-bold text-foreground">Site Before &amp; After</h2>
               </div>
               <div className="flex items-center gap-2">
                 {[
@@ -262,9 +260,7 @@ export function MediaTab({
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
-                <h2 className="text-sm font-bold uppercase tracking-wider text-foreground">
-                  Project Attachments
-                </h2>
+                <h2 className="text-sm font-bold text-foreground">Project Attachments</h2>
               </div>
               <div className="flex items-center gap-3 shrink-0">
                 <button

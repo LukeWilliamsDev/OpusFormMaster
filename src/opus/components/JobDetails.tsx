@@ -951,7 +951,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         <div className="hidden sm:block w-px bg-border shrink-0 order-2" />
 
         <div className="flex flex-col items-start justify-center w-full sm:w-[130px] shrink-0 order-3">
-          <div className="flex flex-col items-start gap-1.5 w-full">
+          <div className="grid grid-cols-2 sm:flex sm:flex-col items-start gap-1.5 w-full">
             <span className="w-full font-mono text-[11px] font-bold text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5 text-center">
               {job.jobRef.replace("-X", "")}
             </span>

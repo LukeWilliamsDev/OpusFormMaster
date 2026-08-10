@@ -28,7 +28,13 @@ const styles = StyleSheet.create({
   },
   logoRow: { flexDirection: "row", alignItems: "center" },
   logoText: { color: "#E9E6E1", fontSize: 22, fontWeight: "bold", letterSpacing: 3 },
-  logoDot: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: "#B5651D", marginHorizontal: 5 },
+  logoDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: "#B5651D",
+    marginHorizontal: 5,
+  },
   headerRight: { alignItems: "flex-end" },
   companyLabel: { color: "#78716c", fontSize: 8, textTransform: "uppercase", letterSpacing: 1 },
   companyVal: { color: "#ffffff", fontSize: 9, marginTop: 2 },
@@ -49,18 +55,43 @@ const styles = StyleSheet.create({
     borderColor: "#e7e5e4",
     marginBottom: 24,
   },
-  metaCell: { flex: 1, paddingVertical: 10, paddingHorizontal: 12, borderRightWidth: 1, borderColor: "#e7e5e4" },
+  metaCell: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRightWidth: 1,
+    borderColor: "#e7e5e4",
+  },
   metaCellLast: { borderRightWidth: 0 },
-  metaLabel: { color: "#a8a29e", fontSize: 7, textTransform: "uppercase", letterSpacing: 1, marginBottom: 3 },
+  metaLabel: {
+    color: "#a8a29e",
+    fontSize: 7,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 3,
+  },
   metaVal: { fontSize: 9, fontWeight: "bold", color: "#0f172a" },
   section: { marginBottom: 16 },
   sectionHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 6 },
   sectionNumber: { color: "#B5651D", fontSize: 9, fontWeight: "bold", width: 22 },
   sectionTitle: { fontSize: 13, fontWeight: "bold", color: "#0f172a", flex: 1 },
-  sectionRule: { height: 1, backgroundColor: "#B5651D", width: 24, marginBottom: 8, marginLeft: 22 },
+  sectionRule: {
+    height: 1,
+    backgroundColor: "#B5651D",
+    width: 24,
+    marginBottom: 8,
+    marginLeft: 22,
+  },
   paragraph: { fontSize: 9.5, lineHeight: 1.5, color: "#44403c", marginBottom: 6, marginLeft: 22 },
   bulletRow: { flexDirection: "row", marginLeft: 22, marginBottom: 4 },
-  bulletDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: "#B5651D", marginTop: 4, marginRight: 8 },
+  bulletDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: "#B5651D",
+    marginTop: 4,
+    marginRight: 8,
+  },
   bulletText: { fontSize: 9.5, lineHeight: 1.5, color: "#44403c", flex: 1 },
   signOff: {
     flexDirection: "row",
@@ -70,7 +101,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingTop: 16,
   },
-  signLabel: { color: "#a8a29e", fontSize: 7, textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 },
+  signLabel: {
+    color: "#a8a29e",
+    fontSize: 7,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
   signVal: { fontSize: 10, fontWeight: "bold", color: "#0f172a" },
   signSub: { fontSize: 8, color: "#78716c", marginTop: 2 },
   footer: {
@@ -143,7 +180,9 @@ function buildDocument(policy) {
         h(Text, { style: styles.sectionTitle }, section.title),
       ),
       h(View, { style: styles.sectionRule }),
-      ...(section.paragraphs || []).map((p, i) => h(Text, { key: `p${i}`, style: styles.paragraph }, p)),
+      ...(section.paragraphs || []).map((p, i) =>
+        h(Text, { key: `p${i}`, style: styles.paragraph }, p),
+      ),
       ...(section.bullets || []).map((b, i) =>
         h(
           View,
@@ -220,7 +259,9 @@ const POLICIES = [
       {
         number: "03",
         title: "Bribes",
-        paragraphs: ["No one may offer, give, ask for, or accept a bribe, whether directly or through someone else."],
+        paragraphs: [
+          "No one may offer, give, ask for, or accept a bribe, whether directly or through someone else.",
+        ],
       },
       {
         number: "04",
@@ -248,7 +289,7 @@ const POLICIES = [
         number: "07",
         title: "Your Responsibilities",
         paragraphs: [
-          "Read, understand, and follow this policy. We keep proper financial records and controls, so payments to third parties are always explainable. Nothing goes \"off-book\".",
+          'Read, understand, and follow this policy. We keep proper financial records and controls, so payments to third parties are always explainable. Nothing goes "off-book".',
           "If you're unsure whether something counts as bribery, or you've been affected by it, tell the Managing Director as soon as possible. We support anyone who raises a genuine concern in good faith.",
         ],
       },
@@ -453,7 +494,9 @@ const POLICIES = [
       {
         number: "02",
         title: "Health and Safety at Work",
-        paragraphs: ["As an employer, we put real weight on good ergonomics and safety in the workplace."],
+        paragraphs: [
+          "As an employer, we put real weight on good ergonomics and safety in the workplace.",
+        ],
       },
       {
         number: "03",
@@ -526,7 +569,9 @@ const POLICIES = [
       {
         number: "03",
         title: "Our Policy",
-        paragraphs: ["We won't tolerate slavery, trafficking, or illegal hiring. We deal fairly with everyone."],
+        paragraphs: [
+          "We won't tolerate slavery, trafficking, or illegal hiring. We deal fairly with everyone.",
+        ],
         bullets: [
           "Right to Work Verification: we strictly verify the identity and right to work of all our direct employees and contractors before they start with us.",
           "Software Safeguards: our software portal helps clients verify compliance documents, like CSCS cards, for their operatives, supporting wider industry efforts against illegal working.",

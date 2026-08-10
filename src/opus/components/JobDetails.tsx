@@ -957,13 +957,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             </span>
             {statusDropdown}
             {loadingWeather ? (
-              <div className="w-full flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
+              <div className="w-full flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
                 <Loader className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
                 Loading
               </div>
             ) : weatherData ? (
               <>
-                <div className="w-full flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
+                <div className="w-full flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
                   {weatherData.condition === "Rain" ? (
                     <CloudRain className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                   ) : weatherData.condition === "Frost" ? (
@@ -979,7 +979,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                   </span>
                 </div>
                 <span
-                  className={`w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[11px] font-bold uppercase tracking-wider ${
+                  className={`w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[11px] font-bold uppercase tracking-wider ${
                     weatherData.isImpactful
                       ? "bg-destructive/15 text-destructive border-destructive/30"
                       : "bg-success/15 text-success border-success/30"
@@ -990,7 +990,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 </span>
               </>
             ) : (
-              <span className="w-full text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
+              <span className="w-full text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
                 Weather unavailable
               </span>
             )}

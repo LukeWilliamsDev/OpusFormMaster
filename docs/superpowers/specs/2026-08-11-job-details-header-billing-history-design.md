@@ -41,8 +41,23 @@ Purely a spacing/typography/card-shell consistency pass — bring every non-Over
 
 ## Testing
 
-Manual verification in browser at desktop, tablet, and mobile widths (per project convention — no automated visual regression suite exists for this page):
+No automated visual regression suite exists for this page — manual verification in browser, resized to each width below (covers this app's Tailwind breakpoints plus real device sizes, since the client's actual screen is unknown):
 
-- Long site name stays on one line at desktop/tablet widths; header doesn't overflow or clip at mobile width.
-- Status/weather/risk chips wrap sensibly under the metadata row on narrow viewports.
-- Attachments, Suppliers, Billing, and History panels all visually match Overview's spacing/type scale when tabbed between.
+| Width  | Represents                         |
+| ------ | ---------------------------------- |
+| 375px  | Small phone (iPhone SE)            |
+| 414px  | Standard phone                     |
+| 640px  | `sm` breakpoint                    |
+| 768px  | `md` / tablet portrait             |
+| 1024px | `lg` breakpoint / tablet landscape |
+| 1280px | `xl` / small laptop                |
+| 1440px | Common desktop                     |
+| 1920px | Large/wide desktop                 |
+
+At every width above, on every tab (Overview, Attachments, Suppliers, Billing, History):
+
+- Long site name stays on one line where there's room; degrades to `line-clamp-2` without overflow/clipping where there isn't.
+- Header metadata chip row (job ref, contractor/postcode, email, status, weather, risk) wraps without overlapping or clipping.
+- Tab bar stays icon-only and usable (no icon crowding/overflow) at every width, including the 375px floor.
+- No horizontal scrollbar appears anywhere on the page at any tested width.
+- Attachments, Suppliers, Billing, and History panels visually match Overview's spacing/type scale, and each panel's own responsive behavior (photo grid columns, map+list stacking, invoice row wrapping) holds up without cramping or overflow at every width.

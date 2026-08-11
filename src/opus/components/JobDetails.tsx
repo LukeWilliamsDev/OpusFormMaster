@@ -3,12 +3,6 @@ import {
   ChevronLeft,
   ChevronDown,
   Check,
-  AlertCircle,
-  CloudRain,
-  CloudSun,
-  Snowflake,
-  Wind,
-  Loader,
   Mail,
   Paperclip,
   History,
@@ -942,40 +936,27 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
         <div className="flex flex-col items-start justify-center w-full sm:w-[130px] shrink-0 order-3">
           <div className="grid grid-cols-2 sm:flex sm:flex-col items-start gap-1.5 w-full">
-            <span className="w-full font-mono text-[11px] font-bold text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5 text-center">
+            <span className="w-full text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
               {job.jobRef.replace("-X", "")}
             </span>
             {statusDropdown}
             {loadingWeather ? (
-              <div className="w-full flex items-center justify-center gap-2 text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
-                <Loader className="w-3.5 h-3.5 animate-spin text-primary shrink-0" />
+              <div className="w-full text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
                 Loading
               </div>
             ) : weatherData ? (
               <>
-                <div className="w-full flex items-center justify-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
-                  {weatherData.condition === "Rain" ? (
-                    <CloudRain className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  ) : weatherData.condition === "Frost" ? (
-                    <Snowflake className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  ) : weatherData.condition === "Wind" ? (
-                    <Wind className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  ) : (
-                    <CloudSun className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  )}
-                  <span className="text-foreground">{weatherData.temperature}°C</span>
-                  <span className="text-muted-foreground normal-case font-medium tracking-normal">
-                    {weatherData.condition}
-                  </span>
+                <div className="w-full text-center text-[11px] font-bold uppercase tracking-wider bg-secondary/50 border border-border rounded-md px-2.5 py-1.5">
+                  <span className="text-foreground">{weatherData.temperature}°C</span>{" "}
+                  <span className="text-muted-foreground">{weatherData.condition}</span>
                 </div>
                 <span
-                  className={`w-full flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[11px] font-bold uppercase tracking-wider ${
+                  className={`w-full text-center px-2.5 py-1.5 rounded-md border text-[11px] font-bold uppercase tracking-wider ${
                     weatherData.isImpactful
                       ? "bg-destructive/15 text-destructive border-destructive/30"
                       : "bg-success/15 text-success border-success/30"
                   }`}
                 >
-                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   {weatherData.riskLevel} Risk
                 </span>
               </>

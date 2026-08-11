@@ -2,10 +2,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { emailShell, logoSvg } from "../_shared/email-theme.ts";
 import { corsHeaders } from "../_shared/cors.ts";
+import { getBearerToken, isStaffRole } from "../_shared/auth.ts";
 
-// NOTE: This Edge Function MUST be deployed with `verify_jwt: false`
-// to allow email clients (Gmail, Outlook, etc.) to fetch the corporate SVG logo
-// via the GET endpoint without Supabase authorization headers.
+// The GET logo endpoint is intentionally public for mail-client image loading.
+// POST requests still require a valid authenticated admin/dispatcher because
+// this function can send arbitrary outbound email through the Resend account.
 
 function escapeHtml(value: string): string {
   return String(value)
@@ -59,30 +60,44 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const authHeader = req.headers.get("Authorization");
-    const token = authHeader ? authHeader.replace("Bearer ", "") : "";
-    if (token && token !== supabaseServiceKey && token !== Deno.env.get("SUPABASE_ANON_KEY")) {
-      const { data } = await supabase.auth.getUser(token);
-      const user = data?.user ?? null;
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
+    const authToken = getBearerToken(req.headers.get("Authorization"));
+    if (!authToken) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Missing Authorization header." }),
+        {
+          status: 401,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        },
+      );
+    }
 
-        if (profile && !["admin", "dispatcher"].includes(profile.role)) {
-          return new Response(
-            JSON.stringify({
-              error: "Forbidden: Only admins and dispatchers can send quote PDFs.",
-            }),
-            {
-              status: 403,
-              headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-            },
-          );
-        }
-      }
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(authToken);
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized: Invalid token." }), {
+        status: 401,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile || !isStaffRole(profile.role)) {
+      return new Response(
+        JSON.stringify({
+          error: "Forbidden: Only admins and dispatchers can send quote PDFs.",
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        },
+      );
     }
 
     const payload: RequestPayload = await req.json();

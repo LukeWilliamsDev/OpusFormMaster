@@ -3,3 +3,11 @@ project_id = "fgpthpxmiroyebrzjdzo"
 [auth]
 minimum_password_length = 8
 password_requirements = "lower_upper_letters_digits_symbols"
+
+# GET serves the public email logo; POST handlers enforce a user JWT and an
+# admin/dispatcher profile role before any outbound email or secret lookup.
+[functions.send-quote-pdf]
+verify_jwt = false
+
+[functions.send-final-bill]
+verify_jwt = false

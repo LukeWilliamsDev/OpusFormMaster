@@ -1,9 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-// NOTE: This Edge Function MUST be deployed with `verify_jwt: false`
-// to allow email clients (Gmail, Outlook, etc.) to fetch the corporate SVG logo
-// via the GET endpoint without Supabase authorization headers.
+// The GET logo endpoint is intentionally public for mail-client image loading.
+// POST requests still require a valid authenticated admin/dispatcher because
+// this function can send arbitrary outbound email through the Resend account.
 
 // _shared/cors.ts and _shared/email-theme.ts are duplicated inline below
 // instead of imported: this function is deployed via the Supabase Management
@@ -138,11 +138,6 @@ function logoSvg(theme: "light" | "dark"): string {
   );
 }
 
-// TEMPORARY: recipient is hardcoded to the requester's own address while this
-// feature is under test, instead of clientInfo.email. Remove OVERRIDE_TO_EMAIL
-// and use payload.toEmail once final bills are ready to go to real clients.
-const OVERRIDE_TO_EMAIL = "lukewilliams141@gmail.com";
-
 function escapeHtml(value: string): string {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -152,8 +147,21 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+// `send-final-bill` is deployed as a single-file bundle through the Supabase
+// Management API, so its authorization helpers stay inline rather than using a
+// relative import that the deployment path cannot resolve.
+function getBearerToken(authHeader: string | null): string | null {
+  const match = authHeader?.match(/^Bearer\s+(\S+)$/i);
+  return match?.[1] ?? null;
+}
+
+function isStaffRole(role: unknown): boolean {
+  return role === "admin" || role === "dispatcher";
+}
+
 interface RequestPayload {
   finalBillId: string;
+  toEmail: string;
   clientName?: string;
   siteName?: string;
   postcode?: string;
@@ -190,35 +198,50 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const authHeader = req.headers.get("Authorization");
-    const token = authHeader ? authHeader.replace("Bearer ", "") : "";
-    if (token && token !== supabaseServiceKey && token !== Deno.env.get("SUPABASE_ANON_KEY")) {
-      const { data } = await supabase.auth.getUser(token);
-      const user = data?.user ?? null;
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
+    const authToken = getBearerToken(req.headers.get("Authorization"));
+    if (!authToken) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized: Missing Authorization header." }),
+        {
+          status: 401,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        },
+      );
+    }
 
-        if (profile && !["admin", "dispatcher"].includes(profile.role)) {
-          return new Response(
-            JSON.stringify({
-              error: "Forbidden: Only admins and dispatchers can send final bills.",
-            }),
-            {
-              status: 403,
-              headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-            },
-          );
-        }
-      }
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(authToken);
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized: Invalid token." }), {
+        status: 401,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (profileError || !profile || !isStaffRole(profile.role)) {
+      return new Response(
+        JSON.stringify({
+          error: "Forbidden: Only admins and dispatchers can send final bills.",
+        }),
+        {
+          status: 403,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        },
+      );
     }
 
     const payload: RequestPayload = await req.json();
     const {
       finalBillId,
+      toEmail,
       clientName,
       siteName,
       postcode,
@@ -232,6 +255,12 @@ serve(async (req) => {
 
     if (!finalBillId) {
       return new Response(JSON.stringify({ error: "finalBillId is required." }), {
+        status: 400,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+    if (!toEmail) {
+      return new Response(JSON.stringify({ error: "Recipient email (toEmail) is required." }), {
         status: 400,
         headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       });
@@ -337,7 +366,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: "Opus Form Billing <" + sender + ">",
-        to: [OVERRIDE_TO_EMAIL],
+        to: [toEmail],
         subject:
           (label || "Invoice #" + billRef) +
           " | " +
@@ -361,19 +390,46 @@ serve(async (req) => {
       throw new Error(resendData.message || JSON.stringify(resendData));
     }
 
-    const { error: updateError } = await supabase
+    const sentAt = new Date().toISOString();
+    const { data: updatedBill, error: updateError } = await supabase
       .from("final_bills")
-      .update({ status: "sent", sent_at: new Date().toISOString() })
-      .eq("id", finalBillId);
+      .update({ status: "sent", sent_at: sentAt })
+      .eq("id", finalBillId)
+      .select("id, status, sent_at")
+      .single();
 
-    if (updateError) {
-      console.error("Failed to mark final bill as sent:", updateError);
+    if (updateError || !updatedBill?.sent_at) {
+      console.error(
+        "Failed to persist final bill sent state:",
+        updateError || "sent_at was not returned",
+      );
+      return new Response(
+        JSON.stringify({
+          success: false,
+          emailSent: true,
+          databaseUpdated: false,
+          error: "Email sent, but the final bill status could not be recorded.",
+        }),
+        {
+          status: 502,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        },
+      );
     }
 
-    return new Response(JSON.stringify({ success: true, data: resendData }), {
-      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      status: 200,
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        emailSent: true,
+        databaseUpdated: true,
+        sentAt: updatedBill.sent_at,
+        data: resendData,
+      }),
+      {
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        status: 200,
+      },
+    );
   } catch (error) {
     console.error("Error sending final bill via Resend:", error);
     return new Response(JSON.stringify({ error: error.message }), {

@@ -855,31 +855,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       if (mode === "finalBill") {
         if (!jobId) throw new Error("Missing job for invoice send");
 
-        const { error: fnError } = await supabase.functions.invoke("send-final-bill", {
-          body: {
-            finalBillId: currentQuoteId,
-            clientName: clientInfo.entity,
-            siteName: clientInfo.site,
-            postcode: clientInfo.postcode,
-            billRef: quoteReference,
-            label: docLabel,
-            pdfBase64: base64,
-            netTotal: totals.netTotal,
-            grossTotal: totals.grossTotal,
-          },
-        });
-        if (fnError) {
-          let errMsg = fnError.message;
-          try {
-            const errBody = await fnError.context?.json();
-            if (errBody && errBody.error) errMsg = errBody.error;
-          } catch (_) {
-            // Fallback to default message
-          }
-          throw new Error(errMsg);
-        }
-
-        const { error: upsertError } = await supabase.from("final_bills").upsert({
+        const { error: draftError } = await supabase.from("final_bills").upsert({
           id: currentQuoteId,
           job_id: jobId,
           reference: quoteReference,
@@ -889,11 +865,51 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           source_invoice_ids: sourceInvoiceIds || [],
           vat_rate: 0,
           totals,
-          status: "sent",
+          status: "draft",
         } as never);
+        if (draftError) throw draftError;
 
-        if (upsertError) {
-          console.error("Invoice sent but failed to update database:", upsertError);
+        const { data: fnData, error: fnError } = await supabase.functions.invoke(
+          "send-final-bill",
+          {
+            body: {
+              finalBillId: currentQuoteId,
+              toEmail: clientInfo.email,
+              clientName: clientInfo.entity,
+              siteName: clientInfo.site,
+              postcode: clientInfo.postcode,
+              billRef: quoteReference,
+              label: docLabel,
+              pdfBase64: base64,
+              netTotal: totals.netTotal,
+              grossTotal: totals.grossTotal,
+            },
+          },
+        );
+        if (fnError) {
+          let errMsg = fnError.message;
+          let emailSent = false;
+          try {
+            const errBody = await fnError.context?.json();
+            if (errBody && errBody.error) errMsg = errBody.error;
+            emailSent = errBody?.emailSent === true;
+          } catch (_) {
+            // Fallback to default message
+          }
+          if (emailSent) {
+            setIsAlreadySent(true);
+            toast.warning("EMAIL SENT", {
+              id: sendingToastId,
+              description: "Email sent, but the invoice status couldn't be saved. Please refresh.",
+            });
+            onBack();
+            return;
+          }
+          throw new Error(errMsg);
+        }
+
+        if (!fnData?.databaseUpdated) {
+          setIsAlreadySent(true);
           toast.warning("EMAIL SENT", {
             id: sendingToastId,
             description: "Email sent, but the invoice status couldn't be saved. Please refresh.",

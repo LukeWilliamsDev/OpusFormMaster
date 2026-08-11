@@ -1,23 +1,21 @@
-# Session Snapshot — 2026-08-10 11:23
+# Session Snapshot — 2026-08-11 13:43
 
 ## Files Changed
 - .claude/sessions/snapshot.md
-- policies/Anti-Bribery-Policy.pdf
-- policies/Health-and-Safety-Policy.pdf
-- policies/Modern-Slavery-Statement.pdf
-- policies/Quality-Management-Policy.pdf
-- policies/Responsible-Sourcing-Policy.pdf
-- policies/Sustainability-Policy.pdf
-- scripts/generate-policies.mjs
 - src/components/application/app-navigation/base-components/nav-list.tsx
 - src/opus/components/HistoryTab.tsx
+- src/opus/components/JobDetails.tsx
+- src/opus/components/RosterView.tsx
+- src/opus/layouts/PortalLayout.tsx
+- src/opus/pages/AuditLog.tsx
+- src/opus/utils/auditDiff.ts
 
 ## Recent Commits
-- 79b0d0c feat(portal): supplier popup redesign, doc-type sort, merged media grid, nav persistence
-- 77f32a0 chore(session): update snapshot
-- 1983edc fix(billing): job-scoped quote/invoice mode split, doc-sequence REF, unique-ref fixes
-- 33ceca6 feat(billing): sequential Quote-##/Invoice-##_JobRef document naming
-- 1a57307 style(map): shrink supplier detail card, drop orange accent bar
+- 711b601 feat(portal): audit log shows before/after values on updates and note text on add
+- e9b587f style(portal): drop weather/risk pill icons, normalize all header pill text to uniform size/weight/case
+- bd456b3 fix(portal): status dropdown chevron overflow bug, drop status icons, ensure full label text fits
+- d177d54 style(portal): match status chevron size to adjacent icons for balance
+- f92be59 style(portal): center status dropdown label to match adjacent pills
 
 ## Token Estimate
 ~? tokens in auto-loaded files

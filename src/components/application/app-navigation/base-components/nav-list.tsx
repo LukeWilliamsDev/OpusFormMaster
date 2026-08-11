@@ -74,6 +74,13 @@ export const NavList = ({
             );
           }
           const collapsed = collapsedSections.has(item.label);
+          if (iconOnly) {
+            return (
+              <li key={index} className="w-full px-2 py-1.5" title={item.label}>
+                <hr className="h-px w-full border-none bg-border" />
+              </li>
+            );
+          }
           return (
             <li key={index} className="w-full px-0.5 pt-4 pb-1.5">
               <button
@@ -85,14 +92,12 @@ export const NavList = ({
                 className="flex w-full items-center justify-between px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
               >
                 <span>{item.label}</span>
-                {!iconOnly && (
-                  <ChevronDown
-                    className={cx(
-                      "h-3 w-3 transition-transform",
-                      collapsed ? "-rotate-90" : "rotate-0",
-                    )}
-                  />
-                )}
+                <ChevronDown
+                  className={cx(
+                    "h-3 w-3 transition-transform",
+                    collapsed ? "-rotate-90" : "rotate-0",
+                  )}
+                />
               </button>
             </li>
           );

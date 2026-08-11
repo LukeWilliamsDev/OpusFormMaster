@@ -19,6 +19,7 @@ import {
   Truck,
   ClipboardList,
   Building2,
+  UserCog,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { usePortal, ALL_ROLES, MANAGEMENT_ROLES } from "../context/PortalContext";
@@ -87,7 +88,7 @@ export const PortalLayout: React.FC = () => {
     },
     { section: "ADMIN" },
     { name: "SITE LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
-    { name: "USERS", path: "/portal/users", icon: Users, roles: ["admin"] },
+    { name: "USERS", path: "/portal/users", icon: UserCog, roles: ["admin"] },
     { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
   ];
 

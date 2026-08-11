@@ -1,9 +1,11 @@
-﻿import React from "react";
+﻿import React, { useState } from "react";
 import { CardGrid } from "../components/CardGrid";
 import { Loader, Search, PencilLine, Layers, FileCheck2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { Database } from "@/integrations/supabase/types";
-import { computeDiff, DiffEntry } from "../utils/auditDiff";
+import { computeDiff, DiffEntry, getEventLabel, getActorName } from "../utils/auditDiff";
+
+const ITEMS_PER_PAGE = 8;
 
 type AuditLogRow = Database["public"]["Tables"]["audit_logs"]["Row"];
 
@@ -30,65 +32,21 @@ export const JOB_REVERTIBLE_FIELDS = [
   "contract_max_pours",
   "status",
 ];
-export const JOB_FIELD_LABELS: Record<string, string> = {
-  site_name: "Site Name",
-  main_contractor: "Main Contractor",
-  postcode: "Postcode",
-  contract_max_pours: "Contract Max Pours",
-  status: "Project Status",
-};
-
-const STATUS_VALUE_LABELS: Record<string, string> = {
-  pending: "Pending",
-  "in-progress": "In Progress",
-  completed: "Completed",
-};
-
-const formatDiffValue = (field: string, value: unknown): string => {
-  if (field === "status") return STATUS_VALUE_LABELS[String(value)] || String(value);
-  if (value === null || value === undefined || value === "") return "—";
-  return String(value);
-};
-
 interface HistoryTabProps {
   jobAuditLogs: AuditLogRow[];
   loadingJobAuditLogs: boolean;
   auditSearch: string;
   setAuditSearch: (value: string) => void;
-  formatPourDate: (date: string) => string;
-  setRevertConfirmTarget: (target: {
-    oldDetails: Record<string, unknown>;
-    newDetails: Record<string, unknown>;
-  }) => void;
 }
-
-const getInitials = (fullName: string | null | undefined, email?: string | null): string => {
-  if (fullName && fullName.trim()) {
-    return fullName
-      .split(/\s+/)
-      .slice(0, 2)
-      .map((word) => word[0]?.toUpperCase())
-      .join("");
-  }
-  if (email) {
-    const [name] = email.split("@");
-    const parts = name.split(/[._-]/);
-    return parts
-      .slice(0, 2)
-      .map((p) => p[0]?.toUpperCase())
-      .join("");
-  }
-  return "SYS";
-};
 
 export function HistoryTab({
   jobAuditLogs,
   loadingJobAuditLogs,
   auditSearch,
   setAuditSearch,
-  formatPourDate,
-  setRevertConfirmTarget,
 }: HistoryTabProps) {
+  const [page, setPage] = useState(1);
+
   return (
     <div className="space-y-4">
       {(() => {
@@ -111,13 +69,23 @@ export function HistoryTab({
             return (event.user_email || "").toLowerCase().includes(searchLower);
           });
 
+        const totalPages = Math.max(1, Math.ceil(events.length / ITEMS_PER_PAGE));
+        const currentPage = Math.min(page, totalPages);
+        const paginatedEvents = events.slice(
+          (currentPage - 1) * ITEMS_PER_PAGE,
+          currentPage * ITEMS_PER_PAGE,
+        );
+
         return (
           <div className="bg-card border border-border rounded-xl p-4 space-y-4">
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
               <Input
                 value={auditSearch}
-                onChange={(e) => setAuditSearch(e.target.value)}
+                onChange={(e) => {
+                  setAuditSearch(e.target.value);
+                  setPage(1);
+                }}
                 placeholder="Search actor..."
                 className="pl-8"
               />
@@ -134,91 +102,45 @@ export function HistoryTab({
               </div>
             ) : (
               <CardGrid
-                items={events}
+                items={paginatedEvents}
                 className="grid grid-cols-1 gap-4"
                 renderCard={(event) => {
-                  const diff = event.diff.filter((d) => JOB_REVERTIBLE_FIELDS.includes(d.field));
-
                   const pourLabel = event.details?.pour_number
                     ? `Pour #${event.details.pour_number} (${event.details.mix_type}, ${event.details.volume_m3}m³)`
                     : "";
 
                   let badgeColor = "bg-secondary border-border text-muted-foreground";
-                  let summaryText = "";
-                  if (event.action === "CREATE") {
+                  if (event.action === "CREATE" || event.action === "UPDATE") {
                     badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                    summaryText = "Job record created";
-                  } else if (event.action === "UPDATE") {
-                    summaryText = diff.length
-                      ? diff
-                          .map(
-                            (d) =>
-                              `${JOB_FIELD_LABELS[d.field] || d.field} changed from "${formatDiffValue(d.field, d.before)}" to "${formatDiffValue(d.field, d.after)}"`,
-                          )
-                          .join("; ")
-                      : "Job Details Have Been Updated";
-                  } else if (event.action === "SCHEDULE_POUR") {
+                  } else if (
+                    event.action === "SCHEDULE_POUR" ||
+                    event.action === "ASSIGN_STAFF" ||
+                    event.action === "UPLOAD_ATTACHMENT" ||
+                    event.action === "EXTERNAL_UPLOAD" ||
+                    event.action === "ADD_NOTE"
+                  ) {
                     badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                    summaryText = `Scheduled ${pourLabel}, expected ${formatPourDate(event.details?.date || "")}`;
-                  } else if (event.action === "COMPLETE_POUR") {
+                  } else if (
+                    event.action === "COMPLETE_POUR" ||
+                    event.action === "INVOICE_SENT" ||
+                    event.action === "QUOTE_SENT"
+                  ) {
                     badgeColor = "bg-success/10 border-success/20 text-success";
-                    summaryText = `Marked ${pourLabel} complete`;
-                  } else if (event.action === "REVERT_POUR") {
+                  } else if (
+                    event.action === "REVERT_POUR" ||
+                    event.action === "REALLOCATE_STAFF"
+                  ) {
                     badgeColor = "bg-warning/10 border-warning/20 text-warning";
-                    summaryText = `Reverted ${pourLabel} back to scheduled`;
-                  } else if (event.action === "REMOVE_POUR") {
+                  } else if (
+                    event.action === "REMOVE_POUR" ||
+                    event.action === "REMOVE_STAFF" ||
+                    event.action === "DELETE_ATTACHMENT" ||
+                    event.action === "DELETE_NOTE"
+                  ) {
                     badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                    summaryText = `Removed ${pourLabel} from the log`;
-                  } else if (event.action === "UPDATE_POUR_NOTES") {
-                    badgeColor = "bg-secondary border-border text-muted-foreground";
-                    summaryText = `Updated notes on ${pourLabel}`;
-                  } else if (event.action === "ASSIGN_STAFF") {
-                    badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                    summaryText = `${event.details?.worker_name || "Staff member"} assigned to site`;
-                  } else if (event.action === "REALLOCATE_STAFF") {
-                    badgeColor = "bg-warning/10 border-warning/20 text-warning";
-                    summaryText = `${event.details?.worker_name || "Staff member"} reallocated to this job`;
-                  } else if (event.action === "REMOVE_STAFF") {
-                    badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                    summaryText = `${event.details?.worker_name || "Staff member"} removed from site`;
-                  } else if (event.action === "UPLOAD_ATTACHMENT") {
-                    badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                    const attachmentLabel =
-                      event.details?.attachment_type === "document"
-                        ? "Document"
-                        : event.details?.attachment_type === "image_after"
-                          ? "After photo"
-                          : "Before photo";
-                    summaryText = `${attachmentLabel} uploaded: ${event.details?.file_name || ""}`;
-                  } else if (event.action === "INVOICE_SENT") {
-                    badgeColor = "bg-success/10 border-success/20 text-success";
-                    summaryText = `Invoice #${event.details?.reference || ""} sent to client`;
-                  } else if (event.action === "QUOTE_SENT") {
-                    badgeColor = "bg-success/10 border-success/20 text-success";
-                    summaryText = `Quote #${event.details?.reference || ""} sent to client`;
-                  } else if (event.action === "GENERATE_UPLOAD_LINK") {
-                    badgeColor = "bg-secondary border-border text-muted-foreground";
-                    summaryText = "External upload link generated";
-                  } else if (event.action === "EXTERNAL_UPLOAD") {
-                    badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                    summaryText = `Document submitted via external link: ${event.details?.file_name || ""}`;
-                  } else if (event.action === "VIEW_ATTACHMENT") {
-                    badgeColor = "bg-secondary border-border text-muted-foreground";
-                    summaryText = `Accessed: ${event.details?.file_name || "attachment"}`;
-                  } else if (event.action === "DELETE_ATTACHMENT") {
-                    badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                    summaryText = `Deleted: ${event.details?.file_name || "attachment"}`;
-                  } else if (event.action === "DELETE_NOTE") {
-                    badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                    summaryText = `Note deleted: "${event.details?.note_body || ""}"`;
-                  } else if (event.action === "ADD_NOTE") {
-                    badgeColor = "bg-primary/10 border-primary/20 text-primary";
-                    summaryText = `Note added: "${event.details?.note_body || ""}"`;
-                  } else {
-                    summaryText = event.action?.replace(/_/g, " ");
                   }
 
-                  const canRevert = event.action === "UPDATE" && diff.length > 0;
+                  const summaryText = `${getEventLabel(event.action)} · ${getActorName(event.user_email)}`;
                   const isPourEvent = pourLabel !== "";
 
                   return (
@@ -236,25 +158,16 @@ export function HistoryTab({
                         <span
                           className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shrink-0 ${badgeColor}`}
                         >
-                          {event.action?.replace(/_/g, " ")}
+                          {getEventLabel(event.action)}
                         </span>
                         <p className="flex-1 min-w-0 basis-full sm:basis-auto order-3 sm:order-none truncate sm:whitespace-normal text-[13px] text-foreground/90">
                           {summaryText}
                         </p>
-                        {canRevert && (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setRevertConfirmTarget({
-                                oldDetails: event.details?.old ?? {},
-                                newDetails: event.details?.new ?? {},
-                              })
-                            }
-                            className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[11px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                          >
-                            Revert
-                          </button>
-                        )}
+                        <span className="text-[12px] text-muted-foreground shrink-0 whitespace-nowrap">
+                          {event.created_at
+                            ? new Date(event.created_at).toLocaleString("en-GB")
+                            : ""}
+                        </span>
                       </div>
                     </div>
                   );
@@ -264,6 +177,30 @@ export function HistoryTab({
                   <span className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[13px] font-bold uppercase tracking-wider" />
                 }
               />
+            )}
+
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between pt-3 border-t border-border">
+                <button
+                  type="button"
+                  onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3.5 py-1.5 bg-card/60 border border-border text-[10px] font-bold uppercase tracking-wider rounded-lg text-muted-foreground hover:text-foreground transition-all disabled:opacity-40 cursor-pointer"
+                >
+                  Previous
+                </button>
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                  Page {currentPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3.5 py-1.5 bg-card/60 border border-border text-[10px] font-bold uppercase tracking-wider rounded-lg text-muted-foreground hover:text-foreground transition-all disabled:opacity-40 cursor-pointer"
+                >
+                  Next
+                </button>
+              </div>
             )}
           </div>
         );

@@ -53,7 +53,7 @@ import {
 import { supabase } from "../../integrations/supabase/client";
 import type { Json, Database } from "../../integrations/supabase/types";
 import { workerToRow, usePortal } from "../context/PortalContext";
-import { computeDiff, DiffEntry } from "../utils/auditDiff";
+import { computeDiff, DiffEntry, getEventLabel, getActorName } from "../utils/auditDiff";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -1793,73 +1793,40 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         }
                       }
 
-                      // Compute diff & summaries
+                      // Badge color by action, summary is generic "label · actor" to match Site Log
                       let summaryText = "";
                       let diff: DiffEntry[] = [];
                       let badgeColor = "bg-secondary border-border text-muted-foreground";
 
                       if (event.type !== "request") {
                         const action = event.action;
-                        if (action === "APPROVE_DOCUMENT") {
+                        if (action === "UPDATE") {
+                          diff = event.details?.old
+                            ? computeDiff(event.details.old, event.details.new)
+                            : [];
+                        }
+                        if (action === "APPROVE_DOCUMENT" || action === "SUBMIT_DOCUMENTS") {
                           badgeColor = "bg-success/10 border-success/20 text-success";
-                          summaryText = `${event.details?.ticket_type || "Certificate"} (Ref: ${event.details?.ticket_number || "N/A"})`;
-                        } else if (action === "REJECT_DOCUMENT") {
+                        } else if (action === "REJECT_DOCUMENT" || action === "REMOVE_STAFF") {
                           badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                          summaryText = `${event.details?.ticket_type || "Certificate"} (Ref: ${event.details?.ticket_number || "N/A"})`;
-                        } else if (action === "SUBMIT_DOCUMENTS") {
-                          badgeColor = "bg-success/10 border-success/20 text-success";
-                          const submittedCerts = event.details?.tickets_submitted || [];
-                          summaryText = `Submitted: ${submittedCerts.map((c: Record<string, unknown>) => c.type).join(", ")}`;
-                        } else if (action === "RESEND_DOCUMENT_REQUEST") {
-                          badgeColor = "bg-primary/5 border-primary/20 text-primary";
-                          const resentCerts = event.details?.requested_certs || [];
-                          summaryText = resentCerts.length
-                            ? `Requested: ${resentCerts.join(", ")}`
-                            : "Document request email renewed and dispatched to operative.";
-                        } else if (action === "CREATE" || action === "UPDATE") {
-                          badgeColor = "bg-secondary border-border text-muted-foreground";
-                          if (action === "CREATE") {
-                            summaryText = "Initial database record created for staff member";
-                          } else {
-                            diff = event.details?.old
-                              ? computeDiff(event.details.old, event.details.new)
-                              : [];
-                            const changedFields = diff
-                              .filter((d) => REVERTIBLE_FIELDS.includes(d.field))
-                              .map((d) => FIELD_LABELS[d.field] || d.field);
-                            summaryText = changedFields.length
-                              ? `Staff Details Updated: ${changedFields.join(", ")}`
-                              : "Staff Details Have Been Updated";
-                          }
+                        } else if (action === "REALLOCATE_STAFF") {
+                          badgeColor = "bg-warning/15 border-warning/30 text-warning";
                         } else if (action === "INSPECT") {
                           badgeColor =
                             "bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400";
-                          summaryText = "Staff dossier profile viewed by administrator";
-                        } else if (action === "VIEW_DOCUMENT") {
+                        } else if (
+                          action === "RESEND_DOCUMENT_REQUEST" ||
+                          action === "VIEW_DOCUMENT" ||
+                          action === "COMPLIANCE_REMINDER_SENT" ||
+                          action === "ASSIGN_STAFF"
+                        ) {
                           badgeColor = "bg-primary/5 border-primary/20 text-primary";
-                          const viewerFirstName = (event.actor || "").split("@")[0].split(".")[0];
-                          summaryText = `${event.details?.ticket_type || "Document"} viewed by ${
-                            viewerFirstName || "operative"
-                          }`;
-                        } else if (action === "COMPLIANCE_REMINDER_SENT") {
-                          badgeColor = "bg-primary/5 border-primary/20 text-primary";
-                          summaryText = `Reminder sent: ${event.details?.ticket_type || "Certificate"}`;
-                        } else if (action === "ASSIGN_STAFF") {
-                          badgeColor = "bg-primary/5 border-primary/20 text-primary";
-                          summaryText = `Assigned to ${event.details?.job_name || "a job"}`;
-                        } else if (action === "REALLOCATE_STAFF") {
-                          badgeColor = "bg-warning/15 border-warning/30 text-warning";
-                          summaryText = `Reallocated to ${event.details?.job_name || "a job"}`;
-                        } else if (action === "REMOVE_STAFF") {
-                          badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                          summaryText = `Removed from ${event.details?.job_name || "a job"}`;
-                        } else {
-                          summaryText = typeof event.details === "string" ? event.details : "";
                         }
+                        summaryText = `${getEventLabel(action)} · ${getActorName(event.actor)}`;
                       }
 
                       // Single-line badge + summary shown in the header row
-                      let headerBadgeText = event.action?.replace(/_/g, " ");
+                      let headerBadgeText = getEventLabel(event.action);
                       let headerBadgeColor = badgeColor;
                       let headerSummary = summaryText;
 
@@ -1888,7 +1855,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             >
                               {headerBadgeText}
                             </span>
-                            <p className="flex-1 min-w-0 basis-full sm:basis-auto order-3 sm:order-none truncate sm:whitespace-normal text-[11px] text-foreground/90">
+                            <p className="flex-1 min-w-0 basis-full sm:basis-auto order-3 sm:order-none truncate sm:whitespace-normal text-[13px] text-foreground/90">
                               {headerSummary}
                             </p>
                             {event.type === "request" && event.details?.status === "pending" && (
@@ -1924,7 +1891,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                 Revert
                               </button>
                             )}
-                            <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
+                            <span className="text-[12px] text-muted-foreground shrink-0 whitespace-nowrap">
                               {date}
                             </span>
                           </div>

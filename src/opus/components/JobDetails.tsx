@@ -24,7 +24,7 @@ import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { compressImageFile } from "../lib/compressImage";
 import { getSignedJobAttachmentUrl, getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
-import { HistoryTab, JOB_REVERTIBLE_FIELDS, JOB_FIELD_LABELS } from "./HistoryTab";
+import { HistoryTab } from "./HistoryTab";
 import { FeedTab } from "./FeedTab";
 import { MediaTab, Attachment } from "./MediaTab";
 import { JobOverviewTab } from "./JobOverviewTab";
@@ -137,10 +137,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   >([]);
   const [loadingJobAuditLogs, setLoadingJobAuditLogs] = useState(false);
   const [auditSearch, setAuditSearch] = useState("");
-  const [revertConfirmTarget, setRevertConfirmTarget] = useState<{
-    oldDetails: Record<string, unknown>;
-    newDetails: Record<string, unknown>;
-  } | null>(null);
   const fetchJobAuditLogs = async () => {
     setLoadingJobAuditLogs(true);
     try {
@@ -204,24 +200,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job.id]);
-
-  const executeRevertJobUpdate = () => {
-    if (!revertConfirmTarget) return;
-    const { oldDetails } = revertConfirmTarget;
-    const revertedStatus = (oldDetails.status as Job["status"]) ?? job.status;
-    onUpdateJob({
-      ...job,
-      siteName: (oldDetails.site_name as string) ?? job.siteName,
-      mainContractor: (oldDetails.main_contractor as string) ?? job.mainContractor,
-      postcode: (oldDetails.postcode as string) ?? job.postcode,
-      contractMaxPours: (oldDetails.contract_max_pours as number) ?? job.contractMaxPours,
-      status: revertedStatus,
-    });
-    setStatus(revertedStatus);
-    setRevertConfirmTarget(null);
-    toast.success("Job details reverted");
-    setTimeout(fetchJobAuditLogs, 300);
-  };
 
   const [isConfirmingJobSave, setIsConfirmingJobSave] = useState(false);
 
@@ -1416,8 +1394,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             loadingJobAuditLogs={loadingJobAuditLogs}
             auditSearch={auditSearch}
             setAuditSearch={setAuditSearch}
-            formatPourDate={formatPourDate}
-            setRevertConfirmTarget={setRevertConfirmTarget}
           />
         </TabsContent>
 
@@ -1482,75 +1458,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           )}
         </TabsContent>
       </Tabs>
-
-      {/* Revert Job Changes Confirmation Modal */}
-      <ConfirmDialog
-        open={!!revertConfirmTarget}
-        onOpenChange={(open) => {
-          if (!open) setRevertConfirmTarget(null);
-        }}
-        tone="neutral"
-        title="Revert Job Changes"
-        confirmLabel="Revert Job"
-        onConfirm={executeRevertJobUpdate}
-        message={
-          revertConfirmTarget && (
-            <>
-              The following values will be restored:
-              <div className="bg-muted/40 border border-border rounded-lg divide-y divide-border text-[12px] mt-3">
-                {JOB_REVERTIBLE_FIELDS.filter(
-                  (f) => revertConfirmTarget.oldDetails?.[f] !== undefined,
-                ).map((f) => {
-                  const rawOldVal = revertConfirmTarget.oldDetails?.[f] as string | undefined;
-                  const rawNewVal = revertConfirmTarget.newDetails?.[f] as string | undefined;
-                  const oldVal =
-                    f === "status" ? STATUS_LABELS[rawOldVal || ""] || rawOldVal : rawOldVal;
-                  const newVal =
-                    f === "status" ? STATUS_LABELS[rawNewVal || ""] || rawNewVal : rawNewVal;
-                  const changed = rawOldVal !== rawNewVal;
-                  return (
-                    <div
-                      key={f}
-                      className={`flex items-center justify-between px-4 py-2.5 ${
-                        changed
-                          ? "bg-amber-500/10 dark:bg-amber-500/5 border-l-2 border-amber-600/50 dark:border-amber-500/40"
-                          : ""
-                      }`}
-                    >
-                      <span
-                        className={`font-semibold uppercase tracking-wider text-[12px] ${
-                          changed
-                            ? "text-amber-800/80 dark:text-amber-400/70"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {JOB_FIELD_LABELS[f]}
-                      </span>
-                      <div className="flex items-center gap-2 text-right">
-                        {changed && newVal != null && (
-                          <span className="line-through text-muted-foreground text-[13px]">
-                            {newVal}
-                          </span>
-                        )}
-                        {changed && newVal != null && (
-                          <span className="text-muted-foreground text-[12px]">→</span>
-                        )}
-                        <span
-                          className={`font-bold ${
-                            changed ? "text-amber-800 dark:text-amber-300" : "text-foreground"
-                          }`}
-                        >
-                          {oldVal}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          )
-        }
-      />
     </div>
   );
 };

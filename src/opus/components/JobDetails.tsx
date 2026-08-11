@@ -3,8 +3,6 @@ import {
   ChevronLeft,
   ChevronDown,
   Check,
-  Circle,
-  Clock,
   AlertCircle,
   CloudRain,
   CloudSun,
@@ -825,24 +823,20 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     {
       key: "pending",
       label: "Pending",
-      Icon: Circle,
       activeClasses: "bg-warning/15 text-warning border-warning/30",
     },
     {
       key: "in-progress",
       label: "In Progress",
-      Icon: Clock,
       activeClasses: "bg-primary/15 text-primary border-primary/30",
     },
     {
       key: "completed",
       label: "Completed",
-      Icon: Check,
       activeClasses: "bg-success/15 text-success border-success/30",
     },
   ] as const;
   const currentStatusOption = STATUS_OPTIONS.find((o) => o.key === status) ?? STATUS_OPTIONS[0];
-  const CurrentStatusIcon = currentStatusOption.Icon;
   const statusDropdown = (
     <div className="relative w-full">
       <button
@@ -850,13 +844,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         onClick={() => setStatusMenuOpen((v) => !v)}
         aria-haspopup="listbox"
         aria-expanded={statusMenuOpen}
-        className={`w-full grid grid-cols-[14px_1fr_14px] items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${currentStatusOption.activeClasses}`}
+        className={`w-full flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer ${currentStatusOption.activeClasses}`}
       >
-        <span />
-        <span className="flex items-center justify-center gap-1.5">
-          <CurrentStatusIcon className="w-3.5 h-3.5 shrink-0" />
-          {currentStatusOption.label}
-        </span>
+        <span className="flex-1 text-center min-w-0">{currentStatusOption.label}</span>
         <ChevronDown className="w-3.5 h-3.5 shrink-0 opacity-70" />
       </button>
 
@@ -867,7 +857,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             role="listbox"
             className="absolute top-full left-0 mt-1 z-20 w-full min-w-[140px] bg-card border border-border rounded-lg shadow-lg py-1 overflow-hidden"
           >
-            {STATUS_OPTIONS.map(({ key: s, label, Icon, activeClasses }) => (
+            {STATUS_OPTIONS.map(({ key: s, label, activeClasses }) => (
               <button
                 key={s}
                 type="button"
@@ -877,13 +867,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                   setStatusMenuOpen(false);
                   if (s !== status) setPendingStatus(s);
                 }}
-                className={`w-full flex items-center gap-2 px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${
+                className={`w-full px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider cursor-pointer transition-colors ${
                   status === s
                     ? activeClasses
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
-                <Icon className="w-3.5 h-3.5 shrink-0" />
                 {label}
               </button>
             ))}

@@ -38,6 +38,18 @@ export const JOB_FIELD_LABELS: Record<string, string> = {
   status: "Project Status",
 };
 
+const STATUS_VALUE_LABELS: Record<string, string> = {
+  pending: "Pending",
+  "in-progress": "In Progress",
+  completed: "Completed",
+};
+
+const formatDiffValue = (field: string, value: unknown): string => {
+  if (field === "status") return STATUS_VALUE_LABELS[String(value)] || String(value);
+  if (value === null || value === undefined || value === "") return "—";
+  return String(value);
+};
+
 interface HistoryTabProps {
   jobAuditLogs: AuditLogRow[];
   loadingJobAuditLogs: boolean;
@@ -125,9 +137,7 @@ export function HistoryTab({
                 items={events}
                 className="grid grid-cols-1 gap-4"
                 renderCard={(event) => {
-                  const diff = event.diff
-                    .filter((d) => JOB_REVERTIBLE_FIELDS.includes(d.field))
-                    .map((d) => JOB_FIELD_LABELS[d.field] || d.field);
+                  const diff = event.diff.filter((d) => JOB_REVERTIBLE_FIELDS.includes(d.field));
 
                   const pourLabel = event.details?.pour_number
                     ? `Pour #${event.details.pour_number} (${event.details.mix_type}, ${event.details.volume_m3}m³)`
@@ -140,7 +150,12 @@ export function HistoryTab({
                     summaryText = "Job record created";
                   } else if (event.action === "UPDATE") {
                     summaryText = diff.length
-                      ? `Job Details Updated: ${diff.join(", ")}`
+                      ? diff
+                          .map(
+                            (d) =>
+                              `${JOB_FIELD_LABELS[d.field] || d.field} changed from "${formatDiffValue(d.field, d.before)}" to "${formatDiffValue(d.field, d.after)}"`,
+                          )
+                          .join("; ")
                       : "Job Details Have Been Updated";
                   } else if (event.action === "SCHEDULE_POUR") {
                     badgeColor = "bg-primary/10 border-primary/20 text-primary";
@@ -196,6 +211,9 @@ export function HistoryTab({
                   } else if (event.action === "DELETE_NOTE") {
                     badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
                     summaryText = `Note deleted: "${event.details?.note_body || ""}"`;
+                  } else if (event.action === "ADD_NOTE") {
+                    badgeColor = "bg-primary/10 border-primary/20 text-primary";
+                    summaryText = `Note added: "${event.details?.note_body || ""}"`;
                   } else {
                     summaryText = event.action?.replace(/_/g, " ");
                   }

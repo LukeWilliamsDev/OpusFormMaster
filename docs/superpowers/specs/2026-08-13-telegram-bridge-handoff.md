@@ -151,17 +151,21 @@ Add `extractAttachments(message)`:
 
 - `message.photo` is an array of sizes — take the **last** element, it is the largest.
 - `message.document` covers PDFs, which is what most certificates actually arrive as.
-- Forward `file_id`, `file_name`, `mime_type`, `file_size`, and the caption. **Do not download.** The edge function holds the token and does the fetching.
+- Forward `file_id`, `file_name`, `mime_type`, `file_size`, and the caption. **Do not download.** The edge function holds the token and does the fetching — and it is the only thing that can, see below.
 - Reject anything over 20 MB locally using `file_size`, without a network call. That is the Bot API download ceiling anyway.
 - Ignore other media types (video, audio, sticker, voice) for now — reply via the edge function, do not store.
 
 Albums arrive as separate updates sharing a `media_group_id`. Do not build grouping. Forward each file independently.
+
+**Composio cannot download files.** The Telegram toolkit exposes `GET_UPDATES`, `SEND_MESSAGE`, `SEND_DOCUMENT`, `ANSWER_CALLBACK_QUERY`, `EDIT_MESSAGE`, `DELETE_MESSAGE`, `FORWARD_MESSAGE`, `GET_CHAT`, `GET_CHAT_MEMBER`, and `GET_ME` — there is no `getFile` equivalent. Retrieval requires the raw bot token against `api.telegram.org/file/bot<token>/<path>`, which is why the token lives in Supabase and the bridge only ever forwards a `file_id`. Do not attempt a Composio-based download; it does not exist.
 
 ---
 
 ## 7. Callback queries — inline keyboards
 
 Currently `allowed_updates: ["message"]` and `extractMessage` handles only `message` / `channel_post`, so there is no `callback_query` path at all. Every confirm/decline, approve/reject, and disambiguation tap depends on this.
+
+Composio covers this fully — `TELEGRAM_GET_UPDATES` accepts `allowed_updates` including `callback_query`, and `TELEGRAM_ANSWER_CALLBACK_QUERY` exists. No bot token is needed on the VPS for any of it.
 
 - Add `"callback_query"` to `allowed_updates` in the `TELEGRAM_GET_UPDATES` call.
 - Extend `extractMessage` (or add a sibling) to recognise `update.callback_query`. Sender is `callback_query.from.id`; chat is `callback_query.message.chat.id`.
@@ -245,6 +249,5 @@ For end-to-end work, point `OPUSFORM_HANDLER_URL` at a local stub returning cann
 
 ## 12. Questions to send back
 
-- Does Composio expose a file-download action? It affects nothing in this design (Supabase holds the token and does the fetching) but it is worth knowing before stage 3.
 - Does the existing durable pending-update state cover the polling gap while the bridge is down, or only work already in flight? The source suggests the latter.
 - Any reason the organisation check must remain per-action rather than per-poll-cycle that is not visible in the source?

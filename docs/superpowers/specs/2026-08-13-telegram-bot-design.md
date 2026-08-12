@@ -107,12 +107,22 @@ The BotFather token is held in **Supabase secrets only**. It is never committed,
 Consequences:
 
 - **Notifications are independent of bridge liveness.** A scheduled edge function calls `api.telegram.org` directly. A dead systemd unit overnight no longer means a crew misses tomorrow's shift — the single worst failure mode in the design.
-- **File download works.** `getFile` followed by a fetch from `api.telegram.org/file/bot<token>/<path>` requires the raw token, which Composio does not expose.
+- **File download becomes possible at all.** Verified 2026-08-13: the Composio Telegram toolkit exposes `GET_UPDATES`, `SEND_MESSAGE`, `SEND_DOCUMENT`, `ANSWER_CALLBACK_QUERY`, `EDIT_MESSAGE`, `DELETE_MESSAGE`, `FORWARD_MESSAGE`, `GET_CHAT`, `GET_CHAT_MEMBER`, and `GET_ME` — and no `getFile` equivalent. Retrieving an uploaded certificate requires `api.telegram.org/file/bot<token>/<path>`. Token-in-Supabase is therefore a requirement of section 7, not a preference.
+- **Inline keyboards need no token.** `allowed_updates` accepts `callback_query` and `TELEGRAM_ANSWER_CALLBACK_QUERY` exists, so the bridge handles callbacks entirely through Composio.
 - **The VPS holds no credential that owns the bot.** The bridge reports a `file_id`; the edge function does the download. One extra hop, and the least-defended surface in the system stops being a credential store.
 
 Inbound polling stays on Composio unchanged.
 
-> Any bot token that has ever been pasted into a chat, ticket, or log is compromised and must be revoked in BotFather before use.
+### 4.4 Token rotation
+
+Composio authenticates the Telegram toolkit **with the bot token**, so revoking it stops the bridge instantly. Rotation is an ordered operation, not a single step:
+
+1. BotFather → revoke → copy the new token.
+2. Reconnect the Telegram toolkit in Composio (opusform organisation) with the new token. The bridge is down between steps 1 and 2 — do them back to back.
+3. Same token into Supabase secrets.
+4. Restart the bridge; verify `TELEGRAM_GET_ME` returns `ok: true`.
+
+> Any bot token that has ever been pasted into a chat, ticket, or log is compromised and must be rotated by this procedure before the system carries real users.
 
 ---
 
@@ -450,7 +460,7 @@ Stages 1–4 involve zero model calls for non-owner users. Stage 5 is a branch o
 
 ## 17. Open Items
 
-- Bot token must be revoked and reissued in BotFather before use, then stored in Supabase secrets only — never in this repository, never on the VPS.
+- Bot token must be rotated per 4.4 before the system carries real users, then stored in Supabase secrets only — never in this repository, never on the VPS.
 - Linger confirmed off on the VPS; must be enabled before stage 1 (see 13).
 - Tier 1 third-party access stays unstarted absent a specific contractor requirement.
 - Whether the bridge's durable pending-update state covers the polling gap during downtime, or only in-flight work.

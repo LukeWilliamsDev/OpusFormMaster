@@ -10,7 +10,7 @@
 
 Give OpusForm a chat surface for the work that does not belong at a desk: shift notifications, compliance chasing, document collection, and quick operational lookups. The portal remains the system of record and the only place complex work happens.
 
-**Platform decision: Telegram only.** WhatsApp is explicitly out of scope. WhatsApp Business requires pre-approved message templates for business-initiated messages, bills per conversation, and lacks native inline keyboards without additional setup. Telegram is free, supports inline keyboards and file uploads natively, and bot creation is immediate. Revisit only if operative adoption fails.
+**Platform: Telegram.** Free, native inline keyboards and file uploads, and bot creation is immediate.
 
 ---
 
@@ -48,8 +48,11 @@ Four audiences, matching the existing role matrix. Each gets a deliberately diff
 - `/myweek` — next seven days of shifts.
 - `/mycerts` — certificates held, with expiry dates.
 - Send site photos, attached to the relevant `job_diary` entry.
+- Add a note to a job they are assigned to. Free text, appended to that job's `job_diary` record for the date, attributed to them. Scoped strictly to jobs they hold a `shifts` row for — an operative cannot note against a job they are not on.
 
 **Explicitly excluded**: editing their own profile, viewing any other operative's data, anything financial. Matches their portal restriction to `/portal/roster?view=calendar`.
+
+**Note visibility is one-directional.** Operatives write notes and see their own. Dispatchers and admins read every note on every job, always, with no operative control over that — a note is a site record, not private correspondence. Operatives cannot edit or delete a note once sent; corrections are a new note. This keeps the diary append-only and audit-safe.
 
 ### 3.2 Dispatchers and Admins
 
@@ -62,12 +65,14 @@ Four audiences, matching the existing role matrix. Each gets a deliberately diff
 | Operative has not responded by a cutoff time | Chase alert                                             |
 | Certificate uploaded                         | Awaiting approval                                       |
 | Third party uploads job documents            | Files received for job X                                |
+| Operative adds a job note                    | Note text plus job reference                            |
 | Job reaches `contract_max_pours`             | Contract ceiling hit                                    |
 
 **Dispatcher-initiated**
 
 - `/who <postcode>` — nearest available operatives. Reuses the existing Haversine proximity logic.
-- `/job <ref>` — status, pours current versus max, today's assigned crew.
+- `/job <ref>` — status, pours current versus max, today's assigned crew, and the latest diary notes with their authors.
+- Add a note to any job, assigned or not. Same append-only `job_diary` record operatives write to.
 - `/staff <name>` — compliance status and next shift.
 - `/today` — sites active today with crew counts.
 - Approve or reject an uploaded certificate — single tap from the notification.
@@ -149,7 +154,6 @@ Cut deliberately, not by oversight:
 - Audit log access — see 3.4.
 - Roster editing and staff record editing — portal tasks.
 - Bulk operations of any kind.
-- WhatsApp — see section 1.
 
 ---
 
@@ -159,7 +163,7 @@ Each stage is independently useful and shippable.
 
 1. **Linking plus operative read-only.** Deep-link binding, `/myweek`, `/mycerts`. Proves identity resolution end to end with no write path.
 2. **Operative notifications and confirmations.** Shift reminders, expiry warnings, confirm/decline buttons.
-3. **Uploads.** Certificate photos from operatives; document uploads from third parties. Both reuse existing bucket policies and token scoping.
+3. **Uploads and job notes.** Certificate photos from operatives; document uploads from third parties; free-text job notes from operatives and dispatchers. Uploads reuse existing bucket policies and token scoping; notes append to `job_diary`.
 4. **Dispatcher lookups and alerts.** Commands, digests, approve/reject taps, crew broadcast.
 5. **Natural language layer.** Added last, as a fallback branch for messages that match no command.
 
@@ -172,5 +176,6 @@ Stages 1–4 involve zero model calls and work entirely without the natural lang
 - An operative can see their week and confirm a shift without opening the portal.
 - Certificate expiry chasing stops depending on someone remembering to check the Expiry Radar.
 - Third-party document collection completes without the recipient needing to open a browser.
+- An operative can log a site note from the job without waiting to reach a desk, and a dispatcher sees it immediately.
 - No capability exists in the bot that the same user could not perform in the portal.
 - Every bot-initiated write appears in `audit_logs`, attributed to the linked OpusForm identity.

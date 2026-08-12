@@ -51,7 +51,7 @@ Verified by reading the source. This is careful work and the design below keeps 
 | 5   | `runLoop` calls `pollOnce` back-to-back with no floor sleep; only Composio honouring `timeout: 30` prevents a hot loop.                                                                                                           | If Composio ever returns immediately, continuous subprocess spawning. One-line fix.                                                                                                                     |
 | 6   | `observedUsers` records every unknown sender permanently, and each one triggers a full state write.                                                                                                                               | Unbounded growth and disk churn on a publicly findable bot. Needs a cap or TTL before wider rollout.                                                                                                    |
 | 7   | `persistState` deep-clones and rewrites the whole file per observed user and per offset advance.                                                                                                                                  | O(state) per message. Fine at one user, a ceiling as sessions and observed users accumulate.                                                                                                            |
-| 8   | Unit is `systemd --user` with `WantedBy=default.target`.                                                                                                                                                                          | Without `loginctl enable-linger ubuntu` it does not start at boot on a headless server. Verify before anyone depends on it.                                                                             |
+| 8   | Unit is `systemd --user` with `WantedBy=default.target`, and **linger is confirmed off** (`Linger=no`, checked 2026-08-13).                                                                                                       | The user systemd manager shuts down when the last login session closes, so the bridge dies on logout as well as on reboot. It is currently up only because a session is holding it. Fix before stage 1. |
 | 9   | `buildJinnPrompt` fences user text in `---` and instructs the model to treat it as data.                                                                                                                                          | Delimiter-only injection defence. Adequate for a single owner, not for operatives, and not remotely for third parties. This is why section 5 exists.                                                    |
 
 ---
@@ -397,7 +397,7 @@ The bridge is a single `systemd --user` process and is the entire inbound channe
 
 Before onboarding real users:
 
-- **Verify linger is enabled** (`loginctl show-user ubuntu --property=Linger`). Without it the unit does not start at boot (finding 8).
+- **Enable linger.** Confirmed off as of 2026-08-13, so the bridge currently dies when the last SSH session closes. `loginctl enable-linger ubuntu`, then confirm `Linger=yes` and that the unit reports `enabled`, then reboot and verify it returns unaided. This is an explicit deployment step, not a note — it is silently absent on any fresh rebuild.
 - Heartbeat and alerting on bridge liveness and poll-loop health.
 - Confirm the existing durable pending-update state covers messages arriving during downtime — the source suggests it does for in-flight work, not for the polling gap.
 
@@ -451,6 +451,6 @@ Stages 1–4 involve zero model calls for non-owner users. Stage 5 is a branch o
 ## 17. Open Items
 
 - Bot token must be revoked and reissued in BotFather before use, then stored in Supabase secrets only — never in this repository, never on the VPS.
-- Linger status on the VPS unverified.
+- Linger confirmed off on the VPS; must be enabled before stage 1 (see 13).
 - Tier 1 third-party access stays unstarted absent a specific contractor requirement.
 - Whether the bridge's durable pending-update state covers the polling gap during downtime, or only in-flight work.

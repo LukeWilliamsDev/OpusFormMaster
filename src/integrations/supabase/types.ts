@@ -6,6 +6,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5";
   };
+  graphql_public: {
+    Tables: {
+      [_ in never]: never;
+    };
+    Views: {
+      [_ in never]: never;
+    };
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json;
+          operationName?: string;
+          query?: string;
+          variables?: Json;
+        };
+        Returns: Json;
+      };
+    };
+    Enums: {
+      [_ in never]: never;
+    };
+    CompositeTypes: {
+      [_ in never]: never;
+    };
+  };
   public: {
     Tables: {
       audit_logs: {
@@ -97,13 +122,6 @@ export type Database = {
             referencedRelation: "jobs";
             referencedColumns: ["id"];
           },
-          {
-            foreignKeyName: "calendar_events_tenant_id_fkey";
-            columns: ["tenant_id"];
-            isOneToOne: false;
-            referencedRelation: "tenants";
-            referencedColumns: ["id"];
-          },
         ];
       };
       document_requests: {
@@ -150,6 +168,145 @@ export type Database = {
             referencedColumns: ["id"];
           },
         ];
+      };
+      final_bills: {
+        Row: {
+          client_info: Json;
+          created_at: string;
+          date: string;
+          id: string;
+          items: Json;
+          job_id: string;
+          reference: string;
+          sent_at: string | null;
+          source_invoice_ids: string[];
+          status: string;
+          tenant_id: string;
+          totals: Json;
+          updated_at: string;
+          vat_rate: number;
+        };
+        Insert: {
+          client_info?: Json;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          items?: Json;
+          job_id: string;
+          reference: string;
+          sent_at?: string | null;
+          source_invoice_ids?: string[];
+          status?: string;
+          tenant_id?: string;
+          totals?: Json;
+          updated_at?: string;
+          vat_rate?: number;
+        };
+        Update: {
+          client_info?: Json;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          items?: Json;
+          job_id?: string;
+          reference?: string;
+          sent_at?: string | null;
+          source_invoice_ids?: string[];
+          status?: string;
+          tenant_id?: string;
+          totals?: Json;
+          updated_at?: string;
+          vat_rate?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "final_bills_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      invoices: {
+        Row: {
+          client_info: Json;
+          created_at: string;
+          date: string;
+          id: string;
+          items: Json;
+          job_id: string;
+          reference: string;
+          status: string;
+          tenant_id: string;
+          totals: Json;
+          updated_at: string;
+          vat_rate: number;
+        };
+        Insert: {
+          client_info?: Json;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          items?: Json;
+          job_id: string;
+          reference: string;
+          status?: string;
+          tenant_id?: string;
+          totals?: Json;
+          updated_at?: string;
+          vat_rate?: number;
+        };
+        Update: {
+          client_info?: Json;
+          created_at?: string;
+          date?: string;
+          id?: string;
+          items?: Json;
+          job_id?: string;
+          reference?: string;
+          status?: string;
+          tenant_id?: string;
+          totals?: Json;
+          updated_at?: string;
+          vat_rate?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "invoices_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      jinn_admin_session: {
+        Row: {
+          access_token: string | null;
+          cached_user: Json | null;
+          expires_at: string | null;
+          id: boolean;
+          refresh_token: string;
+          updated_at: string;
+        };
+        Insert: {
+          access_token?: string | null;
+          cached_user?: Json | null;
+          expires_at?: string | null;
+          id?: boolean;
+          refresh_token: string;
+          updated_at?: string;
+        };
+        Update: {
+          access_token?: string | null;
+          cached_user?: Json | null;
+          expires_at?: string | null;
+          id?: boolean;
+          refresh_token?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
       };
       job_attachments: {
         Row: {
@@ -302,85 +459,6 @@ export type Database = {
             columns: ["job_id"];
             isOneToOne: false;
             referencedRelation: "jobs";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      telegram_invites: {
-        Row: {
-          created_at: string;
-          created_by: string;
-          expires_at: string;
-          target_id: string;
-          tenant_id: string;
-          token: string;
-          used_at: string | null;
-        };
-        Insert: {
-          created_at?: string;
-          created_by?: string;
-          expires_at?: string;
-          target_id: string;
-          tenant_id?: string;
-          token: string;
-          used_at?: string | null;
-        };
-        Update: {
-          created_at?: string;
-          created_by?: string;
-          expires_at?: string;
-          target_id?: string;
-          tenant_id?: string;
-          token?: string;
-          used_at?: string | null;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "telegram_invites_target_id_fkey";
-            columns: ["target_id"];
-            isOneToOne: false;
-            referencedRelation: "staff";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      telegram_links: {
-        Row: {
-          class: string;
-          last_seen_at: string | null;
-          linked_at: string;
-          revoked_at: string | null;
-          target_id: string;
-          telegram_user_id: string;
-          telegram_username: string | null;
-          tenant_id: string;
-        };
-        Insert: {
-          class?: string;
-          last_seen_at?: string | null;
-          linked_at?: string;
-          revoked_at?: string | null;
-          target_id: string;
-          telegram_user_id: string;
-          telegram_username?: string | null;
-          tenant_id?: string;
-        };
-        Update: {
-          class?: string;
-          last_seen_at?: string | null;
-          linked_at?: string;
-          revoked_at?: string | null;
-          target_id?: string;
-          telegram_user_id?: string;
-          telegram_username?: string | null;
-          tenant_id?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "telegram_links_target_id_fkey";
-            columns: ["target_id"];
-            isOneToOne: false;
-            referencedRelation: "staff";
             referencedColumns: ["id"];
           },
         ];
@@ -538,118 +616,6 @@ export type Database = {
           },
         ];
       };
-      final_bills: {
-        Row: {
-          client_info: Json;
-          created_at: string;
-          date: string;
-          id: string;
-          items: Json;
-          job_id: string;
-          reference: string;
-          sent_at: string | null;
-          source_invoice_ids: string[];
-          status: string;
-          tenant_id: string;
-          totals: Json;
-          updated_at: string;
-          vat_rate: number;
-        };
-        Insert: {
-          client_info?: Json;
-          created_at?: string;
-          date?: string;
-          id?: string;
-          items?: Json;
-          job_id: string;
-          reference: string;
-          sent_at?: string | null;
-          source_invoice_ids?: string[];
-          status?: string;
-          tenant_id?: string;
-          totals?: Json;
-          updated_at?: string;
-          vat_rate?: number;
-        };
-        Update: {
-          client_info?: Json;
-          created_at?: string;
-          date?: string;
-          id?: string;
-          items?: Json;
-          job_id?: string;
-          reference?: string;
-          sent_at?: string | null;
-          source_invoice_ids?: string[];
-          status?: string;
-          tenant_id?: string;
-          totals?: Json;
-          updated_at?: string;
-          vat_rate?: number;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "final_bills_job_id_fkey";
-            columns: ["job_id"];
-            isOneToOne: false;
-            referencedRelation: "jobs";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
-      invoices: {
-        Row: {
-          client_info: Json;
-          created_at: string;
-          date: string;
-          id: string;
-          items: Json;
-          job_id: string;
-          reference: string;
-          status: string;
-          tenant_id: string;
-          totals: Json;
-          updated_at: string;
-          vat_rate: number;
-        };
-        Insert: {
-          client_info?: Json;
-          created_at?: string;
-          date?: string;
-          id?: string;
-          items?: Json;
-          job_id: string;
-          reference: string;
-          status?: string;
-          tenant_id?: string;
-          totals?: Json;
-          updated_at?: string;
-          vat_rate?: number;
-        };
-        Update: {
-          client_info?: Json;
-          created_at?: string;
-          date?: string;
-          id?: string;
-          items?: Json;
-          job_id?: string;
-          reference?: string;
-          status?: string;
-          tenant_id?: string;
-          totals?: Json;
-          updated_at?: string;
-          vat_rate?: number;
-        };
-        Relationships: [
-          {
-            foreignKeyName: "invoices_job_id_fkey";
-            columns: ["job_id"];
-            isOneToOne: false;
-            referencedRelation: "jobs";
-            referencedColumns: ["id"];
-          },
-        ];
-      };
       quotes: {
         Row: {
           client_info: Json;
@@ -657,8 +623,8 @@ export type Database = {
           date: string;
           id: string;
           is_sent: boolean;
-          job_ref: string | null;
           items: Json;
+          job_ref: string | null;
           reference: string;
           tenant_id: string;
           totals: Json;
@@ -686,8 +652,8 @@ export type Database = {
           id?: string;
           is_sent?: boolean;
           items?: Json;
-          reference?: string;
           job_ref?: string | null;
+          reference?: string;
           tenant_id?: string;
           totals?: Json;
           updated_at?: string;
@@ -705,8 +671,10 @@ export type Database = {
       };
       shifts: {
         Row: {
+          confirmed_at: string | null;
           created_at: string;
           date: string;
+          declined_at: string | null;
           id: string;
           job_id: string;
           tenant_id: string;
@@ -714,8 +682,10 @@ export type Database = {
           worker_id: string;
         };
         Insert: {
+          confirmed_at?: string | null;
           created_at?: string;
           date: string;
+          declined_at?: string | null;
           id: string;
           job_id: string;
           tenant_id: string;
@@ -723,8 +693,10 @@ export type Database = {
           worker_id: string;
         };
         Update: {
+          confirmed_at?: string | null;
           created_at?: string;
           date?: string;
+          declined_at?: string | null;
           id?: string;
           job_id?: string;
           tenant_id?: string;
@@ -733,10 +705,24 @@ export type Database = {
         };
         Relationships: [
           {
+            foreignKeyName: "shifts_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+          {
             foreignKeyName: "shifts_tenant_id_fkey";
             columns: ["tenant_id"];
             isOneToOne: false;
             referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "shifts_worker_id_fkey";
+            columns: ["worker_id"];
+            isOneToOne: false;
+            referencedRelation: "staff";
             referencedColumns: ["id"];
           },
         ];
@@ -815,6 +801,112 @@ export type Database = {
           },
         ];
       };
+      telegram_invites: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          expires_at: string;
+          target_id: string;
+          tenant_id: string;
+          token: string;
+          used_at: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string;
+          expires_at?: string;
+          target_id: string;
+          tenant_id?: string;
+          token: string;
+          used_at?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          expires_at?: string;
+          target_id?: string;
+          tenant_id?: string;
+          token?: string;
+          used_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "telegram_invites_target_id_fkey";
+            columns: ["target_id"];
+            isOneToOne: false;
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      telegram_links: {
+        Row: {
+          class: string;
+          last_seen_at: string | null;
+          linked_at: string;
+          revoked_at: string | null;
+          target_id: string;
+          telegram_user_id: string;
+          telegram_username: string | null;
+          tenant_id: string;
+        };
+        Insert: {
+          class?: string;
+          last_seen_at?: string | null;
+          linked_at?: string;
+          revoked_at?: string | null;
+          target_id: string;
+          telegram_user_id: string;
+          telegram_username?: string | null;
+          tenant_id?: string;
+        };
+        Update: {
+          class?: string;
+          last_seen_at?: string | null;
+          linked_at?: string;
+          revoked_at?: string | null;
+          target_id?: string;
+          telegram_user_id?: string;
+          telegram_username?: string | null;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "telegram_links_target_id_fkey";
+            columns: ["target_id"];
+            isOneToOne: false;
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      telegram_notifications: {
+        Row: {
+          dedupe_key: string;
+          id: string;
+          kind: string;
+          sent_at: string;
+          telegram_user_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          dedupe_key: string;
+          id?: string;
+          kind: string;
+          sent_at?: string;
+          telegram_user_id: string;
+          tenant_id: string;
+        };
+        Update: {
+          dedupe_key?: string;
+          id?: string;
+          kind?: string;
+          sent_at?: string;
+          telegram_user_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [];
+      };
       tenants: {
         Row: {
           created_at: string;
@@ -853,13 +945,14 @@ export type Database = {
       };
     };
     Functions: {
+      admin_delete_user: { Args: { target_id: string }; Returns: undefined };
       check_email_registered: { Args: { _email: string }; Returns: boolean };
-      create_telegram_invite: { Args: { p_target_id: string }; Returns: string };
-      revoke_telegram_link: { Args: { p_target_id: string }; Returns: undefined };
+      check_expired_tickets: { Args: never; Returns: undefined };
       complete_job_document_request: {
         Args: { p_token: string };
         Returns: undefined;
       };
+      create_telegram_invite: { Args: { p_target_id: string }; Returns: string };
       get_document_request_details: {
         Args: { p_request_id: string };
         Returns: Json;
@@ -880,6 +973,10 @@ export type Database = {
           p_target_type: string;
           p_user_email: string;
         };
+        Returns: undefined;
+      };
+      revoke_telegram_link: {
+        Args: { p_target_id: string };
         Returns: undefined;
       };
       submit_job_attachment: {
@@ -1024,6 +1121,9 @@ export type CompositeTypes<
     : never;
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       app_role: [

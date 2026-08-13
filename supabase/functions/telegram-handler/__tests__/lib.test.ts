@@ -9,6 +9,7 @@ import {
   isValidBridgeSecret,
   nearestByDistance,
   parseCommand,
+  renderJobStatus,
   renderStaffMatches,
   renderStaffStatus,
   renderWeek,
@@ -247,5 +248,39 @@ describe("renderStaffMatches", () => {
     expect(out).toContain("Dave Smith");
     expect(out).toContain("Dave Jones");
     expect(out.toLowerCase()).toContain("specific");
+  });
+});
+
+describe("renderJobStatus", () => {
+  const job = {
+    job_ref: "JOB-100",
+    site_name: "Croydon Depot",
+    status: "active",
+    current_pours: 3,
+    contract_max_pours: 10,
+  };
+
+  it("includes ref, status, pours, crew, and notes", () => {
+    const out = renderJobStatus(
+      job,
+      [{ name: "Dave Smith" }, { name: "Jo Lee" }],
+      [{ author: "Dave Smith", body: "Delivery arrived late" }],
+    );
+    expect(out).toContain("JOB-100");
+    expect(out).toContain("Croydon Depot");
+    expect(out).toContain("active");
+    expect(out).toContain("3/10");
+    expect(out).toContain("Dave Smith, Jo Lee");
+    expect(out).toContain("Delivery arrived late");
+  });
+
+  it("says so when there is no crew booked today", () => {
+    const out = renderJobStatus(job, [], []);
+    expect(out).toContain("No crew booked today.");
+  });
+
+  it("omits the notes section when there are none", () => {
+    const out = renderJobStatus(job, [], []);
+    expect(out).not.toContain("Latest notes");
   });
 });

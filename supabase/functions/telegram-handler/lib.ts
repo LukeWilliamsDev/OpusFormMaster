@@ -142,6 +142,33 @@ export function renderStaffMatches(names: string[]): string {
   return `Multiple matches — be more specific:\n${names.join("\n")}`;
 }
 
+export type JobNoteView = { author: string; body: string };
+export type CrewMember = { name: string };
+
+export function renderJobStatus(
+  job: {
+    job_ref: string;
+    site_name: string;
+    status: string;
+    current_pours: number;
+    contract_max_pours: number;
+  },
+  crew: CrewMember[],
+  notes: JobNoteView[],
+): string {
+  const lines = [
+    `${job.job_ref} — ${job.site_name}`,
+    `Status: ${job.status}`,
+    `Pours: ${job.current_pours}/${job.contract_max_pours}`,
+    crew.length ? `Today's crew: ${crew.map((c) => c.name).join(", ")}` : "No crew booked today.",
+  ];
+  if (notes.length) {
+    lines.push("Latest notes:");
+    for (const note of notes) lines.push(`• ${note.author}: ${note.body}`);
+  }
+  return lines.join("\n");
+}
+
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 const ALLOWED_UPLOAD_MIME_TYPES = new Set(["image/jpeg", "image/png", "application/pdf"]);

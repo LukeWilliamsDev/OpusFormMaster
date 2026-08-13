@@ -1381,7 +1381,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
         {/* Tab 1: Compliance */}
         {activeDossierTab === "general" && (
           <div className="space-y-4 animate-in fade-in duration-200">
-            <TelegramLinkControl staffId={selectedWorkerDetails.id} />
             {selectedWorkerDetails.tickets.length === 0 ? (
               <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
                 No compliance certificates or tickets registered
@@ -2230,6 +2229,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     <Send className="w-3 h-3" />
                     <span>Request Docs</span>
                   </button>
+                  <TelegramLinkControl
+                    staffId={selectedWorkerDetails.id}
+                    staffName={selectedWorkerDetails.name}
+                  />
                   {selectedWorkerDetails.isArchived ? (
                     <button
                       type="button"

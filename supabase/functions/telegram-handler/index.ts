@@ -138,27 +138,37 @@ async function notifyDispatchers(text: string) {
     .select("telegram_user_id, staff(email)")
     .is("revoked_at", null);
 
+  const byEmail = new Map<string, string>();
   for (const link of links ?? []) {
-    const email = (link as Record<string, unknown>).staff as { email?: string } | null;
-    if (!email?.email) continue;
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("email", email.email)
-      .maybeSingle();
-
-    if (profile?.role !== "dispatcher" && profile?.role !== "admin") continue;
-
-    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        chat_id: (link as Record<string, unknown>).telegram_user_id,
-        text,
-      }),
-    });
+    const row = link as Record<string, unknown>;
+    const email = (row.staff as { email?: string } | null)?.email?.toLowerCase();
+    if (email) byEmail.set(email, row.telegram_user_id as string);
   }
+  if (byEmail.size === 0) return;
+
+  // One lookup for the whole set rather than one per link. Filtering by role
+  // rather than by email keeps it case-safe — matching happens in the map below,
+  // where both sides are already lowercased.
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("email")
+    .in("role", ["dispatcher", "admin"]);
+
+  const recipients = (profiles ?? [])
+    .map((p) => byEmail.get(String(p.email).toLowerCase()))
+    .filter((id): id is string => Boolean(id));
+
+  // Independent sends — one slow or failing recipient must not delay the rest,
+  // and none of them should delay the reply to the operative who tapped.
+  await Promise.allSettled(
+    recipients.map((chatId) =>
+      fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ chat_id: chatId, text }),
+      }),
+    ),
+  );
 }
 
 async function handleCallback(body: BridgeRequest, targetId: string): Promise<HandlerResponse> {

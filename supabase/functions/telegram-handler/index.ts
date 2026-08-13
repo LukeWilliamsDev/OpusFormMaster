@@ -147,8 +147,17 @@ serve(async (req) => {
   } else {
     const targetId = await resolveLink(body.telegram_user_id);
     if (!targetId) {
-      // Unlinked senders learn nothing about which commands exist.
-      result = { text: DENY_TEXT };
+      // The bridge only forwards non-/start traffic for senders it believes are
+      // allowlisted, so no active link means access was revoked in the portal.
+      // Tell the bridge to drop them locally. Senders learn nothing either way.
+      result = { text: DENY_TEXT, ack: { link_revoked: body.telegram_user_id } };
+    } else if (body.kind === "callback") {
+      // Nothing issues inline keyboards yet; the bridge still acknowledges it.
+      result = { text: "" };
+    } else if (body.kind === "file") {
+      result = {
+        text: "Sending files here is not available yet. Please use the upload link you were sent.",
+      };
     } else {
       await supabase
         .from("telegram_links")

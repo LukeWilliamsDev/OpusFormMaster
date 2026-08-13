@@ -127,7 +127,37 @@ Replace the current single path in `pollOnce` / `handleAuthorizedUpdate` with th
       → recordObservedUser, advance offset, no reply (unchanged)
 ```
 
-Step 3 is the change that makes onboarding possible. Right now the allowlist check in `pollOnce` logs and advances the offset for unknown senders, so an invited operative's `/start <token>` is discarded and they can never link.
+### Amendment (2026-08-13) — commands must reach the handler even for the owner
+
+The fork as originally written routes **all** owner traffic to Jinn. That was too broad: the owner is also a dispatcher, so under it they can never use `/myweek`, and in stage 4 never `/who`, `/job`, or `/today` either. Confirmed in practice — the owner's `/start` was answered conversationally by Jinn and never reached the handler.
+
+Revised order:
+
+```
+1. Owner access command (/users, /approve, /revoke) from owner private chat
+      → unchanged, handled locally
+2. Text parses to a known OpusForm command (/start, /myweek, and later
+   /mycerts, /who, /job, /today, /staff)
+      → forward to the edge function, INCLUDING for the owner
+3. Sender is OWNER_USER_ID (anything not matching above)
+      → unchanged, Jinn session
+4. Sender is in local allowlist
+      → forward to the edge function
+5. Otherwise
+      → recordObservedUser, advance offset, no reply
+```
+
+Keep the known-command list explicit rather than "anything starting with a slash", so an unrecognised slash command from the owner still reaches Jinn.
+
+**Owner protection, restated:** the handler returns `ack.link_revoked` for any sender it cannot resolve to an active link. Once owner commands reach the handler, that will name `OWNER_USER_ID` whenever the owner is not linked. The bridge must continue to ignore any allowlist removal targeting the owner — the existing owner-protection rule already covers this, but it is now reachable in normal operation rather than theoretical.
+
+**The owner is not a special case in OpusForm terms.** They link their own account through the normal invite flow, and from then on the handler grants exactly what their `profiles.role` allows — the same rule as everyone else. An admin gets admin capabilities in Telegram because the database says so, not because of who they are on the bridge.
+
+Jinn becomes a **fallback, not a destination**: free text that is not an OpusForm command still reaches it, so the assistant keeps working, but it no longer intercepts the owner's operational traffic. When the natural-language layer lands in stage 5, that fallback narrows further — OpusForm questions resolve against role-scoped tools, and only genuinely non-OpusForm conversation reaches Jinn.
+
+**Handler-side follow-up (this repository, not the bridge):** `telegram_links.target_id` points at a `staff` row, but roles live on `profiles`. Resolving capability by role needs the handler to join `staff.email` to `profiles.email` and read `role` on every message. Stage 1 does not need it — `/myweek` is self-scoped — but every dispatcher command from stage 4 does. Tracked here so it is not discovered late.
+
+Step 3 in the original list — `/start` from unknown senders — is the change that makes onboarding possible. Right now the allowlist check in `pollOnce` logs and advances the offset for unknown senders, so an invited operative's `/start <token>` is discarded and they can never link.
 
 ### Allowlist stays local, edge function stays authoritative
 

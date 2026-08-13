@@ -3,13 +3,18 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   BridgeRequest,
   buildUploadPath,
+  cleanPostcode,
   DENY_TEXT,
+  GeoPoint,
   HandlerResponse,
   isDeclaredUploadTypeAllowed,
+  isManagementRole,
   isValidBridgeSecret,
   MAX_UPLOAD_BYTES,
+  nearestByDistance,
   parseCommand,
   renderWeek,
+  renderWho,
   sniffFileType,
 } from "./lib.ts";
 
@@ -104,6 +109,30 @@ async function resolveLink(telegramUserId: string) {
   return data?.target_id ?? null;
 }
 
+// staff.email → profiles.role, the same join notifyDispatchers uses below.
+// Roles are read fresh on every call, never cached — a role change in the
+// portal must take effect on the sender's very next message (design spec §5).
+async function resolveRole(targetId: string): Promise<string | null> {
+  const { data: staff } = await supabase
+    .from("staff")
+    .select("email")
+    .eq("id", targetId)
+    .maybeSingle();
+  const email = staff?.email?.toLowerCase();
+  if (!email) return null;
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("email", email)
+    .maybeSingle();
+  if (error) {
+    console.error("resolveRole: profiles query failed", error.message);
+    return null;
+  }
+  return profile?.role ?? null;
+}
+
 async function handleMyWeek(targetId: string): Promise<HandlerResponse> {
   const today = new Date().toISOString().slice(0, 10);
   const weekEnd = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
@@ -126,6 +155,85 @@ async function handleMyWeek(targetId: string): Promise<HandlerResponse> {
   });
 
   return { text: renderWeek(rows) };
+}
+
+function hashFallbackCoords(postcode: string): GeoPoint {
+  let hash = 0;
+  for (let i = 0; i < postcode.length; i += 1) hash = postcode.charCodeAt(i) + ((hash << 5) - hash);
+  const lat = 52.5 + (Math.abs(hash % 100) / 100) * 1.5;
+  const lng = -1.5 - (Math.abs((hash >> 2) % 100) / 100) * 1.5;
+  return { lat, lng };
+}
+
+// One postcodes.io bulk POST for the whole candidate set rather than one
+// fetch per staff member — a 30-strong roster would otherwise mean 30
+// sequential HTTP round trips per /who. Falls back to the same hash-based
+// generator src/opus/utils/geo.ts uses on API failure, so the bot never
+// disagrees with the portal for the same postcode.
+async function bulkGeocode(postcodes: string[]): Promise<Map<string, GeoPoint>> {
+  const unique = [...new Set(postcodes.map(cleanPostcode))].filter(Boolean);
+  const coords = new Map<string, GeoPoint>();
+  if (unique.length === 0) return coords;
+
+  try {
+    const res = await fetch("https://api.postcodes.io/postcodes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ postcodes: unique.slice(0, 100) }),
+    });
+    if (res.ok) {
+      const body = await res.json();
+      for (const entry of body.result ?? []) {
+        if (entry?.result) {
+          coords.set(cleanPostcode(entry.query), {
+            lat: entry.result.latitude,
+            lng: entry.result.longitude,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.error("bulkGeocode: postcodes.io request failed", err);
+  }
+
+  for (const code of unique) {
+    if (!coords.has(code)) coords.set(code, hashFallbackCoords(code));
+  }
+  return coords;
+}
+
+async function handleWho(argument: string): Promise<HandlerResponse> {
+  const postcode = argument.trim();
+  if (!postcode) return { text: "Usage: /who <postcode>" };
+
+  const { data: staff, error } = await supabase
+    .from("staff")
+    .select("name, postcode")
+    .eq("is_archived", false)
+    .not("postcode", "is", null);
+
+  if (error) {
+    console.error("handleWho: staff query failed", error.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+  if (!staff || staff.length === 0) {
+    return { text: "No staff records have a postcode set." };
+  }
+
+  const coords = await bulkGeocode([postcode, ...staff.map((s) => s.postcode as string)]);
+  const origin = coords.get(cleanPostcode(postcode));
+  if (!origin) return { text: "Couldn't look up that postcode." };
+
+  const candidates = staff
+    .map((s) => {
+      const point = coords.get(cleanPostcode(s.postcode as string));
+      return point
+        ? { name: s.name as string, postcode: s.postcode as string, coords: point }
+        : null;
+    })
+    .filter((c): c is { name: string; postcode: string; coords: GeoPoint } => c !== null);
+
+  return { text: renderWho(nearestByDistance(origin, candidates, 5)) };
 }
 
 /**
@@ -512,10 +620,16 @@ serve(async (req) => {
         .update({ last_seen_at: new Date().toISOString() })
         .eq("telegram_user_id", body.telegram_user_id);
 
-      result =
-        command?.command === "myweek"
-          ? await handleMyWeek(targetId)
+      const cmd = command?.command;
+      if (cmd === "myweek") {
+        result = await handleMyWeek(targetId);
+      } else if (cmd === "who") {
+        result = isManagementRole(await resolveRole(targetId))
+          ? await handleWho(command?.argument ?? "")
           : { text: "Commands: /myweek" };
+      } else {
+        result = { text: "Commands: /myweek" };
+      }
     }
   }
 

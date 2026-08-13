@@ -70,11 +70,14 @@ async function handleStart(body: BridgeRequest, token: string): Promise<HandlerR
     .update({ used_at: new Date().toISOString() })
     .eq("token", token);
 
+  // tenant_id is NOT NULL with no default, and under the service role
+  // private.current_tenant_id() resolves to null — take it from the invite.
   await supabase.from("audit_logs").insert({
     user_email: null,
     action: "telegram_link_created",
     target_type: "staff",
     target_id: invite.target_id,
+    tenant_id: invite.tenant_id,
     details: {
       telegram_user_id: body.telegram_user_id,
       telegram_username: body.sender?.username ?? null,

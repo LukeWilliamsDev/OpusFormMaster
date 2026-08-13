@@ -62,9 +62,10 @@ BEGIN
   INSERT INTO public.telegram_invites (token, target_id)
   VALUES (v_token, p_target_id);
 
-  INSERT INTO public.audit_logs (user_email, action, target_type, target_id, details)
-  VALUES (auth.jwt() ->> 'email', 'telegram_invite_created', 'staff', p_target_id,
-          jsonb_build_object('expires_in_days', 7));
+  -- audit_logs.tenant_id is NOT NULL with no default, so it must be set here.
+  INSERT INTO public.audit_logs (user_id, user_email, action, target_type, target_id, details, tenant_id)
+  VALUES (auth.uid(), auth.jwt() ->> 'email', 'telegram_invite_created', 'staff', p_target_id,
+          jsonb_build_object('expires_in_days', 7), private.current_tenant_id());
 
   RETURN v_token;
 END;
@@ -89,8 +90,9 @@ BEGIN
      SET used_at = now()
    WHERE target_id = p_target_id AND used_at IS NULL;
 
-  INSERT INTO public.audit_logs (user_email, action, target_type, target_id, details)
-  VALUES (auth.jwt() ->> 'email', 'telegram_link_revoked', 'staff', p_target_id, '{}'::jsonb);
+  INSERT INTO public.audit_logs (user_id, user_email, action, target_type, target_id, details, tenant_id)
+  VALUES (auth.uid(), auth.jwt() ->> 'email', 'telegram_link_revoked', 'staff', p_target_id,
+          '{}'::jsonb, private.current_tenant_id());
 END;
 $$;
 

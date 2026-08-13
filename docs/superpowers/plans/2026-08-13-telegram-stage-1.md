@@ -13,7 +13,7 @@
 - Every new table carries `tenant_id uuid NOT NULL DEFAULT private.current_tenant_id()`.
 - Operational access is gated by `private.can_write_ops(auth.uid())` — never re-implement the check.
 - Bot never grants a role. `telegram_links` resolves to a row; role is read fresh from that row on every message.
-- Edge function secrets: `TELEGRAM_BOT_TOKEN`, `OPUSFORM_BRIDGE_SECRET`. Both already set in Supabase. Never `VITE_`-prefixed, never in the repo.
+- Edge function secrets: `TELEGRAM_BOT_TOKEN`, `OPUSFORM_HANDLER_SECRET`. Both already set in Supabase. Never `VITE_`-prefixed, never in the repo.
 - No new npm dependencies in this stage.
 - Migration filenames: `YYYYMMDDHHMMSS_description.sql` in `supabase/migrations/`.
 - Test files live in a `__tests__/` directory beside the code, named `*.test.ts`.
@@ -486,7 +486,7 @@ serve(async (req) => {
   if (
     !isValidBridgeSecret(
       req.headers.get("x-opusform-bridge-secret"),
-      Deno.env.get("OPUSFORM_BRIDGE_SECRET"),
+      Deno.env.get("OPUSFORM_HANDLER_SECRET"),
     )
   ) {
     return new Response("Forbidden", { status: 403 });

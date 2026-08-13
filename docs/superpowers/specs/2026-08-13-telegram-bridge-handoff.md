@@ -14,7 +14,7 @@ Verified 2026-08-13. You are not waiting on anything.
   with `verify_jwt: false`, so the shared secret is the only gate.
 - It handles `/start <token>` (links a Telegram account to a staff row) and `/myweek` (returns the sender's next seven days). Any other command from a linked sender returns `Commands: /myweek`. Unlinked senders always get the deny text.
 - Gate confirmed: a POST with no secret returns `403`, and a POST with a wrong secret returns `403`.
-- The VPS already has `OPUSFORM_HANDLER_URL` and `OPUSFORM_BRIDGE_SECRET` in an `EnvironmentFile`, and linger is enabled.
+- The VPS already has `OPUSFORM_HANDLER_URL` and `OPUSFORM_HANDLER_SECRET` in an `EnvironmentFile`, and linger is enabled.
 
 Your work is section 10, stage 1. Nothing blocks it.
 

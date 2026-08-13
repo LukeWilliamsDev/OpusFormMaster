@@ -131,7 +131,8 @@ serve(async (req) => {
   if (
     !isValidBridgeSecret(
       req.headers.get("x-opusform-bridge-secret"),
-      Deno.env.get("OPUSFORM_BRIDGE_SECRET"),
+      // Named to match the VPS pair OPUSFORM_HANDLER_URL / OPUSFORM_HANDLER_SECRET.
+      Deno.env.get("OPUSFORM_HANDLER_SECRET"),
     )
   ) {
     return new Response("Forbidden", { status: 403 });

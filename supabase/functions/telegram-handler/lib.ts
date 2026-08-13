@@ -1,12 +1,20 @@
 // Pure helpers for the Telegram handler. Deliberately free of Deno imports so
 // Vitest can exercise them directly.
 
+export type UploadFilePayload = {
+  file_id: string;
+  file_name?: string;
+  mime_type?: string;
+  file_size?: number;
+  caption?: string;
+};
+
 export type BridgeRequest = {
   telegram_user_id: string;
   chat_id: string;
   message_id?: number;
   kind: "text" | "callback" | "file";
-  payload: { text?: string };
+  payload: { text?: string; file?: UploadFilePayload };
   sender?: { username?: string; first_name?: string };
 };
 
@@ -56,4 +64,55 @@ export function renderWeek(
     return `${day} — ${where}`;
   });
   return `Your next 7 days:\n${lines.join("\n")}`;
+}
+
+export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
+
+const ALLOWED_UPLOAD_MIME_TYPES = new Set(["image/jpeg", "image/png", "application/pdf"]);
+const ALLOWED_UPLOAD_EXTENSIONS = new Set(["jpg", "jpeg", "png", "pdf"]);
+
+// Cheap pre-download filter on client-declared metadata. Not a security
+// boundary — sniffFileType() on the downloaded bytes is the real gate,
+// since mime_type and the filename extension both come from the client.
+export function isDeclaredUploadTypeAllowed(mimeType?: string, fileName?: string): boolean {
+  if (mimeType && ALLOWED_UPLOAD_MIME_TYPES.has(mimeType.toLowerCase())) return true;
+  const ext = fileName?.split(".").pop()?.toLowerCase();
+  return !!ext && ALLOWED_UPLOAD_EXTENSIONS.has(ext);
+}
+
+// Ground truth for what a file actually is. mime_type is client-supplied and
+// not evidence (design spec §7.3) — only the bytes decide.
+export function sniffFileType(bytes: Uint8Array): { mime: string; ext: string } | null {
+  if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+    return { mime: "image/jpeg", ext: "jpg" };
+  }
+  if (
+    bytes.length >= 8 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47 &&
+    bytes[4] === 0x0d &&
+    bytes[5] === 0x0a &&
+    bytes[6] === 0x1a &&
+    bytes[7] === 0x0a
+  ) {
+    return { mime: "image/png", ext: "png" };
+  }
+  if (
+    bytes.length >= 4 &&
+    bytes[0] === 0x25 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x44 &&
+    bytes[3] === 0x46
+  ) {
+    return { mime: "application/pdf", ext: "pdf" };
+  }
+  return null;
+}
+
+// Never the client-supplied filename (design spec §7.3: path-traversal and
+// overwrite risk) — a fresh uuid under a server-chosen prefix.
+export function buildUploadPath(prefix: string, uuid: string, ext: string): string {
+  return `${prefix}/${uuid}.${ext}`;
 }

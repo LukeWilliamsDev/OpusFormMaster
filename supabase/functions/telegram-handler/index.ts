@@ -2,11 +2,15 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   BridgeRequest,
+  buildUploadPath,
   DENY_TEXT,
   HandlerResponse,
+  isDeclaredUploadTypeAllowed,
   isValidBridgeSecret,
+  MAX_UPLOAD_BYTES,
   parseCommand,
   renderWeek,
+  sniffFileType,
 } from "./lib.ts";
 
 // The bridge authenticates with a shared secret, not a user JWT — it acts for
@@ -236,6 +240,240 @@ async function handleCallback(body: BridgeRequest, targetId: string): Promise<Ha
   };
 }
 
+const UPLOAD_RATE_LIMIT_PER_HOUR = 10;
+
+type UploadContext =
+  | { kind: "document_request"; requestId: string }
+  | { kind: "job"; jobId: string; tenantId: string }
+  | { kind: "none" }
+  | { kind: "ambiguous"; message: string }
+  | { kind: "error" };
+
+// "Open request" per design spec §7.2: a live document_requests row wins —
+// it's the reason the operative was messaged at all. Falling back to today's
+// shift lets an unprompted job photo still land somewhere sensible. Either
+// query erroring must not fall through to the other path silently (handoff
+// §6: a query that errors returns null, indistinguishable from "no rows").
+async function resolveUploadContext(targetId: string): Promise<UploadContext> {
+  const { data: requests, error: requestsError } = await supabase
+    .from("document_requests")
+    .select("id")
+    .eq("worker_id", targetId)
+    .is("completed_at", null)
+    .gt("expires_at", new Date().toISOString());
+
+  if (requestsError) {
+    console.error("resolveUploadContext: document_requests query failed", requestsError.message);
+    return { kind: "error" };
+  }
+  if (requests.length === 1) {
+    return { kind: "document_request", requestId: requests[0].id };
+  }
+  if (requests.length > 1) {
+    return {
+      kind: "ambiguous",
+      message:
+        "You have more than one open document request — please use the link you were sent instead.",
+    };
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const { data: shifts, error: shiftsError } = await supabase
+    .from("shifts")
+    .select("job_id, tenant_id")
+    .eq("worker_id", targetId)
+    .eq("date", today);
+
+  if (shiftsError) {
+    console.error("resolveUploadContext: shifts query failed", shiftsError.message);
+    return { kind: "error" };
+  }
+  if (shifts.length === 1 && shifts[0].job_id) {
+    return { kind: "job", jobId: shifts[0].job_id, tenantId: shifts[0].tenant_id };
+  }
+  if (shifts.length > 1) {
+    return {
+      kind: "ambiguous",
+      message: "You're on more than one job today — please add this from the portal instead.",
+    };
+  }
+
+  return { kind: "none" };
+}
+
+// Fails closed on a query error — an unreadable count must not be treated as
+// zero, or a flaky read becomes a bypassed limit.
+async function isUploadRateLimited(context: UploadContext, staffLabel: string): Promise<boolean> {
+  const since = new Date(Date.now() - 3_600_000).toISOString();
+
+  if (context.kind === "document_request") {
+    // The Storage API's own list(), not a PostgREST query against
+    // storage.objects — that schema isn't exposed to PostgREST on this
+    // project and returns 406.
+    const { data, error } = await supabase.storage
+      .from("compliance-documents")
+      .list(`requests/${context.requestId}`, { limit: 100 });
+    if (error) {
+      console.error("isUploadRateLimited: storage list failed", error.message);
+      return true;
+    }
+    const recent = (data ?? []).filter((obj) => (obj.created_at ?? "") >= since);
+    return recent.length >= UPLOAD_RATE_LIMIT_PER_HOUR;
+  }
+
+  if (context.kind === "job") {
+    const { count, error } = await supabase
+      .from("job_attachments")
+      .select("id", { count: "exact", head: true })
+      .eq("job_id", context.jobId)
+      .eq("uploaded_by", staffLabel)
+      .gte("uploaded_at", since);
+    if (error) {
+      console.error("isUploadRateLimited: job_attachments count failed", error.message);
+      return true;
+    }
+    return (count ?? 0) >= UPLOAD_RATE_LIMIT_PER_HOUR;
+  }
+
+  return false;
+}
+
+// The bot token never leaves Supabase (design spec §4) — getFile and the
+// download both happen here, never on the bridge.
+async function fetchTelegramFile(fileId: string, token: string): Promise<Uint8Array | null> {
+  const metaRes = await fetch(
+    `https://api.telegram.org/bot${token}/getFile?file_id=${encodeURIComponent(fileId)}`,
+  );
+  const meta = await metaRes.json();
+  if (!meta.ok || !meta.result?.file_path) return null;
+
+  const fileRes = await fetch(`https://api.telegram.org/file/bot${token}/${meta.result.file_path}`);
+  if (!fileRes.ok) return null;
+
+  return new Uint8Array(await fileRes.arrayBuffer());
+}
+
+async function handleFile(body: BridgeRequest, targetId: string): Promise<HandlerResponse> {
+  const file = body.payload?.file;
+  if (!file?.file_id) return { text: "" };
+
+  if (file.file_size && file.file_size > MAX_UPLOAD_BYTES) {
+    return { text: "That file's too large — 20 MB max." };
+  }
+  if (!isDeclaredUploadTypeAllowed(file.mime_type, file.file_name)) {
+    return { text: "Only photos and PDFs are accepted." };
+  }
+
+  const context = await resolveUploadContext(targetId);
+  if (context.kind === "error") {
+    return { text: "Something went wrong — please try again shortly." };
+  }
+  if (context.kind === "none") {
+    return { text: "Nothing open to attach this to right now." };
+  }
+  if (context.kind === "ambiguous") {
+    return { text: context.message };
+  }
+
+  const { data: staff } = await supabase
+    .from("staff")
+    .select("name")
+    .eq("id", targetId)
+    .maybeSingle();
+  const staffLabel = `Telegram: ${staff?.name ?? "Operative"}`;
+
+  if (await isUploadRateLimited(context, staffLabel)) {
+    return { text: "You've hit the upload limit for now — try again in an hour." };
+  }
+
+  const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  if (!token) return { text: "Uploads aren't available right now." };
+
+  const bytes = await fetchTelegramFile(file.file_id, token);
+  if (!bytes || bytes.byteLength === 0) {
+    return { text: "Couldn't retrieve that file — please try again." };
+  }
+  if (bytes.byteLength > MAX_UPLOAD_BYTES) {
+    return { text: "That file's too large — 20 MB max." };
+  }
+
+  const sniffed = sniffFileType(bytes);
+  if (!sniffed) {
+    return { text: "Only photos and PDFs are accepted." };
+  }
+
+  if (context.kind === "document_request") {
+    const path = buildUploadPath(`requests/${context.requestId}`, crypto.randomUUID(), sniffed.ext);
+    const { error: uploadError } = await supabase.storage
+      .from("compliance-documents")
+      .upload(path, bytes, { contentType: sniffed.mime, upsert: false });
+    if (uploadError) {
+      console.error("handleFile: compliance-documents upload failed", uploadError.message);
+      return { text: "Something went wrong saving that file — please try again." };
+    }
+
+    const { error: appendError } = await supabase.rpc("append_document_request_upload", {
+      p_request_id: context.requestId,
+      p_upload: {
+        path,
+        file_name: file.file_name || null,
+        caption: file.caption || null,
+        telegram_user_id: body.telegram_user_id,
+        uploaded_at: new Date().toISOString(),
+      },
+    });
+    if (appendError) {
+      console.error("handleFile: append_document_request_upload failed", appendError.message);
+      return { text: "Something went wrong saving that file — please try again." };
+    }
+
+    return {
+      text: "Got it — that's been added to your document request. Your dispatcher will follow up if anything else is needed.",
+    };
+  }
+
+  // context.kind === "job"
+  const path = buildUploadPath(`jobs/${context.jobId}`, crypto.randomUUID(), sniffed.ext);
+  const { error: uploadError } = await supabase.storage
+    .from("job-attachments")
+    .upload(path, bytes, { contentType: sniffed.mime, upsert: false });
+  if (uploadError) {
+    console.error("handleFile: job-attachments upload failed", uploadError.message);
+    return { text: "Something went wrong saving that file — please try again." };
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("job-attachments").getPublicUrl(path);
+
+  const { error: insertError } = await supabase.from("job_attachments").insert({
+    job_id: context.jobId,
+    // job_attachments has no tenant_id column despite its original migration
+    // declaring one — live schema has diverged from the repo (handoff §4).
+    type: "document",
+    file_name: file.file_name || `telegram-${crypto.randomUUID()}.${sniffed.ext}`,
+    file_url: publicUrl,
+    file_size_bytes: bytes.byteLength,
+    uploaded_by: staffLabel,
+  });
+  if (insertError) {
+    console.error("handleFile: job_attachments insert failed", insertError.message);
+    return { text: "Something went wrong saving that file — please try again." };
+  }
+
+  if (file.caption?.trim()) {
+    await supabase.from("job_notes").insert({
+      job_id: context.jobId,
+      tenant_id: context.tenantId,
+      author_type: "operative",
+      author_staff_id: targetId,
+      body: file.caption.trim(),
+    });
+  }
+
+  return { text: "Added to the job. Thanks!" };
+}
+
 serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -267,9 +505,7 @@ serve(async (req) => {
     } else if (body.kind === "callback") {
       result = await handleCallback(body, targetId);
     } else if (body.kind === "file") {
-      result = {
-        text: "Sending files here is not available yet. Please use the upload link you were sent.",
-      };
+      result = await handleFile(body, targetId);
     } else {
       await supabase
         .from("telegram_links")

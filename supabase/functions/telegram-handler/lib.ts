@@ -107,6 +107,41 @@ export function renderWho(rows: NearbyStaff[]): string {
   return `Nearest staff:\n${lines.join("\n")}`;
 }
 
+// Same whole-day-count logic as supabase/functions/telegram-notify/index.ts's
+// daysUntil — duplicated rather than shared across functions (this codebase's
+// existing pattern; see isValidBridgeSecret vs telegram-notify's secretOk).
+// Kept in sync deliberately: the bot must never give a different compliance
+// answer here than the daily digest gives.
+export function daysUntil(expiryDate: string, todayIso: string): number | null {
+  const expiry = Date.parse(`${expiryDate.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(expiry)) return null;
+  return Math.round((expiry - Date.parse(`${todayIso}T00:00:00Z`)) / 86_400_000);
+}
+
+export function ticketStatusLine(what: string, days: number | null, expiryDate?: string): string {
+  if (days === null) return `${what}: no expiry date on file`;
+  if (days > 0) return `${what} — expires in ${days} day${days === 1 ? "" : "s"} (${expiryDate})`;
+  if (days === 0) return `${what} — expires today`;
+  return `${what} — expired ${-days} day${days === -1 ? "" : "s"} ago (${expiryDate})`;
+}
+
+export function renderStaffStatus(
+  name: string,
+  ticketLines: string[],
+  nextShift: { date: string; site_name: string } | null,
+): string {
+  const parts = [
+    name,
+    ticketLines.length ? ticketLines.join("\n") : "No certificates on file.",
+    nextShift ? `Next shift: ${nextShift.date} — ${nextShift.site_name}` : "No upcoming shifts.",
+  ];
+  return parts.join("\n\n");
+}
+
+export function renderStaffMatches(names: string[]): string {
+  return `Multiple matches — be more specific:\n${names.join("\n")}`;
+}
+
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 const ALLOWED_UPLOAD_MIME_TYPES = new Set(["image/jpeg", "image/png", "application/pdf"]);

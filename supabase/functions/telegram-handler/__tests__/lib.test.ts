@@ -2,15 +2,19 @@ import { describe, expect, it } from "vitest";
 import {
   buildUploadPath,
   cleanPostcode,
+  daysUntil,
   DENY_TEXT,
   haversineMiles,
   isDeclaredUploadTypeAllowed,
   isValidBridgeSecret,
   nearestByDistance,
   parseCommand,
+  renderStaffMatches,
+  renderStaffStatus,
   renderWeek,
   renderWho,
   sniffFileType,
+  ticketStatusLine,
 } from "../lib";
 
 describe("parseCommand", () => {
@@ -178,5 +182,70 @@ describe("renderWho", () => {
 
   it("says so when there are no candidates", () => {
     expect(renderWho([])).toBe("No staff records have a postcode set.");
+  });
+});
+
+describe("daysUntil", () => {
+  it("counts whole days to a future date", () => {
+    expect(daysUntil("2026-08-20", "2026-08-13")).toBe(7);
+  });
+
+  it("returns a negative count for a past date", () => {
+    expect(daysUntil("2026-08-01", "2026-08-13")).toBe(-12);
+  });
+
+  it("returns null for an unparseable date", () => {
+    expect(daysUntil("not-a-date", "2026-08-13")).toBeNull();
+  });
+});
+
+describe("ticketStatusLine", () => {
+  it("phrases a future expiry", () => {
+    expect(ticketStatusLine("CSCS", 7, "2026-08-20")).toBe("CSCS — expires in 7 days (2026-08-20)");
+  });
+
+  it("uses singular day phrasing for exactly one day", () => {
+    expect(ticketStatusLine("CSCS", 1, "2026-08-14")).toBe("CSCS — expires in 1 day (2026-08-14)");
+  });
+
+  it("phrases expiry today", () => {
+    expect(ticketStatusLine("CSCS", 0, "2026-08-13")).toBe("CSCS — expires today");
+  });
+
+  it("phrases a past expiry", () => {
+    expect(ticketStatusLine("CSCS", -3, "2026-08-10")).toBe(
+      "CSCS — expired 3 days ago (2026-08-10)",
+    );
+  });
+
+  it("phrases a missing expiry date", () => {
+    expect(ticketStatusLine("CSCS", null)).toBe("CSCS: no expiry date on file");
+  });
+});
+
+describe("renderStaffStatus", () => {
+  it("combines name, ticket lines, and next shift", () => {
+    const out = renderStaffStatus("Dave Smith", ["CSCS — expires in 7 days (2026-08-20)"], {
+      date: "2026-08-15",
+      site_name: "Croydon Depot",
+    });
+    expect(out).toContain("Dave Smith");
+    expect(out).toContain("CSCS");
+    expect(out).toContain("Croydon Depot");
+  });
+
+  it("says so when there are no certificates or no upcoming shift", () => {
+    const out = renderStaffStatus("Dave Smith", [], null);
+    expect(out).toContain("No certificates on file.");
+    expect(out).toContain("No upcoming shifts.");
+  });
+});
+
+describe("renderStaffMatches", () => {
+  it("lists the ambiguous names", () => {
+    const out = renderStaffMatches(["Dave Smith", "Dave Jones"]);
+    expect(out).toContain("Dave Smith");
+    expect(out).toContain("Dave Jones");
+    expect(out.toLowerCase()).toContain("specific");
   });
 });

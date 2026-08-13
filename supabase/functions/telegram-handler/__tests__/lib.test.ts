@@ -6,12 +6,14 @@ import {
   DENY_TEXT,
   haversineMiles,
   isDeclaredUploadTypeAllowed,
+  isManagementRole,
   isValidBridgeSecret,
   nearestByDistance,
   parseCommand,
   renderJobStatus,
   renderStaffMatches,
   renderStaffStatus,
+  renderToday,
   renderWeek,
   renderWho,
   sniffFileType,
@@ -282,5 +284,37 @@ describe("renderJobStatus", () => {
   it("omits the notes section when there are none", () => {
     const out = renderJobStatus(job, [], []);
     expect(out).not.toContain("Latest notes");
+  });
+});
+
+describe("renderToday", () => {
+  it("lists each site with its crew count", () => {
+    const out = renderToday([
+      { site_name: "Croydon Depot", postcode: "CR0 1AA", crewCount: 3 },
+      { site_name: "Unassigned site", postcode: null, crewCount: 1 },
+    ]);
+    expect(out).toContain("Croydon Depot (CR0 1AA) — 3 crew");
+    expect(out).toContain("Unassigned site — 1 crew");
+  });
+
+  it("says so when nothing is active today", () => {
+    expect(renderToday([])).toBe("No sites active today.");
+  });
+});
+
+describe("isManagementRole", () => {
+  it("accepts each management role", () => {
+    expect(isManagementRole("admin")).toBe(true);
+    expect(isManagementRole("director")).toBe(true);
+    expect(isManagementRole("logistics_coordinator")).toBe(true);
+  });
+
+  it("rejects a field role", () => {
+    expect(isManagementRole("labourer")).toBe(false);
+  });
+
+  it("rejects null or undefined", () => {
+    expect(isManagementRole(null)).toBe(false);
+    expect(isManagementRole(undefined)).toBe(false);
   });
 });

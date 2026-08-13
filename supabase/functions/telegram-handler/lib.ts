@@ -169,6 +169,26 @@ export function renderJobStatus(
   return lines.join("\n");
 }
 
+export type TodayJob = { site_name: string; postcode: string | null; crewCount: number };
+
+export function renderToday(jobs: TodayJob[]): string {
+  if (jobs.length === 0) return "No sites active today.";
+  const lines = jobs.map((j) => {
+    const where = j.postcode ? `${j.site_name} (${j.postcode})` : j.site_name;
+    return `${where} — ${j.crewCount} crew`;
+  });
+  return `Today's sites:\n${lines.join("\n")}`;
+}
+
+// Matches private.can_write_ops and MANAGEMENT_ROLES in
+// src/opus/context/PortalContext.tsx:100 — there is no 'dispatcher' member of
+// the app_role enum, so this list, not that word, is the gate.
+export const MANAGEMENT_ROLES = ["admin", "director", "logistics_coordinator"];
+
+export function isManagementRole(role: string | null | undefined): boolean {
+  return !!role && MANAGEMENT_ROLES.includes(role);
+}
+
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 const ALLOWED_UPLOAD_MIME_TYPES = new Set(["image/jpeg", "image/png", "application/pdf"]);

@@ -71,16 +71,21 @@ async function release(kind: string, dedupeKey: string) {
     .eq("dedupe_key", dedupeKey);
 }
 
-async function sendShiftReminders(): Promise<{ sent: number; failed: number }> {
+async function sendShiftReminders() {
   const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
 
-  const { data: shifts } = await supabase
+  const { data: shifts, error } = await supabase
     .from("shifts")
     .select("id, worker_id, date, tenant_id, jobs(site_name, postcode)")
     .eq("date", tomorrow);
 
+  // A failed query previously returned null and looked identical to "nothing to
+  // send". Surface it instead — that ambiguity hid a missing foreign key.
+  if (error) return { error: error.message, candidates: 0, sent: 0, failed: 0, skipped: 0 };
+
   let sent = 0;
   let failed = 0;
+  let skipped = 0;
 
   for (const shift of shifts ?? []) {
     const row = shift as Record<string, unknown>;
@@ -93,11 +98,17 @@ async function sendShiftReminders(): Promise<{ sent: number; failed: number }> {
       .is("revoked_at", null)
       .maybeSingle();
 
-    if (!link) continue;
+    if (!link) {
+      skipped += 1;
+      continue;
+    }
 
     const kind = "shift_reminder";
     const dedupeKey = shiftId;
     if (!(await claim(link.telegram_user_id, kind, dedupeKey, row.tenant_id as string))) {
+      // Already claimed by an earlier run, or the insert failed. Either way it
+      // is a deliberate no-send, not a success.
+      skipped += 1;
       continue;
     }
 
@@ -127,7 +138,7 @@ async function sendShiftReminders(): Promise<{ sent: number; failed: number }> {
     }
   }
 
-  return { sent, failed };
+  return { candidates: (shifts ?? []).length, sent, failed, skipped };
 }
 
 serve(async (req) => {

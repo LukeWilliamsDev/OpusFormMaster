@@ -30,7 +30,7 @@ Untrusted senders must never reach a Jinn session. The bridge becomes a **dumb r
 
 1. **The bridge holds no bot token.** File downloads and scheduled notifications are handled by Supabase directly. Do not install the BotFather token on the VPS.
 2. **The bridge contains no business logic.** No queries, no message copy, no idea what a pour or a certificate is. If you find yourself writing domain logic, it belongs in the edge function.
-3. **The owner path is unchanged.** Telegram ID `8724544272` keeps the existing Jinn session behaviour exactly as it is today.
+3. **No assistant session on Telegram, for anyone.** Superseded by the amendment in section 4: the Jinn path is removed from the bridge entirely and the owner reaches Jinn over SSH instead. Telegram ID `8724544272` is an ordinary linked user, gated by `profiles.role` like everyone else.
 
 ---
 
@@ -131,29 +131,34 @@ Replace the current single path in `pollOnce` / `handleAuthorizedUpdate` with th
 
 The fork as originally written routes **all** owner traffic to Jinn. That was too broad: the owner is also a dispatcher, so under it they can never use `/myweek`, and in stage 4 never `/who`, `/job`, or `/today` either. Confirmed in practice — the owner's `/start` was answered conversationally by Jinn and never reached the handler.
 
+**Jinn is removed from the Telegram path entirely.** The owner reaches Jinn over SSH on the VPS, which is where it belongs. Telegram becomes a pure OpusForm surface with no assistant session behind it, for anyone, ever.
+
+This is the strongest form of "the bridge is a dumb relay", and it deletes the largest security surface in the design: with no agent reachable from Telegram, the prompt-injection risk that constrained the third-party and natural-language sections no longer exists on this channel.
+
 Revised order:
 
 ```
 1. Owner access command (/users, /approve, /revoke) from owner private chat
-      → unchanged, handled locally
-2. Text parses to a known OpusForm command (/start, /myweek, and later
-   /mycerts, /who, /job, /today, /staff)
-      → forward to the edge function, INCLUDING for the owner
-3. Sender is OWNER_USER_ID (anything not matching above)
-      → unchanged, Jinn session
-4. Sender is in local allowlist
+      → handled locally, unchanged (bridge-admin escape hatch)
+2. Text starts with "/start"
+      → forward to the edge function, regardless of allowlist
+3. Sender is in local allowlist (owner included, once linked)
       → forward to the edge function
-5. Otherwise
+4. Otherwise
       → recordObservedUser, advance offset, no reply
 ```
 
-Keep the known-command list explicit rather than "anything starting with a slash", so an unrecognised slash command from the owner still reaches Jinn.
+No owner branch beyond the local access commands. The owner is an ordinary linked user, subject to the same handler and the same `profiles.role` gating as everyone else.
+
+**Code this makes dead.** The Jinn session machinery is no longer reachable from the bridge: `jinnRequest`, `buildJinnPrompt`, `getOrCreateSession`, `sessionTail`, `waitForAssistant`, `latestAssistant`, the `sessions` map in runtime state, `gatewayToken()`, and `JINN_GATEWAY_URL` / `JINN_REPLY_TIMEOUT_MS`. Remove them rather than leaving them unwired — an unreachable path to an agent is exactly the kind of thing that gets re-wired by accident later. Existing `sessions` entries in the state file can be dropped on next write.
+
+Keep the per-chat FIFO queues, the concurrency cap, pending-update durability, atomic state writes, message splitting, observed-user expiry, and the organisation guardrail. Those all still apply to handler traffic. The 180-second reply timeout goes with the session code — handler calls should use a short timeout measured in seconds.
 
 **Owner protection, restated:** the handler returns `ack.link_revoked` for any sender it cannot resolve to an active link. Once owner commands reach the handler, that will name `OWNER_USER_ID` whenever the owner is not linked. The bridge must continue to ignore any allowlist removal targeting the owner — the existing owner-protection rule already covers this, but it is now reachable in normal operation rather than theoretical.
 
 **The owner is not a special case in OpusForm terms.** They link their own account through the normal invite flow, and from then on the handler grants exactly what their `profiles.role` allows — the same rule as everyone else. An admin gets admin capabilities in Telegram because the database says so, not because of who they are on the bridge.
 
-Jinn becomes a **fallback, not a destination**: free text that is not an OpusForm command still reaches it, so the assistant keeps working, but it no longer intercepts the owner's operational traffic. When the natural-language layer lands in stage 5, that fallback narrows further — OpusForm questions resolve against role-scoped tools, and only genuinely non-OpusForm conversation reaches Jinn.
+There is no Jinn fallback. Free text from a linked sender reaches the handler like anything else and gets the capability list back. When the natural-language layer lands in stage 5, that free text resolves against role-scoped tools instead — still inside the handler, still never an open agent session.
 
 **Handler-side follow-up (this repository, not the bridge):** `telegram_links.target_id` points at a `staff` row, but roles live on `profiles`. Resolving capability by role needs the handler to join `staff.email` to `profiles.email` and read `role` on every message. Stage 1 does not need it — `/myweek` is self-scoped — but every dispatcher command from stage 4 does. Tracked here so it is not discovered late.
 

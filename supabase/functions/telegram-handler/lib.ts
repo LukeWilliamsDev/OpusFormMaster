@@ -66,6 +66,47 @@ export function renderWeek(
   return `Your next 7 days:\n${lines.join("\n")}`;
 }
 
+export function cleanPostcode(postcode: string): string {
+  return postcode.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+export type GeoPoint = { lat: number; lng: number };
+
+// Ported from src/opus/utils/geo.ts's calculateDistance — edge functions
+// cannot import from src/opus, so this is a deliberate small duplicate.
+export function haversineMiles(a: GeoPoint, b: GeoPoint): number {
+  const R = 3958.8; // Earth's radius in miles
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
+export type NearbyStaff = { name: string; postcode: string; distanceMiles: number };
+
+export function nearestByDistance(
+  origin: GeoPoint,
+  candidates: Array<{ name: string; postcode: string; coords: GeoPoint }>,
+  limit: number,
+): NearbyStaff[] {
+  return candidates
+    .map((c) => ({
+      name: c.name,
+      postcode: c.postcode,
+      distanceMiles: haversineMiles(origin, c.coords),
+    }))
+    .sort((a, b) => a.distanceMiles - b.distanceMiles)
+    .slice(0, limit);
+}
+
+export function renderWho(rows: NearbyStaff[]): string {
+  if (rows.length === 0) return "No staff records have a postcode set.";
+  const lines = rows.map((r) => `${r.name} — ${r.postcode} (${r.distanceMiles.toFixed(1)} mi)`);
+  return `Nearest staff:\n${lines.join("\n")}`;
+}
+
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 const ALLOWED_UPLOAD_MIME_TYPES = new Set(["image/jpeg", "image/png", "application/pdf"]);

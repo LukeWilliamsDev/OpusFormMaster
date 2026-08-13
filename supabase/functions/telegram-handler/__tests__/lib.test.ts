@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   buildUploadPath,
+  cleanPostcode,
   DENY_TEXT,
+  haversineMiles,
   isDeclaredUploadTypeAllowed,
   isValidBridgeSecret,
+  nearestByDistance,
   parseCommand,
   renderWeek,
+  renderWho,
   sniffFileType,
 } from "../lib";
 
@@ -126,5 +130,53 @@ describe("sniffFileType", () => {
 describe("buildUploadPath", () => {
   it("ignores the client filename and uses the server-generated uuid", () => {
     expect(buildUploadPath("requests/req-1", "abc-123", "pdf")).toBe("requests/req-1/abc-123.pdf");
+  });
+});
+
+describe("cleanPostcode", () => {
+  it("uppercases and strips whitespace", () => {
+    expect(cleanPostcode(" sw1a 1aa ")).toBe("SW1A1AA");
+  });
+});
+
+describe("haversineMiles", () => {
+  it("returns zero for identical points", () => {
+    expect(haversineMiles({ lat: 51.5, lng: -0.1 }, { lat: 51.5, lng: -0.1 })).toBe(0);
+  });
+
+  it("returns a positive distance for distinct points", () => {
+    // Roughly London to Manchester, ~160-180 miles as the crow flies.
+    const london = { lat: 51.5072, lng: -0.1276 };
+    const manchester = { lat: 53.4808, lng: -2.2426 };
+    const miles = haversineMiles(london, manchester);
+    expect(miles).toBeGreaterThan(150);
+    expect(miles).toBeLessThan(200);
+  });
+});
+
+describe("nearestByDistance", () => {
+  it("sorts ascending by distance and applies the limit", () => {
+    const origin = { lat: 51.5, lng: -0.1 };
+    const candidates = [
+      { name: "Far", postcode: "EH1 1AA", coords: { lat: 55.95, lng: -3.19 } },
+      { name: "Near", postcode: "SW1A 1AA", coords: { lat: 51.5012, lng: -0.1419 } },
+      { name: "Mid", postcode: "B1 1AA", coords: { lat: 52.48, lng: -1.9 } },
+    ];
+    const result = nearestByDistance(origin, candidates, 2);
+    expect(result.map((r) => r.name)).toEqual(["Near", "Mid"]);
+    expect(result[0].distanceMiles).toBeLessThan(result[1].distanceMiles);
+  });
+});
+
+describe("renderWho", () => {
+  it("lists candidates with distance", () => {
+    const out = renderWho([{ name: "Dave Smith", postcode: "SW1A 1AA", distanceMiles: 2.345 }]);
+    expect(out).toContain("Dave Smith");
+    expect(out).toContain("SW1A 1AA");
+    expect(out).toContain("2.3");
+  });
+
+  it("says so when there are no candidates", () => {
+    expect(renderWho([])).toBe("No staff records have a postcode set.");
   });
 });

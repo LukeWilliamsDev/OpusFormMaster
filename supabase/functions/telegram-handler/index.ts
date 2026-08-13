@@ -13,6 +13,7 @@ import {
   MAX_UPLOAD_BYTES,
   nearestByDistance,
   parseCommand,
+  renderJobStatus,
   renderWeek,
   renderWho,
   sniffFileType,
@@ -238,6 +239,70 @@ async function handleWho(argument: string): Promise<HandlerResponse> {
     .filter((c): c is { name: string; postcode: string; coords: GeoPoint } => c !== null);
 
   return { text: renderWho(nearestByDistance(origin, candidates, 5)) };
+}
+
+async function handleJob(argument: string): Promise<HandlerResponse> {
+  const ref = argument.trim();
+  if (!ref) return { text: "Usage: /job <ref>" };
+
+  const { data: job, error } = await supabase
+    .from("jobs")
+    .select("id, job_ref, site_name, status, current_pours, contract_max_pours")
+    .ilike("job_ref", ref)
+    .maybeSingle();
+
+  if (error) {
+    console.error("handleJob: jobs query failed", error.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+  if (!job) return { text: `No job found matching ${ref}.` };
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: shifts, error: shiftsError } = await supabase
+    .from("shifts")
+    .select("staff(name)")
+    .eq("job_id", job.id)
+    .eq("date", today);
+  if (shiftsError) {
+    console.error("handleJob: shifts query failed", shiftsError.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+  const crew = (shifts ?? [])
+    .map((row) => (row as Record<string, unknown>).staff as { name?: string } | null)
+    .filter((s): s is { name: string } => Boolean(s?.name))
+    .map((s) => ({ name: s.name }));
+
+  const { data: notes, error: notesError } = await supabase
+    .from("job_notes")
+    .select("body, author_type, author_staff_id, user_email")
+    .eq("job_id", job.id)
+    .order("created_at", { ascending: false })
+    .limit(3);
+  if (notesError) {
+    console.error("handleJob: job_notes query failed", notesError.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+
+  const authorIds = (notes ?? [])
+    .filter((n) => n.author_type === "operative" && n.author_staff_id)
+    .map((n) => n.author_staff_id as string);
+
+  const authorNames = new Map<string, string>();
+  if (authorIds.length > 0) {
+    const { data: authors } = await supabase.from("staff").select("id, name").in("id", authorIds);
+    for (const a of authors ?? []) authorNames.set(a.id as string, a.name as string);
+  }
+
+  const noteViews = (notes ?? []).map((n) => ({
+    author:
+      n.author_type === "operative"
+        ? authorNames.get(n.author_staff_id as string) || "Operative"
+        : (n.user_email as string) || "Dispatcher",
+    body: n.body as string,
+  }));
+
+  return { text: renderJobStatus(job, crew, noteViews) };
 }
 
 /**
@@ -627,10 +692,15 @@ serve(async (req) => {
       const cmd = command?.command;
       if (cmd === "myweek") {
         result = await handleMyWeek(targetId);
-      } else if (cmd === "who") {
-        result = isManagementRole(await resolveRole(targetId))
-          ? await handleWho(command?.argument ?? "")
-          : { text: "Commands: /myweek" };
+      } else if (cmd === "who" || cmd === "job") {
+        const role = await resolveRole(targetId);
+        if (!isManagementRole(role)) {
+          result = { text: "Commands: /myweek" };
+        } else if (cmd === "who") {
+          result = await handleWho(command?.argument ?? "");
+        } else {
+          result = await handleJob(command?.argument ?? "");
+        }
       } else {
         result = { text: "Commands: /myweek" };
       }

@@ -4,6 +4,20 @@
 **Audience**: whoever maintains `composio-telegram-bridge.mjs` on the Oracle Cloud VPS.
 **Companion**: `2026-08-13-telegram-bot-design.md` in this repository holds the full product design. This document is the VPS-side subset and is self-contained — you do not need the design doc to act on it.
 
+## 0. Current status — the Supabase side is already live
+
+Verified 2026-08-13. You are not waiting on anything.
+
+- Tables `telegram_invites` and `telegram_links` exist with RLS enabled, plus the invite and revoke RPCs and a trigger that revokes a link when a staff member is archived.
+- Edge function **`telegram-handler` is deployed and ACTIVE** at
+  `https://fgpthpxmiroyebrzjdzo.supabase.co/functions/v1/telegram-handler`
+  with `verify_jwt: false`, so the shared secret is the only gate.
+- It handles `/start <token>` (links a Telegram account to a staff row) and `/myweek` (returns the sender's next seven days). Any other command from a linked sender returns `Commands: /myweek`. Unlinked senders always get the deny text.
+- Gate confirmed: a POST with no secret returns `403`, and a POST with a wrong secret returns `403`.
+- The VPS already has `OPUSFORM_HANDLER_URL` and `OPUSFORM_BRIDGE_SECRET` in an `EnvironmentFile`, and linger is enabled.
+
+Your work is section 10, stage 1. Nothing blocks it.
+
 ---
 
 ## 1. What is changing and why

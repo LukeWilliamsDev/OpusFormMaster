@@ -149,10 +149,19 @@ async function notifyDispatchers(text: string) {
   // One lookup for the whole set rather than one per link. Filtering by role
   // rather than by email keeps it case-safe — matching happens in the map below,
   // where both sides are already lowercased.
-  const { data: profiles } = await supabase
+  const { data: profiles, error } = await supabase
     .from("profiles")
     .select("email")
-    .in("role", ["dispatcher", "admin"]);
+    // Matches private.can_write_ops and MANAGEMENT_ROLES in
+    // src/opus/context/PortalContext.tsx:100. There is no 'dispatcher' member of
+    // the app_role enum: naming one made Postgres reject the whole query, so
+    // every decline alert was silently dropped from the day this shipped.
+    .in("role", ["admin", "director", "logistics_coordinator"]);
+
+  if (error) {
+    console.error("notifyDispatchers: profiles query failed", error.message);
+    return;
+  }
 
   const recipients = (profiles ?? [])
     .map((p) => byEmail.get(String(p.email).toLowerCase()))

@@ -124,6 +124,99 @@ async function handleMyWeek(targetId: string): Promise<HandlerResponse> {
   return { text: renderWeek(rows) };
 }
 
+/**
+ * Alert every linked dispatcher or admin. Roles live on profiles, links point
+ * at staff, so the two are joined on email. Sent directly rather than returned,
+ * because the reply belongs to the operative who tapped the button.
+ */
+async function notifyDispatchers(text: string) {
+  const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  if (!token) return;
+
+  const { data: links } = await supabase
+    .from("telegram_links")
+    .select("telegram_user_id, staff(email)")
+    .is("revoked_at", null);
+
+  for (const link of links ?? []) {
+    const email = (link as Record<string, unknown>).staff as { email?: string } | null;
+    if (!email?.email) continue;
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("email", email.email)
+      .maybeSingle();
+
+    if (profile?.role !== "dispatcher" && profile?.role !== "admin") continue;
+
+    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        chat_id: (link as Record<string, unknown>).telegram_user_id,
+        text,
+      }),
+    });
+  }
+}
+
+async function handleCallback(body: BridgeRequest, targetId: string): Promise<HandlerResponse> {
+  const data = String((body.payload as Record<string, unknown>)?.callback_data ?? "");
+  const [scope, action, shiftId] = data.split(":");
+  if (scope !== "shift" || !shiftId) return { text: "" };
+
+  // Scoped to the tapper's own shift, so a guessed callback_data cannot touch
+  // anyone else's roster.
+  const { data: shift } = await supabase
+    .from("shifts")
+    .select("id, date, tenant_id, jobs(site_name)")
+    .eq("id", shiftId)
+    .eq("worker_id", targetId)
+    .maybeSingle();
+
+  if (!shift) return { text: "That shift is no longer assigned to you." };
+
+  const confirming = action === "confirm";
+  await supabase
+    .from("shifts")
+    .update(
+      confirming
+        ? { confirmed_at: new Date().toISOString(), declined_at: null }
+        : { declined_at: new Date().toISOString(), confirmed_at: null },
+    )
+    .eq("id", shiftId);
+
+  const { data: staff } = await supabase
+    .from("staff")
+    .select("name")
+    .eq("id", targetId)
+    .maybeSingle();
+
+  const job = (shift as Record<string, unknown>).jobs as { site_name?: string } | null;
+  const site = job?.site_name ?? "site";
+  const when = (shift as Record<string, unknown>).date as string;
+
+  await supabase.from("audit_logs").insert({
+    user_email: null,
+    action: confirming ? "telegram_shift_confirmed" : "telegram_shift_declined",
+    target_type: "shift",
+    target_id: shiftId,
+    tenant_id: (shift as Record<string, unknown>).tenant_id as string,
+    details: { worker_id: targetId, telegram_user_id: body.telegram_user_id },
+  });
+
+  if (!confirming) {
+    await notifyDispatchers(`${staff?.name ?? "An operative"} cannot make ${site} on ${when}.`);
+  }
+
+  return {
+    text: confirming
+      ? `Thanks — you're confirmed for ${site} on ${when}.`
+      : `Noted. Your dispatcher has been told you can't make ${site} on ${when}.`,
+  };
+}
+
 serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -153,8 +246,7 @@ serve(async (req) => {
       // Tell the bridge to drop them locally. Senders learn nothing either way.
       result = { text: DENY_TEXT, ack: { link_revoked: body.telegram_user_id } };
     } else if (body.kind === "callback") {
-      // Nothing issues inline keyboards yet; the bridge still acknowledges it.
-      result = { text: "" };
+      result = await handleCallback(body, targetId);
     } else if (body.kind === "file") {
       result = {
         text: "Sending files here is not available yet. Please use the upload link you were sent.",

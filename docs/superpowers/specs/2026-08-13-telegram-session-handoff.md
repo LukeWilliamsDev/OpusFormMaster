@@ -33,9 +33,19 @@ Ignore the older `2026-08-13-telegram-bridge-handoff.md`; the instructions file 
 
 ---
 
-## 3. The only outstanding stage 2 item
+## 3. Stage 2 is now complete
 
-**Certificate expiry warnings.** An addition to `supabase/functions/telegram-notify/index.ts` — no new plumbing.
+**Certificate expiry warnings shipped 2026-08-13** — telegram-notify v5, verified
+live through real Telegram. See
+`.claude/completions/2026-08-13-telegram-cert-expiry-warnings.md`.
+
+The live test also exposed that `notifyDispatchers` filtered on a role —
+`dispatcher` — that is not a member of the `app_role` enum, so Postgres rejected
+the query and every dispatcher alert had been silently dropped since stage 1.
+Fixed in both functions and verified live: telegram-notify v6, telegram-handler
+v8. Section 2's claim that dispatcher alerts worked was wrong until now.
+
+What was built, for reference:
 
 - Operatives: warnings at 30, 14 and 7 days before expiry, plus a lockout notice on the expiry day.
 - Dispatchers: one daily digest — a count plus the most urgent cases — not one message per ticket.
@@ -76,6 +86,8 @@ Both lines matter — an orphan ledger row would suppress a genuine reminder if 
 ## 6. Two bugs found late, worth remembering as patterns
 
 **Missing foreign keys silently broke queries.** `shifts` had no FK to `jobs` or `staff`, so PostgREST could not resolve `jobs(site_name)` embeds — the request errored and returned null, indistinguishable from "no rows". This broke `/myweek` and the reminder sender. The `/myweek` test _looked_ like a pass because there genuinely were no shifts. Fixed in `20260813160000`. **Check for a declared FK before writing any embedded select.**
+
+**A role that does not exist errored the whole query.** `.in("role", ["dispatcher", "admin"])` against the `app_role` enum, which has no `dispatcher` member, makes Postgres reject the entire statement — it does not simply match nothing. supabase-js returns null data, `profiles ?? []` swallows it, and dispatcher alerts vanished for months. **Check enum labels before filtering on them, and never discard the error from a query whose empty result is meaningful.**
 
 **Ambiguous success reporting hid it.** `{sent: 0, failed: 0}` could not distinguish "nothing to do" from "everything silently skipped". `telegram-notify` now reports `candidates`, `sent`, `failed`, `skipped` and surfaces query errors.
 

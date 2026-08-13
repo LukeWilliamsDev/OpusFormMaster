@@ -113,11 +113,15 @@ async function resolveLink(telegramUserId: string) {
 // Roles are read fresh on every call, never cached — a role change in the
 // portal must take effect on the sender's very next message (design spec §5).
 async function resolveRole(targetId: string): Promise<string | null> {
-  const { data: staff } = await supabase
+  const { data: staff, error: staffError } = await supabase
     .from("staff")
     .select("email")
     .eq("id", targetId)
     .maybeSingle();
+  if (staffError) {
+    console.error("resolveRole: staff query failed", staffError.message);
+    return null;
+  }
   const email = staff?.email?.toLowerCase();
   if (!email) return null;
 

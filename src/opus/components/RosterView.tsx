@@ -55,6 +55,7 @@ import type { Json, Database } from "../../integrations/supabase/types";
 import { workerToRow, usePortal } from "../context/PortalContext";
 import { computeDiff, DiffEntry, getEventLabel, getActorName } from "../utils/auditDiff";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TelegramLinkControl } from "./TelegramLinkControl";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -1380,6 +1381,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
         {/* Tab 1: Compliance */}
         {activeDossierTab === "general" && (
           <div className="space-y-4 animate-in fade-in duration-200">
+            <TelegramLinkControl staffId={selectedWorkerDetails.id} />
             {selectedWorkerDetails.tickets.length === 0 ? (
               <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
                 No compliance certificates or tickets registered

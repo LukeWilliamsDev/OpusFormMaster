@@ -306,6 +306,85 @@ export type Database = {
           },
         ];
       };
+      telegram_invites: {
+        Row: {
+          created_at: string;
+          created_by: string;
+          expires_at: string;
+          target_id: string;
+          tenant_id: string;
+          token: string;
+          used_at: string | null;
+        };
+        Insert: {
+          created_at?: string;
+          created_by?: string;
+          expires_at?: string;
+          target_id: string;
+          tenant_id?: string;
+          token: string;
+          used_at?: string | null;
+        };
+        Update: {
+          created_at?: string;
+          created_by?: string;
+          expires_at?: string;
+          target_id?: string;
+          tenant_id?: string;
+          token?: string;
+          used_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "telegram_invites_target_id_fkey";
+            columns: ["target_id"];
+            isOneToOne: false;
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      telegram_links: {
+        Row: {
+          class: string;
+          last_seen_at: string | null;
+          linked_at: string;
+          revoked_at: string | null;
+          target_id: string;
+          telegram_user_id: string;
+          telegram_username: string | null;
+          tenant_id: string;
+        };
+        Insert: {
+          class?: string;
+          last_seen_at?: string | null;
+          linked_at?: string;
+          revoked_at?: string | null;
+          target_id: string;
+          telegram_user_id: string;
+          telegram_username?: string | null;
+          tenant_id?: string;
+        };
+        Update: {
+          class?: string;
+          last_seen_at?: string | null;
+          linked_at?: string;
+          revoked_at?: string | null;
+          target_id?: string;
+          telegram_user_id?: string;
+          telegram_username?: string | null;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "telegram_links_target_id_fkey";
+            columns: ["target_id"];
+            isOneToOne: false;
+            referencedRelation: "staff";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       jobs: {
         Row: {
           contract_max_pours: number;
@@ -775,6 +854,8 @@ export type Database = {
     };
     Functions: {
       check_email_registered: { Args: { _email: string }; Returns: boolean };
+      create_telegram_invite: { Args: { p_target_id: string }; Returns: string };
+      revoke_telegram_link: { Args: { p_target_id: string }; Returns: undefined };
       complete_job_document_request: {
         Args: { p_token: string };
         Returns: undefined;

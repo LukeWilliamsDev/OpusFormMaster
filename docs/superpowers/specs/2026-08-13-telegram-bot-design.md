@@ -134,11 +134,14 @@ The bridge must fork **before** the session:
 
 ```
 update → resolve sender against telegram_links
-  ├─ owner         → Jinn session (today's behaviour, unchanged)
   ├─ linked staff  → edge function; role read fresh on every message
   ├─ guest token   → fixed upload script; no session, no model
   └─ unknown       → record and ignore, EXCEPT /start <token>
 ```
+
+**Resolved 2026-08-13: there is no assistant session on Telegram at all, for anyone.** The original fork kept a Jinn session for the owner. That is gone — the owner reaches Jinn over SSH instead, and on Telegram is an ordinary linked user gated by `profiles.role` like everyone else. Only the bridge-admin commands (`/users`, `/approve`, `/revoke`) are still handled locally on the VPS.
+
+This removes finding 9 at the root rather than mitigating it: with no agent behind the bot, the delimiter-only injection defence is not merely improved, it is irrelevant to this channel. Implemented and running on the bridge as of 2026-08-13.
 
 **Roles are never granted by Telegram.** A link resolves to a `staff` or `profiles` row; the role is read from that row on every message. Change a role in the portal and bot behaviour changes on the next message. No parallel Telegram permission model to drift.
 

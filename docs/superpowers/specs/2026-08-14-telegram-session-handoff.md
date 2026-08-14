@@ -8,7 +8,7 @@
 
 1. `docs/superpowers/specs/2026-08-13-telegram-bot-design.md` — product design: audiences, capabilities, third-party tiers, build order, what is deliberately out of scope.
 2. `docs/superpowers/specs/2026-08-13-telegram-bridge-instructions.md` — the VPS bridge contract (not in this repo; Oracle Cloud server, maintained by Jinn over SSH).
-3. `docs/superpowers/specs/2026-08-13-telegram-stage4-dispatcher-commands-design.md` and `.claude/completions/2026-08-14-telegram-stage4-dispatcher-commands.md` — what stage 4 actually built, the bugs found in its own final review, and the bug found outside its scope (section 5 below).
+3. `docs/superpowers/specs/2026-08-13-telegram-stage4-dispatcher-commands-design.md` and `.claude/completions/2026-08-14-telegram-stage4-dispatcher-commands.md` — what stage 4 actually built, the bugs found in its own final review, and the bug found outside its scope (section 3 below).
 
 Ignore `2026-08-13-telegram-bridge-handoff.md` (superseded) and `2026-08-13-telegram-session-handoff.md` (this doc replaces it, but its stage 1–3 history is still accurate — see §2).
 

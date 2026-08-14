@@ -761,6 +761,21 @@ async function handleFile(body: BridgeRequest, targetId: string): Promise<Handle
   return { text: "Added to the job. Thanks!" };
 }
 
+// Telegram's typing indicator auto-expires after ~5s, well past this
+// function's slowest handler, so one call per message is enough — no
+// repeat-every-4s loop needed. Fire-and-forget: never awaited, so a slow or
+// failed indicator can't delay or break the real reply. Only telegram-handler
+// can send this — the bridge deliberately holds no bot token (design spec §4.3).
+function sendTypingIndicator(chatId: string) {
+  const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  if (!token) return;
+  fetch(`https://api.telegram.org/bot${token}/sendChatAction`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, action: "typing" }),
+  }).catch((err) => console.error("sendTypingIndicator: request failed", err));
+}
+
 serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -776,6 +791,7 @@ serve(async (req) => {
   }
 
   const body = (await req.json()) as BridgeRequest;
+  sendTypingIndicator(body.chat_id);
   const command = parseCommand(body.payload?.text ?? "");
 
   let result: HandlerResponse = { text: DENY_TEXT };

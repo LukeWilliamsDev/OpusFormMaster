@@ -3,14 +3,25 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   BridgeRequest,
   buildUploadPath,
+  cleanPostcode,
+  daysUntil,
   DENY_TEXT,
+  GeoPoint,
   HandlerResponse,
   isDeclaredUploadTypeAllowed,
+  isManagementRole,
   isValidBridgeSecret,
   MAX_UPLOAD_BYTES,
+  nearestByDistance,
   parseCommand,
+  renderJobStatus,
+  renderStaffMatches,
+  renderStaffStatus,
+  renderToday,
   renderWeek,
+  renderWho,
   sniffFileType,
+  ticketStatusLine,
 } from "./lib.ts";
 
 // The bridge authenticates with a shared secret, not a user JWT — it acts for
@@ -104,6 +115,34 @@ async function resolveLink(telegramUserId: string) {
   return data?.target_id ?? null;
 }
 
+// staff.email → profiles.role, the same join notifyDispatchers uses below.
+// Roles are read fresh on every call, never cached — a role change in the
+// portal must take effect on the sender's very next message (design spec §5).
+async function resolveRole(targetId: string): Promise<string | null> {
+  const { data: staff, error: staffError } = await supabase
+    .from("staff")
+    .select("email")
+    .eq("id", targetId)
+    .maybeSingle();
+  if (staffError) {
+    console.error("resolveRole: staff query failed", staffError.message);
+    return null;
+  }
+  const email = staff?.email?.toLowerCase();
+  if (!email) return null;
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("email", email)
+    .maybeSingle();
+  if (error) {
+    console.error("resolveRole: profiles query failed", error.message);
+    return null;
+  }
+  return profile?.role ?? null;
+}
+
 async function handleMyWeek(targetId: string): Promise<HandlerResponse> {
   const today = new Date().toISOString().slice(0, 10);
   const weekEnd = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
@@ -126,6 +165,268 @@ async function handleMyWeek(targetId: string): Promise<HandlerResponse> {
   });
 
   return { text: renderWeek(rows) };
+}
+
+function hashFallbackCoords(postcode: string): GeoPoint {
+  let hash = 0;
+  for (let i = 0; i < postcode.length; i += 1) hash = postcode.charCodeAt(i) + ((hash << 5) - hash);
+  const lat = 52.5 + (Math.abs(hash % 100) / 100) * 1.5;
+  const lng = -1.5 - (Math.abs((hash >> 2) % 100) / 100) * 1.5;
+  return { lat, lng };
+}
+
+// One postcodes.io bulk POST for the whole candidate set rather than one
+// fetch per staff member — a 30-strong roster would otherwise mean 30
+// sequential HTTP round trips per /who. Falls back to the same hash-based
+// math src/opus/utils/geo.ts uses for unrecognized postcodes (not its
+// hardcoded-prefix shortcuts) on API failure.
+async function bulkGeocode(
+  postcodes: string[],
+): Promise<{ coords: Map<string, GeoPoint>; resolved: Set<string> }> {
+  const unique = [...new Set(postcodes.map(cleanPostcode))].filter(Boolean);
+  const coords = new Map<string, GeoPoint>();
+  const resolved = new Set<string>();
+  if (unique.length === 0) return { coords, resolved };
+
+  try {
+    const res = await fetch("https://api.postcodes.io/postcodes", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ postcodes: unique.slice(0, 100) }),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.ok) {
+      const body = await res.json();
+      for (const entry of body.result ?? []) {
+        if (entry?.result) {
+          const code = cleanPostcode(entry.query);
+          coords.set(code, {
+            lat: entry.result.latitude,
+            lng: entry.result.longitude,
+          });
+          resolved.add(code);
+        }
+      }
+    }
+  } catch (err) {
+    console.error("bulkGeocode: postcodes.io request failed", err);
+  }
+
+  for (const code of unique) {
+    if (!coords.has(code)) coords.set(code, hashFallbackCoords(code));
+  }
+  return { coords, resolved };
+}
+
+async function handleWho(argument: string): Promise<HandlerResponse> {
+  const postcode = argument.trim();
+  if (!postcode) return { text: "Usage: /who <postcode>" };
+
+  const { data: staff, error } = await supabase
+    .from("staff")
+    .select("name, postcode")
+    .eq("is_archived", false)
+    .not("postcode", "is", null);
+
+  if (error) {
+    console.error("handleWho: staff query failed", error.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+  if (!staff || staff.length === 0) {
+    return { text: "No staff records have a postcode set." };
+  }
+
+  const { coords, resolved } = await bulkGeocode([
+    postcode,
+    ...staff.map((s) => s.postcode as string),
+  ]);
+  const originKey = cleanPostcode(postcode);
+  if (!resolved.has(originKey)) return { text: "Couldn't look up that postcode." };
+  const origin = coords.get(originKey)!;
+
+  const candidates = staff
+    .map((s) => {
+      const key = cleanPostcode(s.postcode as string);
+      if (!resolved.has(key)) return null;
+      const point = coords.get(key);
+      return point
+        ? { name: s.name as string, postcode: s.postcode as string, coords: point }
+        : null;
+    })
+    .filter((c): c is { name: string; postcode: string; coords: GeoPoint } => c !== null);
+
+  if (candidates.length === 0) return { text: "Couldn't locate any staff postcodes." };
+
+  return { text: renderWho(nearestByDistance(origin, candidates, 5)) };
+}
+
+async function handleJob(argument: string): Promise<HandlerResponse> {
+  const ref = argument.trim();
+  if (!ref) return { text: "Usage: /job <ref>" };
+
+  const { data: job, error } = await supabase
+    .from("jobs")
+    .select("id, job_ref, site_name, status, current_pours, contract_max_pours")
+    .ilike("job_ref", ref)
+    .maybeSingle();
+
+  if (error) {
+    console.error("handleJob: jobs query failed", error.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+  if (!job) return { text: `No job found matching ${ref}.` };
+
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: shifts, error: shiftsError } = await supabase
+    .from("shifts")
+    .select("staff(name)")
+    .eq("job_id", job.id)
+    .eq("date", today);
+  if (shiftsError) {
+    console.error("handleJob: shifts query failed", shiftsError.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+  const crew = (shifts ?? [])
+    .map((row) => (row as Record<string, unknown>).staff as { name?: string } | null)
+    .filter((s): s is { name: string } => Boolean(s?.name))
+    .map((s) => ({ name: s.name }));
+
+  const { data: notes, error: notesError } = await supabase
+    .from("job_notes")
+    .select("body, author_type, author_staff_id, user_email")
+    .eq("job_id", job.id)
+    .order("created_at", { ascending: false })
+    .limit(3);
+  if (notesError) {
+    console.error("handleJob: job_notes query failed", notesError.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+
+  const authorIds = (notes ?? [])
+    .filter((n) => n.author_type === "operative" && n.author_staff_id)
+    .map((n) => n.author_staff_id as string);
+
+  const authorNames = new Map<string, string>();
+  if (authorIds.length > 0) {
+    const { data: authors, error: authorsError } = await supabase
+      .from("staff")
+      .select("id, name")
+      .in("id", authorIds);
+    if (authorsError) {
+      console.error("handleJob: staff query failed", authorsError.message);
+      return { text: "Something went wrong — please try again shortly." };
+    }
+    for (const a of authors ?? []) authorNames.set(a.id as string, a.name as string);
+  }
+
+  const noteViews = (notes ?? []).map((n) => ({
+    author:
+      n.author_type === "operative"
+        ? authorNames.get(n.author_staff_id as string) || "Operative"
+        : (n.user_email as string) || "Dispatcher",
+    body: n.body as string,
+  }));
+
+  return { text: renderJobStatus(job, crew, noteViews) };
+}
+
+async function handleStaff(argument: string): Promise<HandlerResponse> {
+  const name = argument.trim();
+  if (!name) return { text: "Usage: /staff <name>" };
+
+  const { data: staff, error } = await supabase
+    .from("staff")
+    .select("id, name, tickets")
+    .eq("is_archived", false)
+    .ilike("name", `%${name}%`);
+
+  if (error) {
+    console.error("handleStaff: staff query failed", error.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+
+  if (!staff || staff.length === 0) {
+    return { text: `No staff found matching ${name}.` };
+  }
+
+  if (staff.length >= 2) {
+    const names = staff.slice(0, 5).map((s) => s.name as string);
+    return { text: renderStaffMatches(names) };
+  }
+
+  // Exactly 1 match
+  const member = staff[0];
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: shifts, error: shiftsError } = await supabase
+    .from("shifts")
+    .select("date, jobs(site_name)")
+    .eq("worker_id", member.id as string)
+    .gte("date", today)
+    .order("date")
+    .limit(1);
+
+  if (shiftsError) {
+    console.error("handleStaff: shifts query failed", shiftsError.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+
+  const nextShift =
+    shifts && shifts.length > 0
+      ? {
+          date: (shifts[0] as Record<string, unknown>).date as string,
+          site_name:
+            ((shifts[0] as Record<string, unknown>).jobs as { site_name?: string } | null)
+              ?.site_name || "Unassigned site",
+        }
+      : null;
+
+  const tickets = (member.tickets as Array<{ type?: string; expiryDate?: string }> | null) ?? [];
+  const ticketLines = tickets.map((t) => {
+    const days = t.expiryDate ? daysUntil(t.expiryDate, today) : null;
+    return ticketStatusLine(t.type || "Certificate", days, t.expiryDate);
+  });
+
+  return { text: renderStaffStatus(member.name as string, ticketLines, nextShift) };
+}
+
+async function handleToday(): Promise<HandlerResponse> {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: shifts, error } = await supabase
+    .from("shifts")
+    .select("job_id, jobs(site_name, postcode)")
+    .eq("date", today);
+
+  if (error) {
+    console.error("handleToday: shifts query failed", error.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+
+  const byJob = new Map<
+    string,
+    { site_name: string; postcode: string | null; crewCount: number }
+  >();
+  for (const row of shifts ?? []) {
+    const jobId = row.job_id as string;
+    const job = (row as Record<string, unknown>).jobs as {
+      site_name?: string;
+      postcode?: string;
+    } | null;
+    const existing = byJob.get(jobId);
+    if (existing) {
+      existing.crewCount += 1;
+    } else {
+      byJob.set(jobId, {
+        site_name: job?.site_name || "Unassigned site",
+        postcode: job?.postcode ?? null,
+        crewCount: 1,
+      });
+    }
+  }
+
+  return { text: renderToday([...byJob.values()]) };
 }
 
 /**
@@ -474,6 +775,29 @@ async function handleFile(body: BridgeRequest, targetId: string): Promise<Handle
   return { text: "Added to the job. Thanks!" };
 }
 
+// Fire-and-forget — never awaited, so a slow or failed indicator can't delay
+// or break the real reply. Only telegram-handler can send this — the bridge
+// deliberately holds no bot token (design spec §4.3).
+function sendTypingIndicator(chatId: string) {
+  const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  if (!token) return;
+  fetch(`https://api.telegram.org/bot${token}/sendChatAction`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, action: "typing" }),
+  }).catch((err) => console.error("sendTypingIndicator: request failed", err));
+}
+
+// Telegram's typing indicator auto-expires after ~5s, so a single call goes
+// stale on anything slower (a cold geocode lookup, a slow query). Resend every
+// 4s — under the expiry, so the indicator never visibly drops — until the
+// caller stops it right before the real reply is sent.
+function startTypingLoop(chatId: string): () => void {
+  sendTypingIndicator(chatId);
+  const interval = setInterval(() => sendTypingIndicator(chatId), 4000);
+  return () => clearInterval(interval);
+}
+
 serve(async (req) => {
   if (req.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
@@ -489,34 +813,57 @@ serve(async (req) => {
   }
 
   const body = (await req.json()) as BridgeRequest;
-  const command = parseCommand(body.payload?.text ?? "");
 
   let result: HandlerResponse = { text: DENY_TEXT };
 
-  if (command?.command === "start") {
-    result = await handleStart(body, command.argument);
-  } else {
-    const targetId = await resolveLink(body.telegram_user_id);
-    if (!targetId) {
-      // The bridge only forwards non-/start traffic for senders it believes are
-      // allowlisted, so no active link means access was revoked in the portal.
-      // Tell the bridge to drop them locally. Senders learn nothing either way.
-      result = { text: DENY_TEXT, ack: { link_revoked: body.telegram_user_id } };
-    } else if (body.kind === "callback") {
-      result = await handleCallback(body, targetId);
-    } else if (body.kind === "file") {
-      result = await handleFile(body, targetId);
-    } else {
-      await supabase
-        .from("telegram_links")
-        .update({ last_seen_at: new Date().toISOString() })
-        .eq("telegram_user_id", body.telegram_user_id);
+  const stopTyping = startTypingLoop(body.chat_id);
+  try {
+    const command = parseCommand(body.payload?.text ?? "");
 
-      result =
-        command?.command === "myweek"
-          ? await handleMyWeek(targetId)
-          : { text: "Commands: /myweek" };
+    if (command?.command === "start") {
+      result = await handleStart(body, command.argument);
+    } else {
+      const targetId = await resolveLink(body.telegram_user_id);
+      if (!targetId) {
+        // The bridge only forwards non-/start traffic for senders it believes are
+        // allowlisted, so no active link means access was revoked in the portal.
+        // Tell the bridge to drop them locally. Senders learn nothing either way.
+        result = { text: DENY_TEXT, ack: { link_revoked: body.telegram_user_id } };
+      } else if (body.kind === "callback") {
+        result = await handleCallback(body, targetId);
+      } else if (body.kind === "file") {
+        result = await handleFile(body, targetId);
+      } else {
+        await supabase
+          .from("telegram_links")
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq("telegram_user_id", body.telegram_user_id);
+
+        const cmd = command?.command;
+        if (cmd === "myweek") {
+          result = await handleMyWeek(targetId);
+        } else if (cmd === "who" || cmd === "job" || cmd === "staff" || cmd === "today") {
+          const role = await resolveRole(targetId);
+          if (!isManagementRole(role)) {
+            result = { text: "Commands: /myweek" };
+          } else if (cmd === "who") {
+            result = await handleWho(command?.argument ?? "");
+          } else if (cmd === "job") {
+            result = await handleJob(command?.argument ?? "");
+          } else if (cmd === "staff") {
+            result = await handleStaff(command?.argument ?? "");
+          } else {
+            result = await handleToday();
+          }
+        } else {
+          result = { text: "Commands: /myweek" };
+        }
+      }
     }
+  } finally {
+    // Stop before the response goes out, not after — the caller must never
+    // see the indicator outlive the reply it was standing in for.
+    stopTyping();
   }
 
   return new Response(JSON.stringify(result), {

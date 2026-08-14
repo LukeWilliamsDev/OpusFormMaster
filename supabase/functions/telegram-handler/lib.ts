@@ -66,6 +66,129 @@ export function renderWeek(
   return `Your next 7 days:\n${lines.join("\n")}`;
 }
 
+export function cleanPostcode(postcode: string): string {
+  return postcode.trim().toUpperCase().replace(/\s+/g, "");
+}
+
+export type GeoPoint = { lat: number; lng: number };
+
+// Ported from src/opus/utils/geo.ts's calculateDistance — edge functions
+// cannot import from src/opus, so this is a deliberate small duplicate.
+export function haversineMiles(a: GeoPoint, b: GeoPoint): number {
+  const R = 3958.8; // Earth's radius in miles
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const s =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
+}
+
+export type NearbyStaff = { name: string; postcode: string; distanceMiles: number };
+
+export function nearestByDistance(
+  origin: GeoPoint,
+  candidates: Array<{ name: string; postcode: string; coords: GeoPoint }>,
+  limit: number,
+): NearbyStaff[] {
+  return candidates
+    .map((c) => ({
+      name: c.name,
+      postcode: c.postcode,
+      distanceMiles: haversineMiles(origin, c.coords),
+    }))
+    .sort((a, b) => a.distanceMiles - b.distanceMiles)
+    .slice(0, limit);
+}
+
+export function renderWho(rows: NearbyStaff[]): string {
+  if (rows.length === 0) return "No staff records have a postcode set.";
+  const lines = rows.map((r) => `${r.name} — ${r.postcode} (${r.distanceMiles.toFixed(1)} mi)`);
+  return `Nearest staff:\n${lines.join("\n")}`;
+}
+
+// Same whole-day-count logic as supabase/functions/telegram-notify/index.ts's
+// daysUntil — duplicated rather than shared across functions (this codebase's
+// existing pattern; see isValidBridgeSecret vs telegram-notify's secretOk).
+// Kept in sync deliberately: the bot must never give a different compliance
+// answer here than the daily digest gives.
+export function daysUntil(expiryDate: string, todayIso: string): number | null {
+  const expiry = Date.parse(`${expiryDate.slice(0, 10)}T00:00:00Z`);
+  if (Number.isNaN(expiry)) return null;
+  return Math.round((expiry - Date.parse(`${todayIso}T00:00:00Z`)) / 86_400_000);
+}
+
+export function ticketStatusLine(what: string, days: number | null, expiryDate?: string): string {
+  if (days === null) return `${what}: no expiry date on file`;
+  if (days > 0) return `${what} — expires in ${days} day${days === 1 ? "" : "s"} (${expiryDate})`;
+  if (days === 0) return `${what} — expires today`;
+  return `${what} — expired ${-days} day${days === -1 ? "" : "s"} ago (${expiryDate})`;
+}
+
+export function renderStaffStatus(
+  name: string,
+  ticketLines: string[],
+  nextShift: { date: string; site_name: string } | null,
+): string {
+  const parts = [
+    name,
+    ticketLines.length ? ticketLines.join("\n") : "No certificates on file.",
+    nextShift ? `Next shift: ${nextShift.date} — ${nextShift.site_name}` : "No upcoming shifts.",
+  ];
+  return parts.join("\n\n");
+}
+
+export function renderStaffMatches(names: string[]): string {
+  return `Multiple matches — be more specific:\n${names.join("\n")}`;
+}
+
+export type JobNoteView = { author: string; body: string };
+export type CrewMember = { name: string };
+
+export function renderJobStatus(
+  job: {
+    job_ref: string;
+    site_name: string;
+    status: string;
+    current_pours: number;
+    contract_max_pours: number;
+  },
+  crew: CrewMember[],
+  notes: JobNoteView[],
+): string {
+  const lines = [
+    `${job.job_ref} — ${job.site_name}`,
+    `Status: ${job.status}`,
+    `Pours: ${job.current_pours}/${job.contract_max_pours}`,
+    crew.length ? `Today's crew: ${crew.map((c) => c.name).join(", ")}` : "No crew booked today.",
+  ];
+  if (notes.length) {
+    lines.push("Latest notes:");
+    for (const note of notes) lines.push(`• ${note.author}: ${note.body}`);
+  }
+  return lines.join("\n");
+}
+
+export type TodayJob = { site_name: string; postcode: string | null; crewCount: number };
+
+export function renderToday(jobs: TodayJob[]): string {
+  if (jobs.length === 0) return "No sites active today.";
+  const lines = jobs.map((j) => {
+    const where = j.postcode ? `${j.site_name} (${j.postcode})` : j.site_name;
+    return `${where} — ${j.crewCount} crew`;
+  });
+  return `Today's sites:\n${lines.join("\n")}`;
+}
+
+// Matches private.can_write_ops and MANAGEMENT_ROLES in
+// src/opus/context/PortalContext.tsx:100 — there is no 'dispatcher' member of
+// the app_role enum, so this list, not that word, is the gate.
+export const MANAGEMENT_ROLES = ["admin", "director", "logistics_coordinator"];
+
+export function isManagementRole(role: string | null | undefined): boolean {
+  return !!role && MANAGEMENT_ROLES.includes(role);
+}
+
 export const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 const ALLOWED_UPLOAD_MIME_TYPES = new Set(["image/jpeg", "image/png", "application/pdf"]);

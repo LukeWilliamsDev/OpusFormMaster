@@ -4,6 +4,7 @@ import {
   BridgeRequest,
   buildUploadPath,
   cleanPostcode,
+  daysUntil,
   DENY_TEXT,
   GeoPoint,
   HandlerResponse,
@@ -14,9 +15,12 @@ import {
   nearestByDistance,
   parseCommand,
   renderJobStatus,
+  renderStaffMatches,
+  renderStaffStatus,
   renderWeek,
   renderWho,
   sniffFileType,
+  ticketStatusLine,
 } from "./lib.ts";
 
 // The bridge authenticates with a shared secret, not a user JWT — it acts for
@@ -310,6 +314,69 @@ async function handleJob(argument: string): Promise<HandlerResponse> {
   }));
 
   return { text: renderJobStatus(job, crew, noteViews) };
+}
+
+async function handleStaff(argument: string): Promise<HandlerResponse> {
+  const name = argument.trim();
+  if (!name) return { text: "Usage: /staff <name>" };
+
+  const { data: staff, error } = await supabase
+    .from("staff")
+    .select("id, name, tickets")
+    .eq("is_archived", false)
+    .ilike("name", `%${name}%`);
+
+  if (error) {
+    console.error("handleStaff: staff query failed", error.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+
+  if (!staff || staff.length === 0) {
+    return { text: `No staff found matching ${name}.` };
+  }
+
+  if (staff.length >= 2) {
+    const names = staff.slice(0, 5).map((s) => s.name as string);
+    return { text: renderStaffMatches(names) };
+  }
+
+  // Exactly 1 match
+  const member = staff[0];
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: shifts, error: shiftsError } = await supabase
+    .from("shifts")
+    .select("date, jobs(site_name)")
+    .eq("worker_id", member.id as string)
+    .gte("date", today)
+    .order("date")
+    .limit(1);
+
+  if (shiftsError) {
+    console.error("handleStaff: shifts query failed", shiftsError.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+
+  const nextShift =
+    shifts && shifts.length > 0
+      ? {
+          date: (shifts[0] as Record<string, unknown>).date as string,
+          site_name:
+            ((shifts[0] as Record<string, unknown>).jobs as { site_name?: string } | null)
+              ?.site_name ?? "Unassigned site",
+        }
+      : null;
+
+  const tickets = (member.tickets ?? []) as Array<{
+    ticket_type?: string;
+    expiry_date?: string;
+  }>;
+  const ticketLines = tickets.map((t) => {
+    const days = daysUntil(t.expiry_date ?? "", today);
+    return ticketStatusLine(t.ticket_type ?? "Certificate", days, t.expiry_date);
+  });
+
+  return { text: renderStaffStatus(member.name as string, ticketLines, nextShift) };
 }
 
 /**
@@ -699,14 +766,16 @@ serve(async (req) => {
       const cmd = command?.command;
       if (cmd === "myweek") {
         result = await handleMyWeek(targetId);
-      } else if (cmd === "who" || cmd === "job") {
+      } else if (cmd === "who" || cmd === "job" || cmd === "staff") {
         const role = await resolveRole(targetId);
         if (!isManagementRole(role)) {
           result = { text: "Commands: /myweek" };
         } else if (cmd === "who") {
           result = await handleWho(command?.argument ?? "");
-        } else {
+        } else if (cmd === "job") {
           result = await handleJob(command?.argument ?? "");
+        } else {
+          result = await handleStaff(command?.argument ?? "");
         }
       } else {
         result = { text: "Commands: /myweek" };

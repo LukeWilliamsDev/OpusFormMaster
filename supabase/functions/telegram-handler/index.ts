@@ -147,7 +147,7 @@ async function handleMyWeek(targetId: string): Promise<HandlerResponse> {
   const today = new Date().toISOString().slice(0, 10);
   const weekEnd = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
 
-  const { data: shifts } = await supabase
+  const { data: shifts, error } = await supabase
     .from("shifts")
     .select("date, jobs(site_name, postcode)")
     .eq("worker_id", targetId)
@@ -155,12 +155,17 @@ async function handleMyWeek(targetId: string): Promise<HandlerResponse> {
     .lte("date", weekEnd)
     .order("date");
 
+  if (error) {
+    console.error("handleMyWeek: shifts query failed", error.message);
+    return { text: "Couldn't load your week — try again shortly." };
+  }
+
   const rows = (shifts ?? []).map((shift: Record<string, unknown>) => {
     const job = shift.jobs as { site_name?: string; postcode?: string } | null;
     return {
       date: shift.date as string,
-      site_name: job?.site_name ?? "Unassigned site",
-      postcode: job?.postcode ?? null,
+      site_name: job?.site_name || "Unassigned site",
+      postcode: job?.postcode || null,
     };
   });
 

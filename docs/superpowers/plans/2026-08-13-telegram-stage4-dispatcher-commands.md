@@ -21,10 +21,12 @@
 ## Task 1: `lib.ts` — postcode/geo helpers and `/who` formatting
 
 **Files:**
+
 - Modify: `supabase/functions/telegram-handler/lib.ts` (add after `renderWeek`, ~line 67)
 - Test: `supabase/functions/telegram-handler/__tests__/lib.test.ts`
 
 **Interfaces:**
+
 - Produces: `cleanPostcode(postcode: string): string`, `type GeoPoint = { lat: number; lng: number }`, `haversineMiles(a: GeoPoint, b: GeoPoint): number`, `type NearbyStaff = { name: string; postcode: string; distanceMiles: number }`, `nearestByDistance(origin: GeoPoint, candidates: Array<{ name: string; postcode: string; coords: GeoPoint }>, limit: number): NearbyStaff[]`, `renderWho(rows: NearbyStaff[]): string`
 
 - [ ] **Step 1: Write the failing tests**
@@ -135,7 +137,11 @@ export function nearestByDistance(
   limit: number,
 ): NearbyStaff[] {
   return candidates
-    .map((c) => ({ name: c.name, postcode: c.postcode, distanceMiles: haversineMiles(origin, c.coords) }))
+    .map((c) => ({
+      name: c.name,
+      postcode: c.postcode,
+      distanceMiles: haversineMiles(origin, c.coords),
+    }))
     .sort((a, b) => a.distanceMiles - b.distanceMiles)
     .slice(0, limit);
 }
@@ -164,10 +170,12 @@ git commit -m "feat(telegram): geo helpers and /who formatting"
 ## Task 2: `lib.ts` — ticket expiry and `/staff` formatting
 
 **Files:**
+
 - Modify: `supabase/functions/telegram-handler/lib.ts` (add after the Task 1 additions)
 - Test: `supabase/functions/telegram-handler/__tests__/lib.test.ts`
 
 **Interfaces:**
+
 - Consumes: nothing from Task 1.
 - Produces: `daysUntil(expiryDate: string, todayIso: string): number | null`, `ticketStatusLine(what: string, days: number | null, expiryDate?: string): string`, `renderStaffStatus(name: string, ticketLines: string[], nextShift: { date: string; site_name: string } | null): string`, `renderStaffMatches(names: string[]): string`
 
@@ -204,7 +212,9 @@ describe("ticketStatusLine", () => {
   });
 
   it("phrases a past expiry", () => {
-    expect(ticketStatusLine("CSCS", -3, "2026-08-10")).toBe("CSCS — expired 3 days ago (2026-08-10)");
+    expect(ticketStatusLine("CSCS", -3, "2026-08-10")).toBe(
+      "CSCS — expired 3 days ago (2026-08-10)",
+    );
   });
 
   it("phrases a missing expiry date", () => {
@@ -214,11 +224,10 @@ describe("ticketStatusLine", () => {
 
 describe("renderStaffStatus", () => {
   it("combines name, ticket lines, and next shift", () => {
-    const out = renderStaffStatus(
-      "Dave Smith",
-      ["CSCS — expires in 7 days (2026-08-20)"],
-      { date: "2026-08-15", site_name: "Croydon Depot" },
-    );
+    const out = renderStaffStatus("Dave Smith", ["CSCS — expires in 7 days (2026-08-20)"], {
+      date: "2026-08-15",
+      site_name: "Croydon Depot",
+    });
     expect(out).toContain("Dave Smith");
     expect(out).toContain("CSCS");
     expect(out).toContain("Croydon Depot");
@@ -304,10 +313,12 @@ git commit -m "feat(telegram): ticket expiry and /staff formatting"
 ## Task 3: `lib.ts` — `/job` formatting
 
 **Files:**
+
 - Modify: `supabase/functions/telegram-handler/lib.ts`
 - Test: `supabase/functions/telegram-handler/__tests__/lib.test.ts`
 
 **Interfaces:**
+
 - Produces: `type JobNoteView = { author: string; body: string }`, `type CrewMember = { name: string }`, `renderJobStatus(job: { job_ref: string; site_name: string; status: string; current_pours: number; contract_max_pours: number }, crew: CrewMember[], notes: JobNoteView[]): string`
 
 - [ ] **Step 1: Write the failing tests**
@@ -405,10 +416,12 @@ git commit -m "feat(telegram): /job status formatting"
 ## Task 4: `lib.ts` — `/today` formatting and role-gating helper
 
 **Files:**
+
 - Modify: `supabase/functions/telegram-handler/lib.ts`
 - Test: `supabase/functions/telegram-handler/__tests__/lib.test.ts`
 
 **Interfaces:**
+
 - Produces: `type TodayJob = { site_name: string; postcode: string | null; crewCount: number }`, `renderToday(jobs: TodayJob[]): string`, `MANAGEMENT_ROLES: string[]`, `isManagementRole(role: string | null | undefined): boolean`
 
 - [ ] **Step 1: Write the failing tests**
@@ -497,9 +510,11 @@ git commit -m "feat(telegram): /today formatting and role-gating helper"
 ## Task 5: `index.ts` — role resolution, geocoding, and `/who`
 
 **Files:**
+
 - Modify: `supabase/functions/telegram-handler/index.ts`
 
 **Interfaces:**
+
 - Consumes: `isManagementRole`, `cleanPostcode`, `GeoPoint`, `nearestByDistance`, `renderWho` from `lib.ts` (Tasks 1 and 4).
 - Produces: `resolveRole(targetId: string): Promise<string | null>`, `handleWho(argument: string): Promise<HandlerResponse>`. `/who` wired into the `serve()` dispatch.
 
@@ -538,7 +553,11 @@ Add after the existing `resolveLink` function:
 // Roles are read fresh on every call, never cached — a role change in the
 // portal must take effect on the sender's very next message (design spec §5).
 async function resolveRole(targetId: string): Promise<string | null> {
-  const { data: staff } = await supabase.from("staff").select("email").eq("id", targetId).maybeSingle();
+  const { data: staff } = await supabase
+    .from("staff")
+    .select("email")
+    .eq("id", targetId)
+    .maybeSingle();
   const email = staff?.email?.toLowerCase();
   if (!email) return null;
 
@@ -636,7 +655,9 @@ async function handleWho(argument: string): Promise<HandlerResponse> {
   const candidates = staff
     .map((s) => {
       const point = coords.get(cleanPostcode(s.postcode as string));
-      return point ? { name: s.name as string, postcode: s.postcode as string, coords: point } : null;
+      return point
+        ? { name: s.name as string, postcode: s.postcode as string, coords: point }
+        : null;
     })
     .filter((c): c is { name: string; postcode: string; coords: GeoPoint } => c !== null);
 
@@ -649,25 +670,23 @@ async function handleWho(argument: string): Promise<HandlerResponse> {
 In the `serve()` handler, the current non-callback/non-file branch ends with:
 
 ```typescript
-      result =
-        command?.command === "myweek"
-          ? await handleMyWeek(targetId)
-          : { text: "Commands: /myweek" };
+result =
+  command?.command === "myweek" ? await handleMyWeek(targetId) : { text: "Commands: /myweek" };
 ```
 
 Replace it with:
 
 ```typescript
-      const cmd = command?.command;
-      if (cmd === "myweek") {
-        result = await handleMyWeek(targetId);
-      } else if (cmd === "who") {
-        result = isManagementRole(await resolveRole(targetId))
-          ? await handleWho(command?.argument ?? "")
-          : { text: "Commands: /myweek" };
-      } else {
-        result = { text: "Commands: /myweek" };
-      }
+const cmd = command?.command;
+if (cmd === "myweek") {
+  result = await handleMyWeek(targetId);
+} else if (cmd === "who") {
+  result = isManagementRole(await resolveRole(targetId))
+    ? await handleWho(command?.argument ?? "")
+    : { text: "Commands: /myweek" };
+} else {
+  result = { text: "Commands: /myweek" };
+}
 ```
 
 - [ ] **Step 6: Commit**
@@ -682,9 +701,11 @@ git commit -m "feat(telegram): role resolution, geocoding, and /who"
 ## Task 6: `index.ts` — `/job`
 
 **Files:**
+
 - Modify: `supabase/functions/telegram-handler/index.ts`
 
 **Interfaces:**
+
 - Consumes: `renderJobStatus`, `JobNoteView`, `CrewMember` from `lib.ts` (Task 3); `isManagementRole`, `resolveRole` from Task 5.
 - Produces: `handleJob(argument: string): Promise<HandlerResponse>`, wired as `/job` in dispatch.
 
@@ -769,21 +790,21 @@ async function handleJob(argument: string): Promise<HandlerResponse> {
 Extend the dispatch block from Task 5, Step 5:
 
 ```typescript
-      const cmd = command?.command;
-      if (cmd === "myweek") {
-        result = await handleMyWeek(targetId);
-      } else if (cmd === "who" || cmd === "job") {
-        const role = await resolveRole(targetId);
-        if (!isManagementRole(role)) {
-          result = { text: "Commands: /myweek" };
-        } else if (cmd === "who") {
-          result = await handleWho(command?.argument ?? "");
-        } else {
-          result = await handleJob(command?.argument ?? "");
-        }
-      } else {
-        result = { text: "Commands: /myweek" };
-      }
+const cmd = command?.command;
+if (cmd === "myweek") {
+  result = await handleMyWeek(targetId);
+} else if (cmd === "who" || cmd === "job") {
+  const role = await resolveRole(targetId);
+  if (!isManagementRole(role)) {
+    result = { text: "Commands: /myweek" };
+  } else if (cmd === "who") {
+    result = await handleWho(command?.argument ?? "");
+  } else {
+    result = await handleJob(command?.argument ?? "");
+  }
+} else {
+  result = { text: "Commands: /myweek" };
+}
 ```
 
 - [ ] **Step 4: Commit**
@@ -798,9 +819,11 @@ git commit -m "feat(telegram): /job status lookup"
 ## Task 7: `index.ts` — `/staff`
 
 **Files:**
+
 - Modify: `supabase/functions/telegram-handler/index.ts`
 
 **Interfaces:**
+
 - Consumes: `daysUntil`, `ticketStatusLine`, `renderStaffStatus`, `renderStaffMatches` from `lib.ts` (Task 2).
 - Produces: `handleStaff(argument: string): Promise<HandlerResponse>`, wired as `/staff` in dispatch.
 
@@ -872,23 +895,23 @@ async function handleStaff(argument: string): Promise<HandlerResponse> {
 Extend the dispatch block from Task 6, Step 3 — add `cmd === "staff"` alongside `"who"`/`"job"`:
 
 ```typescript
-      const cmd = command?.command;
-      if (cmd === "myweek") {
-        result = await handleMyWeek(targetId);
-      } else if (cmd === "who" || cmd === "job" || cmd === "staff") {
-        const role = await resolveRole(targetId);
-        if (!isManagementRole(role)) {
-          result = { text: "Commands: /myweek" };
-        } else if (cmd === "who") {
-          result = await handleWho(command?.argument ?? "");
-        } else if (cmd === "job") {
-          result = await handleJob(command?.argument ?? "");
-        } else {
-          result = await handleStaff(command?.argument ?? "");
-        }
-      } else {
-        result = { text: "Commands: /myweek" };
-      }
+const cmd = command?.command;
+if (cmd === "myweek") {
+  result = await handleMyWeek(targetId);
+} else if (cmd === "who" || cmd === "job" || cmd === "staff") {
+  const role = await resolveRole(targetId);
+  if (!isManagementRole(role)) {
+    result = { text: "Commands: /myweek" };
+  } else if (cmd === "who") {
+    result = await handleWho(command?.argument ?? "");
+  } else if (cmd === "job") {
+    result = await handleJob(command?.argument ?? "");
+  } else {
+    result = await handleStaff(command?.argument ?? "");
+  }
+} else {
+  result = { text: "Commands: /myweek" };
+}
 ```
 
 - [ ] **Step 4: Commit**
@@ -903,9 +926,11 @@ git commit -m "feat(telegram): /staff compliance lookup"
 ## Task 8: `index.ts` — `/today`
 
 **Files:**
+
 - Modify: `supabase/functions/telegram-handler/index.ts`
 
 **Interfaces:**
+
 - Consumes: `renderToday`, `TodayJob` from `lib.ts` (Task 4).
 - Produces: `handleToday(): Promise<HandlerResponse>`, wired as `/today` in dispatch. This finalizes the dispatch block for all four commands.
 
@@ -933,10 +958,16 @@ async function handleToday(): Promise<HandlerResponse> {
     return { text: "Something went wrong — please try again shortly." };
   }
 
-  const byJob = new Map<string, { site_name: string; postcode: string | null; crewCount: number }>();
+  const byJob = new Map<
+    string,
+    { site_name: string; postcode: string | null; crewCount: number }
+  >();
   for (const row of shifts ?? []) {
     const jobId = row.job_id as string;
-    const job = (row as Record<string, unknown>).jobs as { site_name?: string; postcode?: string } | null;
+    const job = (row as Record<string, unknown>).jobs as {
+      site_name?: string;
+      postcode?: string;
+    } | null;
     const existing = byJob.get(jobId);
     if (existing) {
       existing.crewCount += 1;
@@ -958,25 +989,25 @@ async function handleToday(): Promise<HandlerResponse> {
 Replace the dispatch block from Task 7, Step 3 with its final form:
 
 ```typescript
-      const cmd = command?.command;
-      if (cmd === "myweek") {
-        result = await handleMyWeek(targetId);
-      } else if (cmd === "who" || cmd === "job" || cmd === "staff" || cmd === "today") {
-        const role = await resolveRole(targetId);
-        if (!isManagementRole(role)) {
-          result = { text: "Commands: /myweek" };
-        } else if (cmd === "who") {
-          result = await handleWho(command?.argument ?? "");
-        } else if (cmd === "job") {
-          result = await handleJob(command?.argument ?? "");
-        } else if (cmd === "staff") {
-          result = await handleStaff(command?.argument ?? "");
-        } else {
-          result = await handleToday();
-        }
-      } else {
-        result = { text: "Commands: /myweek" };
-      }
+const cmd = command?.command;
+if (cmd === "myweek") {
+  result = await handleMyWeek(targetId);
+} else if (cmd === "who" || cmd === "job" || cmd === "staff" || cmd === "today") {
+  const role = await resolveRole(targetId);
+  if (!isManagementRole(role)) {
+    result = { text: "Commands: /myweek" };
+  } else if (cmd === "who") {
+    result = await handleWho(command?.argument ?? "");
+  } else if (cmd === "job") {
+    result = await handleJob(command?.argument ?? "");
+  } else if (cmd === "staff") {
+    result = await handleStaff(command?.argument ?? "");
+  } else {
+    result = await handleToday();
+  }
+} else {
+  result = { text: "Commands: /myweek" };
+}
 ```
 
 - [ ] **Step 4: Run the full `lib.ts` test suite once more**

@@ -239,3 +239,31 @@ export function sniffFileType(bytes: Uint8Array): { mime: string; ext: string } 
 export function buildUploadPath(prefix: string, uuid: string, ext: string): string {
   return `${prefix}/${uuid}.${ext}`;
 }
+
+export type PendingCandidate = { kind: "document_request" | "job"; id: string; label: string };
+
+export function buildDocumentRequestLabel(requestedCerts: string[] | null | undefined): string {
+  return requestedCerts && requestedCerts.length > 0
+    ? requestedCerts.join(", ")
+    : "Document request";
+}
+
+export function buildJobCandidateLabel(siteName: string | null | undefined): string {
+  return siteName || "Unassigned site";
+}
+
+export type ParsedPendingCallback = { rowId: string; index: number } | null;
+
+export function parsePendingCallback(data: string): ParsedPendingCallback {
+  const [scope, action, rowId, indexRaw] = data.split(":");
+  if (scope !== "pending" || action !== "pick" || !rowId || indexRaw === undefined) return null;
+  const index = Number(indexRaw);
+  if (!Number.isInteger(index) || index < 0) return null;
+  return { rowId, index };
+}
+
+const PENDING_UPLOAD_TTL_MS = 10 * 60_000;
+
+export function isPendingExpired(createdAtIso: string, nowIso: string): boolean {
+  return Date.parse(nowIso) - Date.parse(createdAtIso) > PENDING_UPLOAD_TTL_MS;
+}

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildDocumentRequestLabel,
+  buildJobCandidateLabel,
   buildUploadPath,
   cleanPostcode,
   daysUntil,
@@ -7,7 +9,9 @@ import {
   haversineMiles,
   isDeclaredUploadTypeAllowed,
   isManagementRole,
+  isPendingExpired,
   isValidBridgeSecret,
+  parsePendingCallback,
   nearestByDistance,
   parseCommand,
   renderJobStatus,
@@ -316,5 +320,64 @@ describe("isManagementRole", () => {
   it("rejects null or undefined", () => {
     expect(isManagementRole(null)).toBe(false);
     expect(isManagementRole(undefined)).toBe(false);
+  });
+});
+
+describe("buildDocumentRequestLabel", () => {
+  it("joins requested certs", () => {
+    expect(buildDocumentRequestLabel(["CSCS", "First Aid"])).toBe("CSCS, First Aid");
+  });
+
+  it("falls back when empty", () => {
+    expect(buildDocumentRequestLabel([])).toBe("Document request");
+  });
+
+  it("falls back when null", () => {
+    expect(buildDocumentRequestLabel(null)).toBe("Document request");
+  });
+});
+
+describe("buildJobCandidateLabel", () => {
+  it("uses the site name", () => {
+    expect(buildJobCandidateLabel("Riverside Depot")).toBe("Riverside Depot");
+  });
+
+  it("falls back on empty string", () => {
+    expect(buildJobCandidateLabel("")).toBe("Unassigned site");
+  });
+
+  it("falls back on null", () => {
+    expect(buildJobCandidateLabel(null)).toBe("Unassigned site");
+  });
+});
+
+describe("parsePendingCallback", () => {
+  it("parses a valid pick", () => {
+    expect(parsePendingCallback("pending:pick:abc-123:1")).toEqual({
+      rowId: "abc-123",
+      index: 1,
+    });
+  });
+
+  it("returns null for a non-pending scope", () => {
+    expect(parsePendingCallback("shift:confirm:abc")).toBeNull();
+  });
+
+  it("returns null for a non-numeric index", () => {
+    expect(parsePendingCallback("pending:pick:abc-123:x")).toBeNull();
+  });
+
+  it("returns null for a missing index", () => {
+    expect(parsePendingCallback("pending:pick:abc-123")).toBeNull();
+  });
+});
+
+describe("isPendingExpired", () => {
+  it("is not expired inside the 10-minute window", () => {
+    expect(isPendingExpired("2026-08-14T12:00:00.000Z", "2026-08-14T12:09:59.000Z")).toBe(false);
+  });
+
+  it("is expired past the 10-minute window", () => {
+    expect(isPendingExpired("2026-08-14T12:00:00.000Z", "2026-08-14T12:10:01.000Z")).toBe(true);
   });
 });

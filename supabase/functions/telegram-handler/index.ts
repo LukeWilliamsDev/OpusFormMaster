@@ -178,27 +178,33 @@ function hashFallbackCoords(postcode: string): GeoPoint {
 // One postcodes.io bulk POST for the whole candidate set rather than one
 // fetch per staff member — a 30-strong roster would otherwise mean 30
 // sequential HTTP round trips per /who. Falls back to the same hash-based
-// generator src/opus/utils/geo.ts uses on API failure, so the bot never
-// disagrees with the portal for the same postcode.
-async function bulkGeocode(postcodes: string[]): Promise<Map<string, GeoPoint>> {
+// math src/opus/utils/geo.ts uses for unrecognized postcodes (not its
+// hardcoded-prefix shortcuts) on API failure.
+async function bulkGeocode(
+  postcodes: string[],
+): Promise<{ coords: Map<string, GeoPoint>; resolved: Set<string> }> {
   const unique = [...new Set(postcodes.map(cleanPostcode))].filter(Boolean);
   const coords = new Map<string, GeoPoint>();
-  if (unique.length === 0) return coords;
+  const resolved = new Set<string>();
+  if (unique.length === 0) return { coords, resolved };
 
   try {
     const res = await fetch("https://api.postcodes.io/postcodes", {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ postcodes: unique.slice(0, 100) }),
+      signal: AbortSignal.timeout(5000),
     });
     if (res.ok) {
       const body = await res.json();
       for (const entry of body.result ?? []) {
         if (entry?.result) {
-          coords.set(cleanPostcode(entry.query), {
+          const code = cleanPostcode(entry.query);
+          coords.set(code, {
             lat: entry.result.latitude,
             lng: entry.result.longitude,
           });
+          resolved.add(code);
         }
       }
     }
@@ -209,7 +215,7 @@ async function bulkGeocode(postcodes: string[]): Promise<Map<string, GeoPoint>> 
   for (const code of unique) {
     if (!coords.has(code)) coords.set(code, hashFallbackCoords(code));
   }
-  return coords;
+  return { coords, resolved };
 }
 
 async function handleWho(argument: string): Promise<HandlerResponse> {
@@ -230,18 +236,26 @@ async function handleWho(argument: string): Promise<HandlerResponse> {
     return { text: "No staff records have a postcode set." };
   }
 
-  const coords = await bulkGeocode([postcode, ...staff.map((s) => s.postcode as string)]);
-  const origin = coords.get(cleanPostcode(postcode));
-  if (!origin) return { text: "Couldn't look up that postcode." };
+  const { coords, resolved } = await bulkGeocode([
+    postcode,
+    ...staff.map((s) => s.postcode as string),
+  ]);
+  const originKey = cleanPostcode(postcode);
+  if (!resolved.has(originKey)) return { text: "Couldn't look up that postcode." };
+  const origin = coords.get(originKey)!;
 
   const candidates = staff
     .map((s) => {
-      const point = coords.get(cleanPostcode(s.postcode as string));
+      const key = cleanPostcode(s.postcode as string);
+      if (!resolved.has(key)) return null;
+      const point = coords.get(key);
       return point
         ? { name: s.name as string, postcode: s.postcode as string, coords: point }
         : null;
     })
     .filter((c): c is { name: string; postcode: string; coords: GeoPoint } => c !== null);
+
+  if (candidates.length === 0) return { text: "Couldn't locate any staff postcodes." };
 
   return { text: renderWho(nearestByDistance(origin, candidates, 5)) };
 }
@@ -799,12 +813,13 @@ serve(async (req) => {
   }
 
   const body = (await req.json()) as BridgeRequest;
-  const stopTyping = startTypingLoop(body.chat_id);
-  const command = parseCommand(body.payload?.text ?? "");
 
   let result: HandlerResponse = { text: DENY_TEXT };
 
+  const stopTyping = startTypingLoop(body.chat_id);
   try {
+    const command = parseCommand(body.payload?.text ?? "");
+
     if (command?.command === "start") {
       result = await handleStart(body, command.argument);
     } else {

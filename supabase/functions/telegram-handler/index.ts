@@ -363,17 +363,14 @@ async function handleStaff(argument: string): Promise<HandlerResponse> {
           date: (shifts[0] as Record<string, unknown>).date as string,
           site_name:
             ((shifts[0] as Record<string, unknown>).jobs as { site_name?: string } | null)
-              ?.site_name ?? "Unassigned site",
+              ?.site_name || "Unassigned site",
         }
       : null;
 
-  const tickets = (member.tickets ?? []) as Array<{
-    ticket_type?: string;
-    expiry_date?: string;
-  }>;
+  const tickets = (member.tickets as Array<{ type?: string; expiryDate?: string }> | null) ?? [];
   const ticketLines = tickets.map((t) => {
-    const days = daysUntil(t.expiry_date ?? "", today);
-    return ticketStatusLine(t.ticket_type ?? "Certificate", days, t.expiry_date);
+    const days = t.expiryDate ? daysUntil(t.expiryDate, today) : null;
+    return ticketStatusLine(t.type || "Certificate", days, t.expiryDate);
   });
 
   return { text: renderStaffStatus(member.name as string, ticketLines, nextShift) };

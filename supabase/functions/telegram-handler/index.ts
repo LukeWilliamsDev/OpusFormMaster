@@ -17,6 +17,7 @@ import {
   renderJobStatus,
   renderStaffMatches,
   renderStaffStatus,
+  renderToday,
   renderWeek,
   renderWho,
   sniffFileType,
@@ -374,6 +375,44 @@ async function handleStaff(argument: string): Promise<HandlerResponse> {
   });
 
   return { text: renderStaffStatus(member.name as string, ticketLines, nextShift) };
+}
+
+async function handleToday(): Promise<HandlerResponse> {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const { data: shifts, error } = await supabase
+    .from("shifts")
+    .select("job_id, jobs(site_name, postcode)")
+    .eq("date", today);
+
+  if (error) {
+    console.error("handleToday: shifts query failed", error.message);
+    return { text: "Something went wrong — please try again shortly." };
+  }
+
+  const byJob = new Map<
+    string,
+    { site_name: string; postcode: string | null; crewCount: number }
+  >();
+  for (const row of shifts ?? []) {
+    const jobId = row.job_id as string;
+    const job = (row as Record<string, unknown>).jobs as {
+      site_name?: string;
+      postcode?: string;
+    } | null;
+    const existing = byJob.get(jobId);
+    if (existing) {
+      existing.crewCount += 1;
+    } else {
+      byJob.set(jobId, {
+        site_name: job?.site_name || "Unassigned site",
+        postcode: job?.postcode ?? null,
+        crewCount: 1,
+      });
+    }
+  }
+
+  return { text: renderToday([...byJob.values()]) };
 }
 
 /**
@@ -763,7 +802,7 @@ serve(async (req) => {
       const cmd = command?.command;
       if (cmd === "myweek") {
         result = await handleMyWeek(targetId);
-      } else if (cmd === "who" || cmd === "job" || cmd === "staff") {
+      } else if (cmd === "who" || cmd === "job" || cmd === "staff" || cmd === "today") {
         const role = await resolveRole(targetId);
         if (!isManagementRole(role)) {
           result = { text: "Commands: /myweek" };
@@ -771,8 +810,10 @@ serve(async (req) => {
           result = await handleWho(command?.argument ?? "");
         } else if (cmd === "job") {
           result = await handleJob(command?.argument ?? "");
-        } else {
+        } else if (cmd === "staff") {
           result = await handleStaff(command?.argument ?? "");
+        } else {
+          result = await handleToday();
         }
       } else {
         result = { text: "Commands: /myweek" };

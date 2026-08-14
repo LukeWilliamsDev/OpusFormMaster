@@ -761,11 +761,9 @@ async function handleFile(body: BridgeRequest, targetId: string): Promise<Handle
   return { text: "Added to the job. Thanks!" };
 }
 
-// Telegram's typing indicator auto-expires after ~5s, well past this
-// function's slowest handler, so one call per message is enough — no
-// repeat-every-4s loop needed. Fire-and-forget: never awaited, so a slow or
-// failed indicator can't delay or break the real reply. Only telegram-handler
-// can send this — the bridge deliberately holds no bot token (design spec §4.3).
+// Fire-and-forget — never awaited, so a slow or failed indicator can't delay
+// or break the real reply. Only telegram-handler can send this — the bridge
+// deliberately holds no bot token (design spec §4.3).
 function sendTypingIndicator(chatId: string) {
   const token = Deno.env.get("TELEGRAM_BOT_TOKEN");
   if (!token) return;
@@ -774,6 +772,16 @@ function sendTypingIndicator(chatId: string) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, action: "typing" }),
   }).catch((err) => console.error("sendTypingIndicator: request failed", err));
+}
+
+// Telegram's typing indicator auto-expires after ~5s, so a single call goes
+// stale on anything slower (a cold geocode lookup, a slow query). Resend every
+// 4s — under the expiry, so the indicator never visibly drops — until the
+// caller stops it right before the real reply is sent.
+function startTypingLoop(chatId: string): () => void {
+  sendTypingIndicator(chatId);
+  const interval = setInterval(() => sendTypingIndicator(chatId), 4000);
+  return () => clearInterval(interval);
 }
 
 serve(async (req) => {
@@ -791,50 +799,56 @@ serve(async (req) => {
   }
 
   const body = (await req.json()) as BridgeRequest;
-  sendTypingIndicator(body.chat_id);
+  const stopTyping = startTypingLoop(body.chat_id);
   const command = parseCommand(body.payload?.text ?? "");
 
   let result: HandlerResponse = { text: DENY_TEXT };
 
-  if (command?.command === "start") {
-    result = await handleStart(body, command.argument);
-  } else {
-    const targetId = await resolveLink(body.telegram_user_id);
-    if (!targetId) {
-      // The bridge only forwards non-/start traffic for senders it believes are
-      // allowlisted, so no active link means access was revoked in the portal.
-      // Tell the bridge to drop them locally. Senders learn nothing either way.
-      result = { text: DENY_TEXT, ack: { link_revoked: body.telegram_user_id } };
-    } else if (body.kind === "callback") {
-      result = await handleCallback(body, targetId);
-    } else if (body.kind === "file") {
-      result = await handleFile(body, targetId);
+  try {
+    if (command?.command === "start") {
+      result = await handleStart(body, command.argument);
     } else {
-      await supabase
-        .from("telegram_links")
-        .update({ last_seen_at: new Date().toISOString() })
-        .eq("telegram_user_id", body.telegram_user_id);
-
-      const cmd = command?.command;
-      if (cmd === "myweek") {
-        result = await handleMyWeek(targetId);
-      } else if (cmd === "who" || cmd === "job" || cmd === "staff" || cmd === "today") {
-        const role = await resolveRole(targetId);
-        if (!isManagementRole(role)) {
-          result = { text: "Commands: /myweek" };
-        } else if (cmd === "who") {
-          result = await handleWho(command?.argument ?? "");
-        } else if (cmd === "job") {
-          result = await handleJob(command?.argument ?? "");
-        } else if (cmd === "staff") {
-          result = await handleStaff(command?.argument ?? "");
-        } else {
-          result = await handleToday();
-        }
+      const targetId = await resolveLink(body.telegram_user_id);
+      if (!targetId) {
+        // The bridge only forwards non-/start traffic for senders it believes are
+        // allowlisted, so no active link means access was revoked in the portal.
+        // Tell the bridge to drop them locally. Senders learn nothing either way.
+        result = { text: DENY_TEXT, ack: { link_revoked: body.telegram_user_id } };
+      } else if (body.kind === "callback") {
+        result = await handleCallback(body, targetId);
+      } else if (body.kind === "file") {
+        result = await handleFile(body, targetId);
       } else {
-        result = { text: "Commands: /myweek" };
+        await supabase
+          .from("telegram_links")
+          .update({ last_seen_at: new Date().toISOString() })
+          .eq("telegram_user_id", body.telegram_user_id);
+
+        const cmd = command?.command;
+        if (cmd === "myweek") {
+          result = await handleMyWeek(targetId);
+        } else if (cmd === "who" || cmd === "job" || cmd === "staff" || cmd === "today") {
+          const role = await resolveRole(targetId);
+          if (!isManagementRole(role)) {
+            result = { text: "Commands: /myweek" };
+          } else if (cmd === "who") {
+            result = await handleWho(command?.argument ?? "");
+          } else if (cmd === "job") {
+            result = await handleJob(command?.argument ?? "");
+          } else if (cmd === "staff") {
+            result = await handleStaff(command?.argument ?? "");
+          } else {
+            result = await handleToday();
+          }
+        } else {
+          result = { text: "Commands: /myweek" };
+        }
       }
     }
+  } finally {
+    // Stop before the response goes out, not after — the caller must never
+    // see the indicator outlive the reply it was standing in for.
+    stopTyping();
   }
 
   return new Response(JSON.stringify(result), {

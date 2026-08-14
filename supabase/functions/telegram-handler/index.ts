@@ -2,6 +2,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   BridgeRequest,
+  buildDocumentRequestLabel,
+  buildJobCandidateLabel,
   buildUploadPath,
   cleanPostcode,
   daysUntil,
@@ -10,10 +12,13 @@ import {
   HandlerResponse,
   isDeclaredUploadTypeAllowed,
   isManagementRole,
+  isPendingExpired,
   isValidBridgeSecret,
   MAX_UPLOAD_BYTES,
   nearestByDistance,
   parseCommand,
+  parsePendingCallback,
+  PendingCandidate,
   renderJobStatus,
   renderStaffMatches,
   renderStaffStatus,
@@ -22,6 +27,7 @@ import {
   renderWho,
   sniffFileType,
   ticketStatusLine,
+  UploadFilePayload,
 } from "./lib.ts";
 
 // The bridge authenticates with a shared secret, not a user JWT — it acts for
@@ -552,7 +558,7 @@ type UploadContext =
   | { kind: "document_request"; requestId: string }
   | { kind: "job"; jobId: string; tenantId: string }
   | { kind: "none" }
-  | { kind: "ambiguous"; message: string }
+  | { kind: "pending"; candidates: PendingCandidate[] }
   | { kind: "error" };
 
 // "Open request" per design spec §7.2: a live document_requests row wins —
@@ -560,10 +566,12 @@ type UploadContext =
 // shift lets an unprompted job photo still land somewhere sensible. Either
 // query erroring must not fall through to the other path silently (handoff
 // §6: a query that errors returns null, indistinguishable from "no rows").
+// 2+ matches in either query become a `pending` picker (2026-08-14 pending-
+// upload-picker plan) rather than a dead end.
 async function resolveUploadContext(targetId: string): Promise<UploadContext> {
   const { data: requests, error: requestsError } = await supabase
     .from("document_requests")
-    .select("id")
+    .select("id, requested_certs")
     .eq("worker_id", targetId)
     .is("completed_at", null)
     .gt("expires_at", new Date().toISOString());
@@ -577,16 +585,19 @@ async function resolveUploadContext(targetId: string): Promise<UploadContext> {
   }
   if (requests.length > 1) {
     return {
-      kind: "ambiguous",
-      message:
-        "You have more than one open document request — please use the link you were sent instead.",
+      kind: "pending",
+      candidates: requests.map((r) => ({
+        kind: "document_request" as const,
+        id: r.id as string,
+        label: buildDocumentRequestLabel(r.requested_certs as string[] | null),
+      })),
     };
   }
 
   const today = new Date().toISOString().slice(0, 10);
   const { data: shifts, error: shiftsError } = await supabase
     .from("shifts")
-    .select("job_id, tenant_id")
+    .select("job_id, tenant_id, jobs(site_name)")
     .eq("worker_id", targetId)
     .eq("date", today);
 
@@ -599,8 +610,16 @@ async function resolveUploadContext(targetId: string): Promise<UploadContext> {
   }
   if (shifts.length > 1) {
     return {
-      kind: "ambiguous",
-      message: "You're on more than one job today — please add this from the portal instead.",
+      kind: "pending",
+      candidates: shifts
+        .filter((s) => s.job_id)
+        .map((s) => ({
+          kind: "job" as const,
+          id: s.job_id as string,
+          label: buildJobCandidateLabel(
+            (s.jobs as { site_name?: string } | null)?.site_name ?? null,
+          ),
+        })),
     };
   }
 
@@ -659,6 +678,89 @@ async function fetchTelegramFile(fileId: string, token: string): Promise<Uint8Ar
   return new Uint8Array(await fileRes.arrayBuffer());
 }
 
+async function finalizeUpload(
+  context:
+    | { kind: "document_request"; requestId: string }
+    | { kind: "job"; jobId: string; tenantId: string },
+  bytes: Uint8Array,
+  sniffed: { mime: string; ext: string },
+  file: UploadFilePayload,
+  targetId: string,
+  staffLabel: string,
+  telegramUserId: string,
+): Promise<HandlerResponse> {
+  if (context.kind === "document_request") {
+    const path = buildUploadPath(`requests/${context.requestId}`, crypto.randomUUID(), sniffed.ext);
+    const { error: uploadError } = await supabase.storage
+      .from("compliance-documents")
+      .upload(path, bytes, { contentType: sniffed.mime, upsert: false });
+    if (uploadError) {
+      console.error("finalizeUpload: compliance-documents upload failed", uploadError.message);
+      return { text: "Something went wrong saving that file — please try again." };
+    }
+
+    const { error: appendError } = await supabase.rpc("append_document_request_upload", {
+      p_request_id: context.requestId,
+      p_upload: {
+        path,
+        file_name: file.file_name || null,
+        caption: file.caption || null,
+        telegram_user_id: telegramUserId,
+        uploaded_at: new Date().toISOString(),
+      },
+    });
+    if (appendError) {
+      console.error("finalizeUpload: append_document_request_upload failed", appendError.message);
+      return { text: "Something went wrong saving that file — please try again." };
+    }
+
+    return {
+      text: "Got it — that's been added to your document request. Your dispatcher will follow up if anything else is needed.",
+    };
+  }
+
+  // context.kind === "job"
+  const path = buildUploadPath(`jobs/${context.jobId}`, crypto.randomUUID(), sniffed.ext);
+  const { error: uploadError } = await supabase.storage
+    .from("job-attachments")
+    .upload(path, bytes, { contentType: sniffed.mime, upsert: false });
+  if (uploadError) {
+    console.error("finalizeUpload: job-attachments upload failed", uploadError.message);
+    return { text: "Something went wrong saving that file — please try again." };
+  }
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("job-attachments").getPublicUrl(path);
+
+  const { error: insertError } = await supabase.from("job_attachments").insert({
+    job_id: context.jobId,
+    // job_attachments has no tenant_id column despite its original migration
+    // declaring one — live schema has diverged from the repo (handoff §4).
+    type: "document",
+    file_name: file.file_name || `telegram-${crypto.randomUUID()}.${sniffed.ext}`,
+    file_url: publicUrl,
+    file_size_bytes: bytes.byteLength,
+    uploaded_by: staffLabel,
+  });
+  if (insertError) {
+    console.error("finalizeUpload: job_attachments insert failed", insertError.message);
+    return { text: "Something went wrong saving that file — please try again." };
+  }
+
+  if (file.caption?.trim()) {
+    await supabase.from("job_notes").insert({
+      job_id: context.jobId,
+      tenant_id: context.tenantId,
+      author_type: "operative",
+      author_staff_id: targetId,
+      body: file.caption.trim(),
+    });
+  }
+
+  return { text: "Added to the job. Thanks!" };
+}
+
 async function handleFile(body: BridgeRequest, targetId: string): Promise<HandlerResponse> {
   const file = body.payload?.file;
   if (!file?.file_id) return { text: "" };
@@ -676,9 +778,6 @@ async function handleFile(body: BridgeRequest, targetId: string): Promise<Handle
   }
   if (context.kind === "none") {
     return { text: "Nothing open to attach this to right now." };
-  }
-  if (context.kind === "ambiguous") {
-    return { text: context.message };
   }
 
   const { data: staff } = await supabase
@@ -708,76 +807,44 @@ async function handleFile(body: BridgeRequest, targetId: string): Promise<Handle
     return { text: "Only photos and PDFs are accepted." };
   }
 
-  if (context.kind === "document_request") {
-    const path = buildUploadPath(`requests/${context.requestId}`, crypto.randomUUID(), sniffed.ext);
+  if (context.kind === "pending") {
+    const path = buildUploadPath("pending", crypto.randomUUID(), sniffed.ext);
     const { error: uploadError } = await supabase.storage
       .from("compliance-documents")
       .upload(path, bytes, { contentType: sniffed.mime, upsert: false });
     if (uploadError) {
-      console.error("handleFile: compliance-documents upload failed", uploadError.message);
+      console.error("handleFile: pending upload failed", uploadError.message);
       return { text: "Something went wrong saving that file — please try again." };
     }
 
-    const { error: appendError } = await supabase.rpc("append_document_request_upload", {
-      p_request_id: context.requestId,
-      p_upload: {
-        path,
-        file_name: file.file_name || null,
-        caption: file.caption || null,
+    const { data: row, error: insertError } = await supabase
+      .from("telegram_pending_uploads")
+      .insert({
         telegram_user_id: body.telegram_user_id,
-        uploaded_at: new Date().toISOString(),
-      },
-    });
-    if (appendError) {
-      console.error("handleFile: append_document_request_upload failed", appendError.message);
+        target_id: targetId,
+        storage_path: path,
+        mime_type: sniffed.mime,
+        candidates: context.candidates,
+      })
+      .select("id")
+      .single();
+    if (insertError || !row) {
+      console.error("handleFile: telegram_pending_uploads insert failed", insertError?.message);
       return { text: "Something went wrong saving that file — please try again." };
     }
 
     return {
-      text: "Got it — that's been added to your document request. Your dispatcher will follow up if anything else is needed.",
+      text: "Which one is this for?",
+      keyboard: [
+        context.candidates.map((c, i) => ({
+          text: c.label,
+          data: `pending:pick:${row.id}:${i}`,
+        })),
+      ],
     };
   }
 
-  // context.kind === "job"
-  const path = buildUploadPath(`jobs/${context.jobId}`, crypto.randomUUID(), sniffed.ext);
-  const { error: uploadError } = await supabase.storage
-    .from("job-attachments")
-    .upload(path, bytes, { contentType: sniffed.mime, upsert: false });
-  if (uploadError) {
-    console.error("handleFile: job-attachments upload failed", uploadError.message);
-    return { text: "Something went wrong saving that file — please try again." };
-  }
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from("job-attachments").getPublicUrl(path);
-
-  const { error: insertError } = await supabase.from("job_attachments").insert({
-    job_id: context.jobId,
-    // job_attachments has no tenant_id column despite its original migration
-    // declaring one — live schema has diverged from the repo (handoff §4).
-    type: "document",
-    file_name: file.file_name || `telegram-${crypto.randomUUID()}.${sniffed.ext}`,
-    file_url: publicUrl,
-    file_size_bytes: bytes.byteLength,
-    uploaded_by: staffLabel,
-  });
-  if (insertError) {
-    console.error("handleFile: job_attachments insert failed", insertError.message);
-    return { text: "Something went wrong saving that file — please try again." };
-  }
-
-  if (file.caption?.trim()) {
-    await supabase.from("job_notes").insert({
-      job_id: context.jobId,
-      tenant_id: context.tenantId,
-      author_type: "operative",
-      author_staff_id: targetId,
-      body: file.caption.trim(),
-    });
-  }
-
-  return { text: "Added to the job. Thanks!" };
+  return finalizeUpload(context, bytes, sniffed, file, targetId, staffLabel, body.telegram_user_id);
 }
 
 // Fire-and-forget — never awaited, so a slow or failed indicator can't delay

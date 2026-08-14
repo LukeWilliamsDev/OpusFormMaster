@@ -290,7 +290,14 @@ async function handleJob(argument: string): Promise<HandlerResponse> {
 
   const authorNames = new Map<string, string>();
   if (authorIds.length > 0) {
-    const { data: authors } = await supabase.from("staff").select("id, name").in("id", authorIds);
+    const { data: authors, error: authorsError } = await supabase
+      .from("staff")
+      .select("id, name")
+      .in("id", authorIds);
+    if (authorsError) {
+      console.error("handleJob: staff query failed", authorsError.message);
+      return { text: "Something went wrong — please try again shortly." };
+    }
     for (const a of authors ?? []) authorNames.set(a.id as string, a.name as string);
   }
 

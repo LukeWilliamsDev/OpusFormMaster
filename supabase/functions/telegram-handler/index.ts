@@ -498,6 +498,93 @@ async function notifyDispatchers(text: string) {
 
 async function handleCallback(body: BridgeRequest, targetId: string): Promise<HandlerResponse> {
   const data = String((body.payload as Record<string, unknown>)?.callback_data ?? "");
+
+  const pendingPick = parsePendingCallback(data);
+  if (pendingPick) {
+    // Same ownership guard as the shift branch below: a guessed rowId must
+    // not resolve to someone else's pending upload. Unknown, foreign, and
+    // expired rows all get the identical reply — no wording tells a caller
+    // which case they hit.
+    const { data: row, error } = await supabase
+      .from("telegram_pending_uploads")
+      .select("id, target_id, storage_path, mime_type, candidates, created_at")
+      .eq("id", pendingPick.rowId)
+      .maybeSingle();
+
+    const expiredText = "That picker expired — please resend the file.";
+    if (error) {
+      console.error("handleCallback: telegram_pending_uploads query failed", error.message);
+      return { text: "Something went wrong — please try again." };
+    }
+    if (
+      !row ||
+      row.target_id !== targetId ||
+      isPendingExpired(row.created_at, new Date().toISOString())
+    ) {
+      if (row) {
+        await supabase.storage.from("compliance-documents").remove([row.storage_path]);
+        await supabase.from("telegram_pending_uploads").delete().eq("id", row.id);
+      }
+      return { text: expiredText };
+    }
+
+    const candidates = row.candidates as PendingCandidate[];
+    const picked = candidates[pendingPick.index];
+    if (!picked) return { text: expiredText };
+
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from("compliance-documents")
+      .download(row.storage_path);
+    if (downloadError || !fileData) {
+      console.error("handleCallback: pending file download failed", downloadError?.message);
+      return { text: "Something went wrong — please try again." };
+    }
+    const bytes = new Uint8Array(await fileData.arrayBuffer());
+    const ext = row.storage_path.split(".").pop() ?? "bin";
+
+    const { data: staff } = await supabase
+      .from("staff")
+      .select("name")
+      .eq("id", targetId)
+      .maybeSingle();
+    const staffLabel = `Telegram: ${staff?.name ?? "Operative"}`;
+
+    let finalizeContext:
+      | { kind: "document_request"; requestId: string }
+      | { kind: "job"; jobId: string; tenantId: string };
+    if (picked.kind === "document_request") {
+      finalizeContext = { kind: "document_request", requestId: picked.id };
+    } else {
+      const { data: job, error: jobError } = await supabase
+        .from("shifts")
+        .select("tenant_id")
+        .eq("job_id", picked.id)
+        .eq("worker_id", targetId)
+        .limit(1)
+        .maybeSingle();
+      if (jobError || !job) {
+        console.error("handleCallback: job tenant lookup failed", jobError?.message);
+        return { text: "Something went wrong — please try again." };
+      }
+      finalizeContext = { kind: "job", jobId: picked.id, tenantId: job.tenant_id };
+    }
+
+    const result = await finalizeUpload(
+      finalizeContext,
+      bytes,
+      { mime: row.mime_type, ext },
+      { file_id: "", caption: undefined, file_name: undefined },
+      targetId,
+      staffLabel,
+      body.telegram_user_id,
+    );
+
+    await supabase.storage.from("compliance-documents").remove([row.storage_path]);
+    await supabase.from("telegram_pending_uploads").delete().eq("id", row.id);
+
+    return result;
+  }
+
   const [scope, action, shiftId] = data.split(":");
   if (scope !== "shift" || !shiftId) return { text: "" };
 

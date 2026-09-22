@@ -100,6 +100,15 @@ export const ALL_ROLES: AppRole[] = [
 export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
 // Restricted access — mirrors the old "operative" tier.
 export const FIELD_ROLES: AppRole[] = ["logistics_assistant", "site_foreman", "labourer"];
+// Field users may see only the shifts assigned to their own staff record.
+export const ASSIGNED_SHIFT_ROLES: AppRole[] = ["site_foreman", "labourer"];
+// Full schedule visibility without granting operational write access.
+export const SCHEDULE_ROLES: AppRole[] = [
+  "admin",
+  "director",
+  "logistics_coordinator",
+  "logistics_assistant",
+];
 
 // ---- Row <-> App mappers -----------------------------------------------
 export const workerToRow = (w: Worker, tenantId?: string) =>

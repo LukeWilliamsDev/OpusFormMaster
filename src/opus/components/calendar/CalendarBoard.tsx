@@ -38,6 +38,7 @@ interface CalendarBoardProps {
   date: string;
   onChangeGroup: (group: CalendarGroup) => void;
   onChangeDate: (date: string) => void;
+  canEdit?: boolean;
 }
 
 export const CalendarBoard: React.FC<CalendarBoardProps> = ({
@@ -49,6 +50,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   date,
   onChangeGroup,
   onChangeDate,
+  canEdit = true,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -146,16 +148,24 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
                 schedule={schedule}
                 date={date}
                 searchQuery={debouncedSearchQuery}
-                onAssign={(worker) => setAssignTarget({ mode: "pickProject", worker, date })}
-                onRemoveShift={removeShift}
+                onAssign={
+                  canEdit
+                    ? (worker) => setAssignTarget({ mode: "pickProject", worker, date })
+                    : undefined
+                }
+                onRemoveShift={canEdit ? removeShift : undefined}
+                canEdit={canEdit}
               />
             ) : (
               <ProjectDayList
                 jobs={jobs}
                 schedule={schedule}
                 date={date}
-                onAddStaff={(job) => setAssignTarget({ mode: "pickWorker", job, date })}
-                onRemoveShift={removeShift}
+                onAddStaff={
+                  canEdit ? (job) => setAssignTarget({ mode: "pickWorker", job, date }) : undefined
+                }
+                onRemoveShift={canEdit ? removeShift : undefined}
+                canEdit={canEdit}
               />
             )}
           </motion.div>
@@ -171,35 +181,45 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
               weekDays={weekDays}
               weekSchedule={weekSchedule}
               searchQuery={debouncedSearchQuery}
-              onAssign={(worker, assignDate) =>
-                setAssignTarget({ mode: "pickProject", worker, date: assignDate })
+              onAssign={
+                canEdit
+                  ? (worker, assignDate) =>
+                      setAssignTarget({ mode: "pickProject", worker, date: assignDate })
+                  : undefined
               }
-              onRemoveShift={removeShift}
+              onRemoveShift={canEdit ? removeShift : undefined}
+              canEdit={canEdit}
             />
           ) : (
             <WeekGridProject
               jobs={jobs}
               weekDays={weekDays}
               weekSchedule={weekSchedule}
-              onAddStaff={(job, assignDate) =>
-                setAssignTarget({ mode: "pickWorker", job, date: assignDate })
+              onAddStaff={
+                canEdit
+                  ? (job, assignDate) =>
+                      setAssignTarget({ mode: "pickWorker", job, date: assignDate })
+                  : undefined
               }
-              onRemoveShift={removeShift}
+              onRemoveShift={canEdit ? removeShift : undefined}
+              canEdit={canEdit}
             />
           )}
         </div>
       </div>
 
-      <AssignSheet
-        target={assignTarget}
-        jobs={jobs}
-        schedule={fullSchedule}
-        onAssign={(workerId, jobId) => assignWorker(workerId, jobId, assignSheetDate)}
-        onConfirmReallocate={(workerId, jobId, existingShiftId) =>
-          confirmReallocate(workerId, jobId, assignSheetDate, existingShiftId)
-        }
-        onClose={() => setAssignTarget(null)}
-      />
+      {canEdit && (
+        <AssignSheet
+          target={assignTarget}
+          jobs={jobs}
+          schedule={fullSchedule}
+          onAssign={(workerId, jobId) => assignWorker(workerId, jobId, assignSheetDate)}
+          onConfirmReallocate={(workerId, jobId, existingShiftId) =>
+            confirmReallocate(workerId, jobId, assignSheetDate, existingShiftId)
+          }
+          onClose={() => setAssignTarget(null)}
+        />
+      )}
     </div>
   );
 };

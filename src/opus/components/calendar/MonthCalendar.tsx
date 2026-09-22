@@ -23,6 +23,7 @@ interface MonthCalendarProps {
   setCalendarEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>;
   month: string; // YYYY-MM-DD, any date within the displayed month
   onChangeMonth: (month: string) => void;
+  canEdit?: boolean;
 }
 
 const MONTH_LONG = [
@@ -92,6 +93,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
   setCalendarEvents,
   month,
   onChangeMonth,
+  canEdit = true,
 }) => {
   const [detailDate, setDetailDate] = useState<string | null>(null);
   const [pickingJobFor, setPickingJobFor] = useState<string | null>(null);
@@ -383,14 +385,16 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                             {job.siteName}
                           </span>
                         )}
-                        <button
-                          type="button"
-                          onClick={() => setShiftToRemove(shift)}
-                          className="p-1 rounded-md text-muted-foreground hover:text-red-500 cursor-pointer"
-                          aria-label="Remove shift"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
+                        {canEdit && (
+                          <button
+                            type="button"
+                            onClick={() => setShiftToRemove(shift)}
+                            className="p-1 rounded-md text-muted-foreground hover:text-red-500 cursor-pointer"
+                            aria-label="Remove shift"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        )}
                       </div>
                     </li>
                   );
@@ -403,7 +407,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                   Events
                 </p>
-                {!eventForm && (
+                {canEdit && !eventForm && (
                   <button
                     type="button"
                     onClick={openNewEventForm}
@@ -434,22 +438,26 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => openEditEventForm(event)}
-                          className="p-1 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
-                          aria-label="Edit event"
-                        >
-                          <Pencil className="size-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setEventToDelete(event)}
-                          className="p-1 rounded-md text-muted-foreground hover:text-red-500 cursor-pointer"
-                          aria-label="Delete event"
-                        >
-                          <Trash2 className="size-4" />
-                        </button>
+                        {canEdit && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => openEditEventForm(event)}
+                              className="p-1 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
+                              aria-label="Edit event"
+                            >
+                              <Pencil className="size-4" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEventToDelete(event)}
+                              className="p-1 rounded-md text-muted-foreground hover:text-red-500 cursor-pointer"
+                              aria-label="Delete event"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </li>
                   ))}
@@ -502,16 +510,18 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
         </div>
       )}
 
-      <AssignSheet
-        target={assignTarget}
-        jobs={jobs}
-        schedule={assignSchedule}
-        onAssign={(workerId, jobId) => assignWorker(workerId, jobId, assignSheetDate)}
-        onConfirmReallocate={(workerId, jobId, existingShiftId) =>
-          confirmReallocate(workerId, jobId, assignSheetDate, existingShiftId)
-        }
-        onClose={() => setAssignTarget(null)}
-      />
+      {canEdit && (
+        <AssignSheet
+          target={assignTarget}
+          jobs={jobs}
+          schedule={assignSchedule}
+          onAssign={(workerId, jobId) => assignWorker(workerId, jobId, assignSheetDate)}
+          onConfirmReallocate={(workerId, jobId, existingShiftId) =>
+            confirmReallocate(workerId, jobId, assignSheetDate, existingShiftId)
+          }
+          onClose={() => setAssignTarget(null)}
+        />
+      )}
 
       {/* --- CONFIRM EVENT DELETION --- */}
       <ConfirmDialog

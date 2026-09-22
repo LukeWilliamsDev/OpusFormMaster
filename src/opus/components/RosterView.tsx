@@ -55,6 +55,7 @@ import type { Json, Database } from "../../integrations/supabase/types";
 import { workerToRow, usePortal } from "../context/PortalContext";
 import { computeDiff, DiffEntry, getEventLabel, getActorName } from "../utils/auditDiff";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { TelegramLinkControl } from "./TelegramLinkControl";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
@@ -2228,6 +2229,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     <Send className="w-3 h-3" />
                     <span>Request Docs</span>
                   </button>
+                  <TelegramLinkControl
+                    staffId={selectedWorkerDetails.id}
+                    staffName={selectedWorkerDetails.name}
+                  />
                   {selectedWorkerDetails.isArchived ? (
                     <button
                       type="button"

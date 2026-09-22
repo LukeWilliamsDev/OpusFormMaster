@@ -10,8 +10,9 @@ interface WeekGridStaffProps {
   weekDays: WeekDay[];
   weekSchedule: Map<string, DaySchedule>;
   searchQuery: string;
-  onAssign: (worker: Worker, date: string) => void;
-  onRemoveShift: (shiftId: string) => void;
+  onAssign?: (worker: Worker, date: string) => void;
+  onRemoveShift?: (shiftId: string) => void;
+  canEdit?: boolean;
 }
 
 export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
@@ -20,6 +21,7 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
   searchQuery,
   onAssign,
   onRemoveShift,
+  canEdit = true,
 }) => {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const weekKey = weekDays.map((d) => d.date).join(",");
@@ -103,7 +105,7 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
                               worker={worker}
                               job={job}
                               shift={shift}
-                              onRemove={onRemoveShift}
+                              onRemove={canEdit ? onRemoveShift : undefined}
                               size="row"
                             />
                           ))}
@@ -140,7 +142,9 @@ export const WeekGridStaff: React.FC<WeekGridStaffProps> = ({
                             <StaffCard
                               key={worker.id}
                               worker={worker}
-                              onAssign={() => onAssign(worker, day.date)}
+                              onAssign={
+                                canEdit && onAssign ? () => onAssign(worker, day.date) : undefined
+                              }
                               size="row"
                             />
                           ))}

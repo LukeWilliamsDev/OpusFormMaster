@@ -22,7 +22,13 @@ import {
   UserCog,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { usePortal, ALL_ROLES, MANAGEMENT_ROLES } from "../context/PortalContext";
+import {
+  usePortal,
+  ASSIGNED_SHIFT_ROLES,
+  ALL_ROLES,
+  MANAGEMENT_ROLES,
+  SCHEDULE_ROLES,
+} from "../context/PortalContext";
 import { getAvatarPresetClass } from "../pages/Settings";
 import { getAvatarInitials } from "../utils/workerValidation";
 import { NavList } from "@/components/application/app-navigation/base-components/nav-list";
@@ -65,13 +71,19 @@ export const PortalLayout: React.FC = () => {
       name: "SITE SCHEDULE",
       path: "/portal/roster?view=calendar",
       icon: Calendar,
-      roles: ALL_ROLES,
+      roles: SCHEDULE_ROLES,
     },
     {
       name: "CALENDAR",
       path: "/portal/calendar",
       icon: CalendarDays,
-      roles: ALL_ROLES,
+      roles: SCHEDULE_ROLES,
+    },
+    {
+      name: "MY SHIFTS",
+      path: "/portal/my-shifts",
+      icon: Calendar,
+      roles: ASSIGNED_SHIFT_ROLES,
     },
     { section: "STAFF & QUOTES" },
     {

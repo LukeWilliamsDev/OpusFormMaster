@@ -1,12 +1,16 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
+import { ASSIGNED_SHIFT_ROLES, MANAGEMENT_ROLES } from "../context/PortalContext";
 import { MonthCalendar } from "../components/calendar/MonthCalendar";
+import { MyShiftsPage } from "./MyShiftsPage";
 import { isValidISODate, toLocalISODate } from "../utils/week";
 
 export const CalendarPage: React.FC = () => {
-  const { jobs, workers, shifts, setShifts, calendarEvents, setCalendarEvents } = usePortal();
+  const { jobs, workers, shifts, setShifts, calendarEvents, setCalendarEvents, role } = usePortal();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  if (role && ASSIGNED_SHIFT_ROLES.includes(role)) return <MyShiftsPage />;
 
   const dateParam = searchParams.get("date");
   const month = isValidISODate(dateParam) ? dateParam : toLocalISODate(new Date());
@@ -26,6 +30,7 @@ export const CalendarPage: React.FC = () => {
         setCalendarEvents={setCalendarEvents}
         month={month}
         onChangeMonth={handleChangeMonth}
+        canEdit={!!role && MANAGEMENT_ROLES.includes(role)}
       />
     </div>
   );

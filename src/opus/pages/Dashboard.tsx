@@ -22,6 +22,7 @@ import { handleError } from "../utils/errorHandler";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ShiftResponses } from "../components/ShiftResponses";
 import { toast } from "sonner";
 import { useJobForecast, getWeatherOnDate } from "../utils/weather";
 import { toLocalISODate } from "../utils/week";
@@ -587,6 +588,8 @@ export const DashboardPage: React.FC = () => {
 
         <div className="border-t border-border" />
       </div>
+
+      <ShiftResponses />
 
       {/* Quick Operations */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3.5">

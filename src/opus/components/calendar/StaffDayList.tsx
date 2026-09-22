@@ -11,8 +11,9 @@ interface StaffDayListProps {
   schedule: DaySchedule;
   date: string;
   searchQuery: string;
-  onAssign: (worker: Worker) => void;
-  onRemoveShift: (shiftId: string) => void;
+  onAssign?: (worker: Worker) => void;
+  onRemoveShift?: (shiftId: string) => void;
+  canEdit?: boolean;
 }
 
 export const StaffDayList: React.FC<StaffDayListProps> = ({
@@ -21,6 +22,7 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
   searchQuery,
   onAssign,
   onRemoveShift,
+  canEdit = true,
 }) => {
   const { assigned, unassigned, deployedCount } = schedule;
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -103,7 +105,7 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
                           worker={worker}
                           job={job}
                           shift={shift}
-                          onRemove={onRemoveShift}
+                          onRemove={canEdit ? onRemoveShift : undefined}
                           size="row"
                         />
                       ))}
@@ -140,7 +142,7 @@ export const StaffDayList: React.FC<StaffDayListProps> = ({
                         <StaffCard
                           key={worker.id}
                           worker={worker}
-                          onAssign={() => onAssign(worker)}
+                          onAssign={canEdit && onAssign ? () => onAssign(worker) : undefined}
                           size="row"
                         />
                       ))}

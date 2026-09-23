@@ -121,6 +121,12 @@ export const PortalLayout: React.FC = () => {
       icon: Users,
       roles: ["third_party"],
     },
+    {
+      name: "ASSIGNED SITES",
+      path: "/portal/third-party/jobs",
+      icon: Building2,
+      roles: ["third_party"],
+    },
   ];
 
   // SITE RECORDS/POLICIES (full audit trail) are restricted to the one

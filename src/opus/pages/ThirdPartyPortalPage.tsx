@@ -26,7 +26,7 @@ const EMPTY_FORM: FormState = {
   notes: "",
 };
 
-export const ThirdPartyPortalPage: React.FC = () => {
+export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJobs = false }) => {
   const { user, profile, workers, jobs, shifts } = usePortal();
   const [searchParams] = useSearchParams();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
@@ -531,105 +531,107 @@ export const ThirdPartyPortalPage: React.FC = () => {
         </section>
       )}
 
-      <section id="assigned-jobs" className="space-y-3">
-        <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-          Assigned jobs
-        </h2>
-        {assignedJobs.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-            No current or future assignments.
-          </p>
-        ) : (
-          assignedJobs.map((job) => (
-            <article key={job.id} className="rounded-xl border border-border bg-card p-4">
-              <button
-                onClick={() => setSelectedJobId(selectedJobId === job.id ? null : job.id)}
-                className="w-full text-left"
-              >
-                <p className="font-bold text-foreground">{job.siteName}</p>
-                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                  <MapPin className="h-3 w-3" />
-                  {job.postcode} · {job.currentPours} pours
-                </p>
-              </button>
-              {selectedJobId === job.id && (
-                <div className="mt-4 space-y-3 border-t border-border pt-4">
-                  <p className="text-xs text-muted-foreground">
-                    Your staff assigned:{" "}
-                    {workers
-                      .filter((worker) =>
-                        shifts.some(
-                          (shift) => shift.jobId === job.id && shift.workerId === worker.id,
-                        ),
-                      )
-                      .map((worker) => worker.name)
-                      .join(", ") || "None"}
+      {showJobs && (
+        <section id="assigned-jobs" className="space-y-3">
+          <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+            Assigned jobs
+          </h2>
+          {assignedJobs.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              No current or future assignments.
+            </p>
+          ) : (
+            assignedJobs.map((job) => (
+              <article key={job.id} className="rounded-xl border border-border bg-card p-4">
+                <button
+                  onClick={() => setSelectedJobId(selectedJobId === job.id ? null : job.id)}
+                  className="w-full text-left"
+                >
+                  <p className="font-bold text-foreground">{job.siteName}</p>
+                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                    <MapPin className="h-3 w-3" />
+                    {job.postcode} · {job.currentPours} pours
                   </p>
-                  <textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    placeholder="Add a site note..."
-                    className="min-h-20 w-full rounded-lg border border-border bg-background p-3 text-sm"
-                  />
-                  <button
-                    onClick={addNote}
-                    disabled={postingNote || !note.trim()}
-                    className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
-                  >
-                    <Send className="h-3 w-3" />
-                    Add note
-                  </button>
-                  <div className="flex flex-wrap gap-2">
-                    {(["image_before", "image_after", "document"] as const).map((kind) => (
-                      <label
-                        key={kind}
-                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-xs font-bold"
-                      >
-                        <FileUp className="h-4 w-4" />
-                        {uploading
-                          ? "Uploading..."
-                          : kind === "document"
-                            ? "Third Party Attachment"
-                            : kind === "image_before"
-                              ? "Before photo"
-                              : "After photo"}
-                        <input
-                          type="file"
-                          accept={
-                            kind === "document" ? ".pdf,.doc,.docx,.xls,.xlsx,.txt" : "image/*"
-                          }
-                          className="hidden"
-                          onChange={(e) =>
-                            e.target.files?.[0] && uploadFile(e.target.files[0], kind)
-                          }
-                        />
-                      </label>
-                    ))}
-                  </div>
-                  {jobFiles.length > 0 && (
-                    <div className="space-y-2">
-                      {jobFiles.map((file, index) => (
-                        <button
-                          key={file.id ?? `${file.path}-${index}`}
-                          onClick={() => openOwnFile(file)}
-                          className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-left text-xs"
+                </button>
+                {selectedJobId === job.id && (
+                  <div className="mt-4 space-y-3 border-t border-border pt-4">
+                    <p className="text-xs text-muted-foreground">
+                      Your staff assigned:{" "}
+                      {workers
+                        .filter((worker) =>
+                          shifts.some(
+                            (shift) => shift.jobId === job.id && shift.workerId === worker.id,
+                          ),
+                        )
+                        .map((worker) => worker.name)
+                        .join(", ") || "None"}
+                    </p>
+                    <textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      placeholder="Add a site note..."
+                      className="min-h-20 w-full rounded-lg border border-border bg-background p-3 text-sm"
+                    />
+                    <button
+                      onClick={addNote}
+                      disabled={postingNote || !note.trim()}
+                      className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
+                    >
+                      <Send className="h-3 w-3" />
+                      Add note
+                    </button>
+                    <div className="flex flex-wrap gap-2">
+                      {(["image_before", "image_after", "document"] as const).map((kind) => (
+                        <label
+                          key={kind}
+                          className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-xs font-bold"
                         >
-                          <span className="truncate">{file.file_name}</span>
-                          <span className="text-muted-foreground">View</span>
-                        </button>
+                          <FileUp className="h-4 w-4" />
+                          {uploading
+                            ? "Uploading..."
+                            : kind === "document"
+                              ? "Third Party Attachment"
+                              : kind === "image_before"
+                                ? "Before photo"
+                                : "After photo"}
+                          <input
+                            type="file"
+                            accept={
+                              kind === "document" ? ".pdf,.doc,.docx,.xls,.xlsx,.txt" : "image/*"
+                            }
+                            className="hidden"
+                            onChange={(e) =>
+                              e.target.files?.[0] && uploadFile(e.target.files[0], kind)
+                            }
+                          />
+                        </label>
                       ))}
                     </div>
-                  )}
-                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                    <Check className="h-3 w-3 text-emerald-500" />
-                    Only your uploads are visible to you.
+                    {jobFiles.length > 0 && (
+                      <div className="space-y-2">
+                        {jobFiles.map((file, index) => (
+                          <button
+                            key={file.id ?? `${file.path}-${index}`}
+                            onClick={() => openOwnFile(file)}
+                            className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-left text-xs"
+                          >
+                            <span className="truncate">{file.file_name}</span>
+                            <span className="text-muted-foreground">View</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                      <Check className="h-3 w-3 text-emerald-500" />
+                      Only your uploads are visible to you.
+                    </div>
                   </div>
-                </div>
-              )}
-            </article>
-          ))
-        )}
-      </section>
+                )}
+              </article>
+            ))
+          )}
+        </section>
+      )}
     </div>
   );
 };

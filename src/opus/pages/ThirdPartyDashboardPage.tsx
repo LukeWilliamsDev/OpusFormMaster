@@ -14,7 +14,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
       icon: HardHat,
     },
     {
-      href: "/portal/third-party/staff?section=jobs",
+      href: "/portal/third-party/jobs",
       label: "Assigned sites",
       description: "View assigned jobs and add notes, photos, and attachments.",
       count: jobs.length,

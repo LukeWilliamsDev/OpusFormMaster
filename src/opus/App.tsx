@@ -19,6 +19,7 @@ import { MyShiftsPage } from "./pages/MyShiftsPage";
 import { ThirdPartyPortalPage } from "./pages/ThirdPartyPortalPage";
 import { ThirdPartyApprovalsPage } from "./pages/ThirdPartyApprovalsPage";
 import { ThirdPartyDashboardPage } from "./pages/ThirdPartyDashboardPage";
+import { ThirdPartyJobsPage } from "./pages/ThirdPartyJobsPage";
 import { JobLedgerPage } from "./pages/JobLedger";
 import { PipelinePage } from "./pages/Pipeline";
 import { AuditLogPage } from "./pages/AuditLog";
@@ -191,6 +192,14 @@ export default function App() {
               element={
                 <RoleGuard allow={["third_party"]}>
                   <ThirdPartyPortalPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/third-party/jobs"
+              element={
+                <RoleGuard allow={["third_party"]}>
+                  <ThirdPartyJobsPage />
                 </RoleGuard>
               }
             />

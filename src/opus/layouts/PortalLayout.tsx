@@ -109,8 +109,14 @@ export const PortalLayout: React.FC = () => {
     { name: "USERS", path: "/portal/users", icon: UserCog, roles: ["admin"] },
     { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
     {
-      name: "THIRD-PARTY PORTAL",
+      name: "PORTAL HOME",
       path: "/portal/third-party",
+      icon: LayoutDashboard,
+      roles: ["third_party"],
+    },
+    {
+      name: "STAFF",
+      path: "/portal/third-party/staff",
       icon: Users,
       roles: ["third_party"],
     },

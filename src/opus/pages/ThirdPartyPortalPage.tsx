@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Check, FileUp, Loader, MapPin, Plus, Send } from "lucide-react";
 import { toast } from "sonner";
 import { usePortal } from "../context/PortalContext";
@@ -27,6 +28,7 @@ const EMPTY_FORM: FormState = {
 
 export const ThirdPartyPortalPage: React.FC = () => {
   const { user, profile, workers, jobs, shifts } = usePortal();
+  const [searchParams] = useSearchParams();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -36,6 +38,12 @@ export const ThirdPartyPortalPage: React.FC = () => {
   const [postingNote, setPostingNote] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [jobFiles, setJobFiles] = useState<any[]>([]);
+  const [lastSubmissionId, setLastSubmissionId] = useState<string | null>(null);
+  const [ticketType, setTicketType] = useState("CSCS");
+  const [ticketNumber, setTicketNumber] = useState("");
+  const [ticketExpiry, setTicketExpiry] = useState("");
+  const [ticketFile, setTicketFile] = useState<File | null>(null);
+  const [uploadingTicket, setUploadingTicket] = useState(false);
 
   const loadSubmissions = async () => {
     const { data } = await db
@@ -43,10 +51,21 @@ export const ThirdPartyPortalPage: React.FC = () => {
       .select("id, name, role, status, created_at, review_notes")
       .order("created_at", { ascending: false });
     setSubmissions(data ?? []);
+    setLastSubmissionId(
+      data?.find((submission: any) => submission.status === "pending")?.id ?? null,
+    );
   };
   React.useEffect(() => {
     loadSubmissions();
   }, []);
+  React.useEffect(() => {
+    if (searchParams.get("section") === "jobs") {
+      window.setTimeout(
+        () => document.getElementById("assigned-jobs")?.scrollIntoView({ behavior: "smooth" }),
+        100,
+      );
+    }
+  }, [searchParams]);
   React.useEffect(() => {
     if (!selectedJobId) {
       setJobFiles([]);
@@ -97,7 +116,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
     event.preventDefault();
     if (!form.name.trim()) return;
     setSubmitting(true);
-    const { error } = await db.rpc("submit_third_party_staff", {
+    const { data: submissionId, error } = await db.rpc("submit_third_party_staff", {
       p_name: form.name,
       p_role: form.role,
       p_email: form.email,
@@ -108,8 +127,41 @@ export const ThirdPartyPortalPage: React.FC = () => {
     setSubmitting(false);
     if (error) return toast.error(error.message || "Unable to submit staff member");
     setForm(EMPTY_FORM);
+    setLastSubmissionId(submissionId);
     await loadSubmissions();
     toast.success("Staff member submitted for approval");
+  };
+
+  const uploadTicket = async () => {
+    if (!lastSubmissionId || !ticketFile || !user || !profile?.tenant_id) return;
+    setUploadingTicket(true);
+    const extension = ticketFile.name.split(".").pop() || "bin";
+    const path = `${user.id}/${lastSubmissionId}/${crypto.randomUUID()}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("third-party-staff-documents")
+      .upload(path, ticketFile);
+    if (uploadError) {
+      setUploadingTicket(false);
+      return toast.error(uploadError.message || "Unable to upload certificate");
+    }
+    const { error } = await db.from("third_party_staff_documents").insert({
+      tenant_id: profile.tenant_id,
+      submission_id: lastSubmissionId,
+      uploaded_by: user.id,
+      ticket_type: ticketType,
+      ticket_number: ticketNumber || null,
+      expiry_date: ticketExpiry || null,
+      file_name: ticketFile.name,
+      file_path: path,
+      mime_type: ticketFile.type || "application/octet-stream",
+      file_size_bytes: ticketFile.size,
+    });
+    setUploadingTicket(false);
+    if (error) return toast.error(error.message || "Unable to record certificate");
+    setTicketFile(null);
+    setTicketNumber("");
+    setTicketExpiry("");
+    toast.success("Certificate uploaded");
   };
 
   const saveWorker = async (worker: (typeof workers)[number]) => {
@@ -135,7 +187,12 @@ export const ThirdPartyPortalPage: React.FC = () => {
     setPostingNote(true);
     const { error } = await db
       .from("third_party_job_notes")
-      .insert({ tenant_id: profile?.tenant_id, job_id: selectedJob.id, author_id: user?.id, body: note.trim() });
+      .insert({
+        tenant_id: profile?.tenant_id,
+        job_id: selectedJob.id,
+        author_id: user?.id,
+        body: note.trim(),
+      });
     setPostingNote(false);
     if (error) return toast.error(error.message || "Unable to add note");
     setNote("");
@@ -166,7 +223,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
           uploaded_by: user.email ?? "Third party",
           uploaded_by_user_id: user.id,
         })
-        : await db.from("third_party_attachments").insert({
+      : await db.from("third_party_attachments").insert({
           tenant_id: profile?.tenant_id,
           job_id: selectedJob.id,
           uploaded_by: user.id,
@@ -284,7 +341,63 @@ export const ThirdPartyPortalPage: React.FC = () => {
         )}
       </section>
 
-      <section className="space-y-3">
+      {lastSubmissionId && (
+        <section className="rounded-2xl border-2 border-border bg-card p-5">
+          <div className="mb-4">
+            <h2 className="text-sm font-black uppercase tracking-widest">
+              Add certificates or tickets
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Attach compliance documents to your latest pending staff submission. Internal
+              approvers will review them with the staff application.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <select
+              value={ticketType}
+              onChange={(e) => setTicketType(e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            >
+              {(["CSCS", "NPORS", "CPCS", "Telehandler", "Supervisor", "Other"] as const).map(
+                (type) => (
+                  <option key={type}>{type}</option>
+                ),
+              )}
+            </select>
+            <input
+              value={ticketNumber}
+              onChange={(e) => setTicketNumber(e.target.value)}
+              placeholder="Ticket number"
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
+            <input
+              type="date"
+              value={ticketExpiry}
+              onChange={(e) => setTicketExpiry(e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+            />
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm">
+              <FileUp className="h-4 w-4" />
+              {ticketFile?.name || "Choose file"}
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={(e) => setTicketFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
+          </div>
+          <button
+            onClick={uploadTicket}
+            disabled={uploadingTicket || !ticketFile}
+            className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+          >
+            {uploadingTicket ? "Uploading..." : "Upload certificate"}
+          </button>
+        </section>
+      )}
+
+      <section id="assigned-jobs" className="space-y-3">
         <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
           Your approved staff
         </h2>

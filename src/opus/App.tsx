@@ -18,6 +18,7 @@ import { CalendarPage } from "./pages/CalendarPage";
 import { MyShiftsPage } from "./pages/MyShiftsPage";
 import { ThirdPartyPortalPage } from "./pages/ThirdPartyPortalPage";
 import { ThirdPartyApprovalsPage } from "./pages/ThirdPartyApprovalsPage";
+import { ThirdPartyDashboardPage } from "./pages/ThirdPartyDashboardPage";
 import { JobLedgerPage } from "./pages/JobLedger";
 import { PipelinePage } from "./pages/Pipeline";
 import { AuditLogPage } from "./pages/AuditLog";
@@ -179,6 +180,14 @@ export default function App() {
             />
             <Route
               path="/portal/third-party"
+              element={
+                <RoleGuard allow={["third_party"]}>
+                  <ThirdPartyDashboardPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/third-party/staff"
               element={
                 <RoleGuard allow={["third_party"]}>
                   <ThirdPartyPortalPage />

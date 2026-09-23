@@ -7,14 +7,27 @@ const db = supabase as any;
 
 export const ThirdPartyApprovalsPage: React.FC = () => {
   const [submissions, setSubmissions] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<Record<string, any[]>>({});
   const load = async () => {
     const { data, error } = await db
       .from("third_party_staff_submissions")
       .select("*")
       .eq("status", "pending")
       .order("created_at", { ascending: true });
-    if (error) toast.error(error.message);
-    else setSubmissions(data ?? []);
+    if (error) return toast.error(error.message);
+    const rows = data ?? [];
+    setSubmissions(rows);
+    if (!rows.length) return setDocuments({});
+    const { data: docs } = await db
+      .from("third_party_staff_documents")
+      .select("submission_id, ticket_type, ticket_number, expiry_date, file_name")
+      .in(
+        "submission_id",
+        rows.map((row: any) => row.id),
+      );
+    const grouped: Record<string, any[]> = {};
+    for (const doc of docs ?? []) (grouped[doc.submission_id] ??= []).push(doc);
+    setDocuments(grouped);
   };
   useEffect(() => {
     load();
@@ -52,6 +65,20 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
               </p>
               {submission.notes && (
                 <p className="mt-2 text-sm text-muted-foreground">{submission.notes}</p>
+              )}
+              {documents[submission.id]?.length > 0 && (
+                <div className="mt-3 rounded-lg border border-border p-3">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                    Certificates and tickets
+                  </p>
+                  {documents[submission.id].map((doc: any) => (
+                    <p key={doc.file_name} className="mt-1 text-xs">
+                      {doc.ticket_type}
+                      {doc.ticket_number ? ` · ${doc.ticket_number}` : ""}
+                      {doc.expiry_date ? ` · expires ${doc.expiry_date}` : ""} · {doc.file_name}
+                    </p>
+                  ))}
+                </div>
               )}
             </div>
             <div className="mt-4 flex gap-2">

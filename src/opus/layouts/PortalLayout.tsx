@@ -194,7 +194,7 @@ export const PortalLayout: React.FC = () => {
         logoHref={role === "third_party" ? "/portal/third-party" : "/portal/dashboard"}
         profile={{
           name: profile?.full_name || user?.email || "User",
-          role: role || "labourer",
+          role: formatAppRoleLabel(role || "labourer"),
           avatarClass: getAvatarPresetClass(profile?.avatar_url),
           href: "/portal/settings",
         }}

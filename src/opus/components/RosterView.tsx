@@ -28,6 +28,7 @@ import {
   Link2,
   Eye,
   PencilLine,
+  BadgeCheck,
 } from "lucide-react";
 import {
   Worker,
@@ -1376,6 +1377,16 @@ export const RosterView: React.FC<RosterViewProps> = ({
               Audit Log
             </button>
           )}
+          <button
+            type="button"
+            onClick={() =>
+              navigate(`/portal/certificate-checker?staffId=${selectedWorkerDetails.id}`)
+            }
+            className="ml-auto inline-flex items-center gap-1.5 pb-3 text-[10px] font-black uppercase tracking-wider text-primary hover:text-foreground"
+          >
+            <BadgeCheck className="h-3.5 w-3.5" />
+            Check certificate
+          </button>
         </div>
 
         {/* Tab 1: Compliance */}

@@ -17,6 +17,7 @@ import {
   CloudRain,
   CalendarDays,
   CalendarRange,
+  BadgeCheck,
 } from "lucide-react";
 import { handleError } from "../utils/errorHandler";
 import { usePortal } from "../context/PortalContext";
@@ -621,6 +622,18 @@ export const DashboardPage: React.FC = () => {
             <UserCheck className="w-4 h-4" />
           </div>
           <span className="text-[12px] font-bold text-foreground text-left">Staff</span>
+        </button>
+
+        <button
+          onClick={() => navigate("/portal/certificate-checker")}
+          className="p-4 rounded-xl bg-card border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
+        >
+          <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
+            <BadgeCheck className="w-4 h-4" />
+          </div>
+          <span className="text-[12px] font-bold text-foreground text-left">
+            Certificate Checker
+          </span>
         </button>
 
         <button

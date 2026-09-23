@@ -8,6 +8,7 @@ import {
   ALL_ROLES,
   MANAGEMENT_ROLES,
   FIELD_ROLES,
+  INTERNAL_ROLES,
 } from "./context/PortalContext";
 import { PortalLayout } from "./layouts/PortalLayout";
 import { LandingPage } from "./components/LandingPage";
@@ -35,6 +36,7 @@ import { AcceptableUsePolicyPage } from "./pages/AcceptableUsePolicy";
 import { CookieStatementPage } from "./pages/CookieStatement";
 import { ModernSlaveryStatementPage } from "./pages/ModernSlaveryStatement";
 import { LegalHubPage } from "./pages/LegalHub";
+import { CertificateCheckerPage } from "./pages/CertificateCheckerPage";
 
 // Immediate recovery URL redirection for HashRouter before React Router initialises and strips the hash
 (() => {
@@ -169,6 +171,14 @@ export default function App() {
               element={
                 <RoleGuard allow={ALL_ROLES}>
                   <CalendarPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/certificate-checker"
+              element={
+                <RoleGuard allow={INTERNAL_ROLES}>
+                  <CertificateCheckerPage />
                 </RoleGuard>
               }
             />

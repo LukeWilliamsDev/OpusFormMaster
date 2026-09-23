@@ -20,6 +20,7 @@ import {
   ClipboardList,
   Building2,
   UserCog,
+  BadgeCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -29,6 +30,7 @@ import {
   MANAGEMENT_ROLES,
   SCHEDULE_ROLES,
   formatAppRoleLabel,
+  INTERNAL_ROLES,
 } from "../context/PortalContext";
 import { getAvatarPresetClass } from "../pages/Settings";
 import { getAvatarInitials } from "../utils/workerValidation";
@@ -98,6 +100,12 @@ export const PortalLayout: React.FC = () => {
       path: "/portal/third-party-approvals",
       icon: UserCog,
       roles: MANAGEMENT_ROLES,
+    },
+    {
+      name: "CERTIFICATE CHECKER",
+      path: "/portal/certificate-checker",
+      icon: BadgeCheck,
+      roles: INTERNAL_ROLES,
     },
     {
       name: "QUOTES",

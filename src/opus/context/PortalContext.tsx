@@ -98,6 +98,7 @@ export const ALL_ROLES: AppRole[] = [
   "labourer",
   "third_party",
 ];
+export const INTERNAL_ROLES: AppRole[] = ALL_ROLES.filter((role) => role !== "third_party");
 
 export const formatAppRoleLabel = (value: AppRole | string | null | undefined): string =>
   (value || "")

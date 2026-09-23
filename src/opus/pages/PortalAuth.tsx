@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { NoticeModal } from "@/components/ui/notice-modal";
 
 export const PortalAuthPage: React.FC = () => {
-  const { isAuthenticated, profile, signIn, signOut, resetPassword, updatePassword, theme } =
+  const { isAuthenticated, profile, role, signIn, signOut, resetPassword, updatePassword, theme } =
     usePortal();
   const logoSrc =
     theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
@@ -112,14 +112,17 @@ export const PortalAuthPage: React.FC = () => {
       hash.includes("type=invite") ||
       search.includes("type=invite");
 
+    if (isAuthenticated && role === null) return;
     if (isAuthenticated && !isRecovery && formMode !== "reset" && !notification) {
       if (profile?.must_change_password) {
         setFormMode("reset");
         return;
       }
-      navigate("/portal/dashboard", { replace: true });
+      navigate(role === "third_party" ? "/portal/third-party" : "/portal/dashboard", {
+        replace: true,
+      });
     }
-  }, [isAuthenticated, navigate, formMode, notification, profile?.must_change_password]);
+  }, [isAuthenticated, navigate, formMode, notification, profile?.must_change_password, role]);
 
   // After repeated failed attempts, tick a countdown that keeps the form locked as defense-in-depth
   useEffect(() => {

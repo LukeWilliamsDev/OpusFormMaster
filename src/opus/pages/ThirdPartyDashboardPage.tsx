@@ -1,10 +1,20 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { ArrowRight, ClipboardCheck, HardHat, MapPinned } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
+import { supabase } from "../../integrations/supabase/client";
+
+const db = supabase as any;
 
 export const ThirdPartyDashboardPage: React.FC = () => {
   const { workers, jobs } = usePortal();
+  const [pendingCount, setPendingCount] = useState(0);
+  useEffect(() => {
+    db.from("third_party_staff_submissions")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending")
+      .then(({ count }: { count: number | null }) => setPendingCount(count ?? 0));
+  }, []);
   const cards = [
     {
       href: "/portal/third-party/staff",
@@ -20,6 +30,15 @@ export const ThirdPartyDashboardPage: React.FC = () => {
       count: jobs.length,
       icon: MapPinned,
     },
+    {
+      href: "/portal/third-party/staff",
+      label: "Action needed",
+      description: pendingCount
+        ? `${pendingCount} staff submission${pendingCount === 1 ? "" : "s"} waiting for approval.`
+        : "No submissions are waiting for approval.",
+      count: pendingCount,
+      icon: ClipboardCheck,
+    },
   ];
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6 lg:py-12">
@@ -32,7 +51,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           Choose what you need to do. You only see your staff and assigned sites.
         </p>
       </header>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-3">
         {cards.map(({ href, label, description, count, icon: Icon }) => (
           <Link
             key={href}
@@ -46,7 +65,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             <p className="mt-6 text-lg font-black">{label}</p>
             <p className="mt-2 text-sm text-muted-foreground">{description}</p>
             <p className="mt-5 text-xs font-black uppercase tracking-widest text-muted-foreground">
-              {count} visible
+              {label === "Action needed" ? `${count} pending` : `${count} visible`}
             </p>
           </Link>
         ))}

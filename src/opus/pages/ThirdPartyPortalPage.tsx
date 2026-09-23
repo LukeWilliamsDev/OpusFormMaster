@@ -280,385 +280,399 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
         </button>
       </header>
 
-      {showAddStaff && (
-        <section className="rounded-2xl border-2 border-border bg-card p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <Plus className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-black uppercase tracking-widest">
-              Submit staff for approval
-            </h2>
-          </div>
-          <form onSubmit={submitStaff} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {(["name", "email", "phone", "postcode"] as const).map((field) => (
-              <input
-                key={field}
-                required={field === "name"}
-                value={form[field]}
-                onChange={(e) => setField(field, e.target.value)}
-                placeholder={field[0].toUpperCase() + field.slice(1)}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
-            ))}
-            <select
-              value={form.role}
-              onChange={(e) => setField("role", e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-            >
-              {STAFF_ROLES.map((role) => (
-                <option key={role}>{role}</option>
-              ))}
-            </select>
-            <input
-              value={form.notes}
-              onChange={(e) => setField("notes", e.target.value)}
-              placeholder="Notes (optional)"
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-            />
-            <button
-              disabled={submitting}
-              className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50 sm:col-span-2 lg:col-span-1"
-            >
-              {submitting ? (
-                <Loader className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}{" "}
-              Submit for approval
-            </button>
-          </form>
-        </section>
-      )}
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
+        <div className="space-y-8">
+          {showAddStaff && (
+            <section className="rounded-2xl border-2 border-border bg-card p-5">
+              <div className="mb-4 flex items-center gap-2">
+                <Plus className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-black uppercase tracking-widest">
+                  Submit staff for approval
+                </h2>
+              </div>
+              <form onSubmit={submitStaff} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {(["name", "email", "phone", "postcode"] as const).map((field) => (
+                  <input
+                    key={field}
+                    required={field === "name"}
+                    value={form[field]}
+                    onChange={(e) => setField(field, e.target.value)}
+                    placeholder={field[0].toUpperCase() + field.slice(1)}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                  />
+                ))}
+                <select
+                  value={form.role}
+                  onChange={(e) => setField("role", e.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                >
+                  {STAFF_ROLES.map((role) => (
+                    <option key={role}>{role}</option>
+                  ))}
+                </select>
+                <input
+                  value={form.notes}
+                  onChange={(e) => setField("notes", e.target.value)}
+                  placeholder="Notes (optional)"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                />
+                <button
+                  disabled={submitting}
+                  className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50 sm:col-span-2 lg:col-span-1"
+                >
+                  {submitting ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}{" "}
+                  Submit for approval
+                </button>
+              </form>
+            </section>
+          )}
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-          Pending submissions
-        </h2>
-        {pendingSubmissions.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-            No pending submissions.
-          </p>
-        ) : (
-          pendingSubmissions.map((submission) => (
-            <div
-              key={submission.id}
-              className="flex items-center justify-between rounded-xl border border-border bg-card p-4"
-            >
-              <div>
-                <p className="font-bold">{submission.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {submission.role} · {formatUKDate(submission.created_at?.slice(0, 10))}
+          <section className="space-y-3">
+            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+              Pending submissions
+            </h2>
+            {pendingSubmissions.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                No pending submissions.
+              </p>
+            ) : (
+              pendingSubmissions.map((submission) => (
+                <div
+                  key={submission.id}
+                  className="flex items-center justify-between rounded-2xl border-2 border-border bg-card p-4"
+                >
+                  <div>
+                    <p className="font-bold">{submission.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {submission.role} · {formatUKDate(submission.created_at?.slice(0, 10))}
+                    </p>
+                  </div>
+                  <span className="rounded-lg border border-primary/60 bg-primary/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-primary">
+                    {submission.status}
+                  </span>
+                </div>
+              ))
+            )}
+          </section>
+
+          {lastSubmissionId && (
+            <section className="rounded-2xl border-2 border-border bg-card p-5">
+              <div className="mb-4">
+                <h2 className="text-sm font-black uppercase tracking-widest">Add certificates</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Attach compliance documents to your latest pending staff submission. Internal
+                  approvers will review them with the staff application.
                 </p>
               </div>
-              <span className="rounded-full border border-border px-2 py-1 text-[10px] font-black uppercase tracking-widest">
-                {submission.status}
-              </span>
-            </div>
-          ))
-        )}
-      </section>
-
-      {lastSubmissionId && (
-        <section className="rounded-2xl border-2 border-border bg-card p-5">
-          <div className="mb-4">
-            <h2 className="text-sm font-black uppercase tracking-widest">Add certificates</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Attach compliance documents to your latest pending staff submission. Internal
-              approvers will review them with the staff application.
-            </p>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <select
-              value={ticketType}
-              onChange={(e) => setTicketType(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            >
-              {(["CSCS", "NPORS", "CPCS", "Telehandler", "Supervisor", "Other"] as const).map(
-                (type) => (
-                  <option key={type}>{type}</option>
-                ),
-              )}
-            </select>
-            <input
-              value={ticketNumber}
-              onChange={(e) => setTicketNumber(e.target.value)}
-              placeholder="Certificate number"
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            />
-            <input
-              type="date"
-              value={ticketExpiry}
-              onChange={(e) => setTicketExpiry(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            />
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm">
-              <FileUp className="h-4 w-4" />
-              {ticketFile?.name || "Choose file"}
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden"
-                onChange={(e) => setTicketFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
-          </div>
-          <button
-            onClick={() => uploadTicket(lastSubmissionId)}
-            disabled={uploadingTicket || !ticketFile}
-            className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
-          >
-            {uploadingTicket ? "Uploading..." : "Upload certificate"}
-          </button>
-        </section>
-      )}
-
-      <section className="space-y-3">
-        <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-          Your approved staff
-        </h2>
-        {workers.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-            No approved staff yet.
-          </p>
-        ) : (
-          workers.map((worker) => (
-            <div key={worker.id} className="rounded-xl border border-border bg-card p-4">
-              {editingId === worker.id ? (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  <input
-                    value={worker.name}
-                    onChange={(e) => (worker.name = e.target.value)}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  />
-                  <input
-                    value={worker.email ?? ""}
-                    onChange={(e) => (worker.email = e.target.value)}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  />
-                  <input
-                    value={worker.phone ?? ""}
-                    onChange={(e) => (worker.phone = e.target.value)}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  />
-                  <input
-                    value={worker.postcode ?? ""}
-                    onChange={(e) => (worker.postcode = e.target.value)}
-                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  />
-                  <button
-                    onClick={() => saveWorker(worker)}
-                    className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
-                  >
-                    Save changes
-                  </button>
-                  <button
-                    onClick={() => setEditingId(null)}
-                    className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <p className="font-bold text-foreground">{worker.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {worker.role} · {worker.email || "No email"}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setEditingId(worker.id)}
-                      className="rounded-lg border border-border px-3 py-2 text-xs font-bold"
-                    >
-                      Edit
-                    </button>
-                    {submissions.some(
-                      (submission) => submission.approved_staff_id === worker.id,
-                    ) && (
-                      <button
-                        onClick={() => setTicketStaffId(worker.id)}
-                        className="rounded-lg border border-border px-3 py-2 text-xs font-bold"
-                      >
-                        Add certificate
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))
-        )}
-      </section>
-
-      {ticketStaffId && (
-        <section className="rounded-2xl border-2 border-border bg-card p-5">
-          <h2 className="text-sm font-black uppercase tracking-widest">
-            Add certificate to {workers.find((worker) => worker.id === ticketStaffId)?.name}
-          </h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <select
-              value={ticketType}
-              onChange={(e) => setTicketType(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            >
-              {(["CSCS", "NPORS", "CPCS", "Telehandler", "Supervisor", "Other"] as const).map(
-                (type) => (
-                  <option key={type}>{type}</option>
-                ),
-              )}
-            </select>
-            <input
-              value={ticketNumber}
-              onChange={(e) => setTicketNumber(e.target.value)}
-              placeholder="Certificate number"
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            />
-            <input
-              type="date"
-              value={ticketExpiry}
-              onChange={(e) => setTicketExpiry(e.target.value)}
-              className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-            />
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm">
-              <FileUp className="h-4 w-4" />
-              {ticketFile?.name || "Choose file"}
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden"
-                onChange={(e) => setTicketFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
-          </div>
-          <button
-            onClick={() =>
-              uploadTicket(
-                submissions.find((submission) => submission.approved_staff_id === ticketStaffId)
-                  ?.id ?? null,
-                ticketStaffId,
-              )
-            }
-            disabled={uploadingTicket || !ticketFile}
-            className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
-          >
-            {uploadingTicket ? "Uploading..." : "Upload certificate"}
-          </button>
-        </section>
-      )}
-
-      <aside className="rounded-2xl border border-border bg-card p-5">
-        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Staff rules</p>
-        <p className="mt-4 text-sm font-bold">You can edit approved staff and add certificates.</p>
-        <div className="my-5 h-px bg-border" />
-        <p className="text-sm text-muted-foreground">
-          You cannot delete, archive, approve, or see other staff.
-        </p>
-        <p className="mt-5 text-sm text-muted-foreground">
-          Certificates are reviewed by Opus Form management.
-        </p>
-      </aside>
-
-      {showJobs && (
-        <section id="assigned-jobs" className="space-y-3">
-          <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-            Assigned jobs
-          </h2>
-          {assignedJobs.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-              No current or future assignments.
-            </p>
-          ) : (
-            assignedJobs.map((job) => (
-              <article key={job.id} className="rounded-xl border border-border bg-card p-4">
-                <button
-                  onClick={() => setSelectedJobId(selectedJobId === job.id ? null : job.id)}
-                  className="w-full text-left"
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <select
+                  value={ticketType}
+                  onChange={(e) => setTicketType(e.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
                 >
-                  <p className="font-bold text-foreground">{job.siteName}</p>
-                  <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3" />
-                    {job.postcode} · {job.currentPours} pours
-                  </p>
-                </button>
-                {selectedJobId === job.id && (
-                  <div className="mt-4 space-y-3 border-t border-border pt-4">
-                    <p className="text-xs text-muted-foreground">
-                      Your staff assigned:{" "}
-                      {workers
-                        .filter((worker) =>
-                          shifts.some(
-                            (shift) => shift.jobId === job.id && shift.workerId === worker.id,
-                          ),
-                        )
-                        .map((worker) => worker.name)
-                        .join(", ") || "None"}
-                    </p>
-                    <textarea
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      placeholder="Add a site note..."
-                      className="min-h-20 w-full rounded-lg border border-border bg-background p-3 text-sm"
-                    />
-                    <button
-                      onClick={addNote}
-                      disabled={postingNote || !note.trim()}
-                      className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
-                    >
-                      <Send className="h-3 w-3" />
-                      Add note
-                    </button>
-                    <div className="flex flex-wrap gap-2">
-                      {(["image_before", "image_after", "document"] as const).map((kind) => (
-                        <label
-                          key={kind}
-                          className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-xs font-bold"
-                        >
-                          <FileUp className="h-4 w-4" />
-                          {uploading
-                            ? "Uploading..."
-                            : kind === "document"
-                              ? "Third Party Attachment"
-                              : kind === "image_before"
-                                ? "Before photo"
-                                : "After photo"}
-                          <input
-                            type="file"
-                            accept={
-                              kind === "document" ? ".pdf,.doc,.docx,.xls,.xlsx,.txt" : "image/*"
-                            }
-                            className="hidden"
-                            onChange={(e) =>
-                              e.target.files?.[0] && uploadFile(e.target.files[0], kind)
-                            }
-                          />
-                        </label>
-                      ))}
+                  {(["CSCS", "NPORS", "CPCS", "Telehandler", "Supervisor", "Other"] as const).map(
+                    (type) => (
+                      <option key={type}>{type}</option>
+                    ),
+                  )}
+                </select>
+                <input
+                  value={ticketNumber}
+                  onChange={(e) => setTicketNumber(e.target.value)}
+                  placeholder="Certificate number"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+                <input
+                  type="date"
+                  value={ticketExpiry}
+                  onChange={(e) => setTicketExpiry(e.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm">
+                  <FileUp className="h-4 w-4" />
+                  {ticketFile?.name || "Choose file"}
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => setTicketFile(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+              </div>
+              <button
+                onClick={() => uploadTicket(lastSubmissionId)}
+                disabled={uploadingTicket || !ticketFile}
+                className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {uploadingTicket ? "Uploading..." : "Upload certificate"}
+              </button>
+            </section>
+          )}
+
+          <section className="space-y-3">
+            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+              Your approved staff
+            </h2>
+            {workers.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                No approved staff yet.
+              </p>
+            ) : (
+              workers.map((worker) => (
+                <div key={worker.id} className="rounded-2xl border-2 border-border bg-card p-4">
+                  {editingId === worker.id ? (
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <input
+                        value={worker.name}
+                        onChange={(e) => (worker.name = e.target.value)}
+                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                      />
+                      <input
+                        value={worker.email ?? ""}
+                        onChange={(e) => (worker.email = e.target.value)}
+                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                      />
+                      <input
+                        value={worker.phone ?? ""}
+                        onChange={(e) => (worker.phone = e.target.value)}
+                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                      />
+                      <input
+                        value={worker.postcode ?? ""}
+                        onChange={(e) => (worker.postcode = e.target.value)}
+                        className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                      />
+                      <button
+                        onClick={() => saveWorker(worker)}
+                        className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+                      >
+                        Save changes
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
+                      >
+                        Cancel
+                      </button>
                     </div>
-                    {jobFiles.length > 0 && (
-                      <div className="space-y-2">
-                        {jobFiles.map((file, index) => (
+                  ) : (
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500">
+                          <Check className="h-4 w-4" />
+                        </span>
+                        <div>
+                          <p className="font-bold text-foreground">{worker.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {worker.role} · {worker.email || "No email"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => setEditingId(worker.id)}
+                          className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest"
+                        >
+                          Edit
+                        </button>
+                        {submissions.some(
+                          (submission) => submission.approved_staff_id === worker.id,
+                        ) && (
                           <button
-                            key={file.id ?? `${file.path}-${index}`}
-                            onClick={() => openOwnFile(file)}
-                            className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-left text-xs"
+                            onClick={() => setTicketStaffId(worker.id)}
+                            className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest"
                           >
-                            <span className="truncate">{file.file_name}</span>
-                            <span className="text-muted-foreground">View</span>
+                            Add certificate
                           </button>
-                        ))}
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </section>
+
+          {ticketStaffId && (
+            <section className="rounded-2xl border-2 border-border bg-card p-5">
+              <h2 className="text-sm font-black uppercase tracking-widest">
+                Add certificate to {workers.find((worker) => worker.id === ticketStaffId)?.name}
+              </h2>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                <select
+                  value={ticketType}
+                  onChange={(e) => setTicketType(e.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                >
+                  {(["CSCS", "NPORS", "CPCS", "Telehandler", "Supervisor", "Other"] as const).map(
+                    (type) => (
+                      <option key={type}>{type}</option>
+                    ),
+                  )}
+                </select>
+                <input
+                  value={ticketNumber}
+                  onChange={(e) => setTicketNumber(e.target.value)}
+                  placeholder="Certificate number"
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+                <input
+                  type="date"
+                  value={ticketExpiry}
+                  onChange={(e) => setTicketExpiry(e.target.value)}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+                <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm">
+                  <FileUp className="h-4 w-4" />
+                  {ticketFile?.name || "Choose file"}
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    className="hidden"
+                    onChange={(e) => setTicketFile(e.target.files?.[0] ?? null)}
+                  />
+                </label>
+              </div>
+              <button
+                onClick={() =>
+                  uploadTicket(
+                    submissions.find((submission) => submission.approved_staff_id === ticketStaffId)
+                      ?.id ?? null,
+                    ticketStaffId,
+                  )
+                }
+                disabled={uploadingTicket || !ticketFile}
+                className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {uploadingTicket ? "Uploading..." : "Upload certificate"}
+              </button>
+            </section>
+          )}
+
+          {showJobs && (
+            <section id="assigned-jobs" className="space-y-3">
+              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+                Assigned jobs
+              </h2>
+              {assignedJobs.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                  No current or future assignments.
+                </p>
+              ) : (
+                assignedJobs.map((job) => (
+                  <article key={job.id} className="rounded-xl border border-border bg-card p-4">
+                    <button
+                      onClick={() => setSelectedJobId(selectedJobId === job.id ? null : job.id)}
+                      className="w-full text-left"
+                    >
+                      <p className="font-bold text-foreground">{job.siteName}</p>
+                      <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3 w-3" />
+                        {job.postcode} · {job.currentPours} pours
+                      </p>
+                    </button>
+                    {selectedJobId === job.id && (
+                      <div className="mt-4 space-y-3 border-t border-border pt-4">
+                        <p className="text-xs text-muted-foreground">
+                          Your staff assigned:{" "}
+                          {workers
+                            .filter((worker) =>
+                              shifts.some(
+                                (shift) => shift.jobId === job.id && shift.workerId === worker.id,
+                              ),
+                            )
+                            .map((worker) => worker.name)
+                            .join(", ") || "None"}
+                        </p>
+                        <textarea
+                          value={note}
+                          onChange={(e) => setNote(e.target.value)}
+                          placeholder="Add a site note..."
+                          className="min-h-20 w-full rounded-lg border border-border bg-background p-3 text-sm"
+                        />
+                        <button
+                          onClick={addNote}
+                          disabled={postingNote || !note.trim()}
+                          className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
+                        >
+                          <Send className="h-3 w-3" />
+                          Add note
+                        </button>
+                        <div className="flex flex-wrap gap-2">
+                          {(["image_before", "image_after", "document"] as const).map((kind) => (
+                            <label
+                              key={kind}
+                              className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-xs font-bold"
+                            >
+                              <FileUp className="h-4 w-4" />
+                              {uploading
+                                ? "Uploading..."
+                                : kind === "document"
+                                  ? "Third Party Attachment"
+                                  : kind === "image_before"
+                                    ? "Before photo"
+                                    : "After photo"}
+                              <input
+                                type="file"
+                                accept={
+                                  kind === "document"
+                                    ? ".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                                    : "image/*"
+                                }
+                                className="hidden"
+                                onChange={(e) =>
+                                  e.target.files?.[0] && uploadFile(e.target.files[0], kind)
+                                }
+                              />
+                            </label>
+                          ))}
+                        </div>
+                        {jobFiles.length > 0 && (
+                          <div className="space-y-2">
+                            {jobFiles.map((file, index) => (
+                              <button
+                                key={file.id ?? `${file.path}-${index}`}
+                                onClick={() => openOwnFile(file)}
+                                className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-left text-xs"
+                              >
+                                <span className="truncate">{file.file_name}</span>
+                                <span className="text-muted-foreground">View</span>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                          <Check className="h-3 w-3 text-emerald-500" />
+                          Only your uploads are visible to you.
+                        </div>
                       </div>
                     )}
-                    <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                      <Check className="h-3 w-3 text-emerald-500" />
-                      Only your uploads are visible to you.
-                    </div>
-                  </div>
-                )}
-              </article>
-            ))
+                  </article>
+                ))
+              )}
+            </section>
           )}
-        </section>
-      )}
+        </div>
+        <aside className="h-fit rounded-2xl border border-border bg-card p-5">
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+            Staff rules
+          </p>
+          <p className="mt-4 text-sm font-bold">
+            You can edit approved staff and add certificates.
+          </p>
+          <div className="my-5 h-px bg-border" />
+          <p className="text-sm text-muted-foreground">
+            You cannot delete, archive, approve, or see other staff.
+          </p>
+          <p className="mt-5 text-sm text-muted-foreground">
+            Certificates are reviewed by Opus Form management.
+          </p>
+        </aside>
+      </div>
     </div>
   );
 };

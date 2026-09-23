@@ -88,9 +88,10 @@ export const PrivacyNoticePage: React.FC = () => (
     <Section title="5. Data Retention">
       <p>
         We keep your personal data only as long as necessary. Training certificates and
-        right-to-work documentation are kept for the duration of your engagement with us. Site
-        diaries, health and safety records, and payment data are retained for up to 7 years in
-        compliance with UK tax and safety legislation.
+        right-to-work documentation are kept for the duration of your engagement and for at least
+        two years after it ends, or longer where a documented legal or regulatory requirement
+        applies. Site diaries, health and safety records, and payment data are retained for up to 7
+        years in compliance with UK tax and safety legislation.
       </p>
     </Section>
 

@@ -8,7 +8,7 @@
 
 ## 1. Purpose
 
-Defines how staff compliance documents (CSCS cards, certificates, right-to-work evidence) are requested, submitted, validated, and stored.
+Defines how staff compliance documents (CSCS cards, certificates, right-to-work evidence) are requested, submitted, validated, and stored. Right-to-work decisions must follow **OF-POL-07 Right to Work Policy** and the current Home Office employer guidance.
 
 ---
 
@@ -58,8 +58,9 @@ Defines how staff compliance documents (CSCS cards, certificates, right-to-work 
 
 ## 5. Data Retention
 
-- Compliance documents are retained for **6 years** after the worker's last engagement (CDM Regulations 2015)
-- After 6 years, records are flagged for admin review before deletion
+- Right-to-work check records are retained for the duration of the engagement and for at least **2 years after it ends**, or longer where a documented legal or regulatory requirement applies.
+- Other compliance documents are retained in accordance with the applicable retention schedule and legal basis; they must not automatically be given the right-to-work retention period.
+- After the applicable period, records are flagged for admin review before secure deletion.
 - Upload tokens are ephemeral and automatically expire after 48 hours
 
 ---
@@ -68,6 +69,7 @@ Defines how staff compliance documents (CSCS cards, certificates, right-to-work 
 
 Processing compliance documents is performed under **Legal Obligation** (UK GDPR Article 6(1)(c)):
 
-- CDM Regulations 2015 require verification of worker competence
+- Right-to-work checks support the prevention of illegal working under UK immigration and employment law; the exact check route is governed by **OF-POL-07 Right to Work Policy** and current Home Office guidance.
+- CDM Regulations 2015 require verification of worker competence; this is separate from immigration permission.
 - Health and Safety at Work Act 1974 mandates safe working practices
 - Construction (Design and Management) Regulations require proof of qualification

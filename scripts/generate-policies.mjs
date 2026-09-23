@@ -2,13 +2,14 @@
 // Run: node scripts/generate-policies.mjs
 import React from "react";
 import { Document, Page, Text, View, StyleSheet, pdf } from "@react-pdf/renderer";
-import { writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
 const h = React.createElement;
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT_DIR = path.join(__dirname, "..", "policies");
+const PUBLIC_OUT_DIR = path.join(__dirname, "..", "public", "policies");
 
 const COMPANY = {
   name: "Opus Form Ltd",
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
 function buildDocument(policy) {
   const header = h(
     View,
-    { style: styles.header, fixed: true },
+    { style: styles.header },
     h(
       View,
       { style: styles.logoRow },
@@ -215,7 +216,7 @@ function buildDocument(policy) {
 
   const footer = h(
     View,
-    { style: styles.footer, fixed: true },
+    { style: styles.footer },
     h(Text, { style: styles.footerText }, `${COMPANY.name} · Confidential · ${policy.reference}`),
     h(Text, { style: styles.footerText }, "admin@opusform.co.uk"),
   );
@@ -544,6 +545,75 @@ const POLICIES = [
     ],
   },
   {
+    file: "Right-to-Work-Policy.pdf",
+    title: "Right to Work Policy",
+    reference: "OF-POL-07",
+    issued: "July 2026",
+    reviewDate: "July 2027",
+    sections: [
+      {
+        number: "01",
+        title: "Purpose and Scope",
+        paragraphs: [
+          "Opus Form Ltd prevents illegal working where it employs or directly engages an individual to carry out work in the UK. This applies to employees, agency workers, labour-only subcontractors, self-employed operatives, consultants and other individuals working for us or on our behalf where we are responsible for the engagement.",
+          "We follow the current Home Office right-to-work guidance and carry out checks fairly and consistently before work starts. A supplier's tax status or assurance does not replace our own check where Opus Form directly engages the individual.",
+        ],
+      },
+      {
+        number: "02",
+        title: "How We Check",
+        paragraphs: [
+          "Before work starts, the responsible administrator must complete a compliant check using an eligible original document, a GOV.UK share code and date of birth, or the Employer Checking Service where the official process requires it. The result, date, identity, permission and any expiry date or conditions must be recorded.",
+        ],
+        bullets: [
+          "Nobody may start work until the required check has been completed and recorded.",
+          "Time-limited permission must be followed up before it expires.",
+          "A check must be repeated using the current prescribed process; it does not continue indefinitely.",
+          "The official result or required document record must be saved in the private compliance system.",
+        ],
+      },
+      {
+        number: "03",
+        title: "What a Check Must Confirm",
+        paragraphs: [
+          "Manual checks must use the current Home Office prescribed list and confirm that the document appears genuine, belongs to the person presenting it, permits the proposed work and has no unrecorded restrictions. Online checks must be completed through the GOV.UK employer service using the share code and date of birth; a worker's screenshot is not enough.",
+          "We record the checker, date, evidence or verification reference, result, expiry date and any work conditions. Work must not be allocated outside those conditions.",
+        ],
+      },
+      {
+        number: "04",
+        title: "CIS and UTR Numbers",
+        paragraphs: [
+          "A CIS number and a UTR (Unique Taxpayer Reference) are tax-administration references. They do not prove immigration permission or a right to work in the UK and must never be accepted as a substitute for a right-to-work check. The same applies to National Insurance numbers, invoices, payslips, driving licences and evidence of self-employed tax status when offered on their own.",
+        ],
+      },
+      {
+        number: "05",
+        title: "CSCS and Competence",
+        paragraphs: [
+          "CSCS is a separate competence and site-access check. Where required, we check the card using the official CSCS Smart Check or current official verification route and record the card, occupation, expiry and result.",
+          "A CSCS card or CSCS check does not prove a person's right to work. Where both apply, we require both a right-to-work check and a CSCS, training and competence check.",
+        ],
+      },
+      {
+        number: "06",
+        title: "Fairness, Privacy and Retention",
+        paragraphs: [
+          "We do not make assumptions based on nationality, appearance, accent or name, and apply the same lawful process consistently. Evidence is stored in the approved private compliance system and accessed only by authorised staff.",
+          "Records are retained for the engagement and at least two years after it ends, or longer where a documented legal or regulatory requirement applies, before secure disposal.",
+        ],
+      },
+      {
+        number: "07",
+        title: "Monitoring and Concerns",
+        paragraphs: [
+          "The compliance register records checks, expiry dates, follow-up actions and exceptions. A quarterly sample review confirms that evidence, dates, restrictions and retention actions were recorded correctly. Failed, unclear or late checks are escalated before work is allocated.",
+          "Report suspected forged documents, illegal working, exploitation, coercion or modern slavery immediately to admin@opusform.co.uk. Genuine concerns will be handled sensitively and without retaliation.",
+        ],
+      },
+    ],
+  },
+  {
     file: "Modern-Slavery-Statement.pdf",
     title: "Modern Slavery and Illegal Working Statement",
     reference: "OF-POL-03",
@@ -604,6 +674,7 @@ const POLICIES = [
 ];
 
 async function main() {
+  await mkdir(PUBLIC_OUT_DIR, { recursive: true });
   for (const policy of POLICIES) {
     const instance = pdf(buildDocument(policy));
     const buffer = await instance.toBuffer();
@@ -611,6 +682,7 @@ async function main() {
     for await (const chunk of buffer) chunks.push(chunk);
     const outPath = path.join(OUT_DIR, policy.file);
     await writeFile(outPath, Buffer.concat(chunks));
+    await writeFile(path.join(PUBLIC_OUT_DIR, policy.file), Buffer.concat(chunks));
     console.log(`Wrote ${outPath}`);
   }
 }

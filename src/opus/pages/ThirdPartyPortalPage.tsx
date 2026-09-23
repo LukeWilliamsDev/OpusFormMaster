@@ -35,6 +35,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
   const [note, setNote] = useState("");
   const [postingNote, setPostingNote] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [jobFiles, setJobFiles] = useState<any[]>([]);
 
   const loadSubmissions = async () => {
     const { data } = await db
@@ -46,6 +47,38 @@ export const ThirdPartyPortalPage: React.FC = () => {
   React.useEffect(() => {
     loadSubmissions();
   }, []);
+  React.useEffect(() => {
+    if (!selectedJobId) {
+      setJobFiles([]);
+      return;
+    }
+    (async () => {
+      const [{ data: photos }, { data: attachments }] = await Promise.all([
+        db
+          .from("job_attachments")
+          .select("id, file_name, file_url, type, uploaded_at")
+          .eq("job_id", selectedJobId)
+          .eq("uploaded_by_user_id", user?.id),
+        db
+          .from("third_party_attachments")
+          .select("id, file_name, file_path, created_at")
+          .eq("job_id", selectedJobId)
+          .eq("uploaded_by", user?.id),
+      ]);
+      setJobFiles([
+        ...(photos ?? []).map((file: any) => ({
+          ...file,
+          bucket: "job-attachments",
+          path: file.file_url,
+        })),
+        ...(attachments ?? []).map((file: any) => ({
+          ...file,
+          bucket: "third-party-attachments",
+          path: file.file_path,
+        })),
+      ]);
+    })();
+  }, [selectedJobId, user?.id]);
 
   const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
   const assignedJobs = useMemo(
@@ -109,11 +142,11 @@ export const ThirdPartyPortalPage: React.FC = () => {
     toast.success("Note added");
   };
 
-  const uploadFile = async (file: File) => {
+  const uploadFile = async (file: File, kind: "image_before" | "image_after" | "document") => {
     if (!selectedJob || !user) return;
     setUploading(true);
     const extension = file.name.split(".").pop() || "bin";
-    const isPhoto = file.type.startsWith("image/");
+    const isPhoto = kind !== "document";
     const path = isPhoto
       ? `third-party-media/${selectedJob.id}/${user.id}/${crypto.randomUUID()}.${extension}`
       : `${user.id}/${selectedJob.id}/${crypto.randomUUID()}.${extension}`;
@@ -126,7 +159,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
     const { error } = isPhoto
       ? await db.from("job_attachments").insert({
           job_id: selectedJob.id,
-          type: "image_after",
+          type: kind,
           file_name: file.name,
           file_url: path,
           file_size_bytes: file.size,
@@ -143,7 +176,23 @@ export const ThirdPartyPortalPage: React.FC = () => {
         });
     setUploading(false);
     if (error) return toast.error(error.message || "Unable to record upload");
+    setJobFiles((current) => [...current, { file_name: file.name, bucket, path }]);
     toast.success("Attachment uploaded");
+  };
+
+  const openOwnFile = async (file: any) => {
+    const { data, error } = await supabase.storage
+      .from(file.bucket)
+      .createSignedUrl(file.path, 300);
+    if (error || !data?.signedUrl)
+      return toast.error(error?.message || "Unable to open attachment");
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    await db.rpc("log_third_party_action", {
+      p_action: "THIRD_PARTY_OWN_ATTACHMENT_VIEWED",
+      p_target_type: "jobs",
+      p_target_id: selectedJobId,
+      p_details: { file_name: file.file_name },
+    });
   };
 
   return (
@@ -349,17 +398,47 @@ export const ThirdPartyPortalPage: React.FC = () => {
                     <Send className="h-3 w-3" />
                     Add note
                   </button>
-                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-xs font-bold">
-                    <FileUp className="h-4 w-4" />
-                    {uploading
-                      ? "Uploading..."
-                      : "Add before/after photo or third-party attachment"}
-                    <input
-                      type="file"
-                      className="hidden"
-                      onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])}
-                    />
-                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {(["image_before", "image_after", "document"] as const).map((kind) => (
+                      <label
+                        key={kind}
+                        className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-xs font-bold"
+                      >
+                        <FileUp className="h-4 w-4" />
+                        {uploading
+                          ? "Uploading..."
+                          : kind === "document"
+                            ? "Third Party Attachment"
+                            : kind === "image_before"
+                              ? "Before photo"
+                              : "After photo"}
+                        <input
+                          type="file"
+                          accept={
+                            kind === "document" ? ".pdf,.doc,.docx,.xls,.xlsx,.txt" : "image/*"
+                          }
+                          className="hidden"
+                          onChange={(e) =>
+                            e.target.files?.[0] && uploadFile(e.target.files[0], kind)
+                          }
+                        />
+                      </label>
+                    ))}
+                  </div>
+                  {jobFiles.length > 0 && (
+                    <div className="space-y-2">
+                      {jobFiles.map((file, index) => (
+                        <button
+                          key={file.id ?? `${file.path}-${index}`}
+                          onClick={() => openOwnFile(file)}
+                          className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-left text-xs"
+                        >
+                          <span className="truncate">{file.file_name}</span>
+                          <span className="text-muted-foreground">View</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                     <Check className="h-3 w-3 text-emerald-500" />
                     Only your uploads are visible to you.

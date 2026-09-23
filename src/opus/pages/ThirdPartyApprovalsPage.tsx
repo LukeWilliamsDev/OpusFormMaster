@@ -69,7 +69,7 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
               {documents[submission.id]?.length > 0 && (
                 <div className="mt-3 rounded-lg border border-border p-3">
                   <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                    Certificates and tickets
+                    Certificates
                   </p>
                   {documents[submission.id].map((doc: any) => (
                     <p key={doc.file_name} className="mt-1 text-xs">

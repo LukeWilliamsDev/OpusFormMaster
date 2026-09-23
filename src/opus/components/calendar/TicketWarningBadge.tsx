@@ -19,7 +19,7 @@ export const TicketWarningBadge: React.FC<{ worker: Worker }> = ({ worker }) => 
   return (
     <span
       className={`inline-flex items-center justify-center border shrink-0 rounded-md gap-1 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider ${colorClasses}`}
-      title={`${worst.ticket.type} ticket ${worst.status === "EXPIRED" ? "expired" : "expiring soon"} (${new Date(worst.ticket.expiryDate).toLocaleDateString("en-GB")})`}
+      title={`${worst.ticket.type} certificate ${worst.status === "EXPIRED" ? "expired" : "expiring soon"} (${new Date(worst.ticket.expiryDate).toLocaleDateString("en-GB")})`}
     >
       {worst.ticket.type}
       <AlertTriangle className="w-3 h-3" />

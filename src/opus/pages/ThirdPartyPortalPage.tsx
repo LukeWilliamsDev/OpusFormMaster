@@ -345,9 +345,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
       {lastSubmissionId && (
         <section className="rounded-2xl border-2 border-border bg-card p-5">
           <div className="mb-4">
-            <h2 className="text-sm font-black uppercase tracking-widest">
-              Add certificates or tickets
-            </h2>
+            <h2 className="text-sm font-black uppercase tracking-widest">Add certificates</h2>
             <p className="mt-1 text-xs text-muted-foreground">
               Attach compliance documents to your latest pending staff submission. Internal
               approvers will review them with the staff application.
@@ -368,7 +366,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
             <input
               value={ticketNumber}
               onChange={(e) => setTicketNumber(e.target.value)}
-              placeholder="Ticket number"
+              placeholder="Certificate number"
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
             />
             <input
@@ -497,7 +495,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
             <input
               value={ticketNumber}
               onChange={(e) => setTicketNumber(e.target.value)}
-              placeholder="Ticket number"
+              placeholder="Certificate number"
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
             />
             <input

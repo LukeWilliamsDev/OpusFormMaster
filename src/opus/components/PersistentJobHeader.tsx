@@ -130,7 +130,7 @@ export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({ groupe
               <div className="space-y-2 max-h-[60vh] overflow-y-auto">
                 {selectedWorker.tickets.length === 0 ? (
                   <div className="p-6 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
-                    No compliance certificates or tickets registered
+                    No compliance certificates registered
                   </div>
                 ) : (
                   selectedWorker.tickets.map((ticket) => {

@@ -119,7 +119,7 @@ export const ON_SITE_CERTIFICATIONS = [
   "CSCS Labourer Card",
   "Emergency First Aid at Work",
   "Face Fit Testing Respirable Crystalline Silica",
-  "Harness Awareness Inspection Ticket",
+  "Harness Awareness Inspection Certificate",
   "Manual Handling",
   "Site Supervisor Safety Training Scheme",
   "Suspended Loads Endorsement",
@@ -609,8 +609,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
       fetchLogsAndRequests();
     } catch (e) {
-      const { message } = handleError(e, { message: "Failed to update tickets or log audit" });
-      console.error("Failed to update tickets or log audit:", e);
+      const { message } = handleError(e, { message: "Failed to update certificates or log audit" });
+      console.error("Failed to update certificates or log audit:", e);
       // No toast for this background update
     }
   };
@@ -648,7 +648,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       toast.success(`${ticket.type} removed from compliance record`);
     } catch (e: Error | unknown) {
       const { message } = handleError(e, { message: "Failed to remove compliance record" });
-      console.error("Failed to remove ticket or log audit:", e);
+      console.error("Failed to remove certificate or log audit:", e);
       toast.error("Failed to remove compliance record", { description: message });
       // Roll back the optimistic update
       setWorkers((prev) => prev.map((w) => (w.id === workerId ? worker : w)));
@@ -816,7 +816,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       worker.tickets?.filter((t) => getTicketStatus(t) === "EXPIRING_SOON").length || 0;
     const ticketCount = worker.tickets?.length || 0;
 
-    let statusText = ticketCount === 0 ? "NO TICKETS" : "ALL CLEAR";
+    let statusText = ticketCount === 0 ? "NO CERTIFICATES" : "ALL CLEAR";
     let badgeColorClasses =
       ticketCount === 0
         ? "bg-muted border border-border text-muted-foreground font-bold"
@@ -870,7 +870,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           {ticketCount > 0 && ticketCount !== expiredCount && (
             <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium tracking-wide">
               <FileText className="w-3 h-3" />
-              {ticketCount} {ticketCount === 1 ? "ticket" : "tickets"}
+              {ticketCount} {ticketCount === 1 ? "certificate" : "certificates"}
             </span>
           )}
         </div>
@@ -885,7 +885,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       worker.tickets?.filter((t) => getTicketStatus(t) === "EXPIRING_SOON").length || 0;
     const ticketCount = worker.tickets?.length || 0;
 
-    let statusText = ticketCount === 0 ? "NO TICKETS" : "ALL CLEAR";
+    let statusText = ticketCount === 0 ? "NO CERTIFICATES" : "ALL CLEAR";
     let badgeColorClasses =
       ticketCount === 0
         ? "bg-muted border border-border text-muted-foreground font-bold"
@@ -934,7 +934,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           {ticketCount > 0 && ticketCount !== expiredCount && (
             <span className="hidden sm:flex items-center gap-1 text-[10px] text-muted-foreground font-medium tracking-wide">
               <FileText className="w-3 h-3" />
-              {ticketCount} {ticketCount === 1 ? "ticket" : "tickets"}
+              {ticketCount} {ticketCount === 1 ? "certificate" : "certificates"}
             </span>
           )}
           <span
@@ -962,7 +962,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           // Validate tickets if any
           for (const ticket of editTickets) {
             if (!ticket.type.trim()) {
-              setEditError("Ticket Type cannot be empty");
+              setEditError("Certificate Type cannot be empty");
               return;
             }
             if (!ticket.expiryDate) {
@@ -1084,12 +1084,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
             </div>
           </div>
 
-          {/* Tickets Info */}
+          {/* Certificates Info */}
           <div className="flex flex-col">
             <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
               <div className="p-3 sm:p-4 pb-3 sm:pb-4 border-b border-border/5 bg-secondary flex items-center space-x-3 shrink-0">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
-                  Tickets & Certifications
+                  Certificates
                 </span>
               </div>
               <div className="p-3 sm:p-4 space-y-3">
@@ -1108,7 +1108,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           setEditTickets(newTickets);
                         }}
                         className="w-full bg-transparent border-none text-[10px] font-bold text-foreground uppercase px-1 py-1 focus:ring-0"
-                        placeholder="Ticket Type"
+                        placeholder="Certificate Type"
                       />
                     </div>
                     <div className="flex items-center gap-2 sm:contents">
@@ -1144,7 +1144,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   }
                   className="w-full py-2 border border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-primary rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all"
                 >
-                  + Add New Ticket
+                  + Add New Certificate
                 </button>
               </div>
             </div>
@@ -1383,7 +1383,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           <div className="space-y-4 animate-in fade-in duration-200">
             {selectedWorkerDetails.tickets.length === 0 ? (
               <div className="p-8 text-center border border-dashed border-border rounded-xl text-muted-foreground text-[11px] font-bold uppercase tracking-wider">
-                No compliance certificates or tickets registered
+                No compliance certificates registered
               </div>
             ) : (
               selectedWorkerDetails.tickets.map((ticket) => {
@@ -1994,7 +1994,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           }}
         />
 
-        {/* Remove Compliance Ticket Confirmation Modal */}
+        {/* Remove Compliance Certificate Confirmation Modal */}
         <ConfirmDialog
           open={!!ticketToRemove}
           onOpenChange={(open) => {
@@ -2012,8 +2012,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 compliance record?
                 <br />
                 <br />
-                This permanently deletes the ticket entry. This cannot be undone from here — the
-                worker will need to re-upload the document if it's still required.
+                This permanently deletes the certificate entry. This cannot be undone from here —
+                the worker will need to re-upload the document if it's still required.
               </>
             )
           }

@@ -51,7 +51,12 @@ export const ThirdPartyJobsPage: React.FC = () => {
                       pours
                     </p>
                   </div>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-primary transition-transform group-hover:translate-x-1" />
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-500">
+                      {job.status}
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-primary transition-transform group-hover:translate-x-1" />
+                  </div>
                 </div>
                 <div className="mt-5 flex items-center justify-between border-t border-border pt-3 text-xs">
                   <span className="text-muted-foreground">Read-only site overview</span>

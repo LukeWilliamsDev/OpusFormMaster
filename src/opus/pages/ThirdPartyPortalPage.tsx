@@ -45,6 +45,7 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
   const [ticketFile, setTicketFile] = useState<File | null>(null);
   const [uploadingTicket, setUploadingTicket] = useState(false);
   const [ticketStaffId, setTicketStaffId] = useState<string | null>(null);
+  const [showAddStaff, setShowAddStaff] = useState(false);
 
   const loadSubmissions = async () => {
     const { data } = await db
@@ -260,67 +261,77 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:py-12">
-      <header>
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-          Third-party portal
-        </p>
-        <h1 className="mt-2 text-2xl font-black text-foreground">Your staff and assigned sites</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          You can add and maintain your approved staff, then add information to sites where they are
-          assigned.
-        </p>
+      <header className="flex flex-wrap items-end justify-between gap-5">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+            Staff management
+          </p>
+          <h1 className="mt-2 text-3xl font-black text-foreground">Staff</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Submit people for approval and maintain your approved staff.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowAddStaff((current) => !current)}
+          className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground"
+        >
+          <Plus className="h-4 w-4" />
+          {showAddStaff ? "Close" : "Add staff member"}
+        </button>
       </header>
 
-      <section className="rounded-2xl border-2 border-border bg-card p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <Plus className="h-4 w-4 text-primary" />
-          <h2 className="text-sm font-black uppercase tracking-widest">
-            Submit staff for approval
-          </h2>
-        </div>
-        <form onSubmit={submitStaff} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {(["name", "email", "phone", "postcode"] as const).map((field) => (
+      {showAddStaff && (
+        <section className="rounded-2xl border-2 border-border bg-card p-5">
+          <div className="mb-4 flex items-center gap-2">
+            <Plus className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-black uppercase tracking-widest">
+              Submit staff for approval
+            </h2>
+          </div>
+          <form onSubmit={submitStaff} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {(["name", "email", "phone", "postcode"] as const).map((field) => (
+              <input
+                key={field}
+                required={field === "name"}
+                value={form[field]}
+                onChange={(e) => setField(field, e.target.value)}
+                placeholder={field[0].toUpperCase() + field.slice(1)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+              />
+            ))}
+            <select
+              value={form.role}
+              onChange={(e) => setField("role", e.target.value)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+            >
+              {STAFF_ROLES.map((role) => (
+                <option key={role}>{role}</option>
+              ))}
+            </select>
             <input
-              key={field}
-              required={field === "name"}
-              value={form[field]}
-              onChange={(e) => setField(field, e.target.value)}
-              placeholder={field[0].toUpperCase() + field.slice(1)}
+              value={form.notes}
+              onChange={(e) => setField("notes", e.target.value)}
+              placeholder="Notes (optional)"
               className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             />
-          ))}
-          <select
-            value={form.role}
-            onChange={(e) => setField("role", e.target.value)}
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-          >
-            {STAFF_ROLES.map((role) => (
-              <option key={role}>{role}</option>
-            ))}
-          </select>
-          <input
-            value={form.notes}
-            onChange={(e) => setField("notes", e.target.value)}
-            placeholder="Notes (optional)"
-            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-          />
-          <button
-            disabled={submitting}
-            className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50 sm:col-span-2 lg:col-span-1"
-          >
-            {submitting ? (
-              <Loader className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}{" "}
-            Submit for approval
-          </button>
-        </form>
-      </section>
+            <button
+              disabled={submitting}
+              className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50 sm:col-span-2 lg:col-span-1"
+            >
+              {submitting ? (
+                <Loader className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}{" "}
+              Submit for approval
+            </button>
+          </form>
+        </section>
+      )}
 
       <section className="space-y-3">
         <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-          Submission status
+          Pending submissions
         </h2>
         {pendingSubmissions.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
@@ -534,6 +545,18 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
           </button>
         </section>
       )}
+
+      <aside className="rounded-2xl border border-border bg-card p-5">
+        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Staff rules</p>
+        <p className="mt-4 text-sm font-bold">You can edit approved staff and add certificates.</p>
+        <div className="my-5 h-px bg-border" />
+        <p className="text-sm text-muted-foreground">
+          You cannot delete, archive, approve, or see other staff.
+        </p>
+        <p className="mt-5 text-sm text-muted-foreground">
+          Certificates are reviewed by Opus Form management.
+        </p>
+      </aside>
 
       {showJobs && (
         <section id="assigned-jobs" className="space-y-3">

@@ -4,6 +4,7 @@ import {
   PortalProvider,
   usePortal,
   AppRole,
+  ASSIGNED_SHIFT_ROLES,
   ALL_ROLES,
   MANAGEMENT_ROLES,
   FIELD_ROLES,
@@ -14,6 +15,7 @@ import { PortalAuthPage } from "./pages/PortalAuth";
 import { DashboardPage } from "./pages/Dashboard";
 import { LaborRosterPage } from "./pages/LaborRoster";
 import { CalendarPage } from "./pages/CalendarPage";
+import { MyShiftsPage } from "./pages/MyShiftsPage";
 import { JobLedgerPage } from "./pages/JobLedger";
 import { PipelinePage } from "./pages/Pipeline";
 import { AuditLogPage } from "./pages/AuditLog";
@@ -162,6 +164,14 @@ export default function App() {
               }
             />
             <Route
+              path="/portal/my-shifts"
+              element={
+                <RoleGuard allow={ASSIGNED_SHIFT_ROLES}>
+                  <MyShiftsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
               path="/portal/audit"
               element={
                 <AuditLogGuard>
@@ -265,6 +275,10 @@ export default function App() {
 const RoleAwareFallback: React.FC = () => {
   const { role } = usePortal();
   const target =
-    role && FIELD_ROLES.includes(role) ? "/portal/roster?view=calendar" : "/portal/dashboard";
+    role && ASSIGNED_SHIFT_ROLES.includes(role)
+      ? "/portal/my-shifts"
+      : role === "logistics_assistant"
+        ? "/portal/roster?view=calendar"
+        : "/portal/dashboard";
   return <Navigate to={target} replace />;
 };

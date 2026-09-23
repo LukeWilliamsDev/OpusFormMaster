@@ -1,15 +1,25 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
+import { ASSIGNED_SHIFT_ROLES, MANAGEMENT_ROLES } from "../context/PortalContext";
 import { RosterView } from "../components/RosterView";
 import { CalendarBoard, CalendarGroup } from "../components/calendar/CalendarBoard";
 import { defaultSelectedDay, isValidISODate } from "../utils/week";
+import { MyShiftsPage } from "./MyShiftsPage";
 
 export const LaborRosterPage: React.FC = () => {
-  const { jobs, workers, setWorkers, shifts, setShifts } = usePortal();
+  const { jobs, workers, setWorkers, shifts, setShifts, role } = usePortal();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const currentView = searchParams.get("view") === "staff" ? "staff" : "calendar";
+  if (role && ASSIGNED_SHIFT_ROLES.includes(role)) {
+    return <MyShiftsPage />;
+  }
+
+  const requestedView = searchParams.get("view") === "staff" ? "staff" : "calendar";
+  const currentView =
+    role && !MANAGEMENT_ROLES.includes(role) && requestedView === "staff"
+      ? "calendar"
+      : requestedView;
   const selectedWorkerId = searchParams.get("workerId");
   const initialDossierTab = searchParams.get("tab") === "assignments" ? "assignments" : undefined;
   const autoOpenAddWorker = searchParams.get("addWorker") === "1";
@@ -58,6 +68,7 @@ export const LaborRosterPage: React.FC = () => {
           date={selectedDate}
           onChangeGroup={handleChangeGroup}
           onChangeDate={handleChangeDate}
+          canEdit={!!role && MANAGEMENT_ROLES.includes(role)}
         />
       )}
     </div>

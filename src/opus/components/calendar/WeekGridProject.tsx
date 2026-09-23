@@ -48,8 +48,9 @@ interface WeekGridProjectProps {
   jobs: Job[];
   weekDays: WeekDay[];
   weekSchedule: Map<string, DaySchedule>;
-  onAddStaff: (job: Job, date: string) => void;
-  onRemoveShift: (shiftId: string) => void;
+  onAddStaff?: (job: Job, date: string) => void;
+  onRemoveShift?: (shiftId: string) => void;
+  canEdit?: boolean;
 }
 
 // Site office design constants
@@ -68,6 +69,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
   weekSchedule,
   onAddStaff,
   onRemoveShift,
+  canEdit = true,
 }) => {
   const activeJobs = jobs.filter((j) => j.status !== "completed");
 
@@ -127,7 +129,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                             worker={worker}
                             job={job}
                             shift={shift}
-                            onRemove={onRemoveShift}
+                            onRemove={canEdit ? onRemoveShift : undefined}
                             compact
                             size="dense"
                           />
@@ -135,15 +137,17 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                       </div>
                     )}
 
-                    <button
-                      type="button"
-                      onClick={() => onAddStaff(job, day.date)}
-                      aria-label={`Add operatives to ${job.siteName}`}
-                      className={SITE_ADD_STAFF}
-                    >
-                      <Plus className="w-3 h-3" />
-                      <span className="hidden xl:inline">ADD OPERATIVES</span>
-                    </button>
+                    {canEdit && onAddStaff && (
+                      <button
+                        type="button"
+                        onClick={() => onAddStaff(job, day.date)}
+                        aria-label={`Add operatives to ${job.siteName}`}
+                        className={SITE_ADD_STAFF}
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span className="hidden xl:inline">ADD OPERATIVES</span>
+                      </button>
+                    )}
                   </div>
                 );
               })

@@ -48,8 +48,9 @@ interface ProjectDayListProps {
   jobs: Job[];
   schedule: DaySchedule;
   date: string;
-  onAddStaff: (job: Job) => void;
-  onRemoveShift: (shiftId: string) => void;
+  onAddStaff?: (job: Job) => void;
+  onRemoveShift?: (shiftId: string) => void;
+  canEdit?: boolean;
 }
 
 // Site office design constants
@@ -69,6 +70,7 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
   date,
   onAddStaff,
   onRemoveShift,
+  canEdit = true,
 }) => {
   const activeJobs = jobs.filter((j) => j.status !== "completed");
 
@@ -125,17 +127,19 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
                       worker={worker}
                       job={job}
                       shift={shift}
-                      onRemove={onRemoveShift}
+                      onRemove={canEdit ? onRemoveShift : undefined}
                       compact
                     />
                   ))}
                 </div>
               )}
 
-              <button type="button" onClick={() => onAddStaff(job)} className={SITE_ADD_STAFF}>
-                <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                ADD OPERATIVES
-              </button>
+              {canEdit && onAddStaff && (
+                <button type="button" onClick={() => onAddStaff(job)} className={SITE_ADD_STAFF}>
+                  <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                  ADD OPERATIVES
+                </button>
+              )}
             </div>
           );
         })

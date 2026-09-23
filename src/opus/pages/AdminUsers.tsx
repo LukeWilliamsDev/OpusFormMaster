@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../integrations/supabase/client";
-import { usePortal } from "../context/PortalContext";
+import { formatAppRoleLabel, usePortal } from "../context/PortalContext";
 import { CardGrid } from "../components/CardGrid";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { NoticeModal } from "@/components/ui/notice-modal";
@@ -25,6 +25,7 @@ const ROLES = [
   "logistics_assistant",
   "site_foreman",
   "labourer",
+  "third_party",
 ] as const;
 
 type ProfileRow = {
@@ -280,7 +281,7 @@ const EditUserModal: React.FC<{
             >
               {ROLES.map((r) => (
                 <option key={r} value={r}>
-                  {r}
+                  {formatAppRoleLabel(r)}
                 </option>
               ))}
             </select>
@@ -310,7 +311,7 @@ const EditUserModal: React.FC<{
         onOpenChange={setConfirmOpen}
         tone="neutral"
         title="Save changes to this account?"
-        message={`${user.email} will be updated to role "${role}"${fullName !== (user.full_name ?? "") ? ` with name "${fullName}"` : ""}${email.trim() !== user.email ? ` and email "${email.trim()}"` : ""}.`}
+        message={`${user.email} will be updated to role "${formatAppRoleLabel(role)}"${fullName !== (user.full_name ?? "") ? ` with name "${fullName}"` : ""}${email.trim() !== user.email ? ` and email "${email.trim()}"` : ""}.`}
         confirmLabel="Save"
         onConfirm={() => {
           setConfirmOpen(false);
@@ -457,7 +458,7 @@ export const AdminUsers: React.FC = () => {
               <option value="all">All roles</option>
               {ROLES.map((r) => (
                 <option key={r} value={r}>
-                  {r.replace(/_/g, " ")}
+                  {formatAppRoleLabel(r)}
                 </option>
               ))}
             </select>
@@ -586,7 +587,7 @@ export const AdminUsers: React.FC = () => {
                         )}
                       </div>
                       <div className="text-[12px] font-mono text-muted-foreground truncate">
-                        {u.role.replace(/_/g, " ")}
+                        {formatAppRoleLabel(u.role)}
                       </div>
                       <span
                         key={u.status}
@@ -620,7 +621,7 @@ export const AdminUsers: React.FC = () => {
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <span className="text-[11px] font-mono text-muted-foreground truncate min-w-0 flex-1">
-                        {u.role.replace(/_/g, " ")}
+                        {formatAppRoleLabel(u.role)}
                       </span>
                       <div className="flex flex-wrap justify-end gap-1.5 shrink-0">
                         {actionButtons}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { usePortal } from "../context/PortalContext";
+import { formatAppRoleLabel, usePortal } from "../context/PortalContext";
 import { User, Shield, Phone, Key, Check, AlertCircle } from "lucide-react";
 import {
   createProfileFormState,
@@ -228,7 +228,7 @@ export const SettingsPage: React.FC = () => {
                   <div className="flex items-center gap-2 bg-background/50 border border-border/60 rounded-lg p-3 px-4 text-muted-foreground cursor-not-allowed">
                     <Shield className="w-3.5 h-3.5 text-muted-foreground" />
                     <span className="text-xs font-bold capitalize">
-                      {(role || "labourer").replace(/_/g, " ")}
+                      {formatAppRoleLabel(role || "labourer")}
                     </span>
                   </div>
                 </div>

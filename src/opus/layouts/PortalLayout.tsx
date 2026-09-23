@@ -28,6 +28,7 @@ import {
   ALL_ROLES,
   MANAGEMENT_ROLES,
   SCHEDULE_ROLES,
+  formatAppRoleLabel,
 } from "../context/PortalContext";
 import { getAvatarPresetClass } from "../pages/Settings";
 import { getAvatarInitials } from "../utils/workerValidation";
@@ -287,7 +288,7 @@ export const PortalLayout: React.FC = () => {
                     {profile?.full_name || user?.email || "User"}
                   </span>
                   <span className="text-[11px] text-emerald-600 dark:text-emerald-400 capitalize font-medium">
-                    {(role || "labourer").replace(/_/g, " ")}
+                    {formatAppRoleLabel(role || "labourer")}
                   </span>
                 </div>
               </Link>

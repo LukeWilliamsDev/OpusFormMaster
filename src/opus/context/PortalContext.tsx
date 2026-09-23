@@ -98,6 +98,13 @@ export const ALL_ROLES: AppRole[] = [
   "labourer",
   "third_party",
 ];
+
+export const formatAppRoleLabel = (value: AppRole | string | null | undefined): string =>
+  (value || "")
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 // Full ops write access — mirrors private.can_write_ops() in the DB.
 export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
 // Restricted access — mirrors the old "operative" tier.

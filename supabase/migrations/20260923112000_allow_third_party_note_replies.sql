@@ -44,3 +44,8 @@ DROP TRIGGER IF EXISTS populate_third_party_note_reply_author_trg ON public.thir
 CREATE TRIGGER populate_third_party_note_reply_author_trg
   BEFORE INSERT ON public.third_party_job_note_replies
   FOR EACH ROW EXECUTE FUNCTION private.populate_third_party_note_reply_author();
+
+UPDATE public.third_party_job_note_replies r
+SET author_first_name = split_part(COALESCE(NULLIF(trim(p.full_name), ''), p.email), ' ', 1)
+FROM public.profiles p
+WHERE p.id = r.author_id AND r.author_first_name IS NULL;

@@ -5,7 +5,11 @@ import { toast } from "sonner";
 
 const db = supabase as any;
 
-export const ThirdPartyAttachmentsPanel: React.FC<{ jobId: string }> = ({ jobId }) => {
+export const ThirdPartyAttachmentsPanel: React.FC<{
+  jobId: string;
+  refreshKey?: number;
+  action?: React.ReactNode;
+}> = ({ jobId, refreshKey = 0, action }) => {
   const [files, setFiles] = useState<any[]>([]);
   useEffect(() => {
     let cancelled = false;
@@ -22,7 +26,7 @@ export const ThirdPartyAttachmentsPanel: React.FC<{ jobId: string }> = ({ jobId 
     return () => {
       cancelled = true;
     };
-  }, [jobId]);
+  }, [jobId, refreshKey]);
 
   const openFile = async (file: any) => {
     const { data, error } = await supabase.storage
@@ -41,9 +45,12 @@ export const ThirdPartyAttachmentsPanel: React.FC<{ jobId: string }> = ({ jobId 
 
   return (
     <div className="mt-5 rounded-xl border border-border bg-card p-4">
-      <div className="mb-3 flex items-center gap-2">
-        <Paperclip className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-black uppercase tracking-widest">Third Party Attachments</h3>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <Paperclip className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-black uppercase tracking-widest">Third Party Attachments</h3>
+        </div>
+        {action}
       </div>
       {files.length === 0 ? (
         <p className="text-xs text-muted-foreground">No third-party attachments.</p>

@@ -17,6 +17,8 @@ export const ThirdPartySitePage: React.FC = () => {
   const [note, setNote] = useState("");
   const [postingNote, setPostingNote] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [attachmentRefresh, setAttachmentRefresh] = useState(0);
   const [photos, setPhotos] = useState<any[]>([]);
   const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
   const job = jobs.find(
@@ -54,14 +56,12 @@ export const ThirdPartySitePage: React.FC = () => {
   const addNote = async () => {
     if (!note.trim()) return;
     setPostingNote(true);
-    const { error } = await db
-      .from("third_party_job_notes")
-      .insert({
-        tenant_id: profile?.tenant_id,
-        job_id: job.id,
-        author_id: user?.id,
-        body: note.trim(),
-      });
+    const { error } = await db.from("third_party_job_notes").insert({
+      tenant_id: profile?.tenant_id,
+      job_id: job.id,
+      author_id: user?.id,
+      body: note.trim(),
+    });
     setPostingNote(false);
     if (error) return toast.error(error.message || "Unable to add note");
     setNote("");
@@ -79,17 +79,15 @@ export const ThirdPartySitePage: React.FC = () => {
       setUploading(false);
       return toast.error(uploadError.message || "Unable to upload photo");
     }
-    const { error } = await db
-      .from("job_attachments")
-      .insert({
-        job_id: job.id,
-        type,
-        file_name: file.name,
-        file_url: path,
-        file_size_bytes: file.size,
-        uploaded_by: user.email ?? "Third party",
-        uploaded_by_user_id: user.id,
-      });
+    const { error } = await db.from("job_attachments").insert({
+      job_id: job.id,
+      type,
+      file_name: file.name,
+      file_url: path,
+      file_size_bytes: file.size,
+      uploaded_by: user.email ?? "Third party",
+      uploaded_by_user_id: user.id,
+    });
     setUploading(false);
     if (error) return toast.error(error.message || "Unable to record photo");
     setPhotos((current) => [{ file_name: file.name, file_url: path, type }, ...current]);
@@ -101,6 +99,34 @@ export const ThirdPartySitePage: React.FC = () => {
       .createSignedUrl(photo.file_url, 300);
     if (error || !data?.signedUrl) return toast.error(error?.message || "Unable to open photo");
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+  const uploadAttachment = async (file: File) => {
+    if (!user) return;
+    setUploadingAttachment(true);
+    const extension = file.name.split(".").pop() || "bin";
+    const path = `${user.id}/${job.id}/${crypto.randomUUID()}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("third-party-attachments")
+      .upload(path, file);
+    if (uploadError) {
+      setUploadingAttachment(false);
+      return toast.error(uploadError.message || "Unable to upload attachment");
+    }
+    const { error } = await db
+      .from("third_party_attachments")
+      .insert({
+        tenant_id: profile?.tenant_id,
+        job_id: job.id,
+        uploaded_by: user.id,
+        file_name: file.name,
+        file_path: path,
+        mime_type: file.type || "application/octet-stream",
+        file_size_bytes: file.size,
+      });
+    setUploadingAttachment(false);
+    if (error) return toast.error(error.message || "Unable to record attachment");
+    setAttachmentRefresh((current) => current + 1);
+    toast.success("Attachment uploaded");
   };
 
   return (
@@ -258,9 +284,24 @@ export const ThirdPartySitePage: React.FC = () => {
         </section>
       )}
       {tab === "attachments" && (
-        <section>
-          <ThirdPartyAttachmentsPanel jobId={job.id} />
-        </section>
+        <ThirdPartyAttachmentsPanel
+          jobId={job.id}
+          refreshKey={attachmentRefresh}
+          action={
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest hover:border-primary">
+              <FileUp className="h-3.5 w-3.5" />
+              {uploadingAttachment ? "Uploading..." : "Upload file"}
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                className="hidden"
+                onChange={(event) =>
+                  event.target.files?.[0] && uploadAttachment(event.target.files[0])
+                }
+              />
+            </label>
+          }
+        />
       )}
     </div>
   );

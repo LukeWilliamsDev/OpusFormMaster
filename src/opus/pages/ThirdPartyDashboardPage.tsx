@@ -54,7 +54,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
       <div className="grid gap-4 md:grid-cols-3">
         {cards.map(({ href, label, description, count, icon: Icon }) => (
           <Link
-            key={href}
+            key={label}
             to={href}
             className="group rounded-2xl border-2 border-border bg-card p-5 transition-colors hover:border-primary"
           >

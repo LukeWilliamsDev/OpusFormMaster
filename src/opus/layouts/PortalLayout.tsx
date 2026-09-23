@@ -261,7 +261,7 @@ export const PortalLayout: React.FC = () => {
             >
               <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-border">
                 <Link
-                  to="/portal/dashboard"
+                  to={role === "third_party" ? "/portal/third-party" : "/portal/dashboard"}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center"
                 >

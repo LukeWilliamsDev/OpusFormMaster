@@ -92,7 +92,7 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => 
                 ))}
               </div>
               {canReply && (
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
                   <input
                     value={replyDrafts[note.id] ?? ""}
                     onChange={(event) =>

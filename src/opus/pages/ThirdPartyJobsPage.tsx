@@ -42,7 +42,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
                 to={`/portal/third-party/jobs/${job.id}`}
                 className="group block rounded-2xl border-2 border-border bg-card p-5 transition-colors hover:border-primary"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div>
                     <p className="font-black text-foreground">{job.siteName}</p>
                     <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">

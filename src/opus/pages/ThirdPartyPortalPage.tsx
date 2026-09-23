@@ -101,6 +101,10 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
   }, [selectedJobId, user?.id]);
 
   const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
+  const pendingSubmissions = useMemo(
+    () => submissions.filter((submission) => submission.status === "pending"),
+    [submissions],
+  );
   const assignedJobs = useMemo(
     () =>
       jobs.filter((job) =>
@@ -318,12 +322,12 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
         <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
           Submission status
         </h2>
-        {submissions.length === 0 ? (
+        {pendingSubmissions.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-            No submissions yet.
+            No pending submissions.
           </p>
         ) : (
-          submissions.map((submission) => (
+          pendingSubmissions.map((submission) => (
             <div
               key={submission.id}
               className="flex items-center justify-between rounded-xl border border-border bg-card p-4"

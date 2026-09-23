@@ -145,11 +145,14 @@ export const PortalLayout: React.FC = () => {
     return true;
   });
   // Drop a section header if every item under it got filtered out (e.g. ADMIN for non-admins).
-  const navItems = visibleNav.filter((item, i) => {
-    if (!("section" in item)) return true;
-    const next = visibleNav[i + 1];
-    return !!next && !("section" in next);
-  });
+  const navItems =
+    role === "third_party"
+      ? visibleNav.filter((item) => !("section" in item))
+      : visibleNav.filter((item, i) => {
+          if (!("section" in item)) return true;
+          const next = visibleNav[i + 1];
+          return !!next && !("section" in next);
+        });
 
   const checkIsActive = (path: string) => {
     const [itemPath, itemQuery] = path.split("?");

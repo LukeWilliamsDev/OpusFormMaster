@@ -26,7 +26,7 @@ const EMPTY_FORM: FormState = {
 };
 
 export const ThirdPartyPortalPage: React.FC = () => {
-  const { user, workers, jobs, shifts } = usePortal();
+  const { user, profile, workers, jobs, shifts } = usePortal();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -135,7 +135,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
     setPostingNote(true);
     const { error } = await db
       .from("third_party_job_notes")
-      .insert({ job_id: selectedJob.id, author_id: user?.id, body: note.trim() });
+      .insert({ tenant_id: profile?.tenant_id, job_id: selectedJob.id, author_id: user?.id, body: note.trim() });
     setPostingNote(false);
     if (error) return toast.error(error.message || "Unable to add note");
     setNote("");
@@ -166,7 +166,8 @@ export const ThirdPartyPortalPage: React.FC = () => {
           uploaded_by: user.email ?? "Third party",
           uploaded_by_user_id: user.id,
         })
-      : await db.from("third_party_attachments").insert({
+        : await db.from("third_party_attachments").insert({
+          tenant_id: profile?.tenant_id,
           job_id: selectedJob.id,
           uploaded_by: user.id,
           file_name: file.name,

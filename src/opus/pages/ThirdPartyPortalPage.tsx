@@ -1,0 +1,375 @@
+import React, { useMemo, useState } from "react";
+import { Check, FileUp, Loader, MapPin, Plus, Send } from "lucide-react";
+import { toast } from "sonner";
+import { usePortal } from "../context/PortalContext";
+import { STAFF_ROLES } from "../types/erp";
+import { formatUKDate } from "../utils/week";
+import { supabase } from "../../integrations/supabase/client";
+
+const db = supabase as any;
+
+type FormState = {
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  postcode: string;
+  notes: string;
+};
+const EMPTY_FORM: FormState = {
+  name: "",
+  role: STAFF_ROLES[0],
+  email: "",
+  phone: "",
+  postcode: "",
+  notes: "",
+};
+
+export const ThirdPartyPortalPage: React.FC = () => {
+  const { user, workers, jobs, shifts } = usePortal();
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+  const [postingNote, setPostingNote] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const loadSubmissions = async () => {
+    const { data } = await db
+      .from("third_party_staff_submissions")
+      .select("id, name, role, status, created_at, review_notes")
+      .order("created_at", { ascending: false });
+    setSubmissions(data ?? []);
+  };
+  React.useEffect(() => {
+    loadSubmissions();
+  }, []);
+
+  const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
+  const assignedJobs = useMemo(
+    () =>
+      jobs.filter((job) =>
+        shifts.some((shift) => shift.jobId === job.id && ownedWorkerIds.has(shift.workerId)),
+      ),
+    [jobs, shifts, ownedWorkerIds],
+  );
+  const selectedJob = assignedJobs.find((job) => job.id === selectedJobId) ?? null;
+
+  const setField = (field: keyof FormState, value: string) =>
+    setForm((current) => ({ ...current, [field]: value }));
+
+  const submitStaff = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!form.name.trim()) return;
+    setSubmitting(true);
+    const { error } = await db.rpc("submit_third_party_staff", {
+      p_name: form.name,
+      p_role: form.role,
+      p_email: form.email,
+      p_phone: form.phone,
+      p_postcode: form.postcode,
+      p_notes: form.notes,
+    });
+    setSubmitting(false);
+    if (error) return toast.error(error.message || "Unable to submit staff member");
+    setForm(EMPTY_FORM);
+    await loadSubmissions();
+    toast.success("Staff member submitted for approval");
+  };
+
+  const saveWorker = async (worker: (typeof workers)[number]) => {
+    const { error } = await db
+      .from("staff")
+      .update({
+        name: worker.name,
+        role: worker.role,
+        email: worker.email ?? null,
+        phone: worker.phone ?? null,
+        postcode: worker.postcode ?? null,
+        tickets: worker.tickets ?? [],
+        uploaded_certificates: worker.uploadedCertificates ?? [],
+      })
+      .eq("id", worker.id);
+    if (error) return toast.error(error.message || "Unable to save staff member");
+    setEditingId(null);
+    toast.success("Staff member updated");
+  };
+
+  const addNote = async () => {
+    if (!selectedJob || !note.trim()) return;
+    setPostingNote(true);
+    const { error } = await db
+      .from("third_party_job_notes")
+      .insert({ job_id: selectedJob.id, author_id: user?.id, body: note.trim() });
+    setPostingNote(false);
+    if (error) return toast.error(error.message || "Unable to add note");
+    setNote("");
+    toast.success("Note added");
+  };
+
+  const uploadFile = async (file: File) => {
+    if (!selectedJob || !user) return;
+    setUploading(true);
+    const extension = file.name.split(".").pop() || "bin";
+    const isPhoto = file.type.startsWith("image/");
+    const path = isPhoto
+      ? `third-party-media/${selectedJob.id}/${user.id}/${crypto.randomUUID()}.${extension}`
+      : `${user.id}/${selectedJob.id}/${crypto.randomUUID()}.${extension}`;
+    const bucket = isPhoto ? "job-attachments" : "third-party-attachments";
+    const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file);
+    if (uploadError) {
+      setUploading(false);
+      return toast.error(uploadError.message || "Unable to upload file");
+    }
+    const { error } = isPhoto
+      ? await db.from("job_attachments").insert({
+          job_id: selectedJob.id,
+          type: "image_after",
+          file_name: file.name,
+          file_url: path,
+          file_size_bytes: file.size,
+          uploaded_by: user.email ?? "Third party",
+          uploaded_by_user_id: user.id,
+        })
+      : await db.from("third_party_attachments").insert({
+          job_id: selectedJob.id,
+          uploaded_by: user.id,
+          file_name: file.name,
+          file_path: path,
+          mime_type: file.type || "application/octet-stream",
+          file_size_bytes: file.size,
+        });
+    setUploading(false);
+    if (error) return toast.error(error.message || "Unable to record upload");
+    toast.success("Attachment uploaded");
+  };
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:py-12">
+      <header>
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+          Third-party portal
+        </p>
+        <h1 className="mt-2 text-2xl font-black text-foreground">Your staff and assigned sites</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          You can add and maintain your approved staff, then add information to sites where they are
+          assigned.
+        </p>
+      </header>
+
+      <section className="rounded-2xl border-2 border-border bg-card p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <Plus className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-black uppercase tracking-widest">
+            Submit staff for approval
+          </h2>
+        </div>
+        <form onSubmit={submitStaff} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {(["name", "email", "phone", "postcode"] as const).map((field) => (
+            <input
+              key={field}
+              required={field === "name"}
+              value={form[field]}
+              onChange={(e) => setField(field, e.target.value)}
+              placeholder={field[0].toUpperCase() + field.slice(1)}
+              className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+            />
+          ))}
+          <select
+            value={form.role}
+            onChange={(e) => setField("role", e.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+          >
+            {STAFF_ROLES.map((role) => (
+              <option key={role}>{role}</option>
+            ))}
+          </select>
+          <input
+            value={form.notes}
+            onChange={(e) => setField("notes", e.target.value)}
+            placeholder="Notes (optional)"
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+          />
+          <button
+            disabled={submitting}
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50 sm:col-span-2 lg:col-span-1"
+          >
+            {submitting ? (
+              <Loader className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}{" "}
+            Submit for approval
+          </button>
+        </form>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+          Submission status
+        </h2>
+        {submissions.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+            No submissions yet.
+          </p>
+        ) : (
+          submissions.map((submission) => (
+            <div
+              key={submission.id}
+              className="flex items-center justify-between rounded-xl border border-border bg-card p-4"
+            >
+              <div>
+                <p className="font-bold">{submission.name}</p>
+                <p className="text-xs text-muted-foreground">
+                  {submission.role} · {formatUKDate(submission.created_at?.slice(0, 10))}
+                </p>
+              </div>
+              <span className="rounded-full border border-border px-2 py-1 text-[10px] font-black uppercase tracking-widest">
+                {submission.status}
+              </span>
+            </div>
+          ))
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+          Your approved staff
+        </h2>
+        {workers.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+            No approved staff yet.
+          </p>
+        ) : (
+          workers.map((worker) => (
+            <div key={worker.id} className="rounded-xl border border-border bg-card p-4">
+              {editingId === worker.id ? (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <input
+                    value={worker.name}
+                    onChange={(e) => (worker.name = e.target.value)}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  />
+                  <input
+                    value={worker.email ?? ""}
+                    onChange={(e) => (worker.email = e.target.value)}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  />
+                  <input
+                    value={worker.phone ?? ""}
+                    onChange={(e) => (worker.phone = e.target.value)}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  />
+                  <input
+                    value={worker.postcode ?? ""}
+                    onChange={(e) => (worker.postcode = e.target.value)}
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  />
+                  <button
+                    onClick={() => saveWorker(worker)}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+                  >
+                    Save changes
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="font-bold text-foreground">{worker.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {worker.role} · {worker.email || "No email"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setEditingId(worker.id)}
+                    className="rounded-lg border border-border px-3 py-2 text-xs font-bold"
+                  >
+                    Edit
+                  </button>
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+          Assigned jobs
+        </h2>
+        {assignedJobs.length === 0 ? (
+          <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+            No current or future assignments.
+          </p>
+        ) : (
+          assignedJobs.map((job) => (
+            <article key={job.id} className="rounded-xl border border-border bg-card p-4">
+              <button
+                onClick={() => setSelectedJobId(selectedJobId === job.id ? null : job.id)}
+                className="w-full text-left"
+              >
+                <p className="font-bold text-foreground">{job.siteName}</p>
+                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3" />
+                  {job.postcode} · {job.currentPours} pours
+                </p>
+              </button>
+              {selectedJobId === job.id && (
+                <div className="mt-4 space-y-3 border-t border-border pt-4">
+                  <p className="text-xs text-muted-foreground">
+                    Your staff assigned:{" "}
+                    {workers
+                      .filter((worker) =>
+                        shifts.some(
+                          (shift) => shift.jobId === job.id && shift.workerId === worker.id,
+                        ),
+                      )
+                      .map((worker) => worker.name)
+                      .join(", ") || "None"}
+                  </p>
+                  <textarea
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    placeholder="Add a site note..."
+                    className="min-h-20 w-full rounded-lg border border-border bg-background p-3 text-sm"
+                  />
+                  <button
+                    onClick={addNote}
+                    disabled={postingNote || !note.trim()}
+                    className="flex items-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-bold text-primary-foreground"
+                  >
+                    <Send className="h-3 w-3" />
+                    Add note
+                  </button>
+                  <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-3 text-xs font-bold">
+                    <FileUp className="h-4 w-4" />
+                    {uploading
+                      ? "Uploading..."
+                      : "Add before/after photo or third-party attachment"}
+                    <input
+                      type="file"
+                      className="hidden"
+                      onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])}
+                    />
+                  </label>
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <Check className="h-3 w-3 text-emerald-500" />
+                    Only your uploads are visible to you.
+                  </div>
+                </div>
+              )}
+            </article>
+          ))
+        )}
+      </section>
+    </div>
+  );
+};

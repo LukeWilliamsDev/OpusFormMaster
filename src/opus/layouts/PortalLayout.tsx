@@ -93,6 +93,12 @@ export const PortalLayout: React.FC = () => {
       roles: MANAGEMENT_ROLES,
     },
     {
+      name: "STAFF APPROVALS",
+      path: "/portal/third-party-approvals",
+      icon: UserCog,
+      roles: MANAGEMENT_ROLES,
+    },
+    {
       name: "QUOTES",
       path: "/portal/pipeline?view=pipeline-registry",
       icon: Truck,
@@ -102,6 +108,12 @@ export const PortalLayout: React.FC = () => {
     { name: "SITE LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
     { name: "USERS", path: "/portal/users", icon: UserCog, roles: ["admin"] },
     { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
+    {
+      name: "THIRD-PARTY PORTAL",
+      path: "/portal/third-party",
+      icon: Users,
+      roles: ["third_party"],
+    },
   ];
 
   // SITE RECORDS/POLICIES (full audit trail) are restricted to the one
@@ -163,7 +175,7 @@ export const PortalLayout: React.FC = () => {
         collapsed={isSidebarCollapsed}
         onToggleCollapse={toggleSidebar}
         logoSrc={logoSrc}
-        logoHref="/portal/dashboard"
+        logoHref={role === "third_party" ? "/portal/third-party" : "/portal/dashboard"}
         profile={{
           name: profile?.full_name || user?.email || "User",
           role: role || "labourer",
@@ -177,7 +189,10 @@ export const PortalLayout: React.FC = () => {
 
       {/* Mobile Sticky Header */}
       <header className="lg:hidden flex items-center justify-between h-16 bg-background border-b-2 border-border px-4 sticky top-0 z-40">
-        <Link to="/portal/dashboard" className="flex items-center">
+        <Link
+          to={role === "third_party" ? "/portal/third-party" : "/portal/dashboard"}
+          className="flex items-center"
+        >
           <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
         </Link>
         <div className="flex items-center space-x-2">

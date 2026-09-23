@@ -86,7 +86,8 @@ export type AppRole =
   | "logistics_coordinator"
   | "logistics_assistant"
   | "site_foreman"
-  | "labourer";
+  | "labourer"
+  | "third_party";
 
 export const ALL_ROLES: AppRole[] = [
   "admin",
@@ -95,6 +96,7 @@ export const ALL_ROLES: AppRole[] = [
   "logistics_assistant",
   "site_foreman",
   "labourer",
+  "third_party",
 ];
 // Full ops write access — mirrors private.can_write_ops() in the DB.
 export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];

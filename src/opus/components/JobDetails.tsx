@@ -34,6 +34,8 @@ import { handleError } from "../utils/errorHandler";
 import { InvoiceList } from "./billing/InvoiceList";
 import { FinalBillList } from "./billing/FinalBillList";
 import { QuoteInvoiceBuilder } from "./QuoteInvoiceBuilder";
+import { ThirdPartyAttachmentsPanel } from "./ThirdPartyAttachmentsPanel";
+import { ThirdPartyNotesPanel } from "./ThirdPartyNotesPanel";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 100 * 1024 * 1024;
@@ -1345,6 +1347,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           </div>
 
           <FeedTab jobId={job.id} />
+          <ThirdPartyNotesPanel jobId={job.id} />
         </TabsContent>
 
         <TabsContent value="suppliers">
@@ -1386,6 +1389,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             setRenameValue={setRenameValue}
             executeRenameAttachment={executeRenameAttachment}
           />
+          <ThirdPartyAttachmentsPanel jobId={job.id} />
         </TabsContent>
 
         <TabsContent value="history">

@@ -20,6 +20,7 @@ import { ThirdPartyPortalPage } from "./pages/ThirdPartyPortalPage";
 import { ThirdPartyApprovalsPage } from "./pages/ThirdPartyApprovalsPage";
 import { ThirdPartyDashboardPage } from "./pages/ThirdPartyDashboardPage";
 import { ThirdPartyJobsPage } from "./pages/ThirdPartyJobsPage";
+import { ThirdPartySitePage } from "./pages/ThirdPartySitePage";
 import { JobLedgerPage } from "./pages/JobLedger";
 import { PipelinePage } from "./pages/Pipeline";
 import { AuditLogPage } from "./pages/AuditLog";
@@ -200,6 +201,14 @@ export default function App() {
               element={
                 <RoleGuard allow={["third_party"]}>
                   <ThirdPartyJobsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/third-party/jobs/:jobId"
+              element={
+                <RoleGuard allow={["third_party"]}>
+                  <ThirdPartySitePage />
                 </RoleGuard>
               }
             />

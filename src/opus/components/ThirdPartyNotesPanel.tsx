@@ -9,11 +9,11 @@ const db = supabase as any;
 const INTERNAL_ROLES = new Set(["admin", "director", "logistics_coordinator"]);
 
 export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => {
-  const { role, profile } = usePortal();
+  const { role, profile, user } = usePortal();
   const [notes, setNotes] = useState<any[]>([]);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const canReply = INTERNAL_ROLES.has(role ?? "");
+  const canReply = INTERNAL_ROLES.has(role ?? "") || role === "third_party";
 
   const load = useCallback(async () => {
     const { data: noteRows, error } = await db
@@ -26,7 +26,7 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => 
     const { data: replies } = rows.length
       ? await db
           .from("third_party_job_note_replies")
-          .select("id, note_id, body, author_id, created_at")
+          .select("id, note_id, body, author_id, author_first_name, created_at")
           .in(
             "note_id",
             rows.map((note: any) => note.id),
@@ -80,7 +80,10 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => 
                 {note.replies.map((replyItem: any) => (
                   <div key={replyItem.id} className="rounded-md bg-background p-2">
                     <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-                      Opus Form team · {formatUKDate(replyItem.created_at?.slice(0, 10))}
+                      {replyItem.author_id === user?.id
+                        ? "You"
+                        : replyItem.author_first_name || "Opus Form team"}{" "}
+                      · {formatUKDate(replyItem.created_at?.slice(0, 10))}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-xs text-foreground">
                       {replyItem.body}

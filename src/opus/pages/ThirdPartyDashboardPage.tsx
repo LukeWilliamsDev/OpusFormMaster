@@ -6,6 +6,18 @@ import { supabase } from "../../integrations/supabase/client";
 import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
 
 const db = supabase as any;
+const getGreeting = () => {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      hour: "numeric",
+      hour12: false,
+      timeZone: "Europe/London",
+    }).format(new Date()),
+  );
+  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+};
+const statusLabel = (status: string) =>
+  status.replace(/[-_]/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
 
 export const ThirdPartyDashboardPage: React.FC = () => {
   const { workers, jobs, shifts, dataLoading } = usePortal();
@@ -55,6 +67,11 @@ export const ThirdPartyDashboardPage: React.FC = () => {
   const nextJobIsCompleted = Boolean(
     nextJob && ["completed", "complete", "closed"].includes(String(nextJob.status).toLowerCase()),
   );
+  const nextJobStatus = nextJobIsCompleted
+    ? "Completed"
+    : nextJob
+      ? statusLabel(nextJob.status)
+      : null;
   const expiringCertificateCount = workers.reduce(
     (count, worker) =>
       count +
@@ -84,7 +101,9 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
             Third-party portal
           </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground">Good morning</h1>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground">
+            {getGreeting()}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             Everything your team needs for assigned work, approvals, and site updates.
           </p>
@@ -172,8 +191,10 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             <h2 className="text-sm font-black uppercase tracking-widest">
               {nextJobIsCompleted ? "Latest site" : "Next up"}
             </h2>
-            <span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600">
-              {nextJobIsCompleted ? "Completed" : "On track"}
+            <span
+              className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${nextJobIsCompleted ? "bg-muted text-muted-foreground" : nextJob?.status === "pending" || nextJob?.status === "on-hold" ? "bg-amber-500/10 text-amber-700" : "bg-emerald-500/10 text-emerald-600"}`}
+            >
+              {nextJobStatus}
             </span>
           </div>
           {nextJob ? (

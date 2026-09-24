@@ -11,10 +11,12 @@ import { getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
 
 const db = supabase as any;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const isCompletedJob = (job: any) =>
+  ["completed", "complete", "closed"].includes(String(job.status).toLowerCase());
 
 export const ThirdPartySitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
-  const { user, profile, workers, jobs, shifts, dataLoading } = usePortal();
+  const { user, profile, workers, jobs, shifts, role, dataLoading } = usePortal();
   const [note, setNote] = useState("");
   const [postingNote, setPostingNote] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
@@ -111,6 +113,7 @@ export const ThirdPartySitePage: React.FC = () => {
   const assignedStaff = workers.filter((worker) =>
     shifts.some((shift) => shift.jobId === job.id && shift.workerId === worker.id),
   );
+  const readOnlyHistory = role === "third_party" && isCompletedJob(job);
   const addNote = async () => {
     if (!note.trim()) return;
     setPostingNote(true);
@@ -218,64 +221,68 @@ export const ThirdPartySitePage: React.FC = () => {
         )}
       </section>
       <div className="grid gap-5 lg:grid-cols-2">
-        <section className="rounded-2xl border-2 border-border bg-card p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-                Site photos
+        {!readOnlyHistory && (
+          <section className="rounded-2xl border-2 border-border bg-card p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  Site photos
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">View-only photos.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => photos[0] && setGallery({ photos, index: 0 })}
+                disabled={photosLoading || !photos.length}
+                className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
+              >
+                View gallery
+              </button>
+            </div>
+            {photosLoading ? (
+              <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {[1, 2, 3].map((item) => (
+                  <div key={item} className="aspect-[4/3] animate-pulse rounded-lg bg-muted" />
+                ))}
+              </div>
+            ) : photos.length === 0 ? (
+              <p className="mt-6 text-sm text-muted-foreground">
+                No site photos have been uploaded yet.
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">View-only photos.</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => photos[0] && setGallery({ photos, index: 0 })}
-              disabled={photosLoading || !photos.length}
-              className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
-            >
-              View gallery
-            </button>
-          </div>
-          {photosLoading ? (
-            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {[1, 2, 3].map((item) => (
-                <div key={item} className="aspect-[4/3] animate-pulse rounded-lg bg-muted" />
-              ))}
-            </div>
-          ) : photos.length === 0 ? (
-            <p className="mt-6 text-sm text-muted-foreground">
-              No site photos have been uploaded yet.
-            </p>
-          ) : (
-            <div className="mt-5 grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(120px,1fr))]">
-              {photos.slice(0, 6).map((photo) => (
-                <button
-                  key={photo.id ?? photo.file_url}
-                  onClick={() => setGallery({ photos, index: photos.indexOf(photo) })}
-                  className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-card text-left"
-                >
-                  {photo.preview_url ? (
-                    <img
-                      src={photo.preview_url}
-                      alt={photo.type === "image_before" ? "Before site photo" : "After site photo"}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <span className="flex h-full items-center justify-center p-3 text-center text-[10px] font-bold text-muted-foreground">
-                      {photo.file_name}
-                    </span>
-                  )}
-                  <span
-                    className={`absolute left-1.5 top-1.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider shadow-sm ${photo.type === "image_before" ? "bg-black/80 text-white" : "bg-primary text-primary-foreground"}`}
+            ) : (
+              <div className="mt-5 grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(120px,1fr))]">
+                {photos.slice(0, 6).map((photo) => (
+                  <button
+                    key={photo.id ?? photo.file_url}
+                    onClick={() => setGallery({ photos, index: photos.indexOf(photo) })}
+                    className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-card text-left"
                   >
-                    {photo.type === "image_before" ? "Before" : "After"}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </section>
+                    {photo.preview_url ? (
+                      <img
+                        src={photo.preview_url}
+                        alt={
+                          photo.type === "image_before" ? "Before site photo" : "After site photo"
+                        }
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full items-center justify-center p-3 text-center text-[10px] font-bold text-muted-foreground">
+                        {photo.file_name}
+                      </span>
+                    )}
+                    <span
+                      className={`absolute left-1.5 top-1.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider shadow-sm ${photo.type === "image_before" ? "bg-black/80 text-white" : "bg-primary text-primary-foreground"}`}
+                    >
+                      {photo.type === "image_before" ? "Before" : "After"}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
         <section className="rounded-2xl border-2 border-border bg-card p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -307,24 +314,27 @@ export const ThirdPartySitePage: React.FC = () => {
             </p>
           </div>
         </div>
-        <ThirdPartyNotesPanel jobId={job.id} showHeading={false} />
+        <ThirdPartyNotesPanel jobId={job.id} showHeading={false} readOnly={readOnlyHistory} />
       </section>
       <ThirdPartyAttachmentsPanel
         jobId={job.id}
         refreshKey={attachmentRefresh}
+        readOnly={readOnlyHistory}
         action={
-          <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest hover:border-primary">
-            <FileUp className="h-3.5 w-3.5" />
-            {uploadingAttachment ? "Uploading..." : "Upload file"}
-            <input
-              type="file"
-              accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
-              className="hidden"
-              onChange={(event) =>
-                event.target.files?.[0] && uploadAttachment(event.target.files[0])
-              }
-            />
-          </label>
+          !readOnlyHistory ? (
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest hover:border-primary">
+              <FileUp className="h-3.5 w-3.5" />
+              {uploadingAttachment ? "Uploading..." : "Upload file"}
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                className="hidden"
+                onChange={(event) =>
+                  event.target.files?.[0] && uploadAttachment(event.target.files[0])
+                }
+              />
+            </label>
+          ) : null
         }
       />
       <Dialog open={!!gallery} onOpenChange={(open) => !open && setGallery(null)}>

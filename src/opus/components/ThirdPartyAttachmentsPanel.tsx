@@ -11,7 +11,8 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
   jobId: string;
   refreshKey?: number;
   action?: React.ReactNode;
-}> = ({ jobId, refreshKey = 0, action }) => {
+  readOnly?: boolean;
+}> = ({ jobId, refreshKey = 0, action, readOnly = false }) => {
   const { role } = usePortal();
   const [files, setFiles] = useState<any[]>([]);
   const [renameTarget, setRenameTarget] = useState<any | null>(null);
@@ -19,7 +20,7 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
-  const canManage = role === "third_party";
+  const canManage = role === "third_party" && !readOnly;
   useEffect(() => {
     let cancelled = false;
     setLoading(true);

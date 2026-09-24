@@ -10,17 +10,18 @@ import { formatAppRoleLabel } from "../context/PortalContext";
 const db = supabase as any;
 const INTERNAL_ROLES = new Set(["admin", "director", "logistics_coordinator"]);
 
-export const ThirdPartyNotesPanel: React.FC<{ jobId: string; showHeading?: boolean }> = ({
-  jobId,
-  showHeading = true,
-}) => {
+export const ThirdPartyNotesPanel: React.FC<{
+  jobId: string;
+  showHeading?: boolean;
+  readOnly?: boolean;
+}> = ({ jobId, showHeading = true, readOnly = false }) => {
   const { role, profile, user } = usePortal();
   const [notes, setNotes] = useState<any[]>([]);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const canReply = INTERNAL_ROLES.has(role ?? "") || role === "third_party";
+  const canReply = !readOnly && (INTERNAL_ROLES.has(role ?? "") || role === "third_party");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -104,7 +105,8 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string; showHeading?: boole
                 <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                   Third party · {formatUKDate(note.created_at?.slice(0, 10))}
                 </p>
-                {role === "third_party" &&
+                {!readOnly &&
+                  role === "third_party" &&
                   note.author_id === user?.id &&
                   note.replies.length === 0 && (
                     <button

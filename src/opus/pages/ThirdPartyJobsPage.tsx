@@ -43,7 +43,16 @@ export const ThirdPartyJobsPage: React.FC = () => {
       .map((shift) => shift.date)
       .sort();
     const today = new Date().toISOString().slice(0, 10);
-    const date = dates.find((value) => value >= today) ?? dates[dates.length - 1];
+    const pastDates = dates.filter((value) => value <= today);
+    const pastDate = pastDates[pastDates.length - 1];
+    const date = isCompletedJob(job)
+      ? (pastDate ?? dates[0])
+      : (dates.find((value) => value >= today) ?? dates[dates.length - 1]);
+    const dateLabel = isCompletedJob(job)
+      ? pastDate
+        ? "Last shift"
+        : "Scheduled date"
+      : "Next shift";
     const staffNames = assignedStaff.map((worker) => worker.name).filter(Boolean);
     const actionLabel =
       variant === "completed"
@@ -73,7 +82,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
         <div className="mt-5 flex flex-wrap gap-2 text-xs text-muted-foreground">
           {date && (
             <span className="rounded-lg border border-border px-3 py-2">
-              {variant === "completed" ? "Last shift" : "Next shift"} · {formatUKDate(date)}
+              {dateLabel} · {formatUKDate(date)}
             </span>
           )}
           <span className="rounded-lg border border-border px-3 py-2">

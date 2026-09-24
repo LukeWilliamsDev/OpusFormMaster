@@ -257,15 +257,12 @@ export const ThirdPartySitePage: React.FC = () => {
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">
                 Add a note
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Keep updates with the site record.
-              </p>
             </div>
           </div>
           <textarea
             value={note}
             onChange={(event) => setNote(event.target.value)}
-            placeholder="Add a progress update…"
+            placeholder="Write a note…"
             className="mt-5 min-h-24 w-full rounded-xl border border-border bg-background p-4 text-sm"
           />
           <button

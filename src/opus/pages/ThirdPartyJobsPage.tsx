@@ -59,7 +59,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="mt-5 flex items-center justify-between border-t border-border pt-3 text-xs">
-                  <span className="text-muted-foreground">Read-only site overview</span>
+                  <span className="text-muted-foreground">Open site record</span>
                   <span className="font-black uppercase tracking-widest text-primary">
                     View site
                   </span>

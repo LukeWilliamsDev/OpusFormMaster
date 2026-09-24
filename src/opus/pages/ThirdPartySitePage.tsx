@@ -10,6 +10,7 @@ import { ThirdPartyNotesPanel } from "../components/ThirdPartyNotesPanel";
 import { getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
 
 const db = supabase as any;
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 export const ThirdPartySitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -111,6 +112,9 @@ export const ThirdPartySitePage: React.FC = () => {
   };
   const uploadAttachment = async (file: File) => {
     if (!user) return;
+    if (file.size > MAX_UPLOAD_BYTES) {
+      return toast.error("Attachments must be 10 MB or smaller");
+    }
     setUploadingAttachment(true);
     const extension = file.name.split(".").pop() || "bin";
     const path = `${user.id}/${job.id}/${crypto.randomUUID()}.${extension}`;

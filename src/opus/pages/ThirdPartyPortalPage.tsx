@@ -4,9 +4,11 @@ import { toast } from "sonner";
 import { usePortal } from "../context/PortalContext";
 import { STAFF_ROLES } from "../types/erp";
 import { formatUKDate } from "../utils/week";
+import { getTicketStatus } from "../utils/workerValidation";
 import { supabase } from "../../integrations/supabase/client";
 
 const db = supabase as any;
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 const CERTIFICATE_TYPES = [
   "CSCS",
@@ -65,13 +67,20 @@ const EMPTY_FORM: FormState = {
   postcode: "",
   notes: "",
 };
+type WorkerEditDraft = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  postcode: string;
+};
 
 export const ThirdPartyPortalPage: React.FC = () => {
   const { user, profile, workers } = usePortal();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submissions, setSubmissions] = useState<any[]>([]);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingDraft, setEditingDraft] = useState<WorkerEditDraft | null>(null);
   const [lastSubmissionId, setLastSubmissionId] = useState<string | null>(null);
   const [ticketType, setTicketType] = useState("");
   const [ticketNumber, setTicketNumber] = useState("");
@@ -132,6 +141,9 @@ export const ThirdPartyPortalPage: React.FC = () => {
     if (!ticketType.trim()) {
       return toast.error("Enter the certificate name");
     }
+    if (ticketFile.size > MAX_UPLOAD_BYTES) {
+      return toast.error("Certificate files must be 10 MB or smaller");
+    }
     setUploadingTicket(true);
     const extension = ticketFile.name.split(".").pop() || "bin";
     const path = `${user.id}/${submissionId}/${crypto.randomUUID()}.${extension}`;
@@ -165,21 +177,19 @@ export const ThirdPartyPortalPage: React.FC = () => {
     toast.success("Certificate uploaded");
   };
 
-  const saveWorker = async (worker: (typeof workers)[number]) => {
+  const saveWorker = async () => {
+    if (!editingDraft) return;
     const { error } = await db
       .from("staff")
       .update({
-        name: worker.name,
-        role: worker.role,
-        email: worker.email ?? null,
-        phone: worker.phone ?? null,
-        postcode: worker.postcode ?? null,
-        tickets: worker.tickets ?? [],
-        uploaded_certificates: worker.uploadedCertificates ?? [],
+        name: editingDraft.name,
+        email: editingDraft.email || null,
+        phone: editingDraft.phone || null,
+        postcode: editingDraft.postcode || null,
       })
-      .eq("id", worker.id);
+      .eq("id", editingDraft.id);
     if (error) return toast.error(error.message || "Unable to save staff member");
-    setEditingId(null);
+    setEditingDraft(null);
     toast.success("Staff member updated");
   };
 
@@ -244,6 +254,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                   required={field === "name"}
                   value={form[field]}
                   onChange={(e) => setField(field, e.target.value)}
+                  aria-label={field[0].toUpperCase() + field.slice(1)}
                   placeholder={field[0].toUpperCase() + field.slice(1)}
                   className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                 />
@@ -251,6 +262,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
               <select
                 value={form.role}
                 onChange={(e) => setField("role", e.target.value)}
+                aria-label="Staff role"
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
               >
                 {STAFF_ROLES.map((role) => (
@@ -260,6 +272,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
               <input
                 value={form.notes}
                 onChange={(e) => setField("notes", e.target.value)}
+                aria-label="Notes"
                 placeholder="Notes (optional)"
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
               />
@@ -371,36 +384,42 @@ export const ThirdPartyPortalPage: React.FC = () => {
           ) : (
             workers.map((worker) => (
               <div key={worker.id} className="rounded-2xl border-2 border-border bg-card p-4">
-                {editingId === worker.id ? (
+                {editingDraft?.id === worker.id ? (
                   <div className="grid gap-2 sm:grid-cols-2">
                     <input
-                      value={worker.name}
-                      onChange={(e) => (worker.name = e.target.value)}
+                      aria-label="Staff name"
+                      value={editingDraft.name}
+                      onChange={(e) => setEditingDraft({ ...editingDraft, name: e.target.value })}
                       className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
                     />
                     <input
-                      value={worker.email ?? ""}
-                      onChange={(e) => (worker.email = e.target.value)}
+                      aria-label="Staff email"
+                      value={editingDraft.email}
+                      onChange={(e) => setEditingDraft({ ...editingDraft, email: e.target.value })}
                       className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
                     />
                     <input
-                      value={worker.phone ?? ""}
-                      onChange={(e) => (worker.phone = e.target.value)}
+                      aria-label="Staff phone"
+                      value={editingDraft.phone}
+                      onChange={(e) => setEditingDraft({ ...editingDraft, phone: e.target.value })}
                       className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
                     />
                     <input
-                      value={worker.postcode ?? ""}
-                      onChange={(e) => (worker.postcode = e.target.value)}
+                      aria-label="Staff postcode"
+                      value={editingDraft.postcode}
+                      onChange={(e) =>
+                        setEditingDraft({ ...editingDraft, postcode: e.target.value })
+                      }
                       className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
                     />
                     <button
-                      onClick={() => saveWorker(worker)}
+                      onClick={saveWorker}
                       className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
                     >
                       Save changes
                     </button>
                     <button
-                      onClick={() => setEditingId(null)}
+                      onClick={() => setEditingDraft(null)}
                       className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
                     >
                       Cancel
@@ -422,7 +441,15 @@ export const ThirdPartyPortalPage: React.FC = () => {
                       </div>
                       <div className="flex flex-wrap gap-2">
                         <button
-                          onClick={() => setEditingId(worker.id)}
+                          onClick={() =>
+                            setEditingDraft({
+                              id: worker.id,
+                              name: worker.name,
+                              email: worker.email ?? "",
+                              phone: worker.phone ?? "",
+                              postcode: worker.postcode ?? "",
+                            })
+                          }
                           className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest"
                         >
                           Edit
@@ -450,9 +477,18 @@ export const ThirdPartyPortalPage: React.FC = () => {
                           .map((document: any, index) => (
                             <span
                               key={`${document.id ?? document.type ?? document.name}-${index}`}
-                              className="rounded-full bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary"
+                              className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                                getTicketStatus(document) === "EXPIRED"
+                                  ? "bg-destructive/10 text-destructive"
+                                  : getTicketStatus(document) === "EXPIRING_SOON"
+                                    ? "bg-amber-500/10 text-amber-700"
+                                    : "bg-primary/10 text-primary"
+                              }`}
                             >
                               {document.type || document.name || "Certificate"}
+                              {document.expiryDate && getTicketStatus(document) !== "VALID"
+                                ? ` · ${getTicketStatus(document) === "EXPIRED" ? "expired" : "expiring"}`
+                                : ""}
                             </span>
                           ))}
                       </div>

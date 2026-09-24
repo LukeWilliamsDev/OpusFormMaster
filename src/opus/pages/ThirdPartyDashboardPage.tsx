@@ -3,17 +3,35 @@ import { ArrowRight, CalendarDays } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
+import { getTicketStatus } from "../utils/workerValidation";
 
 const db = supabase as any;
 
 export const ThirdPartyDashboardPage: React.FC = () => {
   const { workers, jobs, shifts } = usePortal();
   const [pendingCount, setPendingCount] = useState(0);
+  const [unansweredCount, setUnansweredCount] = useState(0);
   useEffect(() => {
     db.from("third_party_staff_submissions")
       .select("id", { count: "exact", head: true })
       .eq("status", "pending")
       .then(({ count }: { count: number | null }) => setPendingCount(count ?? 0));
+  }, []);
+  useEffect(() => {
+    const loadUnanswered = async () => {
+      const { data: notes } = await db.from("third_party_job_notes").select("id");
+      if (!notes?.length) return setUnansweredCount(0);
+      const { data: replies } = await db
+        .from("third_party_job_note_replies")
+        .select("note_id")
+        .in(
+          "note_id",
+          notes.map((note: any) => note.id),
+        );
+      const replied = new Set((replies ?? []).map((reply: any) => reply.note_id));
+      setUnansweredCount(notes.filter((note: any) => !replied.has(note.id)).length);
+    };
+    void loadUnanswered();
   }, []);
   const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
   const assignedJobs = useMemo(
@@ -24,6 +42,16 @@ export const ThirdPartyDashboardPage: React.FC = () => {
     [jobs, shifts, ownedWorkerIds],
   );
   const nextJob = assignedJobs[0];
+  const expiringCertificateCount = workers.reduce(
+    (count, worker) =>
+      count +
+      (worker.tickets ?? []).filter((ticket) => {
+        const status = getTicketStatus(ticket);
+        return status === "EXPIRED" || status === "EXPIRING_SOON";
+      }).length,
+    0,
+  );
+  const actionCount = pendingCount + unansweredCount + expiringCertificateCount;
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -54,9 +82,11 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           ],
           [
             "Action needed",
-            pendingCount,
-            pendingCount ? "pending review" : "you are all caught up",
-            "/portal/third-party/staff",
+            actionCount,
+            actionCount ? "needs your attention" : "you are all caught up",
+            actionCount && unansweredCount > 0
+              ? "/portal/third-party/jobs"
+              : "/portal/third-party/staff",
           ],
         ].map(([label, count, description, href]) => (
           <Link
@@ -73,6 +103,40 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           </Link>
         ))}
       </div>
+      {actionCount > 0 && (
+        <section className="rounded-2xl border-2 border-border bg-card p-5">
+          <h2 className="text-sm font-black uppercase tracking-widest">Needs attention</h2>
+          <div className="mt-4 space-y-2">
+            {pendingCount > 0 && (
+              <Link
+                to="/portal/third-party/staff"
+                className="flex items-center justify-between rounded-lg border border-border px-3 py-3 text-sm hover:border-primary"
+              >
+                <span>Staff submissions waiting for review</span>
+                <b>{pendingCount}</b>
+              </Link>
+            )}
+            {expiringCertificateCount > 0 && (
+              <Link
+                to="/portal/third-party/staff"
+                className="flex items-center justify-between rounded-lg border border-border px-3 py-3 text-sm hover:border-primary"
+              >
+                <span>Certificates expired or expiring soon</span>
+                <b>{expiringCertificateCount}</b>
+              </Link>
+            )}
+            {unansweredCount > 0 && (
+              <Link
+                to="/portal/third-party/jobs"
+                className="flex items-center justify-between rounded-lg border border-border px-3 py-3 text-sm hover:border-primary"
+              >
+                <span>Site notes without a response</span>
+                <b>{unansweredCount}</b>
+              </Link>
+            )}
+          </div>
+        </section>
+      )}
       <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
         <section className="rounded-2xl border-2 border-border bg-card p-5">
           <div className="mb-4 flex items-center justify-between gap-3">

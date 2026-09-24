@@ -97,9 +97,13 @@ export const ThirdPartySitePage: React.FC = () => {
     toast.success("Photo uploaded");
   };
   const openPhoto = async (photo: any) => {
+    const publicPrefix = "/storage/v1/object/public/job-attachments/";
+    const path = photo.file_url.includes(publicPrefix)
+      ? photo.file_url.split(publicPrefix)[1]
+      : photo.file_url;
     const { data, error } = await supabase.storage
       .from("job-attachments")
-      .createSignedUrl(photo.file_url, 300);
+      .createSignedUrl(path, 300);
     if (error || !data?.signedUrl) return toast.error(error?.message || "Unable to open photo");
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };

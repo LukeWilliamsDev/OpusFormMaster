@@ -1,17 +1,28 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Check, ExternalLink, History, X } from "lucide-react";
+import { Check, Download, ExternalLink, History, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "../../integrations/supabase/client";
 import { usePortal } from "../context/PortalContext";
 import { formatUKDate } from "../utils/week";
 
 const db = supabase as any;
+const latestByType = (rows: any[], keyFor: (row: any) => string) => {
+  const latest = new Map<string, any>();
+  for (const row of [...rows].sort((a, b) =>
+    String(b.created_at ?? "").localeCompare(String(a.created_at ?? "")),
+  )) {
+    const key = keyFor(row);
+    if (!latest.has(key)) latest.set(key, row);
+  }
+  return [...latest.values()];
+};
 
 export const ThirdPartyApprovalsPage: React.FC = () => {
   const { workers } = usePortal();
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [documents, setDocuments] = useState<Record<string, any[]>>({});
   const [documentHistory, setDocumentHistory] = useState<any[]>([]);
+  const [showPrevious, setShowPrevious] = useState(false);
   const load = async () => {
     const { data, error } = await db
       .from("third_party_staff_submissions")
@@ -24,13 +35,20 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
     if (!rows.length) return setDocuments({});
     const { data: docs } = await db
       .from("third_party_staff_documents")
-      .select("submission_id, ticket_type, ticket_number, expiry_date, file_name")
+      .select(
+        "id, submission_id, ticket_type, ticket_number, expiry_date, file_name, file_path, created_at",
+      )
       .in(
         "submission_id",
         rows.map((row: any) => row.id),
       );
     const grouped: Record<string, any[]> = {};
-    for (const doc of docs ?? []) (grouped[doc.submission_id] ??= []).push(doc);
+    for (const row of rows) {
+      grouped[row.id] = latestByType(
+        (docs ?? []).filter((doc: any) => doc.submission_id === row.id),
+        (doc) => doc.ticket_type,
+      );
+    }
     setDocuments(grouped);
   };
   const loadDocumentHistory = async () => {
@@ -48,22 +66,19 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
     load();
     loadDocumentHistory();
   }, []);
-  const currentDocumentIds = useMemo(() => {
-    const current = new Set<string>();
-    const ids = new Set<string>();
-    for (const document of documentHistory) {
-      const key = `${document.staff_id}:${document.ticket_type}`;
-      if (!current.has(key)) {
-        current.add(key);
-        ids.add(document.id);
-      }
-    }
-    return ids;
-  }, [documentHistory]);
-  const openDocument = async (path: string) => {
+  const currentDocuments = useMemo(
+    () =>
+      latestByType(documentHistory, (document) => `${document.staff_id}:${document.ticket_type}`),
+    [documentHistory],
+  );
+  const previousDocuments = useMemo(() => {
+    const currentIds = new Set(currentDocuments.map((document) => document.id));
+    return documentHistory.filter((document) => !currentIds.has(document.id));
+  }, [currentDocuments, documentHistory]);
+  const openDocument = async (path: string, download = false, fileName?: string) => {
     const { data, error } = await supabase.storage
       .from("third-party-staff-documents")
-      .createSignedUrl(path, 300);
+      .createSignedUrl(path, 300, download ? { download: fileName ?? true } : undefined);
     if (error || !data?.signedUrl)
       return toast.error(error?.message || "Unable to open certificate");
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
@@ -108,11 +123,34 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
                     Certificates
                   </p>
                   {documents[submission.id].map((doc: any) => (
-                    <p key={doc.file_name} className="mt-1 text-xs">
-                      {doc.ticket_type}
-                      {doc.ticket_number ? ` · ${doc.ticket_number}` : ""}
-                      {doc.expiry_date ? ` · expires ${doc.expiry_date}` : ""} · {doc.file_name}
-                    </p>
+                    <div
+                      key={doc.id ?? doc.file_name}
+                      className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
+                    >
+                      <p className="min-w-0 truncate text-xs">
+                        <span className="font-bold">{doc.ticket_type}</span>
+                        {doc.ticket_number ? ` · ${doc.ticket_number}` : ""}
+                        {doc.expiry_date
+                          ? ` · expires ${formatUKDate(doc.expiry_date)}`
+                          : ""} · {doc.file_name}
+                      </p>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void openDocument(doc.file_path)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[10px] font-black uppercase tracking-widest hover:border-primary"
+                        >
+                          <ExternalLink className="h-3 w-3" /> View
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void openDocument(doc.file_path, true, doc.file_name)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[10px] font-black uppercase tracking-widest hover:border-primary"
+                        >
+                          <Download className="h-3 w-3" /> Download
+                        </button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -140,22 +178,22 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
         <div className="flex items-center gap-2">
           <History className="h-4 w-4 text-primary" />
           <h2 className="text-sm font-black uppercase tracking-widest">
-            Certificate document history
+            Current certificate documents
           </h2>
         </div>
         <p className="mt-2 text-xs text-muted-foreground">
-          Renewals create new records. Previous files remain available for audit.
+          Renewals create new records. Previous files are retained for audit and hidden from the
+          current list.
         </p>
-        {documentHistory.length === 0 ? (
+        {currentDocuments.length === 0 ? (
           <p className="mt-5 text-sm text-muted-foreground">
             No approved certificate documents yet.
           </p>
         ) : (
           <div className="mt-5 space-y-2">
-            {documentHistory.map((document) => {
+            {currentDocuments.map((document) => {
               const staffName =
                 workers.find((worker) => worker.id === document.staff_id)?.name ?? "Unknown staff";
-              const current = currentDocumentIds.has(document.id);
               return (
                 <div
                   key={document.id}
@@ -174,22 +212,76 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${current ? "bg-emerald-500/10 text-emerald-700" : "bg-muted text-muted-foreground"}`}
-                    >
-                      {current ? "Current" : "Previous"}
+                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
+                      Current
                     </span>
                     <button
                       type="button"
                       onClick={() => void openDocument(document.file_path)}
                       className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest hover:border-primary"
                     >
-                      <ExternalLink className="h-3 w-3" /> Open
+                      <ExternalLink className="h-3 w-3" /> View
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        void openDocument(document.file_path, true, document.file_name)
+                      }
+                      className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest hover:border-primary"
+                    >
+                      <Download className="h-3 w-3" /> Download
                     </button>
                   </div>
                 </div>
               );
             })}
+          </div>
+        )}
+        {previousDocuments.length > 0 && (
+          <div className="mt-5 border-t border-border pt-4">
+            <button
+              type="button"
+              onClick={() => setShowPrevious((visible) => !visible)}
+              className="text-xs font-black uppercase tracking-widest text-primary"
+            >
+              {showPrevious
+                ? "Hide previous versions"
+                : `View ${previousDocuments.length} previous version${previousDocuments.length === 1 ? "" : "s"}`}
+            </button>
+            {showPrevious && (
+              <div className="mt-3 space-y-2">
+                {previousDocuments.map((document) => (
+                  <div
+                    key={document.id}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-xs"
+                  >
+                    <span className="min-w-0 truncate">
+                      {workers.find((worker) => worker.id === document.staff_id)?.name ??
+                        "Unknown staff"}{" "}
+                      · {document.ticket_type} · {document.file_name}
+                    </span>
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => void openDocument(document.file_path)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[10px] font-black uppercase tracking-widest hover:border-primary"
+                      >
+                        <ExternalLink className="h-3 w-3" /> View
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          void openDocument(document.file_path, true, document.file_name)
+                        }
+                        className="inline-flex items-center gap-1 rounded-lg border border-border px-2 py-1 text-[10px] font-black uppercase tracking-widest hover:border-primary"
+                      >
+                        <Download className="h-3 w-3" /> Download
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </section>

@@ -107,9 +107,8 @@ export const ThirdPartyPortalPage: React.FC = () => {
     () => submissions.filter((submission) => submission.status === "pending"),
     [submissions],
   );
-  const documentCount = workers.reduce(
-    (total, worker) =>
-      total + (worker.tickets?.length ?? 0) + (worker.uploadedCertificates?.length ?? 0),
+  const currentCertificateCount = workers.reduce(
+    (total, worker) => total + getCurrentTickets(worker.tickets ?? []).length,
     0,
   );
 
@@ -256,7 +255,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
         {[
           ["Approved staff", workers.length, "visible to Opus Form"],
           ["Pending submissions", pendingSubmissions.length, "waiting for review"],
-          ["Documents held", documentCount, "certificates and records"],
+          ["Current certificates", currentCertificateCount, "latest version per type"],
         ].map(([label, value, description]) => (
           <div
             key={String(label)}
@@ -499,32 +498,40 @@ export const ThirdPartyPortalPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    {worker.tickets?.length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                    {getCurrentTickets(worker.tickets ?? []).length > 0 && (
+                      <div className="space-y-2 border-t border-border pt-3">
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                          Certificates
+                          Current certificates
                         </span>
-                        {getCurrentTickets(worker.tickets)
+                        {getCurrentTickets(worker.tickets ?? [])
                           .slice(0, 4)
                           .map((ticket) => {
                             const status = getTicketStatus(ticket);
+                            const document = (worker.uploadedCertificates ?? []).find(
+                              (candidate) => candidate.id === ticket.id,
+                            );
                             return (
-                              <span
+                              <div
                                 key={ticket.id}
-                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                                  status === "EXPIRED"
-                                    ? "bg-destructive/10 text-destructive"
-                                    : status === "EXPIRING_SOON"
-                                      ? "bg-amber-500/10 text-amber-700"
-                                      : "bg-primary/10 text-primary"
-                                }`}
+                                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs"
                               >
-                                {ticket.type} ·{" "}
-                                {status === "EXPIRED"
-                                  ? "expired"
-                                  : status === "EXPIRING_SOON"
-                                    ? "expiring"
-                                    : "valid"}
+                                <div className="min-w-0 truncate">
+                                  <span className="font-bold">{ticket.type}</span>
+                                  <span
+                                    className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${status === "EXPIRED" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700" : "bg-primary/10 text-primary"}`}
+                                  >
+                                    {status === "EXPIRED"
+                                      ? "Expired"
+                                      : status === "EXPIRING_SOON"
+                                        ? "Expiring"
+                                        : "Valid"}
+                                  </span>
+                                  {document?.name && (
+                                    <span className="ml-2 truncate text-muted-foreground">
+                                      {document.name}
+                                    </span>
+                                  )}
+                                </div>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -534,28 +541,13 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                     setTicketExpiry("");
                                     setTicketFile(null);
                                   }}
-                                  className="ml-1 underline decoration-current/40 underline-offset-2 hover:decoration-current"
+                                  className="shrink-0 font-black text-primary underline decoration-current/40 underline-offset-2 hover:decoration-current"
                                 >
                                   Renew
                                 </button>
-                              </span>
+                              </div>
                             );
                           })}
-                      </div>
-                    )}
-                    {(worker.uploadedCertificates ?? []).length > 0 && (
-                      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                          Documents
-                        </span>
-                        {(worker.uploadedCertificates ?? []).slice(0, 4).map((document) => (
-                          <span
-                            key={document.id}
-                            className="max-w-full truncate rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold text-muted-foreground"
-                          >
-                            {document.name}
-                          </span>
-                        ))}
                       </div>
                     )}
                   </div>

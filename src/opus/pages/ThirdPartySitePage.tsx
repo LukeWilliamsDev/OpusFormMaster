@@ -14,12 +14,13 @@ const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 
 export const ThirdPartySitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
-  const { user, profile, workers, jobs, shifts } = usePortal();
+  const { user, profile, workers, jobs, shifts, dataLoading } = usePortal();
   const [note, setNote] = useState("");
   const [postingNote, setPostingNote] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [attachmentRefresh, setAttachmentRefresh] = useState(0);
   const [photos, setPhotos] = useState<any[]>([]);
+  const [photosLoading, setPhotosLoading] = useState(true);
   const [gallery, setGallery] = useState<{ photos: any[]; index: number } | null>(null);
   const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
   const job = jobs.find(
@@ -32,6 +33,7 @@ export const ThirdPartySitePage: React.FC = () => {
     if (!jobId || !user) return;
     let cancelled = false;
     const loadPhotos = async () => {
+      setPhotosLoading(true);
       const { data, error } = await db
         .from("job_attachments")
         .select("id, file_name, file_url, type, uploaded_at, uploaded_by")
@@ -39,6 +41,7 @@ export const ThirdPartySitePage: React.FC = () => {
         .in("type", ["image_before", "image_after"])
         .order("uploaded_at", { ascending: false });
       if (error) {
+        setPhotosLoading(false);
         toast.error(error.message || "Unable to load site photos");
         return;
       }
@@ -53,7 +56,10 @@ export const ThirdPartySitePage: React.FC = () => {
           preview_url: signed?.thumbUrl ?? signed?.fullUrl,
         };
       });
-      if (!cancelled) setPhotos(withPreviews);
+      if (!cancelled) {
+        setPhotos(withPreviews);
+        setPhotosLoading(false);
+      }
     };
     void loadPhotos();
     return () => {
@@ -80,6 +86,15 @@ export const ThirdPartySitePage: React.FC = () => {
     void preloaded;
   }, [gallery]);
 
+  if (dataLoading) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
+        <div className="h-24 animate-pulse rounded-2xl bg-muted" />
+        <div className="h-40 animate-pulse rounded-2xl bg-muted" />
+        <div className="h-64 animate-pulse rounded-2xl bg-muted" />
+      </div>
+    );
+  }
   if (!job) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12">
@@ -214,13 +229,19 @@ export const ThirdPartySitePage: React.FC = () => {
             <button
               type="button"
               onClick={() => photos[0] && setGallery({ photos, index: 0 })}
-              disabled={!photos.length}
+              disabled={photosLoading || !photos.length}
               className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest disabled:opacity-50"
             >
               View gallery
             </button>
           </div>
-          {photos.length === 0 ? (
+          {photosLoading ? (
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {[1, 2, 3].map((item) => (
+                <div key={item} className="aspect-[4/3] animate-pulse rounded-lg bg-muted" />
+              ))}
+            </div>
+          ) : photos.length === 0 ? (
             <p className="mt-6 text-sm text-muted-foreground">
               No site photos have been uploaded yet.
             </p>
@@ -282,7 +303,7 @@ export const ThirdPartySitePage: React.FC = () => {
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-              Conversation
+              Your conversation
             </p>
           </div>
         </div>

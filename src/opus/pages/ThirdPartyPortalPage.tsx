@@ -76,7 +76,7 @@ type WorkerEditDraft = {
 };
 
 export const ThirdPartyPortalPage: React.FC = () => {
-  const { user, profile, workers } = usePortal();
+  const { user, profile, workers, dataLoading } = usePortal();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -112,6 +112,19 @@ export const ThirdPartyPortalPage: React.FC = () => {
       total + (worker.tickets?.length ?? 0) + (worker.uploadedCertificates?.length ?? 0),
     0,
   );
+
+  if (dataLoading) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:px-6 lg:py-12">
+        <div className="h-24 animate-pulse rounded-2xl bg-muted" />
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="h-32 animate-pulse rounded-2xl bg-muted" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const setField = (field: keyof FormState, value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
@@ -466,31 +479,48 @@ export const ThirdPartyPortalPage: React.FC = () => {
                         )}
                       </div>
                     </div>
-                    {[...(worker.tickets ?? []), ...(worker.uploadedCertificates ?? [])].length >
-                      0 && (
+                    {worker.tickets?.length > 0 && (
                       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                           Certificates
                         </span>
-                        {[...(worker.tickets ?? []), ...(worker.uploadedCertificates ?? [])]
-                          .slice(0, 3)
-                          .map((document: any, index) => (
+                        {worker.tickets.slice(0, 4).map((ticket) => {
+                          const status = getTicketStatus(ticket);
+                          return (
                             <span
-                              key={`${document.id ?? document.type ?? document.name}-${index}`}
+                              key={ticket.id}
                               className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                                getTicketStatus(document) === "EXPIRED"
+                                status === "EXPIRED"
                                   ? "bg-destructive/10 text-destructive"
-                                  : getTicketStatus(document) === "EXPIRING_SOON"
+                                  : status === "EXPIRING_SOON"
                                     ? "bg-amber-500/10 text-amber-700"
                                     : "bg-primary/10 text-primary"
                               }`}
                             >
-                              {document.type || document.name || "Certificate"}
-                              {document.expiryDate && getTicketStatus(document) !== "VALID"
-                                ? ` · ${getTicketStatus(document) === "EXPIRED" ? "expired" : "expiring"}`
-                                : ""}
+                              {ticket.type} ·{" "}
+                              {status === "EXPIRED"
+                                ? "expired"
+                                : status === "EXPIRING_SOON"
+                                  ? "expiring"
+                                  : "valid"}
                             </span>
-                          ))}
+                          );
+                        })}
+                      </div>
+                    )}
+                    {(worker.uploadedCertificates ?? []).length > 0 && (
+                      <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                          Documents
+                        </span>
+                        {(worker.uploadedCertificates ?? []).slice(0, 4).map((document) => (
+                          <span
+                            key={document.id}
+                            className="max-w-full truncate rounded-full bg-muted px-2.5 py-1 text-[10px] font-bold text-muted-foreground"
+                          >
+                            {document.name}
+                          </span>
+                        ))}
                       </div>
                     )}
                   </div>

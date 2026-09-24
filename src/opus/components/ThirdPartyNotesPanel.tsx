@@ -19,15 +19,20 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string; showHeading?: boole
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [loading, setLoading] = useState(true);
   const canReply = INTERNAL_ROLES.has(role ?? "") || role === "third_party";
 
   const load = useCallback(async () => {
+    setLoading(true);
     const { data: noteRows, error } = await db
       .from("third_party_job_notes")
       .select("id, body, author_id, created_at")
       .eq("job_id", jobId)
       .order("created_at", { ascending: true });
-    if (error) return toast.error(error.message || "Unable to load note history");
+    if (error) {
+      setLoading(false);
+      return toast.error(error.message || "Unable to load note history");
+    }
     const rows = noteRows ?? [];
     const { data: replies } = rows.length
       ? await db
@@ -42,6 +47,7 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string; showHeading?: boole
     const grouped: Record<string, any[]> = {};
     for (const reply of replies ?? []) (grouped[reply.note_id] ??= []).push(reply);
     setNotes(rows.map((note: any) => ({ ...note, replies: grouped[note.id] ?? [] })));
+    setLoading(false);
   }, [jobId]);
 
   useEffect(() => {
@@ -83,7 +89,12 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string; showHeading?: boole
           <h3 className="text-sm font-black uppercase tracking-widest">Third Party Notes</h3>
         </div>
       )}
-      {notes.length === 0 ? (
+      {loading ? (
+        <div className="space-y-2">
+          <div className="h-20 animate-pulse rounded-lg bg-muted" />
+          <div className="h-20 animate-pulse rounded-lg bg-muted" />
+        </div>
+      ) : notes.length === 0 ? (
         <p className="text-xs text-muted-foreground">No third-party notes.</p>
       ) : (
         <div className="space-y-4">

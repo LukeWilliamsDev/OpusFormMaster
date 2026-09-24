@@ -2,12 +2,13 @@ import React, { useMemo } from "react";
 import { ArrowRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
+import { formatUKDate } from "../utils/week";
 
 const isCompletedJob = (job: any) =>
   ["completed", "complete", "closed"].includes(String(job.status).toLowerCase());
 
 export const ThirdPartyJobsPage: React.FC = () => {
-  const { workers, jobs, shifts } = usePortal();
+  const { workers, jobs, shifts, dataLoading } = usePortal();
   const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
   const assignedJobs = useMemo(
     () =>
@@ -34,6 +35,24 @@ export const ThirdPartyJobsPage: React.FC = () => {
             <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
               <MapPin className="h-3 w-3" /> {job.postcode}
             </p>
+            {(() => {
+              const dates = shifts
+                .filter((shift) => shift.jobId === job.id)
+                .map((shift) => shift.date)
+                .sort();
+              const today = new Date().toISOString().slice(0, 10);
+              const nextDate =
+                shifts
+                  .filter((shift) => shift.jobId === job.id)
+                  .map((shift) => shift.date)
+                  .sort()
+                  .find((date) => date >= today) ?? dates[dates.length - 1];
+              return nextDate ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Next shift · {formatUKDate(nextDate)}
+                </p>
+              ) : null;
+            })()}
           </div>
           <span className="rounded-full bg-emerald-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-600">
             {job.status}
@@ -60,6 +79,19 @@ export const ThirdPartyJobsPage: React.FC = () => {
       </Link>
     );
   };
+
+  if (dataLoading) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:px-6 lg:py-12">
+        <div className="h-24 animate-pulse rounded-2xl bg-muted" />
+        <div className="grid gap-4 lg:grid-cols-2">
+          {[1, 2].map((item) => (
+            <div key={item} className="h-48 animate-pulse rounded-2xl bg-muted" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:px-6 lg:py-12">

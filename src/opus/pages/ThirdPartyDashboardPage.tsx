@@ -8,9 +8,10 @@ import { getTicketStatus } from "../utils/workerValidation";
 const db = supabase as any;
 
 export const ThirdPartyDashboardPage: React.FC = () => {
-  const { workers, jobs, shifts } = usePortal();
+  const { workers, jobs, shifts, dataLoading } = usePortal();
   const [pendingCount, setPendingCount] = useState(0);
   const [unansweredCount, setUnansweredCount] = useState(0);
+  const [unansweredJobId, setUnansweredJobId] = useState<string | null>(null);
   useEffect(() => {
     db.from("third_party_staff_submissions")
       .select("id", { count: "exact", head: true })
@@ -19,8 +20,12 @@ export const ThirdPartyDashboardPage: React.FC = () => {
   }, []);
   useEffect(() => {
     const loadUnanswered = async () => {
-      const { data: notes } = await db.from("third_party_job_notes").select("id");
-      if (!notes?.length) return setUnansweredCount(0);
+      const { data: notes } = await db.from("third_party_job_notes").select("id, job_id");
+      if (!notes?.length) {
+        setUnansweredCount(0);
+        setUnansweredJobId(null);
+        return;
+      }
       const { data: replies } = await db
         .from("third_party_job_note_replies")
         .select("note_id")
@@ -29,7 +34,9 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           notes.map((note: any) => note.id),
         );
       const replied = new Set((replies ?? []).map((reply: any) => reply.note_id));
-      setUnansweredCount(notes.filter((note: any) => !replied.has(note.id)).length);
+      const unanswered = notes.filter((note: any) => !replied.has(note.id));
+      setUnansweredCount(unanswered.length);
+      setUnansweredJobId(unanswered[0]?.job_id ?? null);
     };
     void loadUnanswered();
   }, []);
@@ -41,7 +48,13 @@ export const ThirdPartyDashboardPage: React.FC = () => {
       ),
     [jobs, shifts, ownedWorkerIds],
   );
-  const nextJob = assignedJobs[0];
+  const activeJobs = assignedJobs.filter(
+    (job) => !["completed", "complete", "closed"].includes(String(job.status).toLowerCase()),
+  );
+  const nextJob = activeJobs[0] ?? assignedJobs[0];
+  const nextJobIsCompleted = Boolean(
+    nextJob && ["completed", "complete", "closed"].includes(String(nextJob.status).toLowerCase()),
+  );
   const expiringCertificateCount = workers.reduce(
     (count, worker) =>
       count +
@@ -52,6 +65,18 @@ export const ThirdPartyDashboardPage: React.FC = () => {
     0,
   );
   const actionCount = pendingCount + unansweredCount + expiringCertificateCount;
+  if (dataLoading) {
+    return (
+      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
+        <div className="h-24 animate-pulse rounded-2xl bg-muted" />
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="h-32 animate-pulse rounded-2xl bg-muted" />
+          ))}
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
@@ -84,8 +109,8 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             "Action needed",
             actionCount,
             actionCount ? "needs your attention" : "you are all caught up",
-            actionCount && unansweredCount > 0
-              ? "/portal/third-party/jobs"
+            actionCount && unansweredCount > 0 && unansweredJobId
+              ? `/portal/third-party/jobs/${unansweredJobId}`
               : "/portal/third-party/staff",
           ],
         ].map(([label, count, description, href]) => (
@@ -127,7 +152,11 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             )}
             {unansweredCount > 0 && (
               <Link
-                to="/portal/third-party/jobs"
+                to={
+                  unansweredJobId
+                    ? `/portal/third-party/jobs/${unansweredJobId}`
+                    : "/portal/third-party/jobs"
+                }
                 className="flex items-center justify-between rounded-lg border border-border px-3 py-3 text-sm hover:border-primary"
               >
                 <span>Site notes without a response</span>
@@ -140,9 +169,11 @@ export const ThirdPartyDashboardPage: React.FC = () => {
       <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
         <section className="rounded-2xl border-2 border-border bg-card p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-sm font-black uppercase tracking-widest">Next up</h2>
+            <h2 className="text-sm font-black uppercase tracking-widest">
+              {nextJobIsCompleted ? "Latest site" : "Next up"}
+            </h2>
             <span className="rounded-full bg-emerald-500/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-emerald-600">
-              On track
+              {nextJobIsCompleted ? "Completed" : "On track"}
             </span>
           </div>
           {nextJob ? (

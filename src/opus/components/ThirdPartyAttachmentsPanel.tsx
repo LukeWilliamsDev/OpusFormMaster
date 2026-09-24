@@ -18,9 +18,11 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
   const [renameValue, setRenameValue] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const canManage = role === "third_party";
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
     (async () => {
       const { data, error } = await db
         .from("third_party_attachments")
@@ -30,6 +32,7 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
       if (cancelled) return;
       if (error) toast.error(error.message || "Unable to load third-party attachments");
       setFiles(data ?? []);
+      setLoading(false);
     })();
     return () => {
       cancelled = true;
@@ -102,7 +105,12 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
         </div>
         {action}
       </div>
-      {files.length === 0 ? (
+      {loading ? (
+        <div className="space-y-2">
+          <div className="h-10 animate-pulse rounded-lg bg-muted" />
+          <div className="h-10 animate-pulse rounded-lg bg-muted" />
+        </div>
+      ) : files.length === 0 ? (
         <p className="text-xs text-muted-foreground">No third-party attachments.</p>
       ) : (
         <div className="space-y-2">

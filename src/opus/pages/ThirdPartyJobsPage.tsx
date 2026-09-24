@@ -49,7 +49,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
                   .find((date) => date >= today) ?? dates[dates.length - 1];
               return nextDate ? (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Next shift · {formatUKDate(nextDate)}
+                  {isCompletedJob(job) ? "Last shift" : "Next shift"} · {formatUKDate(nextDate)}
                 </p>
               ) : null;
             })()}

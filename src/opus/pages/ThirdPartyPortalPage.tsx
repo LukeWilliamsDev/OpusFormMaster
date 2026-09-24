@@ -80,7 +80,7 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
   const [uploading, setUploading] = useState(false);
   const [jobFiles, setJobFiles] = useState<any[]>([]);
   const [lastSubmissionId, setLastSubmissionId] = useState<string | null>(null);
-  const [ticketType, setTicketType] = useState("CSCS");
+  const [ticketType, setTicketType] = useState("");
   const [ticketNumber, setTicketNumber] = useState("");
   const [ticketExpiry, setTicketExpiry] = useState("");
   const [ticketFile, setTicketFile] = useState<File | null>(null);
@@ -210,7 +210,7 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
     setUploadingTicket(false);
     if (error) return toast.error(error.message || "Unable to record certificate");
     setTicketFile(null);
-    setTicketType("CSCS");
+    setTicketType("");
     setTicketNumber("");
     setTicketExpiry("");
     setTicketStaffId(null);

@@ -96,7 +96,9 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
       <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <Paperclip className="h-4 w-4 text-primary" />
-          <h3 className="text-sm font-black uppercase tracking-widest">Attachments</h3>
+          <h3 className="text-sm font-black uppercase tracking-widest">
+            {role === "third_party" ? "Your attachments" : "Attachments"}
+          </h3>
         </div>
         {action}
       </div>

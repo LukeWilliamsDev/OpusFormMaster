@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { ArrowRight, CheckCircle2, MapPin } from "lucide-react";
+import { ArrowRight, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 
@@ -76,15 +76,6 @@ export const ThirdPartyJobsPage: React.FC = () => {
           })}
         </div>
       )}
-      <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-5">
-        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
-        <div>
-          <p className="text-sm font-black">Updates stay with the site record.</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Add notes and attachments from the site page. Site photos are supplied by Opus Form.
-          </p>
-        </div>
-      </div>
     </div>
   );
 };

@@ -161,23 +161,14 @@ export const ThirdPartySitePage: React.FC = () => {
             <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
               {job.currentPours} pours
             </span>
-            <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
-              {assignedStaff.length} staff assigned
-            </span>
           </div>
         </div>
-        <span className="self-start rounded-full bg-emerald-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-600">
-          {job.status}
-        </span>
       </header>
       <section className="rounded-2xl border-2 border-border bg-card p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-              Staff on this site
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Approved staff currently assigned to this site.
+              Assigned staff
             </p>
           </div>
           <span className="rounded-full bg-primary/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-primary">
@@ -214,9 +205,7 @@ export const ThirdPartySitePage: React.FC = () => {
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">
                 Site photos
               </p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                View photos supplied by Opus Form.
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">View-only photos.</p>
             </div>
             <button
               type="button"
@@ -292,10 +281,7 @@ export const ThirdPartySitePage: React.FC = () => {
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
             <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-              Latest notes
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Recent messages and responses for this site.
+              Conversation
             </p>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarDays, CheckCircle2, MessageSquare } from "lucide-react";
+import { ArrowRight, CalendarDays } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
@@ -49,7 +49,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           [
             "Assigned sites",
             assignedJobs.length,
-            "current or upcoming",
+            "assigned to your staff",
             "/portal/third-party/jobs",
           ],
           [
@@ -110,14 +110,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           </Link>
         </section>
         <section className="rounded-2xl border-2 border-border bg-card p-5">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-primary" />
-            <h2 className="text-sm font-black uppercase tracking-widest">At a glance</h2>
-          </div>
-          <p className="mt-4 text-sm font-bold">Your access is active</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Opus Form manages approvals. Your assigned sites appear here automatically.
-          </p>
+          <h2 className="text-sm font-black uppercase tracking-widest">Quick links</h2>
           <div className="mt-5 flex flex-wrap gap-2">
             <Link
               to="/portal/third-party/staff"
@@ -133,15 +126,6 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             </Link>
           </div>
         </section>
-      </div>
-      <div className="flex items-center gap-3 rounded-2xl border border-border bg-card p-5">
-        <MessageSquare className="h-5 w-5 text-primary" />
-        <div>
-          <p className="text-sm font-black">Keep updates with the site</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Notes, responses, photos, and attachments stay together on each assigned site.
-          </p>
-        </div>
       </div>
     </div>
   );

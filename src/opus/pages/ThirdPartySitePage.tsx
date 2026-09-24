@@ -32,9 +32,12 @@ export const ThirdPartySitePage: React.FC = () => {
     db.from("job_attachments")
       .select("id, file_name, file_url, type, uploaded_at")
       .eq("job_id", jobId)
-      .eq("uploaded_by_user_id", user.id)
+      .in("type", ["image_before", "image_after"])
       .order("uploaded_at", { ascending: false })
-      .then(({ data }: { data: any[] | null }) => setPhotos(data ?? []));
+      .then(({ data, error }: { data: any[] | null; error: any }) => {
+        if (error) toast.error(error.message || "Unable to load site photos");
+        setPhotos(data ?? []);
+      });
   }, [jobId, user?.id]);
 
   if (!job) {
@@ -262,7 +265,9 @@ export const ThirdPartySitePage: React.FC = () => {
             </label>
           </div>
           {photos.length === 0 ? (
-            <p className="mt-8 text-sm text-muted-foreground">No site photos uploaded by you.</p>
+            <p className="mt-8 text-sm text-muted-foreground">
+              No site photos have been uploaded yet.
+            </p>
           ) : (
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               {photos.map((photo) => (

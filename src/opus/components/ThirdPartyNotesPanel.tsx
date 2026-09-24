@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "../../integrations/supabase/client";
 import { usePortal } from "../context/PortalContext";
 import { formatUKDate } from "../utils/week";
+import { formatAppRoleLabel } from "../context/PortalContext";
 
 const db = supabase as any;
 const INTERNAL_ROLES = new Set(["admin", "director", "logistics_coordinator"]);
@@ -26,7 +27,7 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => 
     const { data: replies } = rows.length
       ? await db
           .from("third_party_job_note_replies")
-          .select("id, note_id, body, author_id, author_first_name, created_at")
+          .select("id, note_id, body, author_id, author_first_name, author_role, created_at")
           .in(
             "note_id",
             rows.map((note: any) => note.id),
@@ -82,7 +83,12 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => 
                     <p className="text-[10px] font-black uppercase tracking-widest text-primary">
                       {replyItem.author_id === user?.id
                         ? "You"
-                        : replyItem.author_first_name || "Opus Form team"}{" "}
+                        : [
+                            replyItem.author_first_name,
+                            replyItem.author_role && formatAppRoleLabel(replyItem.author_role),
+                          ]
+                            .filter(Boolean)
+                            .join(" · ") || "Opus Form team"}{" "}
                       · {formatUKDate(replyItem.created_at?.slice(0, 10))}
                     </p>
                     <p className="mt-1 whitespace-pre-wrap text-xs text-foreground">

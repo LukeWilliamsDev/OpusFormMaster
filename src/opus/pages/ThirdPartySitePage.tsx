@@ -170,6 +170,43 @@ export const ThirdPartySitePage: React.FC = () => {
           {job.status}
         </span>
       </header>
+      <section className="rounded-2xl border-2 border-border bg-card p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+              Staff on this site
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Approved staff currently assigned to this site.
+            </p>
+          </div>
+          <span className="rounded-full bg-primary/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-primary">
+            {assignedStaff.length} assigned
+          </span>
+        </div>
+        {assignedStaff.length > 0 ? (
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {assignedStaff.map((worker) => (
+              <div
+                key={worker.id}
+                className="flex items-center gap-3 rounded-xl border border-border bg-background px-3 py-3"
+              >
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">
+                  {worker.name?.slice(0, 1).toUpperCase() || "?"}
+                </span>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-foreground">{worker.name}</p>
+                  <p className="truncate text-xs text-muted-foreground">{worker.role}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+            No approved staff are assigned to this site.
+          </p>
+        )}
+      </section>
       <div className="grid gap-5 lg:grid-cols-2">
         <section className="rounded-2xl border-2 border-border bg-card p-5">
           <div className="flex items-center justify-between gap-3">

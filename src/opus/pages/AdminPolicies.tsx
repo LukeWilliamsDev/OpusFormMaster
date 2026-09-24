@@ -11,6 +11,7 @@ export const AdminPolicies: React.FC = () => {
       "Anti-Bribery-Policy.pdf",
       "Health-and-Safety-Policy.pdf",
       "Modern-Slavery-Statement.pdf",
+      "Right-to-Work-Policy.pdf",
       "Quality-Management-Policy.pdf",
       "Responsible-Sourcing-Policy.pdf",
       "Sustainability-Policy.pdf",
@@ -22,7 +23,7 @@ export const AdminPolicies: React.FC = () => {
       } = supabase.storage.from("policies").getPublicUrl(file);
       return {
         name: file.replace(/-/g, " ").replace(".pdf", ""),
-        url: publicUrl,
+        url: file === "Right-to-Work-Policy.pdf" ? `/policies/${file}` : publicUrl,
       };
     });
 

@@ -37,6 +37,7 @@ import { CookieStatementPage } from "./pages/CookieStatement";
 import { ModernSlaveryStatementPage } from "./pages/ModernSlaveryStatement";
 import { LegalHubPage } from "./pages/LegalHub";
 import { CertificateCheckerPage } from "./pages/CertificateCheckerPage";
+import { RightToWorkPolicyPage } from "./pages/RightToWorkPolicy";
 
 // Immediate recovery URL redirection for HashRouter before React Router initialises and strips the hash
 (() => {
@@ -130,6 +131,7 @@ export default function App() {
           <Route path="/privacy" element={<PrivacyNoticePage />} />
           <Route path="/cookies" element={<CookieStatementPage />} />
           <Route path="/modern-slavery" element={<ModernSlaveryStatementPage />} />
+          <Route path="/right-to-work" element={<RightToWorkPolicyPage />} />
 
           {/* Secure Portal Application Views */}
           <Route element={<ProtectedRoute />}>
@@ -307,6 +309,14 @@ export default function App() {
               element={
                 <RoleGuard allow={ALL_ROLES}>
                   <ModernSlaveryStatementPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/right-to-work"
+              element={
+                <RoleGuard allow={ALL_ROLES}>
+                  <RightToWorkPolicyPage />
                 </RoleGuard>
               }
             />

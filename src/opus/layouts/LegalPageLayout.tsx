@@ -70,12 +70,14 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
         { label: "Acceptable Use", path: "/portal/acceptable-use" },
         { label: "Cookie Statement", path: "/portal/cookies" },
         { label: "Modern Slavery", path: "/portal/modern-slavery" },
+        { label: "Right to Work", path: "/portal/right-to-work" },
       ];
     }
     return [
       { label: "Staff Privacy Notice", path: "/privacy" },
       { label: "Cookie Statement", path: "/cookies" },
       { label: "Modern Slavery", path: "/modern-slavery" },
+      { label: "Right to Work", path: "/right-to-work" },
     ];
   };
 

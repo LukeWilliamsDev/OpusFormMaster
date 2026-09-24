@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, ShieldCheck, Cookie, ScrollText, Users } from "lucide-react";
+import { BriefcaseBusiness, FileText, ShieldCheck, Cookie, ScrollText, Users } from "lucide-react";
 
 const POLICIES = [
   {
@@ -32,6 +32,12 @@ const POLICIES = [
     description: "How we oppose slavery and trafficking.",
     path: "/portal/modern-slavery",
     icon: Users,
+  },
+  {
+    label: "Right to Work",
+    description: "How we verify permission to work in the UK.",
+    path: "/portal/right-to-work",
+    icon: BriefcaseBusiness,
   },
 ];
 

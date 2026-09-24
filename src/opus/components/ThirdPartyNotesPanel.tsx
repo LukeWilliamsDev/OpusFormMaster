@@ -84,21 +84,23 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => 
         <div className="space-y-4">
           {notes.map((note) => (
             <div key={note.id} className="rounded-lg border border-border p-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Third party · {formatUKDate(note.created_at?.slice(0, 10))}
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Third party · {formatUKDate(note.created_at?.slice(0, 10))}
+                </p>
+                {role === "third_party" &&
+                  note.author_id === user?.id &&
+                  note.replies.length === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(note)}
+                      className="inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-1 text-[10px] font-bold text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="h-3 w-3" /> Delete
+                    </button>
+                  )}
+              </div>
               <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{note.body}</p>
-              {role === "third_party" &&
-                note.author_id === user?.id &&
-                note.replies.length === 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setDeleteTarget(note)}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
-                  >
-                    <Trash2 className="h-3 w-3" /> Delete note
-                  </button>
-                )}
               <div className="mt-3 space-y-2 border-l-2 border-primary/30 pl-3">
                 {note.replies.map((replyItem: any) => (
                   <div key={replyItem.id} className="rounded-md bg-background p-2">

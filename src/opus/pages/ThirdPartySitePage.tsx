@@ -7,7 +7,7 @@ import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
 import { ThirdPartyAttachmentsPanel } from "../components/ThirdPartyAttachmentsPanel";
 import { ThirdPartyNotesPanel } from "../components/ThirdPartyNotesPanel";
-import { getSignedJobAttachmentUrl, getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
+import { getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
 
 const db = supabase as any;
 type Tab = "overview" | "notes" | "photos" | "attachments";
@@ -18,7 +18,6 @@ export const ThirdPartySitePage: React.FC = () => {
   const [tab, setTab] = useState<Tab>("overview");
   const [note, setNote] = useState("");
   const [postingNote, setPostingNote] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [attachmentRefresh, setAttachmentRefresh] = useState(0);
   const [photos, setPhotos] = useState<any[]>([]);
@@ -111,39 +110,6 @@ export const ThirdPartySitePage: React.FC = () => {
     if (error) return toast.error(error.message || "Unable to add note");
     setNote("");
     toast.success("Note added");
-  };
-  const uploadPhoto = async (file: File, type: "image_before" | "image_after") => {
-    if (!user) return;
-    setUploading(true);
-    const extension = file.name.split(".").pop() || "bin";
-    const path = `third-party-media/${job.id}/${user.id}/${crypto.randomUUID()}.${extension}`;
-    const { error: uploadError } = await supabase.storage
-      .from("job-attachments")
-      .upload(path, file);
-    if (uploadError) {
-      setUploading(false);
-      return toast.error(uploadError.message || "Unable to upload photo");
-    }
-    const { error } = await db.from("job_attachments").insert({
-      job_id: job.id,
-      type,
-      file_name: file.name,
-      file_url: path,
-      file_size_bytes: file.size,
-      uploaded_by: user.email ?? "Third party",
-      uploaded_by_user_id: user.id,
-    });
-    setUploading(false);
-    if (error) return toast.error(error.message || "Unable to record photo");
-    const [fullUrl, previewUrl] = await Promise.all([
-      getSignedJobAttachmentUrl(path, 3600),
-      getSignedJobAttachmentUrl(path, 300, { width: 400, quality: 75 }),
-    ]);
-    setPhotos((current) => [
-      { file_name: file.name, file_url: path, type, full_url: fullUrl, preview_url: previewUrl },
-      ...current,
-    ]);
-    toast.success("Photo uploaded");
   };
   const uploadAttachment = async (file: File) => {
     if (!user) return;
@@ -280,32 +246,9 @@ export const ThirdPartySitePage: React.FC = () => {
           <p className="text-[10px] font-black uppercase tracking-widest text-primary">
             Site photos
           </p>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-xs font-bold">
-              <FileUp className="h-4 w-4" />
-              {uploading ? "Uploading..." : "Before photo"}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) =>
-                  event.target.files?.[0] && uploadPhoto(event.target.files[0], "image_before")
-                }
-              />
-            </label>
-            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-4 py-3 text-xs font-bold">
-              <FileUp className="h-4 w-4" />
-              {uploading ? "Uploading..." : "After photo"}
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) =>
-                  event.target.files?.[0] && uploadPhoto(event.target.files[0], "image_after")
-                }
-              />
-            </label>
-          </div>
+          <p className="mt-4 text-xs text-muted-foreground">
+            Photos are added by Opus Form. You can view them here, but cannot upload site photos.
+          </p>
           {photos.length === 0 ? (
             <p className="mt-8 text-sm text-muted-foreground">
               No site photos have been uploaded yet.

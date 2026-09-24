@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { MessageSquare, Send } from "lucide-react";
+import { MessageSquare, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "../../integrations/supabase/client";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { usePortal } from "../context/PortalContext";
 import { formatUKDate } from "../utils/week";
 import { formatAppRoleLabel } from "../context/PortalContext";
@@ -14,6 +15,7 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => 
   const [notes, setNotes] = useState<any[]>([]);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const canReply = INTERNAL_ROLES.has(role ?? "") || role === "third_party";
 
   const load = useCallback(async () => {
@@ -61,6 +63,15 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => 
     toast.success("Response sent");
   };
 
+  const deleteNote = async () => {
+    if (!deleteTarget) return;
+    const { error } = await db.from("third_party_job_notes").delete().eq("id", deleteTarget.id);
+    if (error) return toast.error(error.message || "Unable to delete note");
+    setDeleteTarget(null);
+    await load();
+    toast.success("Note deleted");
+  };
+
   return (
     <div className="mt-5 rounded-xl border border-border bg-card p-4">
       <div className="mb-4 flex items-center gap-2">
@@ -77,6 +88,17 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => 
                 Third party · {formatUKDate(note.created_at?.slice(0, 10))}
               </p>
               <p className="mt-2 whitespace-pre-wrap text-sm text-foreground">{note.body}</p>
+              {role === "third_party" &&
+                note.author_id === user?.id &&
+                note.replies.length === 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(note)}
+                    className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1.5 text-[10px] font-bold text-muted-foreground hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-3 w-3" /> Delete note
+                  </button>
+                )}
               <div className="mt-3 space-y-2 border-l-2 border-primary/30 pl-3">
                 {note.replies.map((replyItem: any) => (
                   <div key={replyItem.id} className="rounded-md bg-background p-2">
@@ -120,6 +142,16 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => 
           ))}
         </div>
       )}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+        tone="destructive"
+        title="Delete note?"
+        confirmLabel="Delete note"
+        cancelLabel="Keep note"
+        onConfirm={deleteNote}
+        message="This note has no response and will be removed from the site record."
+      />
     </div>
   );
 };

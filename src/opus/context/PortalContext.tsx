@@ -661,7 +661,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [user, profile?.tenant_id]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || !profile?.tenant_id) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
     const rows = workers.map((w) => workerToRow(w, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedWorkersRef.current) return;
@@ -680,10 +680,10 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (error) console.error("delete workers", error);
       }
     })();
-  }, [workers, user, profile?.tenant_id]);
+  }, [workers, user, profile?.tenant_id, role]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || !profile?.tenant_id) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
     const rows = jobs.map((j) => jobToRow(j, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedJobsRef.current) return;
@@ -702,10 +702,10 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (error) console.error("delete jobs", error);
       }
     })();
-  }, [jobs, user, profile?.tenant_id]);
+  }, [jobs, user, profile?.tenant_id, role]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || !profile?.tenant_id) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
     const rows = shifts.map((s) => shiftToRow(s, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedShiftsRef.current) return;
@@ -724,10 +724,10 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (error) console.error("delete shifts", error);
       }
     })();
-  }, [shifts, user, profile?.tenant_id]);
+  }, [shifts, user, profile?.tenant_id, role]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || !profile?.tenant_id) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
     const rows = calendarEvents.map((e) => calendarEventToRow(e, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedCalendarEventsRef.current) return;
@@ -746,7 +746,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         if (error) console.error("delete calendar events", error);
       }
     })();
-  }, [calendarEvents, user, profile?.tenant_id]);
+  }, [calendarEvents, user, profile?.tenant_id, role]);
 
   // window.confirm can't be used here since ConfirmDialog is async/non-blocking.
   // Instead we stash the "pending confirmation" as state and render the dialog

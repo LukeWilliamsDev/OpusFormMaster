@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { usePortal } from "../context/PortalContext";
 import { STAFF_ROLES } from "../types/erp";
 import { formatUKDate } from "../utils/week";
-import { getTicketStatus } from "../utils/workerValidation";
+import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
 import { supabase } from "../../integrations/supabase/client";
 
 const db = supabase as any;
@@ -76,7 +76,7 @@ type WorkerEditDraft = {
 };
 
 export const ThirdPartyPortalPage: React.FC = () => {
-  const { user, profile, workers, dataLoading } = usePortal();
+  const { user, profile, workers, setWorkers, dataLoading } = usePortal();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -187,6 +187,26 @@ export const ThirdPartyPortalPage: React.FC = () => {
     setTicketNumber("");
     setTicketExpiry("");
     setTicketStaffId(null);
+    if (staffId) {
+      const { data: refreshedStaff } = await db
+        .from("staff")
+        .select("id, name, role, email, phone, postcode, tickets, uploaded_certificates")
+        .eq("id", staffId)
+        .single();
+      if (refreshedStaff) {
+        setWorkers((current) =>
+          current.map((worker) =>
+            worker.id === staffId
+              ? {
+                  ...worker,
+                  tickets: refreshedStaff.tickets ?? [],
+                  uploadedCertificates: refreshedStaff.uploaded_certificates ?? [],
+                }
+              : worker,
+          ),
+        );
+      }
+    }
     toast.success("Certificate uploaded");
   };
 
@@ -474,7 +494,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                             onClick={() => setTicketStaffId(worker.id)}
                             className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest"
                           >
-                            Add certificate
+                            Add or renew certificate
                           </button>
                         )}
                       </div>
@@ -484,28 +504,43 @@ export const ThirdPartyPortalPage: React.FC = () => {
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                           Certificates
                         </span>
-                        {worker.tickets.slice(0, 4).map((ticket) => {
-                          const status = getTicketStatus(ticket);
-                          return (
-                            <span
-                              key={ticket.id}
-                              className={`rounded-full px-2.5 py-1 text-[10px] font-bold ${
-                                status === "EXPIRED"
-                                  ? "bg-destructive/10 text-destructive"
+                        {getCurrentTickets(worker.tickets)
+                          .slice(0, 4)
+                          .map((ticket) => {
+                            const status = getTicketStatus(ticket);
+                            return (
+                              <span
+                                key={ticket.id}
+                                className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold ${
+                                  status === "EXPIRED"
+                                    ? "bg-destructive/10 text-destructive"
+                                    : status === "EXPIRING_SOON"
+                                      ? "bg-amber-500/10 text-amber-700"
+                                      : "bg-primary/10 text-primary"
+                                }`}
+                              >
+                                {ticket.type} ·{" "}
+                                {status === "EXPIRED"
+                                  ? "expired"
                                   : status === "EXPIRING_SOON"
-                                    ? "bg-amber-500/10 text-amber-700"
-                                    : "bg-primary/10 text-primary"
-                              }`}
-                            >
-                              {ticket.type} ·{" "}
-                              {status === "EXPIRED"
-                                ? "expired"
-                                : status === "EXPIRING_SOON"
-                                  ? "expiring"
-                                  : "valid"}
-                            </span>
-                          );
-                        })}
+                                    ? "expiring"
+                                    : "valid"}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setTicketStaffId(worker.id);
+                                    setTicketType(ticket.type);
+                                    setTicketNumber(ticket.ticketNumber ?? "");
+                                    setTicketExpiry("");
+                                    setTicketFile(null);
+                                  }}
+                                  className="ml-1 underline decoration-current/40 underline-offset-2 hover:decoration-current"
+                                >
+                                  Renew
+                                </button>
+                              </span>
+                            );
+                          })}
                       </div>
                     )}
                     {(worker.uploadedCertificates ?? []).length > 0 && (
@@ -533,10 +568,12 @@ export const ThirdPartyPortalPage: React.FC = () => {
         {ticketStaffId && (
           <section className="rounded-2xl border-2 border-border bg-card p-5">
             <h2 className="text-sm font-black uppercase tracking-widest">
-              Add certificate to {workers.find((worker) => worker.id === ticketStaffId)?.name}
+              Add or renew certificate for{" "}
+              {workers.find((worker) => worker.id === ticketStaffId)?.name}
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              Start typing to search the list, or enter a certificate name if it is not listed.
+              Uploading a renewal creates a new record. Previous files remain available to Opus Form
+              for audit history.
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <input

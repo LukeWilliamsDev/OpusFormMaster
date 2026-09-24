@@ -22,6 +22,7 @@ export interface Ticket {
   isValid?: boolean;
   verified?: boolean;
   documentUrl?: string;
+  createdAt?: string;
 }
 
 export const STAFF_ROLES = [

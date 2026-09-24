@@ -59,3 +59,17 @@ export const getTicketStatus = (ticket: Ticket) => {
   }
   return "VALID";
 };
+
+/** Return the latest uploaded version of each certificate type for display.
+ * Historical rows remain available in the document audit history.
+ */
+export const getCurrentTickets = (tickets: Ticket[] = []) => {
+  const latest = new Map<string, Ticket>();
+  for (const ticket of tickets) {
+    const previous = latest.get(ticket.type);
+    if (!previous || (ticket.createdAt ?? "") >= (previous.createdAt ?? "")) {
+      latest.set(ticket.type, ticket);
+    }
+  }
+  return [...latest.values()];
+};

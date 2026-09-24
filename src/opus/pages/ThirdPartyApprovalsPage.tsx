@@ -1,13 +1,17 @@
-import React, { useEffect, useState } from "react";
-import { Check, X } from "lucide-react";
+import React, { useEffect, useMemo, useState } from "react";
+import { Check, ExternalLink, History, X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "../../integrations/supabase/client";
+import { usePortal } from "../context/PortalContext";
+import { formatUKDate } from "../utils/week";
 
 const db = supabase as any;
 
 export const ThirdPartyApprovalsPage: React.FC = () => {
+  const { workers } = usePortal();
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [documents, setDocuments] = useState<Record<string, any[]>>({});
+  const [documentHistory, setDocumentHistory] = useState<any[]>([]);
   const load = async () => {
     const { data, error } = await db
       .from("third_party_staff_submissions")
@@ -29,9 +33,41 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
     for (const doc of docs ?? []) (grouped[doc.submission_id] ??= []).push(doc);
     setDocuments(grouped);
   };
+  const loadDocumentHistory = async () => {
+    const { data, error } = await db
+      .from("third_party_staff_documents")
+      .select(
+        "id, staff_id, ticket_type, ticket_number, expiry_date, file_name, file_path, created_at",
+      )
+      .not("staff_id", "is", null)
+      .order("created_at", { ascending: false });
+    if (error) return toast.error(error.message || "Unable to load certificate history");
+    setDocumentHistory(data ?? []);
+  };
   useEffect(() => {
     load();
+    loadDocumentHistory();
   }, []);
+  const currentDocumentIds = useMemo(() => {
+    const current = new Set<string>();
+    const ids = new Set<string>();
+    for (const document of documentHistory) {
+      const key = `${document.staff_id}:${document.ticket_type}`;
+      if (!current.has(key)) {
+        current.add(key);
+        ids.add(document.id);
+      }
+    }
+    return ids;
+  }, [documentHistory]);
+  const openDocument = async (path: string) => {
+    const { data, error } = await supabase.storage
+      .from("third-party-staff-documents")
+      .createSignedUrl(path, 300);
+    if (error || !data?.signedUrl)
+      return toast.error(error?.message || "Unable to open certificate");
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
   const review = async (id: string, approve: boolean) => {
     const { error } = await db.rpc("review_third_party_staff", {
       p_submission_id: id,
@@ -100,6 +136,63 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
           </article>
         ))
       )}
+      <section className="rounded-2xl border-2 border-border bg-card p-5">
+        <div className="flex items-center gap-2">
+          <History className="h-4 w-4 text-primary" />
+          <h2 className="text-sm font-black uppercase tracking-widest">
+            Certificate document history
+          </h2>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Renewals create new records. Previous files remain available for audit.
+        </p>
+        {documentHistory.length === 0 ? (
+          <p className="mt-5 text-sm text-muted-foreground">
+            No approved certificate documents yet.
+          </p>
+        ) : (
+          <div className="mt-5 space-y-2">
+            {documentHistory.map((document) => {
+              const staffName =
+                workers.find((worker) => worker.id === document.staff_id)?.name ?? "Unknown staff";
+              const current = currentDocumentIds.has(document.id);
+              return (
+                <div
+                  key={document.id}
+                  className="flex flex-col gap-3 rounded-xl border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold">
+                      {staffName} · {document.ticket_type}
+                    </p>
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {document.file_name} · uploaded{" "}
+                      {formatUKDate(document.created_at?.slice(0, 10))}
+                      {document.expiry_date
+                        ? ` · expires ${formatUKDate(document.expiry_date)}`
+                        : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-widest ${current ? "bg-emerald-500/10 text-emerald-700" : "bg-muted text-muted-foreground"}`}
+                    >
+                      {current ? "Current" : "Previous"}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void openDocument(document.file_path)}
+                      className="inline-flex items-center gap-1 rounded-lg border border-border px-2.5 py-1.5 text-[10px] font-black uppercase tracking-widest hover:border-primary"
+                    >
+                      <ExternalLink className="h-3 w-3" /> Open
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
     </div>
   );
 };

@@ -3,7 +3,7 @@ import { ArrowRight, CalendarDays } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
-import { getTicketStatus } from "../utils/workerValidation";
+import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
 
 const db = supabase as any;
 
@@ -58,7 +58,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
   const expiringCertificateCount = workers.reduce(
     (count, worker) =>
       count +
-      (worker.tickets ?? []).filter((ticket) => {
+      getCurrentTickets(worker.tickets ?? []).filter((ticket) => {
         const status = getTicketStatus(ticket);
         return status === "EXPIRED" || status === "EXPIRING_SOON";
       }).length,

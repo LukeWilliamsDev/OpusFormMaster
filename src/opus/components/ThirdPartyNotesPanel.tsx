@@ -10,7 +10,10 @@ import { formatAppRoleLabel } from "../context/PortalContext";
 const db = supabase as any;
 const INTERNAL_ROLES = new Set(["admin", "director", "logistics_coordinator"]);
 
-export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => {
+export const ThirdPartyNotesPanel: React.FC<{ jobId: string; showHeading?: boolean }> = ({
+  jobId,
+  showHeading = true,
+}) => {
   const { role, profile, user } = usePortal();
   const [notes, setNotes] = useState<any[]>([]);
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
@@ -73,11 +76,13 @@ export const ThirdPartyNotesPanel: React.FC<{ jobId: string }> = ({ jobId }) => 
   };
 
   return (
-    <div className="mt-5 rounded-xl border border-border bg-card p-4">
-      <div className="mb-4 flex items-center gap-2">
-        <MessageSquare className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-black uppercase tracking-widest">Third Party Notes</h3>
-      </div>
+    <div className={`${showHeading ? "mt-5" : ""} rounded-xl border border-border bg-card p-4`}>
+      {showHeading && (
+        <div className="mb-4 flex items-center gap-2">
+          <MessageSquare className="h-4 w-4 text-primary" />
+          <h3 className="text-sm font-black uppercase tracking-widest">Third Party Notes</h3>
+        </div>
+      )}
       {notes.length === 0 ? (
         <p className="text-xs text-muted-foreground">No third-party notes.</p>
       ) : (

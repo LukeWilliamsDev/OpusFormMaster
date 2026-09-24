@@ -155,6 +155,11 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
     [jobs, shifts, ownedWorkerIds],
   );
   const selectedJob = assignedJobs.find((job) => job.id === selectedJobId) ?? null;
+  const documentCount = workers.reduce(
+    (total, worker) =>
+      total + (worker.tickets?.length ?? 0) + (worker.uploadedCertificates?.length ?? 0),
+    0,
+  );
 
   const setField = (field: keyof FormState, value: string) =>
     setForm((current) => ({ ...current, [field]: value }));
@@ -305,7 +310,7 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-8 sm:px-6 lg:py-12">
+    <div className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:px-6 lg:py-12">
       <datalist id="certificate-types">
         {CERTIFICATE_TYPES.map((type) => (
           <option key={type} value={type} />
@@ -316,9 +321,9 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
             Staff management
           </p>
-          <h1 className="mt-2 text-3xl font-black text-foreground">Staff</h1>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground">Your staff</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Submit people for approval and maintain your approved staff.
+            Manage submissions, approvals, and compliance documents in one place.
           </p>
         </div>
         <button
@@ -329,6 +334,25 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
           {showAddStaff ? "Close" : "Add staff member"}
         </button>
       </header>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {[
+          ["Approved staff", workers.length, "visible to Opus Form"],
+          ["Pending submissions", pendingSubmissions.length, "waiting for review"],
+          ["Documents held", documentCount, "certificates and records"],
+        ].map(([label, value, description]) => (
+          <div
+            key={String(label)}
+            className="rounded-2xl border-2 border-border bg-card p-5 shadow-sm"
+          >
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              {label}
+            </p>
+            <p className="mt-4 text-3xl font-black tracking-tight">{value}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+          </div>
+        ))}
+      </div>
 
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_260px]">
         <div className="space-y-8">

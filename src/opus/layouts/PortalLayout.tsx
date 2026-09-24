@@ -241,13 +241,40 @@ export const PortalLayout: React.FC = () => {
           </button>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            className={`p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] items-center justify-center ${role === "third_party" ? "hidden" : "flex"}`}
             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </header>
+
+      {role === "third_party" && (
+        <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 border-t-2 border-border bg-background/95 px-2 py-2 backdrop-blur lg:hidden">
+          {[
+            { label: "Home", path: "/portal/third-party", icon: LayoutDashboard },
+            { label: "Staff", path: "/portal/third-party/staff", icon: Users },
+            { label: "Sites", path: "/portal/third-party/jobs", icon: Building2 },
+          ].map(({ label, path, icon: Icon }) => (
+            <Link
+              key={path}
+              to={path}
+              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${checkIsActive(path) ? "text-primary" : "text-muted-foreground"}`}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </Link>
+          ))}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-muted-foreground"
+          >
+            <Menu className="h-4 w-4" />
+            More
+          </button>
+        </nav>
+      )}
 
       {/* Mobile Slide-out Drawer */}
       <AnimatePresence>
@@ -370,7 +397,9 @@ export const PortalLayout: React.FC = () => {
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-h-0 bg-background">
+      <main
+        className={`flex-1 flex flex-col min-h-0 bg-background ${role === "third_party" ? "pb-16 lg:pb-0" : ""}`}
+      >
         <div className="flex-1 w-full relative lg:min-h-0 lg:overflow-y-auto">
           <Outlet />
         </div>

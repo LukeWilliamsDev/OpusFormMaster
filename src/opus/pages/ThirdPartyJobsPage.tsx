@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { ArrowRight, MapPin } from "lucide-react";
+import { ArrowRight, CheckCircle2, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 
@@ -15,14 +15,14 @@ export const ThirdPartyJobsPage: React.FC = () => {
   );
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8 px-4 py-8 sm:px-6 lg:py-12">
+    <div className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:px-6 lg:py-12">
       <header>
         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-          Assigned sites
+          Work and sites
         </p>
-        <h1 className="mt-2 text-2xl font-black text-foreground">Assigned sites</h1>
+        <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground">Assigned sites</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Only sites where your approved staff are assigned.
+          Your approved staff and the sites they are assigned to.
         </p>
       </header>
       {assignedJobs.length === 0 ? (
@@ -31,7 +31,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
           <p className="mt-3 text-sm text-muted-foreground">No current or future assignments.</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-4 lg:grid-cols-2">
           {assignedJobs.map((job) => {
             const assignedStaff = workers.filter((worker) =>
               shifts.some((shift) => shift.jobId === job.id && shift.workerId === worker.id),
@@ -40,41 +40,50 @@ export const ThirdPartyJobsPage: React.FC = () => {
               <Link
                 key={job.id}
                 to={`/portal/third-party/jobs/${job.id}`}
-                className="group block rounded-2xl border-2 border-border bg-card p-5 transition-colors hover:border-primary"
+                className="group block rounded-2xl border-2 border-border bg-card p-5 shadow-sm transition-colors hover:border-primary"
               >
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-black text-foreground">{job.siteName}</p>
+                    <p className="text-lg font-black text-foreground">{job.siteName}</p>
                     <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                      <MapPin className="h-3 w-3" />
-                      {job.postcode} · {assignedStaff.length} staff assigned · {job.currentPours}{" "}
-                      pours
+                      <MapPin className="h-3 w-3" /> {job.postcode}
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="rounded-lg border border-emerald-500/50 bg-emerald-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-500">
-                      {job.status}
-                    </span>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-primary transition-transform group-hover:translate-x-1" />
-                  </div>
-                </div>
-                <div className="mt-5 flex items-center justify-between border-t border-border pt-3 text-xs">
-                  <span className="text-muted-foreground">Open site record</span>
-                  <span className="font-black uppercase tracking-widest text-primary">
-                    View site
+                  <span className="rounded-full bg-emerald-500/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-emerald-600">
+                    {job.status}
                   </span>
+                </div>
+                <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <div className="rounded-lg border border-border p-3">
+                    <p className="text-lg font-black">{assignedStaff.length}</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Staff assigned
+                    </p>
+                  </div>
+                  <div className="rounded-lg border border-border p-3">
+                    <p className="text-lg font-black">{job.currentPours}</p>
+                    <p className="mt-1 text-[10px] uppercase tracking-widest text-muted-foreground">
+                      Pours
+                    </p>
+                  </div>
+                  <div className="col-span-2 flex items-center justify-between rounded-lg bg-primary/5 p-3 sm:col-span-1">
+                    <span className="text-xs font-black text-primary">Open site record</span>
+                    <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
+                  </div>
                 </div>
               </Link>
             );
           })}
         </div>
       )}
-      <div className="rounded-2xl border border-border bg-card p-5">
-        <p className="text-[10px] font-black uppercase tracking-widest text-primary">Site access</p>
-        <p className="mt-3 text-sm font-bold">Updates stay with the site record.</p>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Add notes, photos, and attachments from the site page.
-        </p>
+      <div className="flex items-start gap-3 rounded-2xl border border-border bg-card p-5">
+        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+        <div>
+          <p className="text-sm font-black">Updates stay with the site record.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Add notes and attachments from the site page. Site photos are supplied by Opus Form.
+          </p>
+        </div>
       </div>
     </div>
   );

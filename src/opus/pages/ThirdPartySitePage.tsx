@@ -9,6 +9,12 @@ import { ThirdPartyNotesPanel } from "../components/ThirdPartyNotesPanel";
 
 const db = supabase as any;
 type Tab = "overview" | "notes" | "photos" | "attachments";
+const JOB_ATTACHMENTS_PUBLIC_PREFIX = "/storage/v1/object/public/job-attachments/";
+
+const storagePathFor = (fileUrl: string) =>
+  fileUrl.includes(JOB_ATTACHMENTS_PUBLIC_PREFIX)
+    ? fileUrl.split(JOB_ATTACHMENTS_PUBLIC_PREFIX)[1]
+    : fileUrl;
 
 export const ThirdPartySitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -29,15 +35,35 @@ export const ThirdPartySitePage: React.FC = () => {
 
   React.useEffect(() => {
     if (!jobId || !user) return;
-    db.from("job_attachments")
-      .select("id, file_name, file_url, type, uploaded_at")
-      .eq("job_id", jobId)
-      .in("type", ["image_before", "image_after"])
-      .order("uploaded_at", { ascending: false })
-      .then(({ data, error }: { data: any[] | null; error: any }) => {
-        if (error) toast.error(error.message || "Unable to load site photos");
-        setPhotos(data ?? []);
-      });
+    let cancelled = false;
+    const loadPhotos = async () => {
+      const { data, error } = await db
+        .from("job_attachments")
+        .select("id, file_name, file_url, type, uploaded_at, uploaded_by")
+        .eq("job_id", jobId)
+        .in("type", ["image_before", "image_after"])
+        .order("uploaded_at", { ascending: false });
+      if (error) {
+        toast.error(error.message || "Unable to load site photos");
+        return;
+      }
+      const withPreviews = await Promise.all(
+        (data ?? []).map(async (photo: any) => {
+          const { data: signed, error: signedError } = await supabase.storage
+            .from("job-attachments")
+            .createSignedUrl(storagePathFor(photo.file_url), 300);
+          return {
+            ...photo,
+            preview_url: signedError ? null : signed?.signedUrl,
+          };
+        }),
+      );
+      if (!cancelled) setPhotos(withPreviews);
+    };
+    void loadPhotos();
+    return () => {
+      cancelled = true;
+    };
   }, [jobId, user?.id]);
 
   if (!job) {
@@ -93,14 +119,17 @@ export const ThirdPartySitePage: React.FC = () => {
     });
     setUploading(false);
     if (error) return toast.error(error.message || "Unable to record photo");
-    setPhotos((current) => [{ file_name: file.name, file_url: path, type }, ...current]);
+    const { data: signed } = await supabase.storage
+      .from("job-attachments")
+      .createSignedUrl(path, 300);
+    setPhotos((current) => [
+      { file_name: file.name, file_url: path, type, preview_url: signed?.signedUrl },
+      ...current,
+    ]);
     toast.success("Photo uploaded");
   };
   const openPhoto = async (photo: any) => {
-    const publicPrefix = "/storage/v1/object/public/job-attachments/";
-    const path = photo.file_url.includes(publicPrefix)
-      ? photo.file_url.split(publicPrefix)[1]
-      : photo.file_url;
+    const path = storagePathFor(photo.file_url);
     const { data, error } = await supabase.storage
       .from("job-attachments")
       .createSignedUrl(path, 300);
@@ -273,19 +302,46 @@ export const ThirdPartySitePage: React.FC = () => {
               No site photos have been uploaded yet.
             </p>
           ) : (
-            <div className="mt-6 grid gap-3 sm:grid-cols-2">
-              {photos.map((photo) => (
-                <button
-                  key={photo.id ?? photo.file_url}
-                  onClick={() => openPhoto(photo)}
-                  className="rounded-xl border border-border p-3 text-left text-xs font-bold"
-                >
-                  <span className="block truncate">{photo.file_name}</span>
-                  <span className="mt-1 block text-muted-foreground">
-                    {photo.type === "image_before" ? "Before" : "After"} · View photo
-                  </span>
-                </button>
-              ))}
+            <div className="mt-5 rounded-xl border border-border bg-background p-2">
+              <p className="mb-2 flex items-center gap-1.5 px-1 text-xs text-muted-foreground/70">
+                Click a photo to view it full size.
+              </p>
+              <div className="grid gap-2 [grid-template-columns:repeat(auto-fill,minmax(140px,1fr))]">
+                {photos.map((photo) => (
+                  <button
+                    key={photo.id ?? photo.file_url}
+                    onClick={() => openPhoto(photo)}
+                    className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-card text-left"
+                  >
+                    {photo.preview_url ? (
+                      <img
+                        src={photo.preview_url}
+                        alt={
+                          photo.type === "image_before" ? "Before site photo" : "After site photo"
+                        }
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-full items-center justify-center p-3 text-center text-[10px] font-bold text-muted-foreground">
+                        {photo.file_name}
+                      </span>
+                    )}
+                    <span
+                      className={`absolute left-1.5 top-1.5 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider shadow-sm ${photo.type === "image_before" ? "bg-black/80 text-white" : "bg-primary text-primary-foreground"}`}
+                    >
+                      {photo.type === "image_before" ? "Before" : "After"}
+                    </span>
+                    <span className="absolute inset-x-0 bottom-0 flex translate-y-full flex-col bg-black/70 p-1.5 text-[10px] text-white transition-transform group-hover:translate-y-0">
+                      <span className="truncate font-bold">
+                        {photo.uploaded_by || "Uploaded photo"}
+                      </span>
+                      <span>{new Date(photo.uploaded_at || 0).toLocaleDateString("en-GB")}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </section>

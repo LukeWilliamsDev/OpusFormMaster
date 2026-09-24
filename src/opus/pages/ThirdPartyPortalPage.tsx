@@ -40,12 +40,14 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
   const [jobFiles, setJobFiles] = useState<any[]>([]);
   const [lastSubmissionId, setLastSubmissionId] = useState<string | null>(null);
   const [ticketType, setTicketType] = useState("CSCS");
+  const [customTicketType, setCustomTicketType] = useState("");
   const [ticketNumber, setTicketNumber] = useState("");
   const [ticketExpiry, setTicketExpiry] = useState("");
   const [ticketFile, setTicketFile] = useState<File | null>(null);
   const [uploadingTicket, setUploadingTicket] = useState(false);
   const [ticketStaffId, setTicketStaffId] = useState<string | null>(null);
   const [showAddStaff, setShowAddStaff] = useState(false);
+  const effectiveTicketType = ticketType === "Other" ? customTicketType.trim() : ticketType;
 
   const loadSubmissions = async () => {
     const { data } = await db
@@ -140,6 +142,9 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
 
   const uploadTicket = async (submissionId: string | null, staffId: string | null = null) => {
     if (!submissionId || !ticketFile || !user || !profile?.tenant_id) return;
+    if (!effectiveTicketType) {
+      return toast.error("Enter the certificate name");
+    }
     setUploadingTicket(true);
     const extension = ticketFile.name.split(".").pop() || "bin";
     const path = `${user.id}/${submissionId}/${crypto.randomUUID()}.${extension}`;
@@ -155,7 +160,7 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
       submission_id: submissionId,
       staff_id: staffId,
       uploaded_by: user.id,
-      ticket_type: ticketType,
+      ticket_type: effectiveTicketType,
       ticket_number: ticketNumber || null,
       expiry_date: ticketExpiry || null,
       file_name: ticketFile.name,
@@ -166,6 +171,8 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
     setUploadingTicket(false);
     if (error) return toast.error(error.message || "Unable to record certificate");
     setTicketFile(null);
+    setCustomTicketType("");
+    setTicketType("CSCS");
     setTicketNumber("");
     setTicketExpiry("");
     setTicketStaffId(null);
@@ -380,6 +387,15 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
                     ),
                   )}
                 </select>
+                {ticketType === "Other" && (
+                  <input
+                    value={customTicketType}
+                    onChange={(e) => setCustomTicketType(e.target.value)}
+                    placeholder="Certificate name"
+                    required
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  />
+                )}
                 <input
                   value={ticketNumber}
                   onChange={(e) => setTicketNumber(e.target.value)}
@@ -514,6 +530,15 @@ export const ThirdPartyPortalPage: React.FC<{ showJobs?: boolean }> = ({ showJob
                     ),
                   )}
                 </select>
+                {ticketType === "Other" && (
+                  <input
+                    value={customTicketType}
+                    onChange={(e) => setCustomTicketType(e.target.value)}
+                    placeholder="Certificate name"
+                    required
+                    className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                  />
+                )}
                 <input
                   value={ticketNumber}
                   onChange={(e) => setTicketNumber(e.target.value)}

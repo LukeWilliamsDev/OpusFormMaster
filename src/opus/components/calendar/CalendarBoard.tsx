@@ -102,7 +102,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             }`}
           >
             <Layers className="w-4 h-4" />
-            <span>SITES</span>
+            <span>Sites</span>
           </button>
           <button
             type="button"
@@ -112,7 +112,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
-            <span>STAFF</span>
+            <span>Staff</span>
           </button>
         </div>
 
@@ -123,7 +123,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search operatives or sites…"
+              placeholder="Search staff or sites…"
               className={`w-full ${SITE_CARD} pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-600 dark:focus:border-amber-400 transition-colors`}
             />
           </div>

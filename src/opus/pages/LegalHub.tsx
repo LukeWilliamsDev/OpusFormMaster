@@ -10,14 +10,14 @@ const POLICIES = [
     icon: ShieldCheck,
   },
   {
-    label: "Usage Policy",
-    description: "Rules for using the portal.",
+    label: "Portal Usage Policy",
+    description: "How staff should use the portal.",
     path: "/portal/terms",
     icon: FileText,
   },
   {
     label: "Acceptable Use",
-    description: "What you can and can't do on the system.",
+    description: "What you can and cannot do in the portal.",
     path: "/portal/acceptable-use",
     icon: ScrollText,
   },
@@ -44,7 +44,7 @@ export const LegalHubPage: React.FC = () => {
         <h1 className="text-2xl font-black uppercase tracking-wide font-archivo mb-1">
           Legal & Privacy
         </h1>
-        <p className="text-sm text-muted-foreground mb-6">Select a policy to view.</p>
+        <p className="text-sm text-muted-foreground mb-6">Choose a policy to read.</p>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {POLICIES.map(({ label, description, path, icon: Icon }) => (

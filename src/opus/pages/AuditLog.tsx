@@ -121,7 +121,7 @@ export const AuditLogPage: React.FC = () => {
     <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in text-foreground flex flex-col bg-background">
       <div className="border-b border-border pb-6">
         <h1 className="text-2xl sm:text-3xl font-extrabold font-archivo tracking-tight">
-          Site Log
+          Audit log
         </h1>
       </div>
 
@@ -137,7 +137,7 @@ export const AuditLogPage: React.FC = () => {
                   setSearch(e.target.value);
                   setCurrentPage(1);
                 }}
-                placeholder="Search actor or action..."
+                placeholder="Search user or action…"
                 className="w-full pl-7 pr-2 py-1.5 bg-card/60 border border-border rounded-lg text-[10.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-brand-accent/50"
               />
             </div>
@@ -160,11 +160,11 @@ export const AuditLogPage: React.FC = () => {
 
           {loading ? (
             <div className="py-20 text-center text-xs font-mono text-muted-foreground">
-              Loading audit trail...
+              Loading audit log…
             </div>
           ) : paginatedLogs.length === 0 ? (
             <div className="py-20 text-center text-xs font-mono text-muted-foreground">
-              No logs matching filters.
+              No audit entries match these filters.
             </div>
           ) : (
             <CardGrid
@@ -302,7 +302,7 @@ export const AuditLogPage: React.FC = () => {
                   </div>
                 );
               }}
-              emptyMessage="No logs matching filters."
+              emptyMessage="No audit entries match these filters."
               emptyIcon={
                 <span className="py-20 text-center text-xs font-mono text-muted-foreground" />
               }

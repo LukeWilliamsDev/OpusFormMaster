@@ -71,9 +71,9 @@ export const ThirdPartyJobsPage: React.FC = () => {
       )}
       <div className="rounded-2xl border border-border bg-card p-5">
         <p className="text-[10px] font-black uppercase tracking-widest text-primary">Site access</p>
-        <p className="mt-3 text-sm font-bold">Read-only overview</p>
+        <p className="mt-3 text-sm font-bold">Updates stay with the site record.</p>
         <p className="mt-2 text-sm text-muted-foreground">
-          Add notes, site photos, and Third Party Attachments. Your uploads remain private to you.
+          Add notes, photos, and attachments from the site page.
         </p>
       </div>
     </div>

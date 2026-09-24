@@ -126,23 +126,18 @@ export function TelegramLinkControl({
           onConfirm={() => void createInvite()}
           message={
             <div className="space-y-3 text-[12px] leading-relaxed">
-              <p>
-                This creates a single-use link that binds {staffName}&apos;s Telegram account to
-                their staff record. The link is copied to your clipboard — you send it to them
-                yourself. Nothing is sent automatically.
-              </p>
+              <p>Create a single-use link for {staffName}. Copy it and send it to them yourself.</p>
               <div className="bg-muted/40 border border-border rounded-lg p-3 space-y-1.5">
                 <p className="font-semibold uppercase tracking-wider text-[10px] text-muted-foreground">
                   Once linked they can
                 </p>
                 <ul className="list-disc pl-4 space-y-0.5">
                   <li>See their own next seven days of shifts</li>
-                  <li>Nothing else — no other staff, no jobs, no financials</li>
+                  <li>They won’t see other staff, jobs, or financial data.</li>
                 </ul>
               </div>
               <p className="text-muted-foreground">
-                The link expires in 7 days, works once, and can be revoked at any time. Anyone who
-                opens it becomes linked as {staffName}, so send it to them directly.
+                The link expires in 7 days and works once. Revoke it anytime.
               </p>
             </div>
           }
@@ -162,7 +157,7 @@ export function TelegramLinkControl({
           message={
             <div className="space-y-3 text-[12px] leading-relaxed">
               <p>
-                {staffName} has an unused invite, expiring{" "}
+                Invite awaiting acceptance · expires{" "}
                 <span className="font-semibold">
                   {new Date(state.expiresAt).toLocaleDateString("en-GB", {
                     day: "numeric",
@@ -194,7 +189,7 @@ export function TelegramLinkControl({
           onOpenChange={setDialogOpen}
           tone="destructive"
           tag="Telegram"
-          title={`Revoke Telegram access for ${staffName}`}
+          title="Revoke Telegram access?"
           confirmLabel="Revoke access"
           cancelLabel="Close"
           onConfirm={() => void revoke()}

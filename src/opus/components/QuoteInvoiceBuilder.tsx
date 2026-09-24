@@ -586,8 +586,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
   const handleSaveDraft = async () => {
     if (!clientInfo.entity.trim()) {
-      toast.error("VALIDATION FAILURE", {
-        description: "Please provide a Client Name to save a draft.",
+      toast.error("Couldn’t save quote", {
+        description: "Enter a client name before saving the draft.",
       });
       return;
     }
@@ -638,7 +638,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       }, 2000);
     } catch (e) {
       console.error("Failed to save draft quote to Supabase", e);
-      toast.error("SAVE FAILED", { description: "Failed to save draft to database." });
+      toast.error("Couldn’t save quote", {
+        description: "The draft could not be saved. Try again.",
+      });
     }
   };
 
@@ -805,15 +807,15 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     }
 
     if (!profile?.tenant_id) {
-      toast.error("NOT READY", {
+      toast.error("Not ready", {
         description: "Your profile is still loading. Please wait a moment and try again.",
       });
       return;
     }
 
     setIsSendingEmail(true);
-    const sendingToastId = toast.loading("SENDING EMAIL", {
-      description: "Generating PDF and sending to client...",
+    const sendingToastId = toast.loading("Sending email…", {
+      description: "Generating the PDF and sending it to the client…",
     });
 
     try {
@@ -894,7 +896,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
         if (upsertError) {
           console.error("Invoice sent but failed to update database:", upsertError);
-          toast.warning("EMAIL SENT", {
+          toast.warning("Email sent", {
             id: sendingToastId,
             description: "Email sent, but the invoice status couldn't be saved. Please refresh.",
           });
@@ -959,7 +961,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
         setIsAlreadySent(true);
         loadSavedQuotes();
-        toast.success("EMAIL SENT", {
+        toast.success("Email sent", {
           id: sendingToastId,
           description: "Email sent successfully.",
         });
@@ -1033,7 +1035,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
       if (upsertError) {
         console.error("Quote sent but failed to update database:", upsertError);
-        toast.warning("EMAIL SENT", {
+        toast.warning("Email sent", {
           id: sendingToastId,
           description: "Email sent, but the quote status couldn't be saved. Please refresh.",
         });
@@ -1088,13 +1090,16 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       }
 
       loadSavedQuotes();
-      toast.success("EMAIL SENT", { id: sendingToastId, description: "Email sent successfully." });
+      toast.success("Email sent", {
+        id: sendingToastId,
+        description: "The document was emailed to the client.",
+      });
       onBack();
     } catch (err) {
       console.error("Failed to send quote PDF:", err);
-      toast.error("EMAIL FAILED", {
+      toast.error("Email failed", {
         id: sendingToastId,
-        description: "Email failed. Please get in contact with admin@opusform.co.uk",
+        description: "Contact admin@opusform.co.uk for help.",
       });
     } finally {
       setIsSendingEmail(false);
@@ -1308,7 +1313,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
-                  Client Name
+                  Client
                 </span>
                 <div className="flex items-center bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
                   <input
@@ -1426,7 +1431,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                           onBlur={() => {
                             setTimeout(() => setFocusedItemId(null), 200);
                           }}
-                          placeholder="⚠️ Enter item description or pick suggestion below..."
+                          placeholder="Enter an item description or choose a suggestion…"
                         />
                       </div>
                       {!item.description.trim() && focusedItemId !== item.id && (
@@ -1633,7 +1638,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                     }}
                     rows={1}
                     className="w-full bg-transparent border-none outline-none text-[11px] text-foreground leading-relaxed resize-none min-h-0 font-medium overflow-hidden"
-                    placeholder="Enter condition..."
+                    placeholder="Enter payment terms or conditions…"
                   />
                   <button
                     type="button"
@@ -1737,8 +1742,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           if (!open) setValidationErrors([]);
         }}
         tone="error"
-        tag="VALIDATION FAILURE"
-        title="VALIDATION FAILURE"
+        tag="Validation issue"
+        title="Check the quote details"
         message={
           <>
             <p className="text-[11px] text-muted-foreground uppercase tracking-wider leading-relaxed mb-4">

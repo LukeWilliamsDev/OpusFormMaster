@@ -66,7 +66,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
     if (isAuthenticated) {
       return [
         { label: "Staff Privacy Notice", path: "/portal/privacy" },
-        { label: "Usage Policy", path: "/portal/terms" },
+        { label: "Portal Usage Policy", path: "/portal/terms" },
         { label: "Acceptable Use", path: "/portal/acceptable-use" },
         { label: "Cookie Statement", path: "/portal/cookies" },
         { label: "Modern Slavery", path: "/portal/modern-slavery" },
@@ -95,7 +95,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             aria-label="Go back"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Back to previous page
+            Back
           </button>
 
           {/* Title block */}
@@ -115,7 +115,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             {toc.length > 0 && (
               <nav className="hidden lg:block sticky top-6 self-start">
                 <span className="block text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground mb-3">
-                  ON THIS PAGE
+                  On this page
                 </span>
                 <ul className="space-y-2">
                   {toc.map((item) => (
@@ -297,7 +297,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
               ADMIN@OPUSFORM.CO.UK
             </a>
             <span>·</span>
-            <span>© {new Date().getFullYear()} ALL RIGHTS RESERVED</span>
+            <span>© {new Date().getFullYear()} All rights reserved.</span>
           </div>
         </div>
       </footer>

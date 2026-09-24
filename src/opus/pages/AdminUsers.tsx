@@ -431,7 +431,7 @@ export const AdminUsers: React.FC = () => {
         <div className="space-y-1">
           <h1 className="text-2xl sm:text-3xl font-extrabold font-archivo tracking-tight">Users</h1>
           <p className="text-sm text-muted-foreground sm:whitespace-nowrap">
-            Create, edit, disable, or archive accounts. All actions are logged in the site log.
+            Manage user accounts. Changes are recorded in the audit log.
           </p>
         </div>
       </div>
@@ -478,7 +478,7 @@ export const AdminUsers: React.FC = () => {
               className="flex items-center justify-center gap-2 bg-primary text-primary-foreground rounded-lg px-3.5 py-2 text-xs font-bold uppercase tracking-wider shrink-0 hover:opacity-90 transition-opacity"
             >
               <UserPlus className="h-4 w-4" />
-              <span className="hidden sm:inline">New user</span>
+              <span className="hidden sm:inline">Add user</span>
             </button>
           </div>
         </div>

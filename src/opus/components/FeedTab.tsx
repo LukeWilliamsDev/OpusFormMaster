@@ -187,7 +187,7 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
               onBlur={() => {
                 if (!body.trim()) setComposerOpen(false);
               }}
-              placeholder="What happened, what's next..."
+              placeholder="Add a progress update…"
               className="w-full min-h-[72px] rounded-lg border border-border bg-background p-3 pr-12 text-sm leading-relaxed text-foreground placeholder:text-muted-foreground outline-none focus:border-foreground/30"
             />
             <button
@@ -214,7 +214,7 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
             onClick={() => setComposerOpen(true)}
             className="w-full text-left rounded-lg border border-border bg-background px-3 py-2 text-sm text-muted-foreground hover:border-foreground/30 cursor-pointer transition-colors"
           >
-            Add a note...
+            Add note
           </button>
         )}
       </div>
@@ -223,11 +223,11 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
         {loading ? (
           <div className="flex items-center gap-2 text-xs text-muted-foreground py-4 px-4">
             <Loader className="w-4 h-4 animate-spin text-primary" />
-            <span>Loading feed...</span>
+            <span>Loading notes…</span>
           </div>
         ) : grouped.length === 0 ? (
           <div className="text-xs text-muted-foreground py-8 px-4 text-center">
-            No notes yet — log site progress, issues, or handover info.
+            No notes yet. Add progress, issue, or handover details.
           </div>
         ) : (
           <CardGrid
@@ -269,7 +269,7 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
                 })}
               </div>
             )}
-            emptyMessage="No notes yet — log site progress, issues, or handover info."
+            emptyMessage="No notes yet. Add progress, issue, or handover details."
             emptyIcon={<span className="text-xs text-muted-foreground py-8 text-center" />}
           />
         )}
@@ -279,8 +279,8 @@ export const FeedTab: React.FC<{ jobId: string }> = ({ jobId }) => {
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         tone="destructive"
-        title="Delete this note?"
-        message="This permanently removes the note. It can't be undone, and the deletion will be recorded in this job's audit history."
+        title="Delete note?"
+        message="This permanently removes the note. It cannot be undone, and the deletion will be recorded in this job's audit history."
         confirmLabel={deleting ? "Deleting..." : "Delete Note"}
         onConfirm={executeDelete}
       />

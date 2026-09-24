@@ -352,7 +352,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   }) => {
     if (resendingRequestMap[request.id]) return;
     setResendingRequestMap((prev) => ({ ...prev, [request.id]: true }));
-    const sendingToastId = toast.loading("SENDING REQUEST", {
+    const sendingToastId = toast.loading("Sending request…", {
       description: "Sending compliance document request...",
     });
 
@@ -438,12 +438,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
       setDossierAuditLogs(updatedLogs.data || []);
 
       if (emailSentResult) {
-        toast.success("REQUEST SENT", {
+        toast.success("Request sent", {
           id: sendingToastId,
           description: "Compliance request resent to worker.",
         });
       } else {
-        toast.error("EMAIL FAILED", {
+        toast.error("Email failed", {
           id: sendingToastId,
           description: emailErrorResult || "Failed to send email.",
         });
@@ -817,7 +817,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       worker.tickets?.filter((t) => getTicketStatus(t) === "EXPIRING_SOON").length || 0;
     const ticketCount = worker.tickets?.length || 0;
 
-    let statusText = ticketCount === 0 ? "NO CERTIFICATES" : "ALL CLEAR";
+    let statusText = ticketCount === 0 ? "No certificates" : "All clear";
     let badgeColorClasses =
       ticketCount === 0
         ? "bg-muted border border-border text-muted-foreground font-bold"
@@ -886,7 +886,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
       worker.tickets?.filter((t) => getTicketStatus(t) === "EXPIRING_SOON").length || 0;
     const ticketCount = worker.tickets?.length || 0;
 
-    let statusText = ticketCount === 0 ? "NO CERTIFICATES" : "ALL CLEAR";
+    let statusText = ticketCount === 0 ? "No certificates" : "All clear";
     let badgeColorClasses =
       ticketCount === 0
         ? "bg-muted border border-border text-muted-foreground font-bold"
@@ -1552,7 +1552,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
               <div className="flex items-center gap-2 border-b border-border pb-2">
                 <Calendar className="h-4 w-4 text-warning" />
                 <h3 className="text-xs font-bold uppercase tracking-wide text-foreground">
-                  Active Site Deployments
+                  Current site assignments
                 </h3>
               </div>
               {loadingDossierShifts ? (
@@ -1723,7 +1723,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           setAuditSearch(e.target.value);
                           setAuditLogPage(1);
                         }}
-                        placeholder="Search actor or action..."
+                        placeholder="Search user or action…"
                         className="w-full pl-7 pr-2 py-1.5 bg-card/60 border border-border rounded-lg text-[10.5px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-brand-accent/50"
                       />
                     </div>
@@ -2024,7 +2024,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 <br />
                 <br />
                 This permanently deletes the certificate entry. This cannot be undone from here —
-                the worker will need to re-upload the document if it's still required.
+                the worker will need to re-upload the document if it is still required.
               </>
             )
           }
@@ -2210,7 +2210,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-xs font-bold uppercase tracking-wider cursor-pointer self-start"
             >
               <ChevronLeft className="w-4 h-4 text-muted-foreground" />
-              <span>Back to Staff</span>
+              <span>Back to staff</span>
             </button>
 
             <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:justify-end">
@@ -2238,7 +2238,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     className="flex items-center justify-center gap-1 w-full sm:w-auto px-3 py-1.5 bg-primary hover:bg-primary text-primary-foreground rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-primary whitespace-nowrap"
                   >
                     <Send className="w-3 h-3" />
-                    <span>Request Docs</span>
+                    <span>Request documents</span>
                   </button>
                   <TelegramLinkControl
                     staffId={selectedWorkerDetails.id}
@@ -2268,7 +2268,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   onClick={() => setWorkerToEdit(null)}
                   className="px-4 py-2 bg-secondary hover:bg-muted border border-border text-muted-foreground hover:text-foreground text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
                 >
-                  Back to Dossier
+                  Back to profile
                 </button>
               )}
             </div>
@@ -2351,7 +2351,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search staff by name, role, site..."
+                placeholder="Search staff by name, role, or site…"
                 className="w-full bg-background border border-border text-xs text-foreground rounded-xl pl-11 pr-4 py-2 focus:outline-none focus:border-primary transition-colors placeholder:text-muted-foreground shadow-inner font-medium tracking-wide"
               />
             </div>
@@ -2415,7 +2415,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
               >
                 {showAddWorkerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                 <span className="hidden md:inline">
-                  {showAddWorkerForm ? "Cancel Registration" : "Register Staff"}
+                  {showAddWorkerForm ? "Cancel" : "Add staff member"}
                 </span>
               </button>
             </div>
@@ -2435,7 +2435,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                   <div className="flex items-center gap-2 text-sm font-black uppercase tracking-widest text-muted-foreground">
                     <UserPlus className="w-4 h-4 text-primary" />
-                    Register Staff
+                    Add staff member
                   </div>
                   <button
                     type="button"
@@ -2532,7 +2532,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       disabled={submittingWorker}
                       className="px-6 py-2 bg-primary hover:bg-primary text-primary-foreground text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors shadow-lg shadow-primary/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {submittingWorker ? "Registering..." : "Register"}
+                      {submittingWorker ? "Adding..." : "Add staff member"}
                     </button>
                   </div>
                 </div>

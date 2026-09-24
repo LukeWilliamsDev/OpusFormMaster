@@ -112,17 +112,15 @@ export const ThirdPartySitePage: React.FC = () => {
       setUploadingAttachment(false);
       return toast.error(uploadError.message || "Unable to upload attachment");
     }
-    const { error } = await db
-      .from("third_party_attachments")
-      .insert({
-        tenant_id: profile?.tenant_id,
-        job_id: job.id,
-        uploaded_by: user.id,
-        file_name: file.name,
-        file_path: path,
-        mime_type: file.type || "application/octet-stream",
-        file_size_bytes: file.size,
-      });
+    const { error } = await db.from("third_party_attachments").insert({
+      tenant_id: profile?.tenant_id,
+      job_id: job.id,
+      uploaded_by: user.id,
+      file_name: file.name,
+      file_path: path,
+      mime_type: file.type || "application/octet-stream",
+      file_size_bytes: file.size,
+    });
     setUploadingAttachment(false);
     if (error) return toast.error(error.message || "Unable to record attachment");
     setAttachmentRefresh((current) => current + 1);
@@ -194,7 +192,7 @@ export const ThirdPartySitePage: React.FC = () => {
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="What happened, what's next..."
+              placeholder="Add a progress update…"
               className="mt-6 min-h-28 w-full rounded-xl border border-border bg-background p-4 text-sm"
             />
             <button
@@ -217,7 +215,7 @@ export const ThirdPartySitePage: React.FC = () => {
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="What happened, what's next..."
+              placeholder="Add a progress update…"
               className="mt-4 min-h-24 w-full rounded-xl border border-border bg-background p-4 text-sm"
             />
             <button

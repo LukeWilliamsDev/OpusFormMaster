@@ -114,7 +114,7 @@ export const PortalLayout: React.FC = () => {
       roles: MANAGEMENT_ROLES,
     },
     { section: "ADMIN" },
-    { name: "SITE LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
+    { name: "AUDIT LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
     { name: "USERS", path: "/portal/users", icon: UserCog, roles: ["admin"] },
     { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
     {
@@ -235,14 +235,14 @@ export const PortalLayout: React.FC = () => {
           <button
             onClick={handleLogoutClick}
             className="p-2 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
-            title="Logout"
+            title="Log out"
           >
             <LogOut className="w-5 h-5" />
           </button>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Toggle Menu"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -361,7 +361,7 @@ export const PortalLayout: React.FC = () => {
                   className="flex items-center w-full space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all cursor-pointer min-h-[44px]"
                 >
                   <LogOut className="w-4 h-4 shrink-0" />
-                  <span>Log Out</span>
+                  <span>Log out</span>
                 </button>
               </div>
             </motion.div>

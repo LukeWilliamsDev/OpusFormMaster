@@ -345,7 +345,7 @@ export const DashboardPage: React.FC = () => {
     }
 
     setConfirmState((prev) => ({ ...prev, confirmLoading: true }));
-    const sendingToastId = toast.loading("SENDING REMINDER", {
+    const sendingToastId = toast.loading("Sending reminder…", {
       description: `Sending compliance reminder to ${worker.name}...`,
     });
     try {
@@ -399,7 +399,7 @@ export const DashboardPage: React.FC = () => {
     } catch (e: Error | unknown) {
       const { message } = handleError(e, { message: "Failed to send compliance reminder" });
       console.error("Failed to send compliance reminder:", e);
-      toast.warning("Failed to send reminder: " + message, {
+      toast.warning("Reminder failed: " + message, {
         id: sendingToastId,
       });
 
@@ -444,7 +444,7 @@ export const DashboardPage: React.FC = () => {
             <input
               type="text"
               className="w-full bg-card border border-border focus:border-primary focus:ring-1 focus:ring-primary/40 rounded-xl pl-12 pr-28 py-3.5 text-sm text-foreground placeholder-muted-foreground/60 outline-none transition-all duration-200 min-h-[48px]"
-              placeholder="Search site, staff name, role, or estimate ref..."
+              placeholder="Search sites, staff, roles, or quote references…"
               value={searchState.query}
               onChange={(e) => setSearchState((prev) => ({ ...prev, query: e.target.value }))}
               onFocus={() => setSearchState((prev) => ({ ...prev, isFocused: true }))}
@@ -546,7 +546,7 @@ export const DashboardPage: React.FC = () => {
                     {searchResults.quotes.length > 0 && (
                       <div className="pt-2">
                         <span className="text-[11px] font-bold text-primary uppercase tracking-wider px-3 py-1 block">
-                          Matching Estimates
+                          Matching quotes
                         </span>
                         <div className="space-y-0.5">
                           {searchResults.quotes.map((quote) => (
@@ -577,7 +577,7 @@ export const DashboardPage: React.FC = () => {
 
                     {!searchResults.hasAny && (
                       <div className="p-4 text-center text-[12px] text-muted-foreground">
-                        No matched jobs, staff, or quotes found for "{searchState.query}"
+                        No jobs, staff, or quotes found for "{searchState.query}"
                       </div>
                     )}
                   </div>
@@ -653,7 +653,7 @@ export const DashboardPage: React.FC = () => {
           <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all shrink-0">
             <FileText className="w-4 h-4" />
           </div>
-          <span className="text-[12px] font-bold text-foreground text-left">Manage Quotes</span>
+          <span className="text-[12px] font-bold text-foreground text-left">View quotes</span>
         </button>
 
         <button
@@ -663,7 +663,7 @@ export const DashboardPage: React.FC = () => {
           <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all shrink-0">
             <Calculator className="w-4 h-4" />
           </div>
-          <span className="text-[12px] font-bold text-foreground text-left">Create Quote</span>
+          <span className="text-[12px] font-bold text-foreground text-left">Create a quote</span>
         </button>
       </div>
 
@@ -746,7 +746,9 @@ export const DashboardPage: React.FC = () => {
               {expiringTickets.length === 0 && (
                 <div className="flex items-center gap-2 py-3 px-6">
                   <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">Roster fully compliant.</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    All staff documents are up to date.
+                  </p>
                 </div>
               )}
             </div>
@@ -785,7 +787,7 @@ export const DashboardPage: React.FC = () => {
                   </>
                 )
               }
-              confirmLabel="Confirm Send"
+              confirmLabel="Send reminder"
               cancelLabel="Cancel"
               onConfirm={() => {
                 if (confirmState.data) handleRemindAlert(confirmState.data);
@@ -837,7 +839,7 @@ export const DashboardPage: React.FC = () => {
               {activeJobsFiltered.length === 0 && (
                 <div className="flex items-center gap-2 py-3 px-6">
                   <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">No active job sites to check.</p>
+                  <p className="text-[11px] text-muted-foreground">No active sites.</p>
                 </div>
               )}
             </div>
@@ -881,7 +883,7 @@ export const DashboardPage: React.FC = () => {
               {activeJobsFiltered.length === 0 && (
                 <div className="flex items-center gap-2 py-3 px-6">
                   <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">No active job sites.</p>
+                  <p className="text-[11px] text-muted-foreground">No active sites.</p>
                 </div>
               )}
             </div>
@@ -922,7 +924,9 @@ export const DashboardPage: React.FC = () => {
               {crewPerSiteFiltered.length === 0 && (
                 <div className="flex items-center gap-2 py-3 px-6">
                   <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">No crew scheduled.</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    No staff scheduled for this period.
+                  </p>
                 </div>
               )}
             </div>

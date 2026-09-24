@@ -132,7 +132,7 @@ export const SettingsPage: React.FC = () => {
       {/* Page Header */}
       <div>
         <h1 className="text-xl sm:text-2xl font-bold uppercase tracking-widest text-foreground/85">
-          Profile Settings
+          Profile settings
         </h1>
         <p className="text-xs text-muted-foreground mt-1 uppercase font-bold tracking-wider">
           Manage your account credentials, preferences, and avatar preset
@@ -189,7 +189,7 @@ export const SettingsPage: React.FC = () => {
             <div className="flex items-center gap-2 border-b border-border pb-3">
               <User className="w-4 h-4 text-primary" />
               <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/85">
-                Account Details
+                Account details
               </h3>
             </div>
 
@@ -273,7 +273,7 @@ export const SettingsPage: React.FC = () => {
                 disabled={ui.isSavingProfile}
                 className="w-full sm:w-auto bg-secondary border border-border hover:bg-secondary/80 text-secondary-foreground text-[11px] font-black tracking-widest uppercase py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
               >
-                {ui.isSavingProfile ? "Saving..." : "Save Profile Details"}
+                {ui.isSavingProfile ? "Saving..." : "Save profile"}
               </button>
             </form>
           </div>
@@ -283,7 +283,7 @@ export const SettingsPage: React.FC = () => {
             <div className="flex items-center gap-2 border-b border-border pb-3">
               <Key className="w-4 h-4 text-primary" />
               <h3 className="text-xs font-bold uppercase tracking-widest text-foreground/85">
-                Security / Update Password
+                Change password
               </h3>
             </div>
 
@@ -337,7 +337,7 @@ export const SettingsPage: React.FC = () => {
                       onChange={(e) =>
                         setPasswordForm((prev) => ({ ...prev, newPassword: e.target.value }))
                       }
-                      placeholder="Min 8 characters"
+                      placeholder="At least 8 characters"
                     />
                   </div>
                 </div>
@@ -355,7 +355,7 @@ export const SettingsPage: React.FC = () => {
                       onChange={(e) =>
                         setPasswordForm((prev) => ({ ...prev, confirmPassword: e.target.value }))
                       }
-                      placeholder="Match new password"
+                      placeholder="Re-enter your new password"
                     />
                   </div>
                 </div>
@@ -366,7 +366,7 @@ export const SettingsPage: React.FC = () => {
                 disabled={ui.isUpdatingPassword}
                 className="w-full sm:w-auto bg-secondary border border-border hover:bg-secondary/80 text-secondary-foreground text-[11px] font-black tracking-widest uppercase py-3 px-6 rounded-lg transition-colors disabled:opacity-50"
               >
-                {ui.isUpdatingPassword ? "Updating..." : "Update Password"}
+                {ui.isUpdatingPassword ? "Updating..." : "Change password"}
               </button>
             </form>
           </div>

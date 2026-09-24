@@ -76,8 +76,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           <h2 className="text-sm font-black uppercase tracking-widest">Your access</h2>
         </div>
         <p className="mt-2 text-sm text-muted-foreground">
-          Staff approval is handled by Opus Form. Job access appears automatically when your
-          approved staff are assigned.
+          Opus Form manages approvals. Site access appears when your approved staff are assigned.
         </p>
       </div>
     </div>

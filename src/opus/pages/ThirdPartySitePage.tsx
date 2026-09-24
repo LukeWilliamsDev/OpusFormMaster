@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { ArrowLeft, Check, FileUp, MapPin, Send } from "lucide-react";
+import { ArrowLeft, ChevronLeft, ChevronRight, FileUp, Send } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
 import { ThirdPartyAttachmentsPanel } from "../components/ThirdPartyAttachmentsPanel";
@@ -10,12 +11,6 @@ import { getSignedJobAttachmentUrl, getSignedJobAttachmentUrlsBatch } from "../l
 
 const db = supabase as any;
 type Tab = "overview" | "notes" | "photos" | "attachments";
-const JOB_ATTACHMENTS_PUBLIC_PREFIX = "/storage/v1/object/public/job-attachments/";
-
-const storagePathFor = (fileUrl: string) =>
-  fileUrl.includes(JOB_ATTACHMENTS_PUBLIC_PREFIX)
-    ? fileUrl.split(JOB_ATTACHMENTS_PUBLIC_PREFIX)[1]
-    : fileUrl;
 
 export const ThirdPartySitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -27,6 +22,7 @@ export const ThirdPartySitePage: React.FC = () => {
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [attachmentRefresh, setAttachmentRefresh] = useState(0);
   const [photos, setPhotos] = useState<any[]>([]);
+  const [gallery, setGallery] = useState<{ photos: any[]; index: number } | null>(null);
   const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
   const job = jobs.find(
     (item) =>
@@ -129,18 +125,6 @@ export const ThirdPartySitePage: React.FC = () => {
       ...current,
     ]);
     toast.success("Photo uploaded");
-  };
-  const openPhoto = async (photo: any) => {
-    if (photo.full_url) {
-      window.open(photo.full_url, "_blank", "noopener,noreferrer");
-      return;
-    }
-    const path = storagePathFor(photo.file_url);
-    const { data, error } = await supabase.storage
-      .from("job-attachments")
-      .createSignedUrl(path, 300);
-    if (error || !data?.signedUrl) return toast.error(error?.message || "Unable to open photo");
-    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
   const uploadAttachment = async (file: File) => {
     if (!user) return;
@@ -316,7 +300,7 @@ export const ThirdPartySitePage: React.FC = () => {
                 {photos.map((photo) => (
                   <button
                     key={photo.id ?? photo.file_url}
-                    onClick={() => openPhoto(photo)}
+                    onClick={() => setGallery({ photos, index: photos.indexOf(photo) })}
                     className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-card text-left"
                   >
                     {photo.preview_url ? (
@@ -372,6 +356,74 @@ export const ThirdPartySitePage: React.FC = () => {
           }
         />
       )}
+      <Dialog open={!!gallery} onOpenChange={(open) => !open && setGallery(null)}>
+        <DialogContent className="max-w-2xl overflow-hidden bg-black p-0 !inset-x-auto !left-1/2 !top-1/2 !bottom-auto !-translate-x-1/2 !-translate-y-1/2 !rounded-lg !w-[calc(100%-2rem)] !max-h-[calc(100dvh-2rem)]">
+          {gallery && (
+            <div className="relative flex flex-col items-center">
+              <img
+                src={
+                  gallery.photos[gallery.index].full_url || gallery.photos[gallery.index].file_url
+                }
+                alt={
+                  gallery.photos[gallery.index].type === "image_before"
+                    ? "Before site photo"
+                    : "After site photo"
+                }
+                className="max-h-[70vh] w-full bg-black object-contain"
+              />
+              {gallery.photos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Previous photo"
+                    onClick={() =>
+                      setGallery({
+                        photos: gallery.photos,
+                        index: (gallery.index - 1 + gallery.photos.length) % gallery.photos.length,
+                      })
+                    }
+                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-foreground transition-colors hover:bg-black/80"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next photo"
+                    onClick={() =>
+                      setGallery({
+                        photos: gallery.photos,
+                        index: (gallery.index + 1) % gallery.photos.length,
+                      })
+                    }
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-foreground transition-colors hover:bg-black/80"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </>
+              )}
+              <div className="flex w-full flex-col gap-3 bg-card px-4 py-3 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                <div className="min-w-0 truncate">
+                  {gallery.photos[gallery.index].uploaded_by || "Uploaded photo"} ·{" "}
+                  {new Date(gallery.photos[gallery.index].uploaded_at || 0).toLocaleDateString(
+                    "en-GB",
+                  )}
+                  {gallery.photos.length > 1 && ` · ${gallery.index + 1}/${gallery.photos.length}`}
+                </div>
+                <a
+                  href={
+                    gallery.photos[gallery.index].full_url || gallery.photos[gallery.index].file_url
+                  }
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-center font-bold text-primary-foreground"
+                >
+                  Open full size
+                </a>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

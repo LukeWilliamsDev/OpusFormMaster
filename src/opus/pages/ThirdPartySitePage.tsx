@@ -63,6 +63,25 @@ export const ThirdPartySitePage: React.FC = () => {
     };
   }, [jobId, user?.id]);
 
+  // Warm the browser cache for the two adjacent full-size images so the
+  // gallery advances immediately instead of waiting for the next request.
+  React.useEffect(() => {
+    if (!gallery || gallery.photos.length < 2) return;
+    const adjacentIndexes = [
+      (gallery.index - 1 + gallery.photos.length) % gallery.photos.length,
+      (gallery.index + 1) % gallery.photos.length,
+    ];
+    const preloaded = adjacentIndexes.map((index) => {
+      const src = gallery.photos[index].full_url || gallery.photos[index].file_url;
+      if (!src) return null;
+      const image = new Image();
+      image.decoding = "async";
+      image.src = src;
+      return image;
+    });
+    void preloaded;
+  }, [gallery]);
+
   if (!job) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12">
@@ -369,6 +388,9 @@ export const ThirdPartySitePage: React.FC = () => {
                     ? "Before site photo"
                     : "After site photo"
                 }
+                loading="eager"
+                decoding="async"
+                fetchPriority="high"
                 className="max-h-[70vh] w-full bg-black object-contain"
               />
               {gallery.photos.length > 1 && (

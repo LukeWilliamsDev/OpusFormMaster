@@ -6,6 +6,7 @@ import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
 import { ThirdPartyAttachmentsPanel } from "../components/ThirdPartyAttachmentsPanel";
 import { ThirdPartyNotesPanel } from "../components/ThirdPartyNotesPanel";
+import { getSignedJobAttachmentUrl, getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
 
 const db = supabase as any;
 type Tab = "overview" | "notes" | "photos" | "attachments";
@@ -47,17 +48,17 @@ export const ThirdPartySitePage: React.FC = () => {
         toast.error(error.message || "Unable to load site photos");
         return;
       }
-      const withPreviews = await Promise.all(
-        (data ?? []).map(async (photo: any) => {
-          const { data: signed, error: signedError } = await supabase.storage
-            .from("job-attachments")
-            .createSignedUrl(storagePathFor(photo.file_url), 300);
-          return {
-            ...photo,
-            preview_url: signedError ? null : signed?.signedUrl,
-          };
-        }),
+      const signedMap = await getSignedJobAttachmentUrlsBatch(
+        (data ?? []).map((photo: any) => photo.file_url).filter(Boolean),
       );
+      const withPreviews = (data ?? []).map((photo: any) => {
+        const signed = signedMap.get(photo.file_url);
+        return {
+          ...photo,
+          full_url: signed?.fullUrl,
+          preview_url: signed?.thumbUrl ?? signed?.fullUrl,
+        };
+      });
       if (!cancelled) setPhotos(withPreviews);
     };
     void loadPhotos();
@@ -119,16 +120,21 @@ export const ThirdPartySitePage: React.FC = () => {
     });
     setUploading(false);
     if (error) return toast.error(error.message || "Unable to record photo");
-    const { data: signed } = await supabase.storage
-      .from("job-attachments")
-      .createSignedUrl(path, 300);
+    const [fullUrl, previewUrl] = await Promise.all([
+      getSignedJobAttachmentUrl(path, 3600),
+      getSignedJobAttachmentUrl(path, 300, { width: 400, quality: 75 }),
+    ]);
     setPhotos((current) => [
-      { file_name: file.name, file_url: path, type, preview_url: signed?.signedUrl },
+      { file_name: file.name, file_url: path, type, full_url: fullUrl, preview_url: previewUrl },
       ...current,
     ]);
     toast.success("Photo uploaded");
   };
   const openPhoto = async (photo: any) => {
+    if (photo.full_url) {
+      window.open(photo.full_url, "_blank", "noopener,noreferrer");
+      return;
+    }
     const path = storagePathFor(photo.file_url);
     const { data, error } = await supabase.storage
       .from("job-attachments")

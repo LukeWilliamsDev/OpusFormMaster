@@ -11,12 +11,17 @@ import { supabase } from "../../integrations/supabase/client";
 export async function getSignedJobAttachmentUrl(
   fileUrl: string,
   expiresInSeconds = 3600,
-  transform?: { width?: number; height?: number; quality?: number },
+  transform?: {
+    width?: number;
+    height?: number;
+    quality?: number;
+    resize?: "cover" | "contain" | "fill";
+  },
 ): Promise<string | null> {
   const marker = "/job-attachments/";
   const idx = fileUrl.indexOf(marker);
-  if (idx === -1) return null;
-  const filePath = fileUrl.slice(idx + marker.length);
+  const filePath = idx === -1 ? fileUrl : fileUrl.slice(idx + marker.length);
+  if (!filePath) return null;
 
   const { data, error } = await supabase.storage
     .from("job-attachments")
@@ -32,7 +37,8 @@ export interface BatchSignedUrlsResult {
 }
 
 /**
- * Batch sign multiple file URLs in 1 or 2 API calls instead of N roundtrips.
+ * Batch sign full-size URLs and sign transformed previews concurrently. The
+ * storage API supports transforms on single-file signing, not batch signing.
  */
 export async function getSignedJobAttachmentUrlsBatch(
   fileUrls: string[],
@@ -56,13 +62,24 @@ export async function getSignedJobAttachmentUrlsBatch(
 
   const paths = validItems.map((item) => item.filePath);
 
-  // Fetch full size signed URLs and thumbnail signed URLs in parallel (batch calls)
-  const [fullResResponse, thumbResResponse] = await Promise.all([
+  // Fetch full-size signed URLs in one batch while transformed previews sign
+  // concurrently. This avoids downloading multi-megabyte originals into the
+  // gallery while keeping the full-size click target ready.
+  const [fullResResponse, thumbResults] = await Promise.all([
     supabase.storage.from("job-attachments").createSignedUrls(paths, expiresInSeconds),
-
-    supabase.storage.from("job-attachments").createSignedUrls(paths, expiresInSeconds, {
-      transform: { width: 400, quality: 75, resize: "contain" },
-    } as any),
+    Promise.all(
+      validItems.map(async (item) => {
+        const { data, error } = await supabase.storage
+          .from("job-attachments")
+          .createSignedUrl(item.filePath, expiresInSeconds, {
+            transform: { width: 400, quality: 75, resize: "contain" },
+          });
+        return {
+          path: item.filePath,
+          signedUrl: error ? null : (data?.signedUrl ?? null),
+        };
+      }),
+    ),
   ]);
 
   const fullMap = new Map<string, string>();
@@ -75,11 +92,9 @@ export async function getSignedJobAttachmentUrlsBatch(
   }
 
   const thumbMap = new Map<string, string>();
-  if (thumbResResponse.data) {
-    for (const item of thumbResResponse.data) {
-      if (item.path && item.signedUrl) {
-        thumbMap.set(item.path, item.signedUrl);
-      }
+  for (const item of thumbResults) {
+    if (item.path && item.signedUrl) {
+      thumbMap.set(item.path, item.signedUrl);
     }
   }
 

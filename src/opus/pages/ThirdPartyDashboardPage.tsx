@@ -192,7 +192,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
               {nextJobIsCompleted ? "Latest site" : "Next up"}
             </h2>
             <span
-              className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${nextJobIsCompleted ? "bg-muted text-muted-foreground" : nextJob?.status === "pending" || nextJob?.status === "on-hold" ? "bg-amber-500/10 text-amber-700" : "bg-emerald-500/10 text-emerald-600"}`}
+              className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${nextJobIsCompleted ? "bg-muted text-muted-foreground" : nextJob?.status === "pending" || nextJob?.status === "on-hold" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
             >
               {nextJobStatus}
             </span>

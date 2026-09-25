@@ -480,7 +480,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                 <span className="text-xs text-muted-foreground">{visibleWorkers.length} shown</span>
               </div>
               {attentionWorkers.length > 0 && (
-                <div className="mt-4 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-800">
+                <div className="mt-4 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-800 dark:bg-amber-400/15 dark:text-amber-100">
                   <div className="flex items-center gap-2 font-black uppercase tracking-widest">
                     <AlertCircle className="h-3.5 w-3.5" /> Needs attention
                   </div>
@@ -538,7 +538,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                       </span>
                       <span className="text-right">
                         <span
-                          className={`block rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${attention ? "bg-amber-500/10 text-amber-700" : "bg-emerald-500/10 text-emerald-700"}`}
+                          className={`block rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${attention ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
                         >
                           {attention ? "Expiring" : "Valid"}
                         </span>
@@ -687,7 +687,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                   <div className="min-w-0">
                                     <span className="font-bold">{ticket.type}</span>
                                     <span
-                                      className={`ml-2 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${status === "EXPIRED" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700" : "bg-emerald-500/10 text-emerald-700"}`}
+                                      className={`ml-2 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${status === "EXPIRED" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
                                     >
                                       {status === "EXPIRED"
                                         ? "Expired"
@@ -889,18 +889,6 @@ export const ThirdPartyPortalPage: React.FC = () => {
                             ))
                           )}
                         </div>
-                      </div>
-                      <div className="mt-6 border-t border-border pt-4">
-                        <div className="flex items-center justify-between gap-3">
-                          <h4 className="text-sm font-black">Recent activity</h4>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                            Audit retained
-                          </span>
-                        </div>
-                        <p className="mt-3 text-xs text-muted-foreground">
-                          Certificate files and previous versions remain available in Opus Form’s
-                          audit history.
-                        </p>
                       </div>
                     </>
                   )}
@@ -1111,7 +1099,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                 <div className="min-w-0 truncate">
                                   <span className="font-bold">{ticket.type}</span>
                                   <span
-                                    className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${status === "EXPIRED" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700" : "bg-primary/10 text-primary"}`}
+                                    className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${status === "EXPIRED" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-primary/10 text-primary"}`}
                                   >
                                     {status === "EXPIRED"
                                       ? "Expired"

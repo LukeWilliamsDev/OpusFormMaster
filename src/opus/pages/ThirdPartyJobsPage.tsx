@@ -74,7 +74,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
             </p>
           </div>
           <span
-            className={`shrink-0 rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-widest ${variant === "attention" ? "bg-amber-500/10 text-amber-700" : "bg-emerald-500/10 text-emerald-600"}`}
+            className={`shrink-0 rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-widest ${variant === "attention" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
           >
             {statusLabel(job.status)}
           </span>
@@ -147,7 +147,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
           {attentionJobs.length > 0 && (
             <section className="space-y-3">
               <div>
-                <h2 className="text-sm font-black uppercase tracking-widest text-amber-700">
+                <h2 className="text-sm font-black uppercase tracking-widest text-amber-700 dark:text-amber-300">
                   Needs your attention
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">

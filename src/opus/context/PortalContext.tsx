@@ -112,6 +112,8 @@ export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coor
 export const FIELD_ROLES: AppRole[] = ["logistics_assistant", "site_foreman", "labourer"];
 // Field users may see only the shifts assigned to their own staff record.
 export const ASSIGNED_SHIFT_ROLES: AppRole[] = ["site_foreman", "labourer"];
+// Roles permitted to prepare and send client documents.
+export const DOCUMENT_SEND_ROLES: AppRole[] = [...MANAGEMENT_ROLES];
 // Full schedule visibility without granting operational write access.
 export const SCHEDULE_ROLES: AppRole[] = [
   "admin",

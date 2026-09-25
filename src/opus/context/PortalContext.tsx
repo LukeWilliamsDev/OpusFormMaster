@@ -108,6 +108,8 @@ export const formatAppRoleLabel = (value: AppRole | string | null | undefined): 
     .join(" ");
 // Full ops write access — mirrors private.can_write_ops() in the DB.
 export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
+// Document sending is an operational management action, not a field-user action.
+export const DOCUMENT_SEND_ROLES: AppRole[] = MANAGEMENT_ROLES;
 // Restricted access — mirrors the old "operative" tier.
 export const FIELD_ROLES: AppRole[] = ["logistics_assistant", "site_foreman", "labourer"];
 // Field users may see only the shifts assigned to their own staff record.

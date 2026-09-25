@@ -163,7 +163,10 @@ export const ThirdPartyPortalPage: React.FC = () => {
       .includes(staffSearch.toLowerCase());
     return matchesSearch && (staffFilter === "all" || hasCertificateAttention(worker));
   });
-  const selectedWorker = workers.find((worker) => worker.id === selectedWorkerId) ?? null;
+  const selectedWorker =
+    workers.find((worker) => worker.id === staffId) ??
+    workers.find((worker) => worker.id === selectedWorkerId) ??
+    null;
   const staffListQuery = new URLSearchParams();
   if (staffSearch.trim()) staffListQuery.set("search", staffSearch.trim());
   if (staffFilter !== "all") staffListQuery.set("filter", staffFilter);
@@ -200,6 +203,25 @@ export const ThirdPartyPortalPage: React.FC = () => {
     return (
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
         <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
+      </div>
+    );
+  }
+
+  if (isStaffDetailRoute && !selectedWorker) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+        <Link
+          to="/portal/third-party/staff"
+          className="text-xs font-black uppercase tracking-widest text-primary"
+        >
+          ← Back to staff
+        </Link>
+        <section className="mt-6 rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+          <h1 className="text-xl font-black">Staff record not found</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This staff record may have been removed or is no longer available to your account.
+          </p>
+        </section>
       </div>
     );
   }
@@ -598,6 +620,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                     key={value}
                     type="button"
                     onClick={() => updateStaffListState(staffSearch, value)}
+                    aria-pressed={staffFilter === value}
                     className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${staffFilter === value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
                   >
                     {label}

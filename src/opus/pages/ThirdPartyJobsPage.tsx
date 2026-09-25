@@ -198,7 +198,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
                   type="button"
                   onClick={() => updateListState(search, value)}
                   aria-pressed={filter === value}
-                  className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${filter === value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                  className={`min-h-11 whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${filter === value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
                 >
                   {label}
                 </button>

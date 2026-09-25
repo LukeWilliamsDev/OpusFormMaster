@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, FileUp, Send } from "lucide-react";
+import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, FileUp, Send } from "lucide-react";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -14,8 +14,11 @@ const db = supabase as any;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const isCompletedJob = (job: any) =>
   ["completed", "complete", "closed"].includes(String(job.status).toLowerCase());
-const statusLabel = (status: string) =>
-  status.replace(/[-_]/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+const needsAttention = (job: any) =>
+  ["pending", "on-hold", "on hold"].includes(String(job.status).toLowerCase());
+
+const siteStateLabel = (job: any) =>
+  isCompletedJob(job) ? "Completed" : needsAttention(job) ? "Needs attention" : "Open";
 
 export const ThirdPartySitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -119,6 +122,7 @@ export const ThirdPartySitePage: React.FC = () => {
     shifts.some((shift) => shift.jobId === job.id && shift.workerId === worker.id),
   );
   const readOnlyHistory = role === "third_party" && isCompletedJob(job);
+  const stateLabel = siteStateLabel(job);
   const shiftDates = shifts
     .filter((shift) => shift.jobId === job.id && shift.date)
     .map((shift) => shift.date)
@@ -192,8 +196,10 @@ export const ThirdPartySitePage: React.FC = () => {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">{job.postcode}</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
-              {statusLabel(job.status)}
+            <span
+              className={`rounded-lg border px-3 py-2 text-xs font-semibold ${readOnlyHistory ? "border-border bg-muted text-muted-foreground" : needsAttention(job) ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-200" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"}`}
+            >
+              {stateLabel}
             </span>
             {siteDate && (
               <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
@@ -207,9 +213,13 @@ export const ThirdPartySitePage: React.FC = () => {
         </div>
       </header>
       {readOnlyHistory && (
-        <p className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
-          Completed sites are view-only. Photos, attachments, and conversation history remain
-          available.
+        <p className="flex items-start gap-2 rounded-xl border border-border bg-muted p-3 text-xs text-muted-foreground">
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+          <span>
+            <strong className="text-foreground">Completed · view-only</strong>
+            <br />
+            Photos, attachments, and conversation history remain available.
+          </span>
         </p>
       )}
       <section className="rounded-2xl border-2 border-border bg-card p-5">

@@ -1,13 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  AlertCircle,
-  ArrowRight,
-  CalendarDays,
-  CheckCircle2,
-  MapPin,
-  Plus,
-  Users,
-} from "lucide-react";
+import { AlertCircle, ArrowRight, CheckCircle2, MapPin, Plus, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
@@ -404,15 +396,6 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           </div>
         </section>
       </div>
-      {completedJobs.length > 0 && (
-        <Link
-          to="/portal/third-party/sites?filter=completed"
-          className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary"
-        >
-          <CalendarDays className="h-3.5 w-3.5" />
-          Completed sites are view-only
-        </Link>
-      )}
     </div>
   );
 };

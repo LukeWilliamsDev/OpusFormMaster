@@ -10,10 +10,8 @@ const isCompletedJob = (job: any) =>
 const needsAttention = (job: any) =>
   ["pending", "on-hold", "on hold"].includes(String(job.status).toLowerCase());
 
-const statusLabel = (status: string) =>
-  String(status || "unknown")
-    .replace(/[-_]/g, " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
+const siteStateLabel = (job: any, completed: boolean) =>
+  completed ? "Completed" : needsAttention(job) ? "Needs attention" : "Open";
 
 const getJobDate = (jobId: string, shifts: any[], completed: boolean) => {
   const dates = shifts
@@ -215,14 +213,18 @@ export const ThirdPartyJobsPage: React.FC = () => {
               {visibleJobs.map((job) => {
                 const completed = isCompletedJob(job);
                 const jobDate = getJobDate(job.id, shifts, completed);
+                const stateLabel = siteStateLabel(job, completed);
                 return (
                   <button
                     key={job.id}
                     type="button"
                     onClick={() => openSite(job.id)}
-                    className="grid w-full min-w-0 grid-cols-[2.25rem_minmax(0,1fr)_auto_1rem] items-center gap-3 p-4 text-left transition-colors hover:bg-primary/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-5"
+                    aria-label={`Open ${job.siteName} (${stateLabel})`}
+                    className={`grid w-full min-w-0 grid-cols-[2.25rem_minmax(0,1fr)_auto_1rem] items-center gap-3 p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-5 ${completed ? "bg-muted/25 hover:bg-muted/50" : "hover:bg-primary/5"}`}
                   >
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black ${completed ? "bg-muted text-muted-foreground" : needsAttention(job) ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-primary/10 text-primary"}`}
+                    >
                       {completed ? "✓" : "↗"}
                     </span>
                     <span className="min-w-0">
@@ -240,9 +242,9 @@ export const ThirdPartyJobsPage: React.FC = () => {
                       </span>
                     </span>
                     <span
-                      className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${needsAttention(job) ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : completed ? "bg-muted text-muted-foreground" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
+                      className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${needsAttention(job) ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : completed ? "bg-muted text-muted-foreground ring-1 ring-inset ring-border" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
                     >
-                      {statusLabel(job.status)}
+                      {stateLabel}
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </button>

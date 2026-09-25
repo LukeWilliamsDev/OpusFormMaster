@@ -71,6 +71,7 @@ const EMPTY_FORM: FormState = {
 type WorkerEditDraft = {
   id: string;
   name: string;
+  role: string;
   email: string;
   phone: string;
   postcode: string;
@@ -280,6 +281,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
       .from("staff")
       .update({
         name: editingDraft.name,
+        role: editingDraft.role,
         email: editingDraft.email || null,
         phone: editingDraft.phone || null,
         postcode: editingDraft.postcode || null,
@@ -557,41 +559,120 @@ export const ThirdPartyPortalPage: React.FC = () => {
               {selectedWorker ? (
                 <>
                   {editingDraft?.id === selectedWorker.id ? (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {(
-                        [
-                          ["name", "Staff name"],
-                          ["email", "Email"],
-                          ["phone", "Phone"],
-                          ["postcode", "Postcode"],
-                        ] as const
-                      ).map(([field, label]) => (
-                        <label key={field} className="text-xs font-bold text-muted-foreground">
-                          {label}
-                          <input
-                            aria-label={label}
-                            value={editingDraft[field]}
-                            onChange={(event) =>
-                              setEditingDraft({ ...editingDraft, [field]: event.target.value })
-                            }
-                            className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                          />
-                        </label>
-                      ))}
-                      <div className="flex gap-2 sm:col-span-2">
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                            Staff record
+                          </p>
+                          <h3 className="mt-1 text-2xl font-black">Edit staff details</h3>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Update {selectedWorker.name}&apos;s contact and role information.
+                          </p>
+                        </div>
                         <button
                           type="button"
-                          onClick={saveWorker}
-                          className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+                          aria-label="Close edit staff details"
+                          onClick={() => setEditingDraft(null)}
+                          className="text-2xl leading-none text-muted-foreground hover:text-foreground"
                         >
-                          Save changes
+                          ×
                         </button>
+                      </div>
+                      <div className="mt-6 border-t border-border pt-5">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <div>
+                            <h4 className="text-sm font-black">About the person</h4>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Use the name and role shown on their work records.
+                            </p>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground">
+                            Required fields marked *
+                          </span>
+                        </div>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <label className="text-xs font-bold text-muted-foreground">
+                            Full name *
+                            <input
+                              required
+                              aria-label="Staff name"
+                              value={editingDraft.name}
+                              onChange={(event) =>
+                                setEditingDraft({ ...editingDraft, name: event.target.value })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                            />
+                          </label>
+                          <label className="text-xs font-bold text-muted-foreground">
+                            Role *
+                            <select
+                              aria-label="Staff role"
+                              value={editingDraft.role}
+                              onChange={(event) =>
+                                setEditingDraft({ ...editingDraft, role: event.target.value })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                            >
+                              {STAFF_ROLES.map((role) => (
+                                <option key={role}>{role}</option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                      </div>
+                      <div className="mt-6 border-t border-border pt-5">
+                        <h4 className="text-sm font-black">Contact details</h4>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          These details help us match the person to the correct records.
+                        </p>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          {(
+                            [
+                              ["email", "Email address"],
+                              ["phone", "Phone number"],
+                              ["postcode", "Postcode"],
+                            ] as const
+                          ).map(([field, label]) => (
+                            <label key={field} className="text-xs font-bold text-muted-foreground">
+                              {label}
+                              <input
+                                aria-label={label}
+                                value={editingDraft[field]}
+                                onChange={(event) =>
+                                  setEditingDraft({ ...editingDraft, [field]: event.target.value })
+                                }
+                                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mt-5 flex gap-3 rounded-xl bg-primary/5 p-4 text-xs text-muted-foreground">
+                        <AlertCircle className="h-5 w-5 shrink-0 text-primary" />
+                        <p>
+                          <strong className="text-foreground">
+                            Compliance records stay unchanged
+                          </strong>
+                          <br />
+                          Editing these details will not replace certificates, files, or audit
+                          history.
+                        </p>
+                      </div>
+                      <div className="mt-5 flex justify-end gap-2 border-t border-border pt-4">
                         <button
                           type="button"
                           onClick={() => setEditingDraft(null)}
                           className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
                         >
                           Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={saveWorker}
+                          className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+                        >
+                          Save changes <span aria-hidden="true">→</span>
                         </button>
                       </div>
                     </div>
@@ -612,6 +693,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                           setEditingDraft({
                             id: selectedWorker.id,
                             name: selectedWorker.name,
+                            role: selectedWorker.role,
                             email: selectedWorker.email ?? "",
                             phone: selectedWorker.phone ?? "",
                             postcode: selectedWorker.postcode ?? "",
@@ -1058,6 +1140,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                             setEditingDraft({
                               id: worker.id,
                               name: worker.name,
+                              role: worker.role,
                               email: worker.email ?? "",
                               phone: worker.phone ?? "",
                               postcode: worker.postcode ?? "",

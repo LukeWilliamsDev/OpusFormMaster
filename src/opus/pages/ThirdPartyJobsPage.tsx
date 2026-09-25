@@ -165,7 +165,21 @@ export const ThirdPartyJobsPage: React.FC = () => {
                 </button>
               )}
             </div>
-            <div className="mt-3 flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <label className="mt-3 block sm:hidden">
+              <span className="sr-only">Filter assigned sites</span>
+              <select
+                value={filter}
+                onChange={(event) => setFilter(event.target.value as SiteFilter)}
+                aria-label="Filter assigned sites"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-semibold outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
+              >
+                <option value="all">All sites · {assignedJobs.length}</option>
+                <option value="active">Open · {activeJobs.length}</option>
+                <option value="attention">Needs attention · {attentionJobs.length}</option>
+                <option value="completed">Completed · {completedJobs.length}</option>
+              </select>
+            </label>
+            <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
               {(
                 [
                   ["all", `All sites · ${assignedJobs.length}`],
@@ -179,7 +193,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
                   type="button"
                   onClick={() => setFilter(value)}
                   aria-pressed={filter === value}
-                  className={`shrink-0 whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${filter === value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                  className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${filter === value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
                 >
                   {label}
                 </button>
@@ -187,13 +201,13 @@ export const ThirdPartyJobsPage: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 grid min-w-0 gap-4 md:grid-cols-[minmax(320px,400px)_minmax(0,1fr)] md:items-start xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)]">
-            <section className="min-w-0 overflow-hidden rounded-2xl border-2 border-border bg-card p-4 md:sticky md:top-24">
+          <div className="mt-4 grid min-w-0 gap-4 xl:grid-cols-[minmax(360px,440px)_minmax(0,1fr)] xl:items-start">
+            <section className="min-w-0 overflow-hidden rounded-2xl border-2 border-border bg-card p-4 xl:sticky xl:top-24">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-sm font-black">Site directory</h2>
                 <span className="text-xs text-muted-foreground">{visibleJobs.length} shown</span>
               </div>
-              <div className="mt-3 space-y-2 md:max-h-[calc(100vh-23rem)] md:overflow-y-auto md:pr-1">
+              <div className="mt-3 space-y-2 xl:max-h-[calc(100vh-23rem)] xl:overflow-y-auto xl:pr-1">
                 {visibleJobs.map((job) => {
                   const completed = isCompletedJob(job);
                   const jobDate = getJobDate(job.id, shifts, completed);

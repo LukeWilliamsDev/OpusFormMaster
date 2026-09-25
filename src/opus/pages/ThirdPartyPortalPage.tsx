@@ -1,6 +1,18 @@
 import React, { useMemo, useState } from "react";
-import { Check, FileUp, Loader, Plus, Send } from "lucide-react";
+import {
+  AlertCircle,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  FileUp,
+  Loader,
+  MapPin,
+  Plus,
+  Search,
+  Send,
+} from "lucide-react";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { STAFF_ROLES } from "../types/erp";
 import { formatUKDate } from "../utils/week";
@@ -77,7 +89,7 @@ type WorkerEditDraft = {
 type CertificatePanelMode = "add" | "replace";
 
 export const ThirdPartyPortalPage: React.FC = () => {
-  const { user, profile, workers, setWorkers, dataLoading } = usePortal();
+  const { user, profile, workers, setWorkers, jobs, shifts, dataLoading } = usePortal();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -92,6 +104,9 @@ export const ThirdPartyPortalPage: React.FC = () => {
   const [certificatePanelMode, setCertificatePanelMode] = useState<CertificatePanelMode>("add");
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [showAddStaff, setShowAddStaff] = useState(false);
+  const [staffSearch, setStaffSearch] = useState("");
+  const [staffFilter, setStaffFilter] = useState<"all" | "attention">("all");
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
 
   const loadSubmissions = async () => {
     const { data } = await db
@@ -114,6 +129,29 @@ export const ThirdPartyPortalPage: React.FC = () => {
     (total, worker) => total + getCurrentTickets(worker.tickets ?? []).length,
     0,
   );
+  React.useEffect(() => {
+    if (!workers.length) return setSelectedWorkerId(null);
+    if (!selectedWorkerId || !workers.some((worker) => worker.id === selectedWorkerId)) {
+      setSelectedWorkerId(workers[0].id);
+    }
+  }, [workers, selectedWorkerId]);
+  const hasCertificateAttention = (worker: (typeof workers)[number]) =>
+    getCurrentTickets(worker.tickets ?? []).some((ticket) => {
+      const status = getTicketStatus(ticket);
+      return status === "EXPIRED" || status === "EXPIRING_SOON";
+    });
+  const attentionWorkers = workers.filter(hasCertificateAttention);
+  const visibleWorkers = workers.filter((worker) => {
+    const matchesSearch = `${worker.name} ${worker.role} ${worker.email ?? ""}`
+      .toLowerCase()
+      .includes(staffSearch.toLowerCase());
+    return matchesSearch && (staffFilter === "all" || hasCertificateAttention(worker));
+  });
+  const selectedWorker = workers.find((worker) => worker.id === selectedWorkerId) ?? null;
+  const assignedJobsForWorker = (workerId: string) =>
+    jobs.filter((job) =>
+      shifts.some((shift) => shift.jobId === job.id && shift.workerId === workerId),
+    );
 
   if (dataLoading) {
     return (
@@ -350,7 +388,326 @@ export const ThirdPartyPortalPage: React.FC = () => {
           </section>
         )}
 
-        <section className="space-y-3">
+        <section className="space-y-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+                Staff directory
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {workers.length} approved staff · {attentionWorkers.length} needs attention ·{" "}
+                {currentCertificateCount} current certificates
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:items-start">
+            <section className="rounded-2xl border-2 border-border bg-card p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-black">People</h3>
+                <span className="text-xs text-muted-foreground">{visibleWorkers.length} shown</span>
+              </div>
+              {attentionWorkers.length > 0 && (
+                <div className="mt-4 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-800">
+                  <div className="flex items-center gap-2 font-black uppercase tracking-widest">
+                    <AlertCircle className="h-3.5 w-3.5" /> Needs attention
+                  </div>
+                  <p className="mt-1">
+                    {attentionWorkers[0].name} has a certificate expiring soon.
+                  </p>
+                </div>
+              )}
+              <label className="relative mt-4 block">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={staffSearch}
+                  onChange={(event) => setStaffSearch(event.target.value)}
+                  placeholder="Search staff by name or role"
+                  aria-label="Search staff"
+                  className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm"
+                />
+              </label>
+              <div className="mt-3 flex gap-2 overflow-x-auto">
+                {(
+                  [
+                    ["all", `All staff · ${workers.length}`],
+                    ["attention", `Needs attention · ${attentionWorkers.length}`],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setStaffFilter(value)}
+                    className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${staffFilter === value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 space-y-2">
+                {visibleWorkers.map((worker) => {
+                  const attention = hasCertificateAttention(worker);
+                  const workerSites = assignedJobsForWorker(worker.id);
+                  return (
+                    <button
+                      key={worker.id}
+                      type="button"
+                      onClick={() => setSelectedWorkerId(worker.id)}
+                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors ${selectedWorkerId === worker.id ? "border-primary ring-2 ring-primary/10" : "border-border hover:border-primary"}`}
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">
+                        {worker.name.slice(0, 1).toUpperCase()}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-black">{worker.name}</span>
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                          {worker.role}
+                        </span>
+                      </span>
+                      <span className="text-right">
+                        <span
+                          className={`block rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${attention ? "bg-amber-500/10 text-amber-700" : "bg-emerald-500/10 text-emerald-700"}`}
+                        >
+                          {attention ? "Expiring" : "Valid"}
+                        </span>
+                        <span className="mt-1 block text-[10px] text-muted-foreground">
+                          {workerSites.length} sites
+                        </span>
+                      </span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="rounded-2xl border-2 border-border bg-card p-5">
+              {selectedWorker ? (
+                <>
+                  {editingDraft?.id === selectedWorker.id ? (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {(
+                        [
+                          ["name", "Staff name"],
+                          ["email", "Email"],
+                          ["phone", "Phone"],
+                          ["postcode", "Postcode"],
+                        ] as const
+                      ).map(([field, label]) => (
+                        <label key={field} className="text-xs font-bold text-muted-foreground">
+                          {label}
+                          <input
+                            aria-label={label}
+                            value={editingDraft[field]}
+                            onChange={(event) =>
+                              setEditingDraft({ ...editingDraft, [field]: event.target.value })
+                            }
+                            className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                          />
+                        </label>
+                      ))}
+                      <div className="flex gap-2 sm:col-span-2">
+                        <button
+                          type="button"
+                          onClick={saveWorker}
+                          className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+                        >
+                          Save changes
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditingDraft(null)}
+                          className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                          Staff record
+                        </p>
+                        <h3 className="mt-1 text-2xl font-black">{selectedWorker.name}</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {selectedWorker.role} · {selectedWorker.email || "No email"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingDraft({
+                            id: selectedWorker.id,
+                            name: selectedWorker.name,
+                            email: selectedWorker.email ?? "",
+                            phone: selectedWorker.phone ?? "",
+                            postcode: selectedWorker.postcode ?? "",
+                          })
+                        }
+                        className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest"
+                      >
+                        Edit details
+                      </button>
+                    </div>
+                  )}
+
+                  {!editingDraft && (
+                    <>
+                      <div className="mt-5 grid grid-cols-3 gap-2">
+                        {[
+                          [
+                            "Certificates",
+                            getCurrentTickets(selectedWorker.tickets ?? []).length,
+                            hasCertificateAttention(selectedWorker) ? "needs renewal" : "current",
+                          ],
+                          [
+                            "Assigned sites",
+                            assignedJobsForWorker(selectedWorker.id).length,
+                            "site records",
+                          ],
+                          [
+                            "Files held",
+                            selectedWorker.uploadedCertificates?.length ?? 0,
+                            "including history",
+                          ],
+                        ].map(([label, value, note]) => (
+                          <div key={String(label)} className="rounded-lg border border-border p-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                              {label}
+                            </p>
+                            <p className="mt-2 text-2xl font-black">{value}</p>
+                            <p className="mt-1 text-[10px] text-muted-foreground">{note}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-6 border-t border-border pt-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="text-sm font-black">Current certificates</h4>
+                          {submissions.some(
+                            (submission) => submission.approved_staff_id === selectedWorker.id,
+                          ) && (
+                            <button
+                              type="button"
+                              onClick={() => openCertificatePanel(selectedWorker.id, "add")}
+                              className="text-[10px] font-black uppercase tracking-widest text-primary"
+                            >
+                              + Add certificate
+                            </button>
+                          )}
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          {getCurrentTickets(selectedWorker.tickets ?? []).length === 0 ? (
+                            <p className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
+                              No certificates on file.
+                            </p>
+                          ) : (
+                            getCurrentTickets(selectedWorker.tickets ?? []).map((ticket) => {
+                              const status = getTicketStatus(ticket);
+                              const document = (selectedWorker.uploadedCertificates ?? []).find(
+                                (candidate) => candidate.id === ticket.id,
+                              );
+                              return (
+                                <div
+                                  key={ticket.id}
+                                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-3 py-3"
+                                >
+                                  <div className="min-w-0">
+                                    <span className="font-bold">{ticket.type}</span>
+                                    <span
+                                      className={`ml-2 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${status === "EXPIRED" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700" : "bg-emerald-500/10 text-emerald-700"}`}
+                                    >
+                                      {status === "EXPIRED"
+                                        ? "Expired"
+                                        : status === "EXPIRING_SOON"
+                                          ? "Expiring soon"
+                                          : "Valid"}
+                                    </span>
+                                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                                      {document?.name || "No file attached"}
+                                      {ticket.expiryDate
+                                        ? ` · expires ${formatUKDate(ticket.expiryDate)}`
+                                        : ""}
+                                    </p>
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      openCertificatePanel(selectedWorker.id, "replace", {
+                                        ...ticket,
+                                        fileName: document?.name,
+                                      })
+                                    }
+                                    className="shrink-0 text-xs font-black text-primary"
+                                  >
+                                    Replace
+                                  </button>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-6 border-t border-border pt-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="text-sm font-black">Assigned sites</h4>
+                          <a
+                            href="#/portal/third-party/jobs"
+                            className="text-[10px] font-black uppercase tracking-widest text-primary"
+                          >
+                            View all →
+                          </a>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          {assignedJobsForWorker(selectedWorker.id).length === 0 ? (
+                            <p className="text-xs text-muted-foreground">No assigned sites.</p>
+                          ) : (
+                            assignedJobsForWorker(selectedWorker.id).map((job) => (
+                              <Link
+                                key={job.id}
+                                to={`/portal/third-party/jobs/${job.id}`}
+                                className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3 hover:border-primary"
+                              >
+                                <span className="min-w-0">
+                                  <span className="block truncate text-xs font-bold">
+                                    {job.siteName}
+                                  </span>
+                                  <span className="mt-1 block text-[10px] text-muted-foreground">
+                                    {job.postcode}
+                                  </span>
+                                </span>
+                                <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-primary">
+                                  {job.status}
+                                </span>
+                              </Link>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                      <div className="mt-6 border-t border-border pt-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="text-sm font-black">Recent activity</h4>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                            Audit retained
+                          </span>
+                        </div>
+                        <p className="mt-3 text-xs text-muted-foreground">
+                          Certificate files and previous versions remain available in Opus Form’s
+                          audit history.
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Select a staff member to view their record.
+                </p>
+              )}
+            </section>
+          </div>
+        </section>
+
+        <section className="hidden space-y-3">
           <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
             Pending submissions
           </h2>

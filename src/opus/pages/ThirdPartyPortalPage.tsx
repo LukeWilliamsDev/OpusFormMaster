@@ -367,7 +367,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
         )}
       </header>
 
-      <div className={`${showStaffList ? "" : "hidden"} hidden gap-4 md:grid md:grid-cols-3`}>
+      <div className={`${showStaffList ? "hidden md:grid md:grid-cols-3" : "hidden"} gap-4`}>
         {[
           ["Approved staff", workers.length, "visible to Opus Form"],
           ["Pending submissions", pendingSubmissions.length, "waiting for review"],

@@ -1221,8 +1221,8 @@ export const ThirdPartyPortalPage: React.FC = () => {
           )}
         </section>
 
-        {false && ticketStaffId && (
-          <section className="rounded-2xl border-2 border-primary/60 bg-card p-5 shadow-sm ring-4 ring-primary/5">
+        {ticketStaffId && (
+          <section className="hidden rounded-2xl border-2 border-primary/60 bg-card p-5 shadow-sm ring-4 ring-primary/5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-primary">

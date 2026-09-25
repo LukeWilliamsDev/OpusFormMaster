@@ -23,7 +23,7 @@ const getJobDate = (jobId: string, shifts: any[], completed: boolean) => {
   const pastDates = dates.filter((date) => date <= today);
   if (completed) {
     return {
-      label: pastDates.length ? "Last shift" : "Scheduled date",
+      label: pastDates.length ? "Last shift" : "Date on record",
       date: pastDates.at(-1) ?? dates[0],
     };
   }

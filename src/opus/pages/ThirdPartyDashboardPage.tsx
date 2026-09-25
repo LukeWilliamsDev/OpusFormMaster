@@ -101,7 +101,6 @@ export const ThirdPartyDashboardPage: React.FC = () => {
       ).length,
     0,
   );
-  const actionCount = pendingCount + unansweredCount + expiringCertificateCount;
   const assignedStaffForJob = (jobId: string) =>
     workers.filter((worker) =>
       shifts.some((shift) => shift.jobId === jobId && shift.workerId === worker.id),
@@ -110,6 +109,9 @@ export const ThirdPartyDashboardPage: React.FC = () => {
     getCurrentTickets(worker.tickets ?? []).some((ticket) =>
       ["EXPIRED", "EXPIRING_SOON"].includes(getTicketStatus(ticket)),
     );
+  const attentionWorkerCount = workers.filter(hasAttention).length;
+  const firstAttentionWorker = workers.find(hasAttention);
+  const actionCount = pendingCount + unansweredCount + expiringCertificateCount;
   const statusTone = (status: string) =>
     ["pending", "on-hold", "on hold"].includes(status.toLowerCase())
       ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200"
@@ -117,14 +119,14 @@ export const ThirdPartyDashboardPage: React.FC = () => {
 
   if (dataLoading)
     return (
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
+      <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="h-72 animate-pulse rounded-2xl bg-muted" />
       </div>
     );
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
+    <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 pb-28 sm:px-6 lg:py-12 lg:pb-12 2xl:max-w-[1500px]">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
@@ -153,34 +155,80 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           </Link>
         </div>
       </header>
-      <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-        {workers.length} approved staff · {activeJobs.length} assigned sites ·{" "}
-        {completedJobs.length} completed
-      </p>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            Staff needing attention
+          </p>
+          <p className="mt-3 text-3xl font-black">{attentionWorkerCount}</p>
+          <p className="mt-1 text-xs text-muted-foreground">Review certificates</p>
+        </div>
+        <div className="rounded-2xl border border-border bg-card p-4">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            Open sites
+          </p>
+          <p className="mt-3 text-3xl font-black">{activeJobs.length}</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {activeJobs.length ? "Current assignments" : "No active sites assigned"}
+          </p>
+        </div>
+        <div className="col-span-2 rounded-2xl border border-border bg-card p-4 sm:col-span-1">
+          <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            Completed sites
+          </p>
+          <p className="mt-3 text-3xl font-black">{completedJobs.length}</p>
+          <p className="mt-1 text-xs text-muted-foreground">View site history</p>
+        </div>
+      </div>
 
       {actionCount > 0 && (
-        <section className="rounded-2xl border-2 border-amber-500/40 bg-card p-5 dark:border-amber-400/40">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-200" />
-            <h2 className="text-sm font-black uppercase tracking-widest">Needs attention</h2>
+        <section className="rounded-2xl border border-amber-500/60 bg-card p-4 sm:p-5 dark:border-amber-400/60">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-200" />
+              <h2 className="text-sm font-black">Needs your attention</h2>
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+              {actionCount} {actionCount === 1 ? "item" : "items"}
+            </span>
           </div>
           <div className="mt-4 space-y-2">
             {pendingCount > 0 && (
               <Link
                 to="/portal/third-party/staff"
-                className="flex items-center justify-between rounded-lg border border-border px-3 py-3 text-sm hover:border-primary"
+                className="flex flex-col gap-2 rounded-xl border border-border bg-background px-3 py-3 hover:border-primary sm:flex-row sm:items-center sm:justify-between"
               >
-                <span>Staff submissions waiting for review</span>
-                <b>{pendingCount}</b>
+                <span>
+                  <span className="block text-sm font-bold">Staff submission needs review</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {pendingCount} {pendingCount === 1 ? "submission" : "submissions"} waiting
+                  </span>
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  Review staff →
+                </span>
               </Link>
             )}
             {expiringCertificateCount > 0 && (
               <Link
-                to="/portal/third-party/staff"
-                className="flex items-center justify-between rounded-lg border border-border px-3 py-3 text-sm hover:border-primary"
+                to={
+                  firstAttentionWorker
+                    ? `/portal/third-party/staff/${firstAttentionWorker.id}`
+                    : "/portal/third-party/staff?filter=attention"
+                }
+                className="flex flex-col gap-2 rounded-xl border border-border bg-background px-3 py-3 hover:border-primary sm:flex-row sm:items-center sm:justify-between"
               >
-                <span>Certificates expired or expiring soon</span>
-                <b>{expiringCertificateCount}</b>
+                <span>
+                  <span className="block text-sm font-bold">Certificate needs review</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {expiringCertificateCount}{" "}
+                    {expiringCertificateCount === 1 ? "certificate" : "certificates"} expired or
+                    expiring soon
+                  </span>
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  Review staff →
+                </span>
               </Link>
             )}
             {unansweredCount > 0 && (
@@ -190,17 +238,24 @@ export const ThirdPartyDashboardPage: React.FC = () => {
                     ? `/portal/third-party/sites/${unansweredJobId}`
                     : "/portal/third-party/sites"
                 }
-                className="flex items-center justify-between rounded-lg border border-border px-3 py-3 text-sm hover:border-primary"
+                className="flex flex-col gap-2 rounded-xl border border-border bg-background px-3 py-3 hover:border-primary sm:flex-row sm:items-center sm:justify-between"
               >
-                <span>Site notes without a response</span>
-                <b>{unansweredCount}</b>
+                <span>
+                  <span className="block text-sm font-bold">Site note needs a response</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {unansweredCount} {unansweredCount === 1 ? "note" : "notes"} waiting for a reply
+                  </span>
+                </span>
+                <span className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  Respond →
+                </span>
               </Link>
             )}
           </div>
         </section>
       )}
 
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className="hidden gap-5 sm:grid md:grid-cols-2">
         <section className="rounded-2xl border-2 border-border bg-card p-5">
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -209,7 +264,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
               </p>
               <h2 className="mt-1 text-xl font-black">Your staff</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Submit people for review and keep their records current.
+                Open a staff record to manage certificates and assignments.
               </p>
             </div>
             <Users className="h-5 w-5 text-primary" />
@@ -234,7 +289,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             {workers.slice(0, 3).map((worker) => (
               <Link
                 key={worker.id}
-                to="/portal/third-party/staff"
+                to={`/portal/third-party/staff/${worker.id}`}
                 className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3 hover:border-primary"
               >
                 <span className="min-w-0">
@@ -268,9 +323,9 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Sites</p>
-              <h2 className="mt-1 text-xl font-black">Assigned work</h2>
+              <h2 className="mt-1 text-xl font-black">Open sites</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Open a site to view its people, files, photos, and conversation.
+                Open a site record to view its current work.
               </p>
             </div>
             <MapPin className="h-5 w-5 text-primary" />
@@ -339,7 +394,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
               to="/portal/third-party/sites"
               className="text-xs font-black uppercase tracking-widest text-primary"
             >
-              View assigned sites →
+              View open sites →
             </Link>
             {completedJobs.length > 0 && (
               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
@@ -351,7 +406,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
       </div>
       {completedJobs.length > 0 && (
         <Link
-          to="/portal/third-party/sites"
+          to="/portal/third-party/sites?filter=completed"
           className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary"
         >
           <CalendarDays className="h-3.5 w-3.5" />

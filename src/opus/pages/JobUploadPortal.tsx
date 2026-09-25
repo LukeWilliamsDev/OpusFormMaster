@@ -286,6 +286,7 @@ export const JobUploadPortalPage: React.FC = () => {
                 <input
                   type="file"
                   multiple
+                  accept="application/pdf,image/jpeg,image/png,image/heic,.doc,.docx,.xls,.xlsx"
                   id="file-upload-input"
                   onChange={handleFileSelect}
                   className="hidden"

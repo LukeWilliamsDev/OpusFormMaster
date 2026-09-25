@@ -1,7 +1,11 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
-import { ASSIGNED_SHIFT_ROLES, MANAGEMENT_ROLES } from "../context/PortalContext";
+import {
+  ASSIGNED_SHIFT_ROLES,
+  DOCUMENT_SEND_ROLES,
+  MANAGEMENT_ROLES,
+} from "../context/PortalContext";
 import { RosterView } from "../components/RosterView";
 import { CalendarBoard, CalendarGroup } from "../components/calendar/CalendarBoard";
 import { defaultSelectedDay, isValidISODate } from "../utils/week";
@@ -17,7 +21,7 @@ export const LaborRosterPage: React.FC = () => {
 
   const requestedView = searchParams.get("view") === "staff" ? "staff" : "calendar";
   const currentView =
-    role && !MANAGEMENT_ROLES.includes(role) && requestedView === "staff"
+    role && !DOCUMENT_SEND_ROLES.includes(role) && requestedView === "staff"
       ? "calendar"
       : requestedView;
   const selectedWorkerId = searchParams.get("workerId");

@@ -122,7 +122,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("admin-create-user error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "Unable to create the user." }), {
       status: 500,
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
     });

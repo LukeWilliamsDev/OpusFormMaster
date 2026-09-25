@@ -223,7 +223,7 @@ async function dispatcherRecipients(): Promise<Array<{ chatId: string; tenantId:
 
   const { data: profiles, error } = await supabase
     .from("profiles")
-    .select("email")
+    .select("email, tenant_id")
     .in("role", OPS_ROLES);
 
   // profiles.role is the app_role enum. Filtering on a label the enum does not
@@ -236,7 +236,10 @@ async function dispatcherRecipients(): Promise<Array<{ chatId: string; tenantId:
   }
 
   return (profiles ?? [])
-    .map((p) => byEmail.get(String(p.email).toLowerCase()))
+    .map((p) => {
+      const recipient = byEmail.get(String(p.email).toLowerCase());
+      return recipient && recipient.tenantId === p.tenant_id ? recipient : null;
+    })
     .filter((r): r is { chatId: string; tenantId: string } => Boolean(r));
 }
 

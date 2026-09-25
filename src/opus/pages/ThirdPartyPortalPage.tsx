@@ -388,7 +388,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
           </section>
         )}
 
-        <section className="space-y-4">
+        <section className="min-w-0 space-y-4">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
@@ -401,7 +401,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
             </div>
           </div>
           <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:items-start">
-            <section className="rounded-2xl border-2 border-border bg-card p-4">
+            <section className="min-w-0 rounded-2xl border-2 border-border bg-card p-4">
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-sm font-black">People</h3>
                 <span className="text-xs text-muted-foreground">{visibleWorkers.length} shown</span>
@@ -480,7 +480,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
               </div>
             </section>
 
-            <section className="rounded-2xl border-2 border-border bg-card p-5">
+            <section className="min-w-0 rounded-2xl border-2 border-border bg-card p-5">
               {selectedWorker ? (
                 <>
                   {editingDraft?.id === selectedWorker.id ? (
@@ -707,7 +707,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
           </div>
         </section>
 
-        <section className="hidden space-y-3">
+        <section className="space-y-3">
           <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
             Pending submissions
           </h2>
@@ -789,7 +789,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
           </section>
         )}
 
-        <section className="space-y-3">
+        <section className="hidden space-y-3">
           <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
             Your approved staff
           </h2>

@@ -1,11 +1,35 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { ArrowRight, CalendarDays } from "lucide-react";
+import { AlertCircle, ArrowRight, CalendarDays, CheckCircle2, MapPin } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
+import { formatUKDate } from "../utils/week";
 import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
 
 const db = supabase as any;
+const isCompletedJob = (job: any) =>
+  ["completed", "complete", "closed"].includes(String(job.status).toLowerCase());
+const statusLabel = (status: string) =>
+  status.replace(/[-_]/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
+const getJobDate = (jobId: string, shifts: any[], completed: boolean) => {
+  const dates = shifts
+    .filter((shift) => shift.jobId === jobId && shift.date)
+    .map((shift) => shift.date)
+    .sort();
+  if (!dates.length) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const pastDates = dates.filter((date) => date <= today);
+  return completed
+    ? {
+        label: pastDates.length ? "Last shift" : "Scheduled date",
+        date: pastDates.at(-1) ?? dates[0],
+      }
+    : {
+        label: "Next shift",
+        date: dates.find((date) => date >= today) ?? dates.at(-1) ?? dates[0],
+      };
+};
+
 const getGreeting = () => {
   const hour = Number(
     new Intl.DateTimeFormat("en-GB", {
@@ -16,8 +40,6 @@ const getGreeting = () => {
   );
   return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 };
-const statusLabel = (status: string) =>
-  status.replace(/[-_]/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
 
 export const ThirdPartyDashboardPage: React.FC = () => {
   const { workers, jobs, shifts, dataLoading } = usePortal();
@@ -33,11 +55,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
   useEffect(() => {
     const loadUnanswered = async () => {
       const { data: notes } = await db.from("third_party_job_notes").select("id, job_id");
-      if (!notes?.length) {
-        setUnansweredCount(0);
-        setUnansweredJobId(null);
-        return;
-      }
+      if (!notes?.length) return;
       const { data: replies } = await db
         .from("third_party_job_note_replies")
         .select("note_id")
@@ -60,96 +78,69 @@ export const ThirdPartyDashboardPage: React.FC = () => {
       ),
     [jobs, shifts, ownedWorkerIds],
   );
-  const activeJobs = assignedJobs.filter(
-    (job) => !["completed", "complete", "closed"].includes(String(job.status).toLowerCase()),
-  );
-  const nextJob = activeJobs[0] ?? assignedJobs[0];
-  const nextJobIsCompleted = Boolean(
-    nextJob && ["completed", "complete", "closed"].includes(String(nextJob.status).toLowerCase()),
-  );
-  const nextJobStatus = nextJobIsCompleted
-    ? "Completed"
-    : nextJob
-      ? statusLabel(nextJob.status)
-      : null;
+  const activeJobs = assignedJobs.filter((job) => !isCompletedJob(job));
+  const completedJobs = assignedJobs.filter(isCompletedJob);
+  const nextJob =
+    [...activeJobs].sort((a, b) => {
+      const aDate = getJobDate(a.id, shifts, false)?.date ?? "9999-12-31";
+      const bDate = getJobDate(b.id, shifts, false)?.date ?? "9999-12-31";
+      return aDate.localeCompare(bDate);
+    })[0] ?? null;
   const expiringCertificateCount = workers.reduce(
     (count, worker) =>
       count +
-      getCurrentTickets(worker.tickets ?? []).filter((ticket) => {
-        const status = getTicketStatus(ticket);
-        return status === "EXPIRED" || status === "EXPIRING_SOON";
-      }).length,
+      getCurrentTickets(worker.tickets ?? []).filter((ticket) =>
+        ["EXPIRED", "EXPIRING_SOON"].includes(getTicketStatus(ticket)),
+      ).length,
     0,
   );
   const actionCount = pendingCount + unansweredCount + expiringCertificateCount;
-  if (dataLoading) {
+  const assignedStaffForJob = (jobId: string) =>
+    workers.filter((worker) =>
+      shifts.some((shift) => shift.jobId === jobId && shift.workerId === worker.id),
+    );
+
+  if (dataLoading)
     return (
       <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
-        <div className="grid gap-4 md:grid-cols-3">
-          {[1, 2, 3].map((item) => (
-            <div key={item} className="h-32 animate-pulse rounded-2xl bg-muted" />
-          ))}
-        </div>
+        <div className="h-72 animate-pulse rounded-2xl bg-muted" />
       </div>
     );
-  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-            Third-party portal
+            Portal home
           </p>
           <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground">
             {getGreeting()}
           </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Everything your team needs for assigned work, approvals, and site updates.
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            Your partner access is active. Assigned sites appear here automatically; completed sites
+            are view-only.
           </p>
         </div>
         <Link
-          to="/portal/third-party/staff"
+          to="/portal/third-party/jobs"
           className="rounded-xl bg-primary px-5 py-3 text-center text-xs font-black uppercase tracking-widest text-primary-foreground"
         >
-          + Add staff member
+          View assigned sites <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
         </Link>
       </header>
-      <div className="grid gap-4 md:grid-cols-3">
-        {[
-          ["Your staff", workers.length, "approved and visible", "/portal/third-party/staff"],
-          [
-            "Assigned sites",
-            assignedJobs.length,
-            "assigned to your staff",
-            "/portal/third-party/jobs",
-          ],
-          [
-            "Action needed",
-            actionCount,
-            actionCount ? "needs your attention" : "you are all caught up",
-            actionCount && unansweredCount > 0 && unansweredJobId
-              ? `/portal/third-party/jobs/${unansweredJobId}`
-              : "/portal/third-party/staff",
-          ],
-        ].map(([label, count, description, href]) => (
-          <Link
-            key={String(label)}
-            to={String(href)}
-            className="group relative overflow-hidden rounded-2xl border-2 border-border bg-card p-5 shadow-sm transition-colors hover:border-primary"
-          >
-            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-              {label}
-            </p>
-            <p className="mt-5 text-4xl font-black tracking-tight">{count}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
-            <ArrowRight className="absolute bottom-5 right-5 h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
-          </Link>
-        ))}
-      </div>
+      <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+        {activeJobs.length} active sites · {completedJobs.length} completed · {workers.length}{" "}
+        approved staff
+      </p>
+
       {actionCount > 0 && (
-        <section className="rounded-2xl border-2 border-border bg-card p-5">
-          <h2 className="text-sm font-black uppercase tracking-widest">Needs attention</h2>
+        <section className="rounded-2xl border-2 border-amber-500/40 bg-card p-5 dark:border-amber-400/40">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-200" />
+            <h2 className="text-sm font-black uppercase tracking-widest">Needs attention</h2>
+          </div>
           <div className="mt-4 space-y-2">
             {pendingCount > 0 && (
               <Link
@@ -185,64 +176,133 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           </div>
         </section>
       )}
-      <div className="grid gap-5 lg:grid-cols-[1.35fr_1fr]">
-        <section className="rounded-2xl border-2 border-border bg-card p-5">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-sm font-black uppercase tracking-widest">
-              {nextJobIsCompleted ? "Latest site" : "Next up"}
-            </h2>
-            <span
-              className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${nextJobIsCompleted ? "bg-muted text-muted-foreground" : nextJob?.status === "pending" || nextJob?.status === "on-hold" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
-            >
-              {nextJobStatus}
-            </span>
+
+      <section className="rounded-2xl border-2 border-border bg-card p-5">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+              Next scheduled site
+            </p>
+            {nextJob ? (
+              <>
+                <h2 className="mt-1 text-xl font-black">{nextJob.siteName}</h2>
+                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                  <MapPin className="h-3 w-3" />
+                  {nextJob.postcode}
+                </p>
+              </>
+            ) : (
+              <h2 className="mt-1 text-xl font-black">No active sites assigned</h2>
+            )}
           </div>
-          {nextJob ? (
+          {nextJob && (
+            <span
+              className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${["pending", "on-hold"].includes(String(nextJob.status).toLowerCase()) ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
+            >
+              {statusLabel(nextJob.status)}
+            </span>
+          )}
+        </div>
+        {nextJob ? (
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                {getJobDate(nextJob.id, shifts, false)?.label ?? "Shift date"}
+              </p>
+              <p className="mt-2 text-lg font-black">
+                {getJobDate(nextJob.id, shifts, false)?.date
+                  ? formatUKDate(getJobDate(nextJob.id, shifts, false)!.date)
+                  : "Not set"}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Assigned staff
+              </p>
+              <p className="mt-2 text-lg font-black">{assignedStaffForJob(nextJob.id).length}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">approved workers</p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Site record
+              </p>
+              <p className="mt-2 text-lg font-black">{nextJob.currentPours ?? 0} pours</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">current value</p>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-muted-foreground">
+            Completed sites remain available in Assigned sites.
+          </p>
+        )}
+        {nextJob && (
+          <div className="mt-5 flex justify-end">
             <Link
               to={`/portal/third-party/jobs/${nextJob.id}`}
-              className="group block rounded-xl border border-border p-4 transition-colors hover:border-primary"
+              className="rounded-lg border border-border px-4 py-2 text-xs font-black uppercase tracking-widest hover:border-primary"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="font-black">{nextJob.siteName}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {nextJob.postcode} · {nextJob.currentPours} pours
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">{nextJob.status}</p>
-                </div>
-                <ArrowRight className="h-4 w-4 text-primary transition-transform group-hover:translate-x-1" />
-              </div>
-            </Link>
-          ) : (
-            <p className="rounded-xl border border-dashed border-border p-5 text-sm text-muted-foreground">
-              No assigned sites yet.
-            </p>
-          )}
-          <Link
-            to="/portal/third-party/jobs"
-            className="mt-3 flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary"
-          >
-            <CalendarDays className="h-3.5 w-3.5" /> View assigned sites
-          </Link>
-        </section>
-        <section className="rounded-2xl border-2 border-border bg-card p-5">
-          <h2 className="text-sm font-black uppercase tracking-widest">Quick links</h2>
-          <div className="mt-5 flex flex-wrap gap-2">
-            <Link
-              to="/portal/third-party/staff"
-              className="rounded-lg border border-border px-3 py-2 text-xs font-bold"
-            >
-              View staff
-            </Link>
-            <Link
-              to="/portal/third-party/jobs"
-              className="rounded-lg border border-border px-3 py-2 text-xs font-bold"
-            >
-              View sites
+              Open site record <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
             </Link>
           </div>
-        </section>
-      </div>
+        )}
+      </section>
+
+      <section className="rounded-2xl border-2 border-border bg-card p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+              Your work
+            </p>
+            <h2 className="mt-1 text-lg font-black">Active sites</h2>
+          </div>
+          <Link
+            to="/portal/third-party/jobs"
+            className="text-xs font-black uppercase tracking-widest text-primary"
+          >
+            View all →
+          </Link>
+        </div>
+        {activeJobs.length ? (
+          <div className="mt-4 space-y-2">
+            {activeJobs.slice(0, 4).map((job) => {
+              const date = getJobDate(job.id, shifts, false);
+              return (
+                <Link
+                  key={job.id}
+                  to={`/portal/third-party/jobs/${job.id}`}
+                  className="flex flex-col gap-2 rounded-lg border border-border px-3 py-3 hover:border-primary sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <span>
+                    <span className="block text-sm font-bold">{job.siteName}</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {date ? `${date.label} · ${formatUKDate(date.date)}` : "No shift date"} ·{" "}
+                      {job.postcode}
+                    </span>
+                  </span>
+                  <span className="self-start rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200">
+                    {statusLabel(job.status)}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mt-4 flex items-center gap-3 rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
+            <CheckCircle2 className="h-4 w-4" />
+            No active sites currently assigned.
+          </div>
+        )}
+      </section>
+      {completedJobs.length > 0 && (
+        <Link
+          to="/portal/third-party/jobs"
+          className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary"
+        >
+          <CalendarDays className="h-3.5 w-3.5" />
+          {completedJobs.length} completed site{completedJobs.length === 1 ? "" : "s"} available in
+          history
+        </Link>
+      )}
     </div>
   );
 };

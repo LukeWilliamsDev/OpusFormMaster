@@ -8,11 +8,14 @@ import { supabase } from "../../integrations/supabase/client";
 import { ThirdPartyAttachmentsPanel } from "../components/ThirdPartyAttachmentsPanel";
 import { ThirdPartyNotesPanel } from "../components/ThirdPartyNotesPanel";
 import { getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
+import { formatUKDate } from "../utils/week";
 
 const db = supabase as any;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const isCompletedJob = (job: any) =>
   ["completed", "complete", "closed"].includes(String(job.status).toLowerCase());
+const statusLabel = (status: string) =>
+  status.replace(/[-_]/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
 
 export const ThirdPartySitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -114,6 +117,16 @@ export const ThirdPartySitePage: React.FC = () => {
     shifts.some((shift) => shift.jobId === job.id && shift.workerId === worker.id),
   );
   const readOnlyHistory = role === "third_party" && isCompletedJob(job);
+  const shiftDates = shifts
+    .filter((shift) => shift.jobId === job.id && shift.date)
+    .map((shift) => shift.date)
+    .sort();
+  const today = new Date().toISOString().slice(0, 10);
+  const pastShiftDates = shiftDates.filter((date) => date <= today);
+  const siteDate = isCompletedJob(job)
+    ? (pastShiftDates.at(-1) ?? shiftDates[0])
+    : (shiftDates.find((date) => date >= today) ?? shiftDates.at(-1));
+  const siteDateLabel = isCompletedJob(job) ? "Last shift" : "Next shift";
   const addNote = async () => {
     if (!note.trim()) return;
     setPostingNote(true);
@@ -178,14 +191,25 @@ export const ThirdPartySitePage: React.FC = () => {
           <p className="mt-2 text-sm text-muted-foreground">{job.postcode}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
-              {job.status}
+              {statusLabel(job.status)}
             </span>
+            {siteDate && (
+              <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
+                {siteDateLabel} · {formatUKDate(siteDate)}
+              </span>
+            )}
             <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
               {job.currentPours} pours
             </span>
           </div>
         </div>
       </header>
+      {readOnlyHistory && (
+        <p className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
+          Completed sites are view-only. Photos, attachments, and conversation history remain
+          available.
+        </p>
+      )}
       <section className="rounded-2xl border-2 border-border bg-card p-5">
         <div className="flex items-center justify-between gap-3">
           <div>

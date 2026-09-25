@@ -398,11 +398,11 @@ export const PortalLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <main
-        className={`flex-1 flex flex-col min-h-0 bg-background ${role === "third_party" ? "pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}
+        className={`flex-1 flex flex-col min-h-0 bg-background ${role === "third_party" ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}
       >
         <div
           className="flex-1 w-full relative lg:min-h-0 lg:overflow-y-auto"
-          style={{ scrollPaddingBottom: role === "third_party" ? "5rem" : undefined }}
+          style={{ scrollPaddingBottom: role === "third_party" ? "6.5rem" : undefined }}
         >
           <Outlet />
         </div>

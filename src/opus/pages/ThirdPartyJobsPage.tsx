@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ChevronRight, MapPin, Search } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { formatUKDate, toLondonISODate } from "../utils/week";
 
@@ -34,9 +34,11 @@ type SiteFilter = "all" | "active" | "attention" | "completed";
 
 export const ThirdPartyJobsPage: React.FC = () => {
   const { workers, jobs, shifts, dataLoading } = usePortal();
+  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState<SiteFilter>("all");
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
   const assignedJobs = useMemo(
     () =>
@@ -82,6 +84,14 @@ export const ThirdPartyJobsPage: React.FC = () => {
       .filter((shift) => assignedJobs.some((job) => job.id === shift.jobId))
       .map((shift) => shift.workerId),
   ).size;
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 767px)");
+    const updateViewport = () => setIsMobileViewport(media.matches);
+    updateViewport();
+    media.addEventListener("change", updateViewport);
+    return () => media.removeEventListener("change", updateViewport);
+  }, []);
 
   if (dataLoading) {
     return (
@@ -132,21 +142,12 @@ export const ThirdPartyJobsPage: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:items-start">
-          <section className="min-w-0 rounded-2xl border-2 border-border bg-card p-4">
+        <div className="grid min-w-0 gap-4 md:grid-cols-[minmax(300px,360px)_minmax(0,1fr)] md:items-start">
+          <section className="min-w-0 overflow-hidden rounded-2xl border-2 border-border bg-card p-4 md:sticky md:top-24">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-sm font-black">Site directory</h2>
               <span className="text-xs text-muted-foreground">{visibleJobs.length} shown</span>
             </div>
-            {attentionJobs.length > 0 && (
-              <div className="mt-4 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-800 dark:bg-amber-400/15 dark:text-amber-100">
-                <p className="font-black uppercase tracking-widest">Needs attention</p>
-                <p className="mt-1">
-                  {attentionJobs.length} site{attentionJobs.length === 1 ? "" : "s"} need a
-                  follow-up.
-                </p>
-              </div>
-            )}
             <label className="relative mt-4 block">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <input
@@ -157,11 +158,11 @@ export const ThirdPartyJobsPage: React.FC = () => {
                 className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm"
               />
             </label>
-            <div className="mt-3 flex gap-2 overflow-x-auto">
+            <div className="mt-3 flex gap-2 overflow-x-auto overscroll-x-contain pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {(
                 [
                   ["all", `All sites · ${assignedJobs.length}`],
-                  ["active", `Active · ${activeJobs.length}`],
+                  ["active", `Open · ${activeJobs.length}`],
                   ["attention", `Needs attention · ${attentionJobs.length}`],
                   ["completed", `Completed · ${completedJobs.length}`],
                 ] as const
@@ -176,24 +177,34 @@ export const ThirdPartyJobsPage: React.FC = () => {
                 </button>
               ))}
             </div>
-            <div className="mt-3 space-y-2">
+            <div className="mt-3 space-y-2 md:max-h-[calc(100vh-23rem)] md:overflow-y-auto md:pr-1">
               {visibleJobs.map((job) => {
                 const completed = isCompletedJob(job);
                 const jobDate = getJobDate(job.id, shifts, completed);
-                const staffCount = assignedStaffForJob(job.id).length;
                 return (
                   <button
                     key={job.id}
                     type="button"
-                    onClick={() => setSelectedJobId(job.id)}
-                    className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors ${selectedJobId === job.id ? "border-primary ring-2 ring-primary/10" : "border-border hover:border-primary"}`}
+                    onClick={() => {
+                      if (isMobileViewport) {
+                        navigate(`/portal/third-party/jobs/${job.id}`);
+                      } else {
+                        setSelectedJobId(job.id);
+                      }
+                    }}
+                    className={`grid w-full min-w-0 grid-cols-[2.25rem_minmax(0,1fr)_auto_1rem] items-center gap-3 rounded-xl border p-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${selectedJobId === job.id ? "border-primary bg-primary/5 ring-2 ring-primary/10" : "border-border hover:border-primary"}`}
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">
                       {completed ? "✓" : "↗"}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-black">{job.siteName}</span>
-                      <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                      <span className="block truncate text-sm font-black" title={job.siteName}>
+                        {job.siteName}
+                      </span>
+                      <span
+                        className="mt-0.5 block truncate text-xs text-muted-foreground"
+                        title={`${job.postcode ?? ""} · ${jobDate ? `${jobDate.label} ${formatUKDate(jobDate.date)}` : "No shift date"}`}
+                      >
                         {job.postcode} ·{" "}
                         {jobDate
                           ? `${jobDate.label} ${formatUKDate(jobDate.date)}`
@@ -204,9 +215,6 @@ export const ThirdPartyJobsPage: React.FC = () => {
                       className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${needsAttention(job) ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : completed ? "bg-muted text-muted-foreground" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
                     >
                       {statusLabel(job.status)}
-                    </span>
-                    <span className="hidden text-[10px] text-muted-foreground sm:block">
-                      {staffCount} staff
                     </span>
                     <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                   </button>
@@ -220,7 +228,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
             </div>
           </section>
 
-          <section className="min-w-0 rounded-2xl border-2 border-border bg-card p-5">
+          <section className="hidden min-w-0 rounded-2xl border-2 border-border bg-card p-5 md:block">
             {selectedJob ? (
               (() => {
                 const completed = isCompletedJob(selectedJob);
@@ -228,12 +236,14 @@ export const ThirdPartyJobsPage: React.FC = () => {
                 const staff = assignedStaffForJob(selectedJob.id);
                 return (
                   <>
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                      <div>
+                    <div className="flex min-w-0 flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                      <div className="min-w-0">
                         <p className="text-[10px] font-black uppercase tracking-widest text-primary">
                           Site record
                         </p>
-                        <h2 className="mt-1 text-2xl font-black">{selectedJob.siteName}</h2>
+                        <h2 className="mt-1 break-words text-2xl font-black">
+                          {selectedJob.siteName}
+                        </h2>
                         <p className="mt-1 text-sm text-muted-foreground">
                           {selectedJob.postcode} · {statusLabel(selectedJob.status)}
                         </p>
@@ -245,7 +255,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
                       </div>
                       <Link
                         to={`/portal/third-party/jobs/${selectedJob.id}`}
-                        className="rounded-lg border border-border px-3 py-2 text-center text-[10px] font-black uppercase tracking-widest hover:border-primary"
+                        className="w-full whitespace-nowrap rounded-lg border border-border px-3 py-2 text-center text-[10px] font-black uppercase tracking-widest hover:border-primary xl:w-auto"
                       >
                         Open full site record
                       </Link>
@@ -256,7 +266,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
                         remain available.
                       </p>
                     )}
-                    <div className="mt-5 grid grid-cols-2 gap-2">
+                    <div className="mt-5 grid grid-cols-2 gap-2 xl:grid-cols-3">
                       <div className="rounded-lg border border-border p-3">
                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                           Assigned staff
@@ -289,8 +299,10 @@ export const ThirdPartyJobsPage: React.FC = () => {
                               key={worker.id}
                               className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3"
                             >
-                              <div>
-                                <p className="text-xs font-bold">{worker.name}</p>
+                              <div className="min-w-0">
+                                <p className="truncate text-xs font-bold" title={worker.name}>
+                                  {worker.name}
+                                </p>
                                 <p className="mt-1 text-[10px] text-muted-foreground">
                                   {worker.role}
                                 </p>

@@ -36,10 +36,6 @@ export const ModernSlaveryStatementPage: React.FC = () => (
       <p>
         We won't tolerate slavery, trafficking, or illegal hiring. We deal fairly with everyone.
       </p>
-      <p>
-        Our detailed operational requirements are set out in our Right to Work Policy. A tax
-        reference, CIS number, UTR or CSCS card is not accepted as proof of a right to work.
-      </p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>
           <strong>Right to Work Verification:</strong> We strictly verify the identity and right to

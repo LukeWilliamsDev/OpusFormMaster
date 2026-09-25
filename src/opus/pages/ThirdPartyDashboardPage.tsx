@@ -1,5 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { AlertCircle, ArrowRight, CalendarDays, CheckCircle2, MapPin } from "lucide-react";
+import {
+  AlertCircle,
+  ArrowRight,
+  CalendarDays,
+  CheckCircle2,
+  MapPin,
+  Plus,
+  Users,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
@@ -11,7 +19,7 @@ const isCompletedJob = (job: any) =>
   ["completed", "complete", "closed"].includes(String(job.status).toLowerCase());
 const statusLabel = (status: string) =>
   status.replace(/[-_]/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
-const getJobDate = (jobId: string, shifts: any[], completed: boolean) => {
+const getJobDate = (jobId: string, shifts: any[], completed = false) => {
   const dates = shifts
     .filter((shift) => shift.jobId === jobId && shift.date)
     .map((shift) => shift.date)
@@ -21,7 +29,7 @@ const getJobDate = (jobId: string, shifts: any[], completed: boolean) => {
   const pastDates = dates.filter((date) => date <= today);
   return completed
     ? {
-        label: pastDates.length ? "Last shift" : "Scheduled date",
+        label: pastDates.length ? "Last shift" : "Date on record",
         date: pastDates.at(-1) ?? dates[0],
       }
     : {
@@ -29,7 +37,6 @@ const getJobDate = (jobId: string, shifts: any[], completed: boolean) => {
         date: dates.find((date) => date >= today) ?? dates.at(-1) ?? dates[0],
       };
 };
-
 const getGreeting = () => {
   const hour = Number(
     new Intl.DateTimeFormat("en-GB", {
@@ -81,11 +88,11 @@ export const ThirdPartyDashboardPage: React.FC = () => {
   const activeJobs = assignedJobs.filter((job) => !isCompletedJob(job));
   const completedJobs = assignedJobs.filter(isCompletedJob);
   const nextJob =
-    [...activeJobs].sort((a, b) => {
-      const aDate = getJobDate(a.id, shifts, false)?.date ?? "9999-12-31";
-      const bDate = getJobDate(b.id, shifts, false)?.date ?? "9999-12-31";
-      return aDate.localeCompare(bDate);
-    })[0] ?? null;
+    [...activeJobs].sort((a, b) =>
+      (getJobDate(a.id, shifts)?.date ?? "9999-12-31").localeCompare(
+        getJobDate(b.id, shifts)?.date ?? "9999-12-31",
+      ),
+    )[0] ?? null;
   const expiringCertificateCount = workers.reduce(
     (count, worker) =>
       count +
@@ -98,6 +105,10 @@ export const ThirdPartyDashboardPage: React.FC = () => {
   const assignedStaffForJob = (jobId: string) =>
     workers.filter((worker) =>
       shifts.some((shift) => shift.jobId === jobId && shift.workerId === worker.id),
+    );
+  const hasAttention = (worker: (typeof workers)[number]) =>
+    getCurrentTickets(worker.tickets ?? []).some((ticket) =>
+      ["EXPIRED", "EXPIRING_SOON"].includes(getTicketStatus(ticket)),
     );
 
   if (dataLoading)
@@ -119,20 +130,28 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             {getGreeting()}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Your partner access is active. Assigned sites appear here automatically; completed sites
-            are view-only.
+            Manage your people and assigned work from one place.
           </p>
         </div>
-        <Link
-          to="/portal/third-party/jobs"
-          className="rounded-xl bg-primary px-5 py-3 text-center text-xs font-black uppercase tracking-widest text-primary-foreground"
-        >
-          View assigned sites <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
-        </Link>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Link
+            to="/portal/third-party/staff?add=1"
+            className="rounded-xl bg-primary px-5 py-3 text-center text-xs font-black uppercase tracking-widest text-primary-foreground"
+          >
+            <Plus className="mr-1 inline h-3.5 w-3.5" />
+            Add staff member
+          </Link>
+          <Link
+            to="/portal/third-party/jobs"
+            className="rounded-xl border border-border px-5 py-3 text-center text-xs font-black uppercase tracking-widest hover:border-primary"
+          >
+            View assigned sites <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
+          </Link>
+        </div>
       </header>
       <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-        {activeJobs.length} active sites · {completedJobs.length} completed · {workers.length}{" "}
-        approved staff
+        {workers.length} approved staff · {pendingCount} pending submissions · {activeJobs.length}{" "}
+        active sites
       </p>
 
       {actionCount > 0 && (
@@ -177,130 +196,157 @@ export const ThirdPartyDashboardPage: React.FC = () => {
         </section>
       )}
 
-      <section className="rounded-2xl border-2 border-border bg-card p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-              Next scheduled site
-            </p>
-            {nextJob ? (
-              <>
-                <h2 className="mt-1 text-xl font-black">{nextJob.siteName}</h2>
-                <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                  <MapPin className="h-3 w-3" />
-                  {nextJob.postcode}
-                </p>
-              </>
-            ) : (
-              <h2 className="mt-1 text-xl font-black">No active sites assigned</h2>
+      <div className="grid gap-5 lg:grid-cols-2">
+        <section className="rounded-2xl border-2 border-border bg-card p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                People
+              </p>
+              <h2 className="mt-1 text-xl font-black">Your staff</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Submit people for review and keep their records current.
+              </p>
+            </div>
+            <Users className="h-5 w-5 text-primary" />
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-2">
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Approved
+              </p>
+              <p className="mt-2 text-2xl font-black">{workers.length}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">staff records</p>
+            </div>
+            <div className="rounded-lg border border-border p-3">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Pending
+              </p>
+              <p className="mt-2 text-2xl font-black">{pendingCount}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">submissions</p>
+            </div>
+          </div>
+          <div className="mt-4 space-y-2">
+            {workers.slice(0, 3).map((worker) => (
+              <Link
+                key={worker.id}
+                to="/portal/third-party/staff"
+                className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3 hover:border-primary"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-bold">{worker.name}</span>
+                  <span className="mt-1 block truncate text-xs text-muted-foreground">
+                    {worker.role}
+                  </span>
+                </span>
+                <span
+                  className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${hasAttention(worker) ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
+                >
+                  {hasAttention(worker) ? "Attention" : "Current"}
+                </span>
+              </Link>
+            ))}
+            {!workers.length && (
+              <p className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
+                No approved staff yet. Add your first staff member to get started.
+              </p>
             )}
           </div>
-          {nextJob && (
-            <span
-              className={`rounded-full px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${["pending", "on-hold"].includes(String(nextJob.status).toLowerCase()) ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
-            >
-              {statusLabel(nextJob.status)}
-            </span>
-          )}
-        </div>
-        {nextJob ? (
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-lg border border-border p-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                {getJobDate(nextJob.id, shifts, false)?.label ?? "Shift date"}
-              </p>
-              <p className="mt-2 text-lg font-black">
-                {getJobDate(nextJob.id, shifts, false)?.date
-                  ? formatUKDate(getJobDate(nextJob.id, shifts, false)!.date)
-                  : "Not set"}
-              </p>
-            </div>
-            <div className="rounded-lg border border-border p-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Assigned staff
-              </p>
-              <p className="mt-2 text-lg font-black">{assignedStaffForJob(nextJob.id).length}</p>
-              <p className="mt-1 text-[10px] text-muted-foreground">approved workers</p>
-            </div>
-            <div className="rounded-lg border border-border p-3">
-              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                Site record
-              </p>
-              <p className="mt-2 text-lg font-black">{nextJob.currentPours ?? 0} pours</p>
-              <p className="mt-1 text-[10px] text-muted-foreground">current value</p>
-            </div>
-          </div>
-        ) : (
-          <p className="mt-4 text-sm text-muted-foreground">
-            Completed sites remain available in Assigned sites.
-          </p>
-        )}
-        {nextJob && (
-          <div className="mt-5 flex justify-end">
-            <Link
-              to={`/portal/third-party/jobs/${nextJob.id}`}
-              className="rounded-lg border border-border px-4 py-2 text-xs font-black uppercase tracking-widest hover:border-primary"
-            >
-              Open site record <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
-            </Link>
-          </div>
-        )}
-      </section>
-
-      <section className="rounded-2xl border-2 border-border bg-card p-5">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-              Your work
-            </p>
-            <h2 className="mt-1 text-lg font-black">Active sites</h2>
-          </div>
           <Link
-            to="/portal/third-party/jobs"
-            className="text-xs font-black uppercase tracking-widest text-primary"
+            to="/portal/third-party/staff"
+            className="mt-4 block text-xs font-black uppercase tracking-widest text-primary"
           >
-            View all →
+            View all staff →
           </Link>
-        </div>
-        {activeJobs.length ? (
+        </section>
+
+        <section className="rounded-2xl border-2 border-border bg-card p-5">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary">Sites</p>
+              <h2 className="mt-1 text-xl font-black">Assigned work</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Open a site to view its people, files, photos, and conversation.
+              </p>
+            </div>
+            <MapPin className="h-5 w-5 text-primary" />
+          </div>
+          {nextJob ? (
+            <div className="mt-5 rounded-xl border border-primary/40 bg-primary/5 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                    Next scheduled site
+                  </p>
+                  <p className="mt-1 truncate text-sm font-black">{nextJob.siteName}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {nextJob.postcode} · {getJobDate(nextJob.id, shifts)?.label}{" "}
+                    {formatUKDate(getJobDate(nextJob.id, shifts)!.date)}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200">
+                  {statusLabel(nextJob.status)}
+                </span>
+              </div>
+              <Link
+                to={`/portal/third-party/jobs/${nextJob.id}`}
+                className="mt-4 inline-flex items-center text-xs font-black uppercase tracking-widest text-primary"
+              >
+                Open site record <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
+            </div>
+          ) : (
+            <div className="mt-5 flex items-start gap-3 rounded-xl border border-dashed border-border p-4">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <div>
+                <p className="text-sm font-bold">No active sites assigned</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Completed sites remain available in site history.
+                </p>
+              </div>
+            </div>
+          )}
           <div className="mt-4 space-y-2">
-            {activeJobs.slice(0, 4).map((job) => {
-              const date = getJobDate(job.id, shifts, false);
-              return (
-                <Link
-                  key={job.id}
-                  to={`/portal/third-party/jobs/${job.id}`}
-                  className="flex flex-col gap-2 rounded-lg border border-border px-3 py-3 hover:border-primary sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <span>
-                    <span className="block text-sm font-bold">{job.siteName}</span>
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      {date ? `${date.label} · ${formatUKDate(date.date)}` : "No shift date"} ·{" "}
-                      {job.postcode}
-                    </span>
+            {activeJobs.slice(0, 3).map((job) => (
+              <Link
+                key={job.id}
+                to={`/portal/third-party/jobs/${job.id}`}
+                className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3 hover:border-primary"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-bold">{job.siteName}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {getJobDate(job.id, shifts)?.date
+                      ? `${getJobDate(job.id, shifts)?.label} · ${formatUKDate(getJobDate(job.id, shifts)!.date)}`
+                      : "No shift date"}
                   </span>
-                  <span className="self-start rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200">
-                    {statusLabel(job.status)}
-                  </span>
-                </Link>
-              );
-            })}
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
+              </Link>
+            ))}
           </div>
-        ) : (
-          <div className="mt-4 flex items-center gap-3 rounded-lg border border-dashed border-border p-4 text-sm text-muted-foreground">
-            <CheckCircle2 className="h-4 w-4" />
-            No active sites currently assigned.
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <Link
+              to="/portal/third-party/jobs"
+              className="text-xs font-black uppercase tracking-widest text-primary"
+            >
+              View assigned sites →
+            </Link>
+            {completedJobs.length > 0 && (
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                {completedJobs.length} completed in history
+              </span>
+            )}
           </div>
-        )}
-      </section>
+        </section>
+      </div>
       {completedJobs.length > 0 && (
         <Link
           to="/portal/third-party/jobs"
           className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary"
         >
           <CalendarDays className="h-3.5 w-3.5" />
-          {completedJobs.length} completed site{completedJobs.length === 1 ? "" : "s"} available in
-          history
+          Completed sites are view-only
         </Link>
       )}
     </div>

@@ -164,7 +164,6 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
       const { error } = await supabase.functions.invoke("send-final-bill", {
         body: {
           finalBillId: id,
-          toEmail: clientInfo.email.trim(),
           clientName: clientInfo.entity,
           siteName: clientInfo.site,
           postcode: clientInfo.postcode,

@@ -93,7 +93,9 @@ export const ThirdPartyPortalPage: React.FC = () => {
   const [ticketStaffId, setTicketStaffId] = useState<string | null>(null);
   const [certificatePanelMode, setCertificatePanelMode] = useState<CertificatePanelMode>("add");
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
-  const [showAddStaff, setShowAddStaff] = useState(false);
+  const [showAddStaff, setShowAddStaff] = useState(
+    () => new URLSearchParams(window.location.search).get("add") === "1",
+  );
   const [staffSearch, setStaffSearch] = useState("");
   const [staffFilter, setStaffFilter] = useState<"all" | "attention">("all");
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);

@@ -202,6 +202,17 @@ export const ThirdPartyPortalPage: React.FC = () => {
     setTicketFile(null);
   };
 
+  const viewCertificateDocument = async (path?: string) => {
+    if (!path) return toast.error("This certificate file is not available");
+    const { data, error } = await supabase.storage
+      .from("third-party-staff-documents")
+      .createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) {
+      return toast.error(error?.message || "Unable to open certificate file");
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
   const uploadTicket = async (submissionId: string | null, staffId: string | null = null) => {
     if (!submissionId || !ticketFile || !user || !profile?.tenant_id) return;
     if (!ticketType.trim()) {
@@ -691,18 +702,31 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                         : ""}
                                     </p>
                                   </div>
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      openCertificatePanel(selectedWorker.id, "replace", {
-                                        ...ticket,
-                                        fileName: document?.name,
-                                      })
-                                    }
-                                    className="shrink-0 text-xs font-black text-primary"
-                                  >
-                                    Replace
-                                  </button>
+                                  <div className="flex shrink-0 gap-2">
+                                    {ticket.documentUrl && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          void viewCertificateDocument(ticket.documentUrl)
+                                        }
+                                        className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-black hover:border-primary"
+                                      >
+                                        View
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        openCertificatePanel(selectedWorker.id, "replace", {
+                                          ...ticket,
+                                          fileName: document?.name,
+                                        })
+                                      }
+                                      className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-black text-primary hover:border-primary"
+                                    >
+                                      Replace
+                                    </button>
+                                  </div>
                                 </div>
                               );
                             })

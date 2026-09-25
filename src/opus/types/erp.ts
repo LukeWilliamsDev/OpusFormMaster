@@ -63,6 +63,7 @@ export interface Worker {
     name: string;
     size: string;
     uploadedAt: string;
+    documentUrl?: string;
   }[];
   isArchived?: boolean;
 }

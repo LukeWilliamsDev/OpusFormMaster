@@ -74,6 +74,7 @@ type WorkerEditDraft = {
   phone: string;
   postcode: string;
 };
+type CertificatePanelMode = "add" | "replace";
 
 export const ThirdPartyPortalPage: React.FC = () => {
   const { user, profile, workers, setWorkers, dataLoading } = usePortal();
@@ -88,6 +89,8 @@ export const ThirdPartyPortalPage: React.FC = () => {
   const [ticketFile, setTicketFile] = useState<File | null>(null);
   const [uploadingTicket, setUploadingTicket] = useState(false);
   const [ticketStaffId, setTicketStaffId] = useState<string | null>(null);
+  const [certificatePanelMode, setCertificatePanelMode] = useState<CertificatePanelMode>("add");
+  const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [showAddStaff, setShowAddStaff] = useState(false);
 
   const loadSubmissions = async () => {
@@ -148,6 +151,30 @@ export const ThirdPartyPortalPage: React.FC = () => {
     toast.success("Staff member submitted for approval");
   };
 
+  const openCertificatePanel = (
+    staffId: string,
+    mode: CertificatePanelMode,
+    ticket: any | null = null,
+  ) => {
+    setTicketStaffId(staffId);
+    setCertificatePanelMode(mode);
+    setSelectedTicket(ticket);
+    setTicketType(ticket?.type ?? "");
+    setTicketNumber(ticket?.ticketNumber ?? "");
+    setTicketExpiry("");
+    setTicketFile(null);
+  };
+
+  const closeCertificatePanel = () => {
+    setTicketStaffId(null);
+    setSelectedTicket(null);
+    setCertificatePanelMode("add");
+    setTicketType("");
+    setTicketNumber("");
+    setTicketExpiry("");
+    setTicketFile(null);
+  };
+
   const uploadTicket = async (submissionId: string | null, staffId: string | null = null) => {
     if (!submissionId || !ticketFile || !user || !profile?.tenant_id) return;
     if (!ticketType.trim()) {
@@ -185,7 +212,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
     setTicketType("");
     setTicketNumber("");
     setTicketExpiry("");
-    setTicketStaffId(null);
+    closeCertificatePanel();
     if (staffId) {
       const { data: refreshedStaff } = await db
         .from("staff")
@@ -490,10 +517,10 @@ export const ThirdPartyPortalPage: React.FC = () => {
                           (submission) => submission.approved_staff_id === worker.id,
                         ) && (
                           <button
-                            onClick={() => setTicketStaffId(worker.id)}
+                            onClick={() => openCertificatePanel(worker.id, "add")}
                             className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest"
                           >
-                            Add or renew certificate
+                            Add another certificate
                           </button>
                         )}
                       </div>
@@ -526,24 +553,24 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                         ? "Expiring"
                                         : "Valid"}
                                   </span>
-                                  {document?.name && (
-                                    <span className="ml-2 truncate text-muted-foreground">
-                                      {document.name}
-                                    </span>
-                                  )}
+                                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                                    {document?.name || "No file attached"}
+                                    {ticket.expiryDate
+                                      ? ` · expires ${formatUKDate(ticket.expiryDate)}`
+                                      : ""}
+                                  </p>
                                 </div>
                                 <button
                                   type="button"
-                                  onClick={() => {
-                                    setTicketStaffId(worker.id);
-                                    setTicketType(ticket.type);
-                                    setTicketNumber(ticket.ticketNumber ?? "");
-                                    setTicketExpiry("");
-                                    setTicketFile(null);
-                                  }}
+                                  onClick={() =>
+                                    openCertificatePanel(worker.id, "replace", {
+                                      ...ticket,
+                                      fileName: document?.name,
+                                    })
+                                  }
                                   className="shrink-0 font-black text-primary underline decoration-current/40 underline-offset-2 hover:decoration-current"
                                 >
-                                  Renew
+                                  Replace
                                 </button>
                               </div>
                             );
@@ -558,60 +585,120 @@ export const ThirdPartyPortalPage: React.FC = () => {
         </section>
 
         {ticketStaffId && (
-          <section className="rounded-2xl border-2 border-border bg-card p-5">
-            <h2 className="text-sm font-black uppercase tracking-widest">
-              Add or renew certificate for{" "}
-              {workers.find((worker) => worker.id === ticketStaffId)?.name}
-            </h2>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Uploading a renewal creates a new record. Previous files remain available to Opus Form
-              for audit history.
-            </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <input
-                list="certificate-types"
-                value={ticketType}
-                onChange={(e) => setTicketType(e.target.value)}
-                placeholder="Type or select certificate"
-                required
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-              />
-              <input
-                value={ticketNumber}
-                onChange={(e) => setTicketNumber(e.target.value)}
-                placeholder="Certificate number"
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-              />
-              <input
-                type="date"
-                value={ticketExpiry}
-                onChange={(e) => setTicketExpiry(e.target.value)}
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-              />
-              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm">
-                <FileUp className="h-4 w-4" />
-                {ticketFile?.name || "Choose file"}
+          <section className="rounded-2xl border-2 border-primary/60 bg-card p-5 shadow-sm ring-4 ring-primary/5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  Certificate update
+                </p>
+                <h2 className="mt-1 text-xl font-black">
+                  {certificatePanelMode === "replace"
+                    ? `Replace ${ticketType} certificate`
+                    : `Add a certificate for ${workers.find((worker) => worker.id === ticketStaffId)?.name}`}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {certificatePanelMode === "replace"
+                    ? `The new file will become the current ${ticketType} record.`
+                    : "Add a new certificate type to this staff record."}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close certificate panel"
+                onClick={closeCertificatePanel}
+                className="text-2xl leading-none text-muted-foreground hover:text-foreground"
+              >
+                ×
+              </button>
+            </div>
+            {certificatePanelMode === "replace" && selectedTicket && (
+              <div className="mt-4 rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground">
+                <p className="font-black uppercase tracking-widest text-foreground">
+                  Current record
+                </p>
+                <p className="mt-1">
+                  {selectedTicket.fileName || "Current certificate file"}
+                  {selectedTicket.expiryDate
+                    ? ` · expires ${formatUKDate(selectedTicket.expiryDate)}`
+                    : ""}
+                </p>
+              </div>
+            )}
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="text-xs font-bold text-muted-foreground">
+                Certificate number
                 <input
-                  type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  className="hidden"
-                  onChange={(e) => setTicketFile(e.target.files?.[0] ?? null)}
+                  value={ticketNumber}
+                  onChange={(e) => setTicketNumber(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                />
+              </label>
+              <label className="text-xs font-bold text-muted-foreground">
+                New expiry date
+                <input
+                  type="date"
+                  value={ticketExpiry}
+                  onChange={(e) => setTicketExpiry(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
                 />
               </label>
             </div>
-            <button
-              onClick={() =>
-                uploadTicket(
-                  submissions.find((submission) => submission.approved_staff_id === ticketStaffId)
-                    ?.id ?? null,
-                  ticketStaffId,
-                )
-              }
-              disabled={uploadingTicket || !ticketFile}
-              className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
-            >
-              {uploadingTicket ? "Uploading..." : "Upload certificate"}
-            </button>
+            {certificatePanelMode === "add" && (
+              <label className="mt-3 block text-xs font-bold text-muted-foreground">
+                Certificate type
+                <input
+                  list="certificate-types"
+                  value={ticketType}
+                  onChange={(e) => setTicketType(e.target.value)}
+                  placeholder="Type or select certificate"
+                  required
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                />
+              </label>
+            )}
+            <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-primary/60 bg-primary/5 px-4 py-4 text-sm text-primary hover:bg-primary/10">
+              <FileUp className="h-5 w-5" />
+              <span>
+                <strong className="block">{ticketFile?.name || "Choose a PDF or image"}</strong>
+                <small className="text-xs text-muted-foreground">Maximum 10 MB</small>
+              </span>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={(e) => setTicketFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
+            <p className="mt-3 text-xs text-muted-foreground">
+              The previous file stays in Opus Form’s audit history and will not be shown as the
+              current certificate.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeCertificatePanel}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() =>
+                  uploadTicket(
+                    submissions.find((submission) => submission.approved_staff_id === ticketStaffId)
+                      ?.id ?? null,
+                    ticketStaffId,
+                  )
+                }
+                disabled={uploadingTicket || !ticketFile || !ticketType.trim()}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {uploadingTicket
+                  ? "Uploading..."
+                  : certificatePanelMode === "replace"
+                    ? "Upload renewal"
+                    : "Add certificate"}
+              </button>
+            </div>
           </section>
         )}
       </div>

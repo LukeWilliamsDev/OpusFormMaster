@@ -112,8 +112,6 @@ export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coor
 export const FIELD_ROLES: AppRole[] = ["logistics_assistant", "site_foreman", "labourer"];
 // Field users may see only the shifts assigned to their own staff record.
 export const ASSIGNED_SHIFT_ROLES: AppRole[] = ["site_foreman", "labourer"];
-// Roles permitted to prepare and send client documents.
-export const DOCUMENT_SEND_ROLES: AppRole[] = [...MANAGEMENT_ROLES];
 // Full schedule visibility without granting operational write access.
 export const SCHEDULE_ROLES: AppRole[] = [
   "admin",
@@ -242,6 +240,8 @@ interface PortalContextType {
   isAuthenticated: boolean;
   authLoading: boolean;
   dataLoading: boolean;
+  dataError: string | null;
+  reloadPortalData: () => void;
   session: Session | null;
   user: User | null;
   role: AppRole | null;
@@ -286,6 +286,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [dataError, setDataError] = useState<string | null>(null);
+  const [dataLoadAttempt, setDataLoadAttempt] = useState(0);
 
   // Theme Management
   const [theme, setThemeState] = useState<"dark" | "light">(() => {
@@ -376,6 +378,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setShifts([]);
         setCalendarEvents([]);
         setDataLoading(true);
+        setDataError(null);
       }
     });
 
@@ -417,14 +420,9 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (cancelled) return;
       if (error) {
         console.error("Failed to load profile", error);
-        setRole("labourer");
-        setProfileState({
-          full_name: "",
-          phone_number: "",
-          avatar_url: "",
-          tenant_id: "",
-          must_change_password: false,
-        });
+        setRole(null);
+        setProfileState(null);
+        setDataError("We could not verify your portal access. Please try again.");
       } else {
         setRole((data?.role as AppRole) ?? "labourer");
         setProfileState({
@@ -467,6 +465,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     let cancelled = false;
     (async () => {
       setDataLoading(true);
+      setDataError(null);
       const startStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
       const endStr = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
       const [wRes, jRes, sRes, ceRes] = await Promise.all([
@@ -482,6 +481,19 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (jRes.error) console.error("load jobs", jRes.error);
       if (sRes.error) console.error("load shifts", sRes.error);
       if (ceRes.error) console.error("load calendar events", ceRes.error);
+      const failedResources = [
+        wRes.error && "staff",
+        jRes.error && "sites",
+        sRes.error && "assignments",
+        ceRes.error && "calendar",
+      ].filter(Boolean) as string[];
+      if (failedResources.length) {
+        setDataError(
+          `We could not load ${failedResources.join(", ")}. Check your connection and try again.`,
+        );
+        setDataLoading(false);
+        return;
+      }
       const wList = (wRes.data ?? []).map(rowToWorker);
       const jList = (jRes.data ?? []).map(rowToJob);
       const sList = (sRes.data ?? []).map(rowToShift);
@@ -520,7 +532,9 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // to fingerprint already-loaded rows; adding it would re-run this whole
     // fetch a second time once the profile loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, role]);
+  }, [user, role, dataLoadAttempt]);
+
+  const reloadPortalData = () => setDataLoadAttempt((attempt) => attempt + 1);
 
   // Keep the roster live: anonymous submissions (e.g. the credential portal)
   // write to `staff` outside this session's own upsert loop below, so without
@@ -959,6 +973,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isAuthenticated: !!session,
         authLoading,
         dataLoading,
+        dataError,
+        reloadPortalData,
         session,
         user,
         role,

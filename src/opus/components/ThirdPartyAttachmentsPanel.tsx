@@ -155,6 +155,7 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
                     value={renameValue}
                     onChange={(event) => setRenameValue(event.target.value)}
                     onKeyDown={(event) => event.key === "Enter" && void saveRename()}
+                    aria-label={`New name for ${file.file_name}`}
                     className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-xs"
                     autoFocus
                   />

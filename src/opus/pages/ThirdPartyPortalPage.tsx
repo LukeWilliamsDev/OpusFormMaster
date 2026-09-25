@@ -6,6 +6,7 @@ import { usePortal } from "../context/PortalContext";
 import { STAFF_ROLES } from "../types/erp";
 import { formatUKDate } from "../utils/week";
 import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
+import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
 import { supabase } from "../../integrations/supabase/client";
 
 const db = supabase as any;
@@ -79,7 +80,17 @@ type WorkerEditDraft = {
 type CertificatePanelMode = "add" | "replace";
 
 export const ThirdPartyPortalPage: React.FC = () => {
-  const { user, profile, workers, setWorkers, jobs, shifts, dataLoading } = usePortal();
+  const {
+    user,
+    profile,
+    workers,
+    setWorkers,
+    jobs,
+    shifts,
+    dataLoading,
+    dataError,
+    reloadPortalData,
+  } = usePortal();
   const location = useLocation();
   const navigate = useNavigate();
   const { staffId } = useParams<{ staffId?: string }>();
@@ -181,6 +192,14 @@ export const ThirdPartyPortalPage: React.FC = () => {
             <div key={item} className="h-32 animate-pulse rounded-2xl bg-muted" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (dataError) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+        <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
       </div>
     );
   }
@@ -1106,6 +1125,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                 list="certificate-types"
                 value={ticketType}
                 onChange={(e) => setTicketType(e.target.value)}
+                aria-label="Certificate type"
                 placeholder="Type or select certificate"
                 required
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
@@ -1113,6 +1133,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
               <input
                 value={ticketNumber}
                 onChange={(e) => setTicketNumber(e.target.value)}
+                aria-label="Certificate number"
                 placeholder="Certificate number"
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
               />
@@ -1120,6 +1141,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                 type="date"
                 value={ticketExpiry}
                 onChange={(e) => setTicketExpiry(e.target.value)}
+                aria-label="Certificate expiry date"
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
               />
               <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm">

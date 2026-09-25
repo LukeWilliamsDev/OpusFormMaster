@@ -5,6 +5,7 @@ import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
 import { formatUKDate, toLondonISODate } from "../utils/week";
 import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
+import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
 
 const db = supabase as any;
 const isCompletedJob = (job: any) =>
@@ -41,7 +42,7 @@ const getGreeting = () => {
 };
 
 export const ThirdPartyDashboardPage: React.FC = () => {
-  const { workers, jobs, shifts, dataLoading } = usePortal();
+  const { workers, jobs, shifts, dataLoading, dataError, reloadPortalData } = usePortal();
   const [pendingCount, setPendingCount] = useState(0);
   const [unansweredCount, setUnansweredCount] = useState(0);
   const [unansweredJobId, setUnansweredJobId] = useState<string | null>(null);
@@ -116,6 +117,14 @@ export const ThirdPartyDashboardPage: React.FC = () => {
         <div className="h-72 animate-pulse rounded-2xl bg-muted" />
       </div>
     );
+
+  if (dataError) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+        <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 pb-28 sm:px-6 lg:py-12 lg:pb-12 2xl:max-w-[1500px]">

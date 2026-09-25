@@ -2,6 +2,7 @@ import React, { useMemo, useState } from "react";
 import { ArrowRight, ChevronRight, MapPin, Search } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
+import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
 import { formatUKDate, toLondonISODate } from "../utils/week";
 
 const isCompletedJob = (job: any) =>
@@ -41,7 +42,7 @@ const buildListQuery = (search: string, filter: SiteFilter) => {
 };
 
 export const ThirdPartyJobsPage: React.FC = () => {
-  const { workers, jobs, shifts, dataLoading } = usePortal();
+  const { workers, jobs, shifts, dataLoading, dataError, reloadPortalData } = usePortal();
   const location = useLocation();
   const navigate = useNavigate();
   const initialParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
@@ -97,6 +98,14 @@ export const ThirdPartyJobsPage: React.FC = () => {
       <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="h-80 animate-pulse rounded-2xl bg-muted" />
+      </div>
+    );
+  }
+
+  if (dataError) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+        <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
       </div>
     );
   }

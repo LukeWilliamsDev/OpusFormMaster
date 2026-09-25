@@ -146,6 +146,7 @@ export const ThirdPartyNotesPanel: React.FC<{
                     onChange={(event) =>
                       setReplyDrafts((current) => ({ ...current, [note.id]: event.target.value }))
                     }
+                    aria-label={`Reply to note from ${formatUKDate(note.created_at?.slice(0, 10))}`}
                     placeholder="Reply to this note..."
                     className="min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-xs"
                   />

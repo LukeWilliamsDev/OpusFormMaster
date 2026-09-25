@@ -1,16 +1,5 @@
 import React, { useMemo, useState } from "react";
-import {
-  AlertCircle,
-  CalendarDays,
-  Check,
-  ChevronRight,
-  FileUp,
-  Loader,
-  MapPin,
-  Plus,
-  Search,
-  Send,
-} from "lucide-react";
+import { AlertCircle, Check, ChevronRight, FileUp, Loader, Plus, Search, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
@@ -316,7 +305,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
         </button>
       </header>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="hidden grid gap-4 md:grid-cols-3">
         {[
           ["Approved staff", workers.length, "visible to Opus Form"],
           ["Pending submissions", pendingSubmissions.length, "waiting for review"],
@@ -337,53 +326,126 @@ export const ThirdPartyPortalPage: React.FC = () => {
 
       <div className="space-y-8">
         {showAddStaff && (
-          <section className="rounded-2xl border-2 border-border bg-card p-5">
-            <div className="mb-4 flex items-center gap-2">
-              <Plus className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-black uppercase tracking-widest">
-                Submit staff for approval
-              </h2>
+          <section className="rounded-2xl border-2 border-primary/50 bg-card p-5 shadow-sm ring-4 ring-primary/5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  People and approvals
+                </p>
+                <h2 className="mt-1 text-2xl font-black">Submit staff member</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Add someone to your team for Opus Form to review.
+                </p>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                1 of 1 · Staff details
+              </span>
             </div>
-            <form onSubmit={submitStaff} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {(["name", "email", "phone", "postcode"] as const).map((field) => (
-                <input
-                  key={field}
-                  required={field === "name"}
-                  value={form[field]}
-                  onChange={(e) => setField(field, e.target.value)}
-                  aria-label={field[0].toUpperCase() + field.slice(1)}
-                  placeholder={field[0].toUpperCase() + field.slice(1)}
-                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
-              ))}
-              <select
-                value={form.role}
-                onChange={(e) => setField("role", e.target.value)}
-                aria-label="Staff role"
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-              >
-                {STAFF_ROLES.map((role) => (
-                  <option key={role}>{role}</option>
-                ))}
-              </select>
-              <input
-                value={form.notes}
-                onChange={(e) => setField("notes", e.target.value)}
-                aria-label="Notes"
-                placeholder="Notes (optional)"
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-              />
-              <button
-                disabled={submitting}
-                className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50 sm:col-span-2 lg:col-span-1"
-              >
-                {submitting ? (
-                  <Loader className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Send className="h-4 w-4" />
-                )}{" "}
-                Submit for approval
-              </button>
+            <form onSubmit={submitStaff} className="mt-6 space-y-6">
+              <div>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-black">About the person</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Use the name and role shown on their work records.
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">
+                    Required fields marked *
+                  </span>
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="text-xs font-bold text-muted-foreground">
+                    Full name *
+                    <input
+                      required
+                      value={form.name}
+                      onChange={(e) => setField("name", e.target.value)}
+                      aria-label="Full name"
+                      placeholder="e.g. Alex Morgan"
+                      className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    />
+                  </label>
+                  <label className="text-xs font-bold text-muted-foreground">
+                    Role *
+                    <select
+                      value={form.role}
+                      onChange={(e) => setField("role", e.target.value)}
+                      aria-label="Staff role"
+                      className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    >
+                      {STAFF_ROLES.map((role) => (
+                        <option key={role}>{role}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div className="border-t border-border pt-5">
+                <h3 className="text-sm font-black">Contact details</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  These details help us match the person to the correct records.
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {(
+                    [
+                      ["email", "Email address", "name@company.com"],
+                      ["phone", "Phone number", "07..."],
+                      ["postcode", "Postcode", "M1 1AA"],
+                    ] as const
+                  ).map(([field, label, placeholder]) => (
+                    <label key={field} className="text-xs font-bold text-muted-foreground">
+                      {label}
+                      <input
+                        value={form[field]}
+                        onChange={(e) => setField(field, e.target.value)}
+                        aria-label={label}
+                        placeholder={placeholder}
+                        className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                      />
+                    </label>
+                  ))}
+                  <label className="text-xs font-bold text-muted-foreground">
+                    Notes <span className="font-normal">Optional</span>
+                    <textarea
+                      value={form.notes}
+                      onChange={(e) => setField("notes", e.target.value)}
+                      aria-label="Notes"
+                      placeholder="Anything Opus Form should know"
+                      className="mt-1 min-h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    />
+                  </label>
+                </div>
+              </div>
+              <div className="flex gap-3 rounded-xl bg-primary/5 p-4 text-xs text-muted-foreground">
+                <AlertCircle className="h-5 w-5 shrink-0 text-primary" />
+                <p>
+                  <strong className="text-foreground">What happens next?</strong>
+                  <br />
+                  Submit this person for review. After submission, you can add their certificates
+                  and supporting documents.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 border-t border-border pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowAddStaff(false)}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={submitting}
+                  className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}{" "}
+                  Submit for approval
+                </button>
+              </div>
             </form>
           </section>
         )}
@@ -707,33 +769,35 @@ export const ThirdPartyPortalPage: React.FC = () => {
           </div>
         </section>
 
-        <section className="space-y-3">
-          <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-            Pending submissions
-          </h2>
-          {pendingSubmissions.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-              No pending submissions.
-            </p>
-          ) : (
-            pendingSubmissions.map((submission) => (
-              <div
-                key={submission.id}
-                className="flex items-center justify-between rounded-2xl border-2 border-border bg-card p-4"
-              >
-                <div>
-                  <p className="font-bold">{submission.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {submission.role} · {formatUKDate(submission.created_at?.slice(0, 10))}
-                  </p>
+        {pendingSubmissions.length > 0 && (
+          <section className="space-y-3">
+            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+              Pending submissions
+            </h2>
+            {pendingSubmissions.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                No pending submissions.
+              </p>
+            ) : (
+              pendingSubmissions.map((submission) => (
+                <div
+                  key={submission.id}
+                  className="flex items-center justify-between rounded-2xl border-2 border-border bg-card p-4"
+                >
+                  <div>
+                    <p className="font-bold">{submission.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {submission.role} · {formatUKDate(submission.created_at?.slice(0, 10))}
+                    </p>
+                  </div>
+                  <span className="rounded-lg border border-primary/60 bg-primary/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-primary">
+                    {submission.status}
+                  </span>
                 </div>
-                <span className="rounded-lg border border-primary/60 bg-primary/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-primary">
-                  {submission.status}
-                </span>
-              </div>
-            ))
-          )}
-        </section>
+              ))
+            )}
+          </section>
+        )}
 
         {lastSubmissionId && (
           <section className="rounded-2xl border-2 border-border bg-card p-5">

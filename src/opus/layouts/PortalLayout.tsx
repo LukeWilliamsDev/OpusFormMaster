@@ -55,6 +55,12 @@ export const PortalLayout: React.FC = () => {
   };
   const navigate = useNavigate();
   const location = useLocation();
+  const hideThirdPartyBottomNav =
+    role === "third_party" &&
+    /^\/portal\/third-party\/(staff\/(new|[^/]+)|sites\/[^/]+|jobs\/[^/]+)$/.test(
+      location.pathname,
+    );
+  const showThirdPartyBottomNav = role === "third_party" && !hideThirdPartyBottomNav;
 
   const handleLogoutClick = async () => {
     await signOut();
@@ -249,7 +255,7 @@ export const PortalLayout: React.FC = () => {
         </div>
       </header>
 
-      {role === "third_party" && (
+      {showThirdPartyBottomNav && (
         <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 border-t-2 border-border bg-background/95 px-2 py-2 backdrop-blur lg:hidden">
           {[
             { label: "Home", path: "/portal/third-party", icon: LayoutDashboard },
@@ -398,11 +404,11 @@ export const PortalLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <main
-        className={`flex-1 flex flex-col min-h-0 bg-background ${role === "third_party" ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}
+        className={`flex-1 flex flex-col min-h-0 bg-background ${showThirdPartyBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}
       >
         <div
           className="flex-1 w-full relative lg:min-h-0 lg:overflow-y-auto"
-          style={{ scrollPaddingBottom: role === "third_party" ? "6.5rem" : undefined }}
+          style={{ scrollPaddingBottom: showThirdPartyBottomNav ? "6.5rem" : undefined }}
         >
           <Outlet />
         </div>

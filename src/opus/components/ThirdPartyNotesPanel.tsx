@@ -21,10 +21,12 @@ export const ThirdPartyNotesPanel: React.FC<{
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const canReply = !readOnly && (INTERNAL_ROLES.has(role ?? "") || role === "third_party");
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(null);
     const { data: noteRows, error } = await db
       .from("third_party_job_notes")
       .select("id, body, author_id, created_at")
@@ -32,10 +34,11 @@ export const ThirdPartyNotesPanel: React.FC<{
       .order("created_at", { ascending: true });
     if (error) {
       setLoading(false);
+      setError(error.message || "Unable to load note history");
       return toast.error(error.message || "Unable to load note history");
     }
     const rows = noteRows ?? [];
-    const { data: replies } = rows.length
+    const { data: replies, error: repliesError } = rows.length
       ? await db
           .from("third_party_job_note_replies")
           .select("id, note_id, body, author_id, author_first_name, author_role, created_at")
@@ -45,6 +48,11 @@ export const ThirdPartyNotesPanel: React.FC<{
           )
           .order("created_at", { ascending: true })
       : { data: [] };
+    if (repliesError) {
+      setLoading(false);
+      setError(repliesError.message || "Unable to load note responses");
+      return toast.error(repliesError.message || "Unable to load note responses");
+    }
     const grouped: Record<string, any[]> = {};
     for (const reply of replies ?? []) (grouped[reply.note_id] ??= []).push(reply);
     setNotes(rows.map((note: any) => ({ ...note, replies: grouped[note.id] ?? [] })));
@@ -94,6 +102,16 @@ export const ThirdPartyNotesPanel: React.FC<{
         <div className="space-y-2">
           <div className="h-20 animate-pulse rounded-lg bg-muted" />
           <div className="h-20 animate-pulse rounded-lg bg-muted" />
+        </div>
+      ) : error ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-xs text-muted-foreground"
+        >
+          <p>{error}</p>
+          <button type="button" onClick={() => void load()} className="mt-3 font-bold text-primary">
+            Try again →
+          </button>
         </div>
       ) : notes.length === 0 ? (
         <p className="text-xs text-muted-foreground">No third-party notes.</p>

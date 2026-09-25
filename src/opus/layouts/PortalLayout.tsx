@@ -45,6 +45,7 @@ export const PortalLayout: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mainContentRef = useRef<HTMLElement>(null);
   const wasMobileMenuOpenRef = useRef(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
@@ -78,7 +79,25 @@ export const PortalLayout: React.FC = () => {
   useEffect(() => {
     if (!isMobileMenuOpen) return;
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsMobileMenuOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsMobileMenuOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = mobileMenuRef.current?.querySelectorAll<HTMLElement>(
+        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])",
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     document.addEventListener("keydown", closeOnEscape);
     return () => document.removeEventListener("keydown", closeOnEscape);
@@ -352,6 +371,7 @@ export const PortalLayout: React.FC = () => {
               className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 lg:hidden"
             />
             <motion.div
+              ref={mobileMenuRef}
               id="mobile-portal-menu"
               role="dialog"
               aria-modal="true"

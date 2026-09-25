@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ChevronRight, MapPin, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
-import { formatUKDate } from "../utils/week";
+import { formatUKDate, toLondonISODate } from "../utils/week";
 
 const isCompletedJob = (job: any) =>
   ["completed", "complete", "closed"].includes(String(job.status).toLowerCase());
@@ -19,7 +19,7 @@ const getJobDate = (jobId: string, shifts: any[], completed: boolean) => {
     .map((shift) => shift.date)
     .sort();
   if (!dates.length) return null;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLondonISODate();
   const pastDates = dates.filter((date) => date <= today);
   if (completed) {
     return {
@@ -48,6 +48,11 @@ export const ThirdPartyJobsPage: React.FC = () => {
   const activeJobs = assignedJobs.filter((job) => !isCompletedJob(job));
   const completedJobs = assignedJobs.filter(isCompletedJob);
   const attentionJobs = activeJobs.filter(needsAttention);
+  const nextActiveJob = [...activeJobs].sort((a, b) =>
+    (getJobDate(a.id, shifts, false)?.date ?? "9999-12-31").localeCompare(
+      getJobDate(b.id, shifts, false)?.date ?? "9999-12-31",
+    ),
+  )[0];
   const visibleJobs = assignedJobs.filter((job) => {
     const matchesSearch = `${job.siteName} ${job.postcode ?? ""}`
       .toLowerCase()
@@ -104,13 +109,13 @@ export const ThirdPartyJobsPage: React.FC = () => {
             Find a site quickly, then manage its record in one place.
           </p>
           <p className="mt-4 text-xs font-black uppercase tracking-widest text-muted-foreground">
-            {activeJobs.length} active · {completedJobs.length} completed · {assignedStaffCount}{" "}
+            {activeJobs.length} assigned · {completedJobs.length} completed · {assignedStaffCount}{" "}
             staff assigned
           </p>
         </div>
-        {activeJobs[0] && (
+        {nextActiveJob && (
           <Link
-            to={`/portal/third-party/jobs/${activeJobs[0].id}`}
+            to={`/portal/third-party/jobs/${nextActiveJob.id}`}
             className="rounded-xl bg-primary px-5 py-3 text-center text-xs font-black uppercase tracking-widest text-primary-foreground"
           >
             Open next site <ArrowRight className="ml-1 inline h-3.5 w-3.5" />

@@ -8,7 +8,7 @@ import { supabase } from "../../integrations/supabase/client";
 import { ThirdPartyAttachmentsPanel } from "../components/ThirdPartyAttachmentsPanel";
 import { ThirdPartyNotesPanel } from "../components/ThirdPartyNotesPanel";
 import { getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
-import { formatUKDate } from "../utils/week";
+import { formatUKDate, toLondonISODate } from "../utils/week";
 
 const db = supabase as any;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -121,7 +121,7 @@ export const ThirdPartySitePage: React.FC = () => {
     .filter((shift) => shift.jobId === job.id && shift.date)
     .map((shift) => shift.date)
     .sort();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLondonISODate();
   const pastShiftDates = shiftDates.filter((date) => date <= today);
   const siteDate = isCompletedJob(job)
     ? (pastShiftDates.at(-1) ?? shiftDates[0])

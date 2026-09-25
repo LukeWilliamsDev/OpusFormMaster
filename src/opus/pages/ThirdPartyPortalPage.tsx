@@ -101,6 +101,10 @@ export const ThirdPartyPortalPage: React.FC = () => {
   const [staffFilter, setStaffFilter] = useState<"all" | "attention">("all");
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
 
+  React.useEffect(() => {
+    setShowAddStaff(new URLSearchParams(location.search).get("add") === "1");
+  }, [location.search]);
+
   const loadSubmissions = async () => {
     const { data } = await db
       .from("third_party_staff_submissions")

@@ -43,6 +43,18 @@ export const toLocalISODate = (d: Date): string => {
   return `${y}-${m}-${day}`;
 };
 
+/** London-local YYYY-MM-DD for dates used by the portal's UK-facing schedules. */
+export const toLondonISODate = (d: Date = new Date()): string => {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(d);
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return `${values.year}-${values.month}-${values.day}`;
+};
+
 /** Parse YYYY-MM-DD as a local-midnight Date. */
 export const parseLocalISODate = (iso: string): Date => {
   const [y, m, d] = iso.split("-").map(Number);

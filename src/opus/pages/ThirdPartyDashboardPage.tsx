@@ -11,7 +11,7 @@ import {
 import { Link } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
-import { formatUKDate } from "../utils/week";
+import { formatUKDate, toLondonISODate } from "../utils/week";
 import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
 
 const db = supabase as any;
@@ -25,7 +25,7 @@ const getJobDate = (jobId: string, shifts: any[], completed = false) => {
     .map((shift) => shift.date)
     .sort();
   if (!dates.length) return null;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLondonISODate();
   const pastDates = dates.filter((date) => date <= today);
   return completed
     ? {
@@ -110,6 +110,10 @@ export const ThirdPartyDashboardPage: React.FC = () => {
     getCurrentTickets(worker.tickets ?? []).some((ticket) =>
       ["EXPIRED", "EXPIRING_SOON"].includes(getTicketStatus(ticket)),
     );
+  const statusTone = (status: string) =>
+    ["pending", "on-hold", "on hold"].includes(status.toLowerCase())
+      ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200"
+      : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200";
 
   if (dataLoading)
     return (
@@ -150,8 +154,8 @@ export const ThirdPartyDashboardPage: React.FC = () => {
         </div>
       </header>
       <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-        {workers.length} approved staff · {pendingCount} pending submissions · {activeJobs.length}{" "}
-        active sites
+        {workers.length} approved staff · {activeJobs.length} assigned sites ·{" "}
+        {completedJobs.length} completed
       </p>
 
       {actionCount > 0 && (
@@ -284,7 +288,9 @@ export const ThirdPartyDashboardPage: React.FC = () => {
                     {formatUKDate(getJobDate(nextJob.id, shifts)!.date)}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full bg-emerald-500/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200">
+                <span
+                  className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${statusTone(nextJob.status)}`}
+                >
                   {statusLabel(nextJob.status)}
                 </span>
               </div>
@@ -299,7 +305,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             <div className="mt-5 flex items-start gap-3 rounded-xl border border-dashed border-border p-4">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <div>
-                <p className="text-sm font-bold">No active sites assigned</p>
+                <p className="text-sm font-bold">No open sites assigned</p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   Completed sites remain available in site history.
                 </p>
@@ -307,23 +313,26 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             </div>
           )}
           <div className="mt-4 space-y-2">
-            {activeJobs.slice(0, 3).map((job) => (
-              <Link
-                key={job.id}
-                to={`/portal/third-party/jobs/${job.id}`}
-                className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3 hover:border-primary"
-              >
-                <span className="min-w-0">
-                  <span className="block truncate text-sm font-bold">{job.siteName}</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">
-                    {getJobDate(job.id, shifts)?.date
-                      ? `${getJobDate(job.id, shifts)?.label} · ${formatUKDate(getJobDate(job.id, shifts)!.date)}`
-                      : "No shift date"}
+            {activeJobs
+              .filter((job) => job.id !== nextJob?.id)
+              .slice(0, 3)
+              .map((job) => (
+                <Link
+                  key={job.id}
+                  to={`/portal/third-party/jobs/${job.id}`}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3 hover:border-primary"
+                >
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-bold">{job.siteName}</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      {getJobDate(job.id, shifts)?.date
+                        ? `${getJobDate(job.id, shifts)?.label} · ${formatUKDate(getJobDate(job.id, shifts)!.date)}`
+                        : "No shift date"}
+                    </span>
                   </span>
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
-              </Link>
-            ))}
+                  <ArrowRight className="h-4 w-4 shrink-0 text-primary" />
+                </Link>
+              ))}
           </div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <Link

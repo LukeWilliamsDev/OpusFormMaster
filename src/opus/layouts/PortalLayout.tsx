@@ -131,7 +131,7 @@ export const PortalLayout: React.FC = () => {
     },
     {
       name: "ASSIGNED SITES",
-      path: "/portal/third-party/jobs",
+      path: "/portal/third-party/sites",
       icon: Building2,
       roles: ["third_party"],
     },
@@ -254,7 +254,7 @@ export const PortalLayout: React.FC = () => {
           {[
             { label: "Home", path: "/portal/third-party", icon: LayoutDashboard },
             { label: "Staff", path: "/portal/third-party/staff", icon: Users },
-            { label: "Sites", path: "/portal/third-party/jobs", icon: Building2 },
+            { label: "Sites", path: "/portal/third-party/sites", icon: Building2 },
           ].map(({ label, path, icon: Icon }) => (
             <Link
               key={path}

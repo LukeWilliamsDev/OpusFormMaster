@@ -139,14 +139,14 @@ export const ThirdPartyDashboardPage: React.FC = () => {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Link
-            to="/portal/third-party/staff?add=1"
+            to="/portal/third-party/staff/new"
             className="rounded-xl bg-primary px-5 py-3 text-center text-xs font-black uppercase tracking-widest text-primary-foreground"
           >
             <Plus className="mr-1 inline h-3.5 w-3.5" />
             Add staff member
           </Link>
           <Link
-            to="/portal/third-party/jobs"
+            to="/portal/third-party/sites"
             className="rounded-xl border border-border px-5 py-3 text-center text-xs font-black uppercase tracking-widest hover:border-primary"
           >
             View assigned sites <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
@@ -187,8 +187,8 @@ export const ThirdPartyDashboardPage: React.FC = () => {
               <Link
                 to={
                   unansweredJobId
-                    ? `/portal/third-party/jobs/${unansweredJobId}`
-                    : "/portal/third-party/jobs"
+                    ? `/portal/third-party/sites/${unansweredJobId}`
+                    : "/portal/third-party/sites"
                 }
                 className="flex items-center justify-between rounded-lg border border-border px-3 py-3 text-sm hover:border-primary"
               >
@@ -295,7 +295,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
                 </span>
               </div>
               <Link
-                to={`/portal/third-party/jobs/${nextJob.id}`}
+                to={`/portal/third-party/sites/${nextJob.id}`}
                 className="mt-4 inline-flex items-center text-xs font-black uppercase tracking-widest text-primary"
               >
                 Open site record <ArrowRight className="ml-1 h-3.5 w-3.5" />
@@ -319,7 +319,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
               .map((job) => (
                 <Link
                   key={job.id}
-                  to={`/portal/third-party/jobs/${job.id}`}
+                  to={`/portal/third-party/sites/${job.id}`}
                   className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3 hover:border-primary"
                 >
                   <span className="min-w-0">
@@ -336,7 +336,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           </div>
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
             <Link
-              to="/portal/third-party/jobs"
+              to="/portal/third-party/sites"
               className="text-xs font-black uppercase tracking-widest text-primary"
             >
               View assigned sites →
@@ -351,7 +351,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
       </div>
       {completedJobs.length > 0 && (
         <Link
-          to="/portal/third-party/jobs"
+          to="/portal/third-party/sites"
           className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground hover:text-primary"
         >
           <CalendarDays className="h-3.5 w-3.5" />

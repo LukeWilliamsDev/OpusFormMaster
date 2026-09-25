@@ -209,6 +209,38 @@ export default function App() {
               }
             />
             <Route
+              path="/portal/third-party/staff/new"
+              element={
+                <RoleGuard allow={["third_party"]}>
+                  <ThirdPartyPortalPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/third-party/staff/:staffId"
+              element={
+                <RoleGuard allow={["third_party"]}>
+                  <ThirdPartyPortalPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/third-party/sites"
+              element={
+                <RoleGuard allow={["third_party"]}>
+                  <ThirdPartyJobsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/third-party/sites/:jobId"
+              element={
+                <RoleGuard allow={["third_party"]}>
+                  <ThirdPartySitePage />
+                </RoleGuard>
+              }
+            />
+            <Route
               path="/portal/third-party/jobs"
               element={
                 <RoleGuard allow={["third_party"]}>

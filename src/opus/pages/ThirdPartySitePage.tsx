@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { ArrowLeft, ChevronLeft, ChevronRight, FileUp, Send } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { usePortal } from "../context/PortalContext";
@@ -19,6 +19,7 @@ const statusLabel = (status: string) =>
 
 export const ThirdPartySitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
+  const location = useLocation();
   const { user, profile, workers, jobs, shifts, role, dataLoading } = usePortal();
   const [note, setNote] = useState("");
   const [postingNote, setPostingNote] = useState(false);
@@ -33,6 +34,7 @@ export const ThirdPartySitePage: React.FC = () => {
       item.id === jobId &&
       shifts.some((shift) => shift.jobId === item.id && ownedWorkerIds.has(shift.workerId)),
   );
+  const sitesListPath = `/portal/third-party/sites${location.search}`;
 
   React.useEffect(() => {
     if (!jobId || !user) return;
@@ -103,7 +105,7 @@ export const ThirdPartySitePage: React.FC = () => {
   if (!job) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12">
-        <Link to="/portal/third-party/jobs" className="text-sm font-bold text-primary">
+        <Link to={sitesListPath} className="text-sm font-bold text-primary">
           ← Back to assigned sites
         </Link>
         <div className="mt-8 rounded-2xl border-2 border-dashed border-border p-12 text-center text-sm text-muted-foreground">
@@ -174,7 +176,7 @@ export const ThirdPartySitePage: React.FC = () => {
   return (
     <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
       <Link
-        to="/portal/third-party/jobs"
+        to={sitesListPath}
         className="inline-flex items-center gap-2 text-xs font-bold text-primary"
       >
         <ArrowLeft className="h-3 w-3" />

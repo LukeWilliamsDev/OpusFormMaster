@@ -12,10 +12,11 @@ export const TicketStatusBadge: React.FC<TicketStatusBadgeProps> = ({ ticket }) 
   if (status === "VALID") return null;
 
   const colorClasses =
-    status === "EXPIRED"
+    status === "EXPIRED" || status === "INVALID"
       ? "bg-red-500/20 border-red-500/30 text-red-400"
       : "bg-amber-500/10 border-amber-500/20 text-amber-400 animate-pulse";
-  const statusText = status === "EXPIRED" ? "EXPIRED" : "EXPIRING";
+  const statusText =
+    status === "INVALID" ? "NEEDS REVIEW" : status === "EXPIRED" ? "EXPIRED" : "EXPIRING";
 
   return (
     <span

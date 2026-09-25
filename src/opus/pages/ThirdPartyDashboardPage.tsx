@@ -90,7 +90,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
     (count, worker) =>
       count +
       getCurrentTickets(worker.tickets ?? []).filter((ticket) =>
-        ["EXPIRED", "EXPIRING_SOON"].includes(getTicketStatus(ticket)),
+        ["EXPIRED", "EXPIRING_SOON", "INVALID"].includes(getTicketStatus(ticket)),
       ).length,
     0,
   );
@@ -100,7 +100,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
     );
   const hasAttention = (worker: (typeof workers)[number]) =>
     getCurrentTickets(worker.tickets ?? []).some((ticket) =>
-      ["EXPIRED", "EXPIRING_SOON"].includes(getTicketStatus(ticket)),
+      ["EXPIRED", "EXPIRING_SOON", "INVALID"].includes(getTicketStatus(ticket)),
     );
   const attentionWorkerCount = workers.filter(hasAttention).length;
   const firstAttentionWorker = workers.find(hasAttention);

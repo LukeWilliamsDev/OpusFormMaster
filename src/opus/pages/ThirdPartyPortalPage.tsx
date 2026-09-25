@@ -154,7 +154,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
   const hasCertificateAttention = (worker: (typeof workers)[number]) =>
     getCurrentTickets(worker.tickets ?? []).some((ticket) => {
       const status = getTicketStatus(ticket);
-      return status === "EXPIRED" || status === "EXPIRING_SOON";
+      return status === "EXPIRED" || status === "EXPIRING_SOON" || status === "INVALID";
     });
   const attentionWorkers = workers.filter(hasCertificateAttention);
   const visibleWorkers = workers.filter((worker) => {
@@ -861,13 +861,15 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                   <div className="min-w-0">
                                     <span className="font-bold">{ticket.type}</span>
                                     <span
-                                      className={`ml-2 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${status === "EXPIRED" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
+                                      className={`ml-2 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${status === "EXPIRED" || status === "INVALID" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
                                     >
-                                      {status === "EXPIRED"
-                                        ? "Expired"
-                                        : status === "EXPIRING_SOON"
-                                          ? "Expiring soon"
-                                          : "Valid"}
+                                      {status === "INVALID"
+                                        ? "Needs review"
+                                        : status === "EXPIRED"
+                                          ? "Expired"
+                                          : status === "EXPIRING_SOON"
+                                            ? "Expiring soon"
+                                            : "Valid"}
                                     </span>
                                     <p className="mt-1 truncate text-xs text-muted-foreground">
                                       {document?.name || "No file attached"}
@@ -1279,13 +1281,15 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                 <div className="min-w-0 truncate">
                                   <span className="font-bold">{ticket.type}</span>
                                   <span
-                                    className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${status === "EXPIRED" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-primary/10 text-primary"}`}
+                                    className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${status === "EXPIRED" || status === "INVALID" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-primary/10 text-primary"}`}
                                   >
-                                    {status === "EXPIRED"
-                                      ? "Expired"
-                                      : status === "EXPIRING_SOON"
-                                        ? "Expiring"
-                                        : "Valid"}
+                                    {status === "INVALID"
+                                      ? "Needs review"
+                                      : status === "EXPIRED"
+                                        ? "Expired"
+                                        : status === "EXPIRING_SOON"
+                                          ? "Expiring"
+                                          : "Valid"}
                                   </span>
                                   <p className="mt-1 truncate text-xs text-muted-foreground">
                                     {document?.name || "No file attached"}

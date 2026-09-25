@@ -1,6 +1,7 @@
 import { describe, test, expect } from "vitest";
 import { validateWorkerForDeployment, getTicketStatus } from "../workerValidation";
 import { Worker, Ticket, StaffRole } from "../../types/erp";
+import { toLondonISODate } from "../week";
 
 const createMockWorker = (role: StaffRole, tickets: Ticket[] = []): Worker => ({
   id: "worker-1",
@@ -118,5 +119,25 @@ describe("getTicketStatus", () => {
       ticketNumber: "123",
     };
     expect(getTicketStatus(ticket)).toBe("VALID");
+  });
+
+  test("returns INVALID for malformed calendar dates", () => {
+    const ticket: Ticket = {
+      id: "t-invalid",
+      type: "CSCS",
+      expiryDate: "2026-02-30",
+      ticketNumber: "123",
+    };
+    expect(getTicketStatus(ticket)).toBe("INVALID");
+  });
+
+  test("does not expire a certificate on the London calendar date it ends", () => {
+    const ticket: Ticket = {
+      id: "t-today",
+      type: "CSCS",
+      expiryDate: toLondonISODate(),
+      ticketNumber: "123",
+    };
+    expect(getTicketStatus(ticket)).toBe("EXPIRING_SOON");
   });
 });

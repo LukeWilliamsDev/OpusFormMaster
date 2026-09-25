@@ -137,6 +137,7 @@ export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({ groupe
                     const status = getTicketStatus(ticket);
                     const isExpired = status === "EXPIRED";
                     const isExpiringSoon = status === "EXPIRING_SOON";
+                    const needsReview = status === "INVALID";
                     const expiryDate = new Date(ticket.expiryDate);
 
                     let iconBox = "border-success/20 bg-success/15 text-success";
@@ -144,10 +145,10 @@ export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({ groupe
                     let statusText = "ACTIVE";
                     let LeftIcon = CheckCircle2;
 
-                    if (isExpired) {
+                    if (isExpired || needsReview) {
                       iconBox = "border-destructive/20 bg-destructive/15 text-destructive";
                       badgeClass = "bg-destructive/20 border-destructive/30 text-destructive";
-                      statusText = "EXPIRED";
+                      statusText = needsReview ? "NEEDS REVIEW" : "EXPIRED";
                       LeftIcon = ShieldAlert;
                     } else if (isExpiringSoon) {
                       iconBox = "border-warning/20 bg-warning/15 text-warning";

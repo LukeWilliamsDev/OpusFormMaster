@@ -32,7 +32,7 @@ import {
   formatAppRoleLabel,
   INTERNAL_ROLES,
 } from "../context/PortalContext";
-import { getAvatarPresetClass } from "../pages/Settings";
+import { getAvatarPresetClass } from "../utils/avatar";
 import { getAvatarInitials } from "../utils/workerValidation";
 import { NavList } from "@/components/application/app-navigation/base-components/nav-list";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";

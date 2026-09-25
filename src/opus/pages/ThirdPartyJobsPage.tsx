@@ -199,7 +199,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
             </div>
           </div>
 
-          <section className="min-w-0 overflow-hidden rounded-2xl border-2 border-border bg-card xl:mx-auto xl:max-w-[1120px]">
+          <section className="min-w-0 overflow-hidden rounded-2xl border-2 border-border bg-card">
             <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5">
               <div>
                 <h2 className="text-sm font-black">Site directory</h2>

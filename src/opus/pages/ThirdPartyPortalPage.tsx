@@ -174,7 +174,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
 
   if (dataLoading) {
     return (
-      <div className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:px-6 lg:py-12">
+      <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="grid gap-4 md:grid-cols-3">
           {[1, 2, 3].map((item) => (
@@ -322,7 +322,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:px-6 lg:py-12">
+    <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
       <datalist id="certificate-types">
         {CERTIFICATE_TYPES.map((type) => (
           <option key={type} value={type} />
@@ -526,7 +526,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:items-start">
+          <div className="grid gap-4">
             <section
               className={`${showStaffList ? "" : "hidden"} min-w-0 rounded-2xl border-2 border-border bg-card p-4`}
             >

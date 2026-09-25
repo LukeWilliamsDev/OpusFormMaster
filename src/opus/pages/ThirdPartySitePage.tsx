@@ -95,7 +95,7 @@ export const ThirdPartySitePage: React.FC = () => {
 
   if (dataLoading) {
     return (
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="h-40 animate-pulse rounded-2xl bg-muted" />
         <div className="h-64 animate-pulse rounded-2xl bg-muted" />
@@ -174,7 +174,7 @@ export const ThirdPartySitePage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
       <Link
         to={sitesListPath}
         className="inline-flex items-center gap-2 text-xs font-bold text-primary"

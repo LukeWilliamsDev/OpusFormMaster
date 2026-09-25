@@ -6,6 +6,7 @@ import {
   AppRole,
   ASSIGNED_SHIFT_ROLES,
   ALL_ROLES,
+  DOCUMENT_SEND_ROLES,
   MANAGEMENT_ROLES,
   FIELD_ROLES,
   INTERNAL_ROLES,
@@ -24,6 +25,7 @@ import { ThirdPartyJobsPage } from "./pages/ThirdPartyJobsPage";
 import { ThirdPartySitePage } from "./pages/ThirdPartySitePage";
 import { JobLedgerPage } from "./pages/JobLedger";
 import { PipelinePage } from "./pages/Pipeline";
+import { DocumentSendPage } from "./pages/DocumentSend";
 import { AuditLogPage } from "./pages/AuditLog";
 import { AdminPolicies } from "./pages/AdminPolicies";
 import { AdminUsers } from "./pages/AdminUsers";
@@ -35,9 +37,9 @@ import { TermsOfServicePage } from "./pages/TermsOfService";
 import { AcceptableUsePolicyPage } from "./pages/AcceptableUsePolicy";
 import { CookieStatementPage } from "./pages/CookieStatement";
 import { ModernSlaveryStatementPage } from "./pages/ModernSlaveryStatement";
+import { RightToWorkPolicyPage } from "./pages/RightToWorkPolicy";
 import { LegalHubPage } from "./pages/LegalHub";
 import { CertificateCheckerPage } from "./pages/CertificateCheckerPage";
-import { RightToWorkPolicyPage } from "./pages/RightToWorkPolicy";
 
 // Immediate recovery URL redirection for HashRouter before React Router initialises and strips the hash
 (() => {
@@ -156,6 +158,14 @@ export default function App() {
               element={
                 <RoleGuard allow={MANAGEMENT_ROLES}>
                   <PipelinePage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/documents"
+              element={
+                <RoleGuard allow={DOCUMENT_SEND_ROLES}>
+                  <DocumentSendPage />
                 </RoleGuard>
               }
             />

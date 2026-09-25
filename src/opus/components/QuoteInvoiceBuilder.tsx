@@ -79,6 +79,7 @@ interface ValuationBuilderProps {
   sourceInvoiceIds?: string[];
   prefill?: { entity?: string; email?: string; site?: string; postcode?: string };
   jobRef?: string;
+  sendOnly?: boolean;
 }
 
 const SUGGESTED_ITEMS = [
@@ -354,6 +355,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   sourceInvoiceIds,
   prefill,
   jobRef,
+  sendOnly = false,
 }) => {
   const { profile, user } = usePortal();
   const recordTable =
@@ -860,6 +862,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         const { error: fnError } = await supabase.functions.invoke("send-final-bill", {
           body: {
             finalBillId: currentQuoteId,
+            toEmail: clientInfo.email.trim(),
             clientName: clientInfo.entity,
             siteName: clientInfo.site,
             postcode: clientInfo.postcode,
@@ -1193,7 +1196,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               <Eye className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Preview</span>
             </button>
-            {mode === "quote" && (
+            {mode === "quote" && !sendOnly && (
               <button
                 onClick={handleSaveDraft}
                 className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-secondary border border-border rounded-lg px-3 py-1.5 text-foreground/85 text-[11px] font-bold tracking-widest uppercase hover:bg-secondary/70 transition-colors"
@@ -1233,7 +1236,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         {/* -- LEFT PANEL: Form -- */}
         <div className="flex flex-col gap-5 flex-1 min-w-0">
           {/* SAVED HISTORY (collapsed accordion) */}
-          {mode === "quote" && (
+          {mode === "quote" && !sendOnly && (
             <div className="bg-card border border-border rounded-xl overflow-hidden">
               <button
                 type="button"
@@ -1767,7 +1770,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
       {/* --- DELETE QUOTE CONFIRMATION --- */}
       <ConfirmDialog
-        open={!!quoteToDelete}
+        open={!sendOnly && !!quoteToDelete}
         onOpenChange={(open) => {
           if (!open) setQuoteToDelete(null);
         }}

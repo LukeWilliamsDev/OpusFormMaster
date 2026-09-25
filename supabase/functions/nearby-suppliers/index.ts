@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "../_shared/cors.ts";
 
 // Category groups to search — each group is OR'd internally (Geoapify's
@@ -69,9 +70,53 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized." }), {
+        status: 401,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
+    const token = authHeader.slice("Bearer ".length).trim();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceRoleKey || !token) {
+      return new Response(JSON.stringify({ error: "Unauthorized." }), {
+        status: 401,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    const { data: authData, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !authData.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized." }), {
+        status: 401,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
     const { lat, lng, radiusMiles = 5 } = await req.json();
-    if (typeof lat !== "number" || typeof lng !== "number") {
-      return new Response(JSON.stringify({ error: "lat and lng are required numbers" }), {
+    if (
+      typeof lat !== "number" ||
+      typeof lng !== "number" ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      return new Response(JSON.stringify({ error: "Valid latitude and longitude are required." }), {
+        status: 400,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
+
+    const requestedRadius = typeof radiusMiles === "number" ? radiusMiles : 5;
+    if (!Number.isFinite(requestedRadius) || requestedRadius <= 0 || requestedRadius > 10) {
+      return new Response(JSON.stringify({ error: "radiusMiles must be between 0 and 10." }), {
         status: 400,
         headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       });
@@ -85,7 +130,7 @@ serve(async (req) => {
       });
     }
 
-    const radiusM = Math.round(radiusMiles * 1609.34);
+    const radiusM = Math.round(requestedRadius * 1609.34);
     const filterAndBias = `&filter=circle:${lng},${lat},${radiusM}&bias=proximity:${lng},${lat}`;
 
     // limit=50: the circle filter already bounds results to the radius —

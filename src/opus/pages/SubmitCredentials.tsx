@@ -493,9 +493,9 @@ export const SubmitCredentialsPage: React.FC = () => {
       return;
     }
 
-    // Validate size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      updateSlot(index, { error: "File size must be under 5 MB." });
+    // Validate size (10MB max; storage enforces the same limit server-side)
+    if (file.size > 10 * 1024 * 1024) {
+      updateSlot(index, { error: "File size must be under 10 MB." });
       return;
     }
 

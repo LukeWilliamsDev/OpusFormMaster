@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { AlertCircle, Check, ChevronRight, FileUp, Loader, Plus, Search, Send } from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { STAFF_ROLES } from "../types/erp";
 import { formatUKDate } from "../utils/week";
@@ -80,6 +80,7 @@ type CertificatePanelMode = "add" | "replace";
 
 export const ThirdPartyPortalPage: React.FC = () => {
   const { user, profile, workers, setWorkers, jobs, shifts, dataLoading } = usePortal();
+  const location = useLocation();
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -94,7 +95,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
   const [certificatePanelMode, setCertificatePanelMode] = useState<CertificatePanelMode>("add");
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [showAddStaff, setShowAddStaff] = useState(
-    () => new URLSearchParams(window.location.search).get("add") === "1",
+    () => new URLSearchParams(location.search).get("add") === "1",
   );
   const [staffSearch, setStaffSearch] = useState("");
   const [staffFilter, setStaffFilter] = useState<"all" | "attention">("all");

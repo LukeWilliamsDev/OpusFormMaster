@@ -79,7 +79,6 @@ interface ValuationBuilderProps {
   sourceInvoiceIds?: string[];
   prefill?: { entity?: string; email?: string; site?: string; postcode?: string };
   jobRef?: string;
-  sendOnly?: boolean;
 }
 
 const SUGGESTED_ITEMS = [

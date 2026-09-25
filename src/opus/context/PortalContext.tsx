@@ -112,8 +112,6 @@ export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coor
 export const FIELD_ROLES: AppRole[] = ["logistics_assistant", "site_foreman", "labourer"];
 // Field users may see only the shifts assigned to their own staff record.
 export const ASSIGNED_SHIFT_ROLES: AppRole[] = ["site_foreman", "labourer"];
-// Roles permitted to prepare and send client documents.
-export const DOCUMENT_SEND_ROLES: AppRole[] = [...MANAGEMENT_ROLES];
 // Full schedule visibility without granting operational write access.
 export const SCHEDULE_ROLES: AppRole[] = [
   "admin",
@@ -472,7 +470,9 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const [wRes, jRes, sRes, ceRes] = await Promise.all([
         supabase.from("staff").select("*"),
         supabase.from("jobs").select("*"),
-        supabase.from("shifts").select("*").gte("date", startStr).lte("date", endStr),
+        role === "third_party"
+          ? supabase.from("shifts").select("*")
+          : supabase.from("shifts").select("*").gte("date", startStr).lte("date", endStr),
         supabase.from("calendar_events").select("*").gte("date", startStr).lte("date", endStr),
       ]);
       if (cancelled) return;
@@ -518,7 +518,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // to fingerprint already-loaded rows; adding it would re-run this whole
     // fetch a second time once the profile loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+  }, [user, role]);
 
   // Keep the roster live: anonymous submissions (e.g. the credential portal)
   // write to `staff` outside this session's own upsert loop below, so without

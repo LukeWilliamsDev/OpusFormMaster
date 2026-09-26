@@ -3,42 +3,14 @@ import { ArrowRight, ChevronRight, MapPin, Search } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
+import {
+  getSiteState,
+  isCompletedSite,
+  siteNeedsAttention,
+  siteStateLabel,
+  siteStateStyles,
+} from "../utils/siteStatus";
 import { formatUKDate, toLondonISODate } from "../utils/week";
-
-const isCompletedJob = (job: any) =>
-  ["completed", "complete", "closed"].includes(String(job.status).toLowerCase());
-
-const needsAttention = (job: any) =>
-  ["pending", "on-hold", "on hold"].includes(String(job.status).toLowerCase());
-
-type SiteState = "open" | "attention" | "completed";
-
-const siteState = (job: any, completed: boolean): SiteState =>
-  completed ? "completed" : needsAttention(job) ? "attention" : "open";
-
-const siteStateLabel = (state: SiteState) =>
-  state === "completed" ? "Completed" : state === "attention" ? "Needs attention" : "Open";
-
-const siteStateStyles: Record<SiteState, { row: string; icon: string; badge: string }> = {
-  open: {
-    row: "bg-sky-50/60 hover:bg-sky-100/80 dark:bg-sky-950/20 dark:hover:bg-sky-950/40",
-    icon: "bg-sky-100 text-sky-700 dark:bg-sky-400/20 dark:text-sky-200",
-    badge:
-      "bg-sky-100 text-sky-800 ring-1 ring-inset ring-sky-200 dark:bg-sky-400/20 dark:text-sky-100 dark:ring-sky-400/30",
-  },
-  attention: {
-    row: "bg-amber-50/70 hover:bg-amber-100/80 dark:bg-amber-950/20 dark:hover:bg-amber-950/40",
-    icon: "bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-100",
-    badge:
-      "bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-400/20 dark:text-amber-100 dark:ring-amber-400/30",
-  },
-  completed: {
-    row: "bg-emerald-50/70 hover:bg-emerald-100/80 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40",
-    icon: "bg-emerald-100 text-emerald-800 dark:bg-emerald-400/20 dark:text-emerald-100",
-    badge:
-      "bg-emerald-100 text-emerald-800 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-400/20 dark:text-emerald-100 dark:ring-emerald-400/30",
-  },
-};
 
 const filterSelectedStyles: Record<SiteFilter, string> = {
   all: "border-primary bg-primary/10 text-primary",
@@ -94,9 +66,9 @@ export const ThirdPartyJobsPage: React.FC = () => {
       ),
     [jobs, shifts, ownedWorkerIds],
   );
-  const activeJobs = assignedJobs.filter((job) => !isCompletedJob(job));
-  const completedJobs = assignedJobs.filter(isCompletedJob);
-  const attentionJobs = activeJobs.filter(needsAttention);
+  const activeJobs = assignedJobs.filter((job) => !isCompletedSite(job));
+  const completedJobs = assignedJobs.filter(isCompletedSite);
+  const attentionJobs = activeJobs.filter(siteNeedsAttention);
   const nextActiveJob = [...activeJobs].sort((a, b) =>
     (getJobDate(a.id, shifts, false)?.date ?? "9999-12-31").localeCompare(
       getJobDate(b.id, shifts, false)?.date ?? "9999-12-31",
@@ -108,9 +80,9 @@ export const ThirdPartyJobsPage: React.FC = () => {
       .includes(search.toLowerCase());
     const matchesFilter =
       filter === "all" ||
-      (filter === "active" && !isCompletedJob(job)) ||
-      (filter === "attention" && needsAttention(job)) ||
-      (filter === "completed" && isCompletedJob(job));
+      (filter === "active" && !isCompletedSite(job)) ||
+      (filter === "attention" && siteNeedsAttention(job)) ||
+      (filter === "completed" && isCompletedSite(job));
     return matchesSearch && matchesFilter;
   });
   const assignedStaffCount = new Set(
@@ -256,9 +228,9 @@ export const ThirdPartyJobsPage: React.FC = () => {
             </div>
             <div className="divide-y divide-border">
               {visibleJobs.map((job) => {
-                const completed = isCompletedJob(job);
+                const completed = isCompletedSite(job);
                 const jobDate = getJobDate(job.id, shifts, completed);
-                const state = siteState(job, completed);
+                const state = getSiteState(job);
                 const stateLabel = siteStateLabel(state);
                 const styles = siteStateStyles[state];
                 return (

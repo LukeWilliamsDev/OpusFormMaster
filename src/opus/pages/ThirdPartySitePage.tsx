@@ -10,16 +10,10 @@ import { ThirdPartyNotesPanel } from "../components/ThirdPartyNotesPanel";
 import { getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
 import { formatUKDate, toLondonISODate } from "../utils/week";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
+import { getSiteState, siteStateLabel, siteStateStyles } from "../utils/siteStatus";
 
 const db = supabase as any;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-const isCompletedJob = (job: any) =>
-  ["completed", "complete", "closed"].includes(String(job.status).toLowerCase());
-const needsAttention = (job: any) =>
-  ["pending", "on-hold", "on hold"].includes(String(job.status).toLowerCase());
-
-const siteStateLabel = (job: any) =>
-  isCompletedJob(job) ? "Completed" : needsAttention(job) ? "Needs attention" : "Open";
 
 export const ThirdPartySitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -130,18 +124,20 @@ export const ThirdPartySitePage: React.FC = () => {
   const assignedStaff = workers.filter((worker) =>
     shifts.some((shift) => shift.jobId === job.id && shift.workerId === worker.id),
   );
-  const readOnlyHistory = role === "third_party" && isCompletedJob(job);
-  const stateLabel = siteStateLabel(job);
+  const state = getSiteState(job);
+  const readOnlyHistory = role === "third_party" && state === "completed";
+  const stateLabel = siteStateLabel(state);
   const shiftDates = shifts
     .filter((shift) => shift.jobId === job.id && shift.date)
     .map((shift) => shift.date)
     .sort();
   const today = toLondonISODate();
   const pastShiftDates = shiftDates.filter((date) => date <= today);
-  const siteDate = isCompletedJob(job)
-    ? (pastShiftDates.at(-1) ?? shiftDates[0])
-    : (shiftDates.find((date) => date >= today) ?? shiftDates.at(-1));
-  const siteDateLabel = isCompletedJob(job) ? "Last shift" : "Next shift";
+  const siteDate =
+    state === "completed"
+      ? (pastShiftDates.at(-1) ?? shiftDates[0])
+      : (shiftDates.find((date) => date >= today) ?? shiftDates.at(-1));
+  const siteDateLabel = state === "completed" ? "Last shift" : "Next shift";
   const addNote = async () => {
     if (!note.trim()) return;
     setPostingNote(true);
@@ -206,7 +202,7 @@ export const ThirdPartySitePage: React.FC = () => {
           <p className="mt-2 text-sm text-muted-foreground">{job.postcode}</p>
           <div className="mt-4 flex flex-wrap gap-2">
             <span
-              className={`rounded-lg border px-3 py-2 text-xs font-semibold ${readOnlyHistory ? "border-border bg-muted text-muted-foreground" : needsAttention(job) ? "border-amber-500/50 bg-amber-500/10 text-amber-700 dark:text-amber-200" : "border-emerald-500/40 bg-emerald-500/10 text-emerald-700 dark:text-emerald-200"}`}
+              className={`rounded-lg border px-3 py-2 text-xs font-semibold ${siteStateStyles[state].detail}`}
             >
               {stateLabel}
             </span>
@@ -222,10 +218,12 @@ export const ThirdPartySitePage: React.FC = () => {
         </div>
       </header>
       {readOnlyHistory && (
-        <p className="flex items-start gap-2 rounded-xl border border-border bg-muted p-3 text-xs text-muted-foreground">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+        <p
+          className={`flex items-start gap-2 rounded-xl border p-3 text-xs ${siteStateStyles.completed.detail}`}
+        >
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            <strong className="text-foreground">Completed · view-only</strong>
+            <strong>Completed · view-only</strong>
             <br />
             Photos, attachments, and conversation history remain available.
           </span>

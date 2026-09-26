@@ -6,12 +6,14 @@ import { supabase } from "../../integrations/supabase/client";
 import { formatUKDate, toLondonISODate } from "../utils/week";
 import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
+import {
+  getSiteState,
+  isCompletedSite,
+  siteStateLabel,
+  siteStateStyles,
+} from "../utils/siteStatus";
 
 const db = supabase as any;
-const isCompletedJob = (job: any) =>
-  ["completed", "complete", "closed"].includes(String(job.status).toLowerCase());
-const statusLabel = (status: string) =>
-  status.replace(/[-_]/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
 const getJobDate = (jobId: string, shifts: any[], completed = false) => {
   const dates = shifts
     .filter((shift) => shift.jobId === jobId && shift.date)
@@ -78,8 +80,8 @@ export const ThirdPartyDashboardPage: React.FC = () => {
       ),
     [jobs, shifts, ownedWorkerIds],
   );
-  const activeJobs = assignedJobs.filter((job) => !isCompletedJob(job));
-  const completedJobs = assignedJobs.filter(isCompletedJob);
+  const activeJobs = assignedJobs.filter((job) => !isCompletedSite(job));
+  const completedJobs = assignedJobs.filter(isCompletedSite);
   const nextJob =
     [...activeJobs].sort((a, b) =>
       (getJobDate(a.id, shifts)?.date ?? "9999-12-31").localeCompare(
@@ -105,11 +107,6 @@ export const ThirdPartyDashboardPage: React.FC = () => {
   const attentionWorkerCount = workers.filter(hasAttention).length;
   const firstAttentionWorker = workers.find(hasAttention);
   const actionCount = pendingCount + unansweredCount + expiringCertificateCount;
-  const statusTone = (status: string) =>
-    ["pending", "on-hold", "on hold"].includes(status.toLowerCase())
-      ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200"
-      : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200";
-
   if (dataLoading)
     return (
       <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
@@ -157,14 +154,14 @@ export const ThirdPartyDashboardPage: React.FC = () => {
         </div>
       </header>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className={`rounded-2xl border p-4 ${siteStateStyles.attention.card}`}>
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             Staff needing attention
           </p>
           <p className="mt-3 text-3xl font-black">{attentionWorkerCount}</p>
           <p className="mt-1 text-xs text-muted-foreground">Review certificates</p>
         </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
+        <div className={`rounded-2xl border p-4 ${siteStateStyles.open.card}`}>
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             Open sites
           </p>
@@ -173,7 +170,9 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             {activeJobs.length ? "Current assignments" : "No active sites assigned"}
           </p>
         </div>
-        <div className="col-span-2 rounded-2xl border border-border bg-card p-4 sm:col-span-1">
+        <div
+          className={`col-span-2 rounded-2xl border p-4 sm:col-span-1 ${siteStateStyles.completed.card}`}
+        >
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
             Completed sites
           </p>
@@ -345,9 +344,9 @@ export const ThirdPartyDashboardPage: React.FC = () => {
                   </p>
                 </div>
                 <span
-                  className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${statusTone(nextJob.status)}`}
+                  className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${siteStateStyles[getSiteState(nextJob)].badge}`}
                 >
-                  {statusLabel(nextJob.status)}
+                  {siteStateLabel(getSiteState(nextJob))}
                 </span>
               </div>
               <Link

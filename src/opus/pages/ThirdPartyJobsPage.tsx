@@ -11,8 +11,44 @@ const isCompletedJob = (job: any) =>
 const needsAttention = (job: any) =>
   ["pending", "on-hold", "on hold"].includes(String(job.status).toLowerCase());
 
-const siteStateLabel = (job: any, completed: boolean) =>
-  completed ? "Completed" : needsAttention(job) ? "Needs attention" : "Open";
+type SiteState = "open" | "attention" | "completed";
+
+const siteState = (job: any, completed: boolean): SiteState =>
+  completed ? "completed" : needsAttention(job) ? "attention" : "open";
+
+const siteStateLabel = (state: SiteState) =>
+  state === "completed" ? "Completed" : state === "attention" ? "Needs attention" : "Open";
+
+const siteStateStyles: Record<SiteState, { row: string; icon: string; badge: string }> = {
+  open: {
+    row: "bg-sky-50/60 hover:bg-sky-100/80 dark:bg-sky-950/20 dark:hover:bg-sky-950/40",
+    icon: "bg-sky-100 text-sky-700 dark:bg-sky-400/20 dark:text-sky-200",
+    badge:
+      "bg-sky-100 text-sky-800 ring-1 ring-inset ring-sky-200 dark:bg-sky-400/20 dark:text-sky-100 dark:ring-sky-400/30",
+  },
+  attention: {
+    row: "bg-amber-50/70 hover:bg-amber-100/80 dark:bg-amber-950/20 dark:hover:bg-amber-950/40",
+    icon: "bg-amber-100 text-amber-800 dark:bg-amber-400/20 dark:text-amber-100",
+    badge:
+      "bg-amber-100 text-amber-800 ring-1 ring-inset ring-amber-200 dark:bg-amber-400/20 dark:text-amber-100 dark:ring-amber-400/30",
+  },
+  completed: {
+    row: "bg-emerald-50/70 hover:bg-emerald-100/80 dark:bg-emerald-950/20 dark:hover:bg-emerald-950/40",
+    icon: "bg-emerald-100 text-emerald-800 dark:bg-emerald-400/20 dark:text-emerald-100",
+    badge:
+      "bg-emerald-100 text-emerald-800 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-400/20 dark:text-emerald-100 dark:ring-emerald-400/30",
+  },
+};
+
+const filterSelectedStyles: Record<SiteFilter, string> = {
+  all: "border-primary bg-primary/10 text-primary",
+  active:
+    "border-sky-300 bg-sky-100 text-sky-800 dark:border-sky-400/40 dark:bg-sky-400/20 dark:text-sky-100",
+  attention:
+    "border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/20 dark:text-amber-100",
+  completed:
+    "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-400/40 dark:bg-emerald-400/20 dark:text-emerald-100",
+};
 
 const getJobDate = (jobId: string, shifts: any[], completed: boolean) => {
   const dates = shifts
@@ -198,7 +234,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
                   type="button"
                   onClick={() => updateListState(search, value)}
                   aria-pressed={filter === value}
-                  className={`min-h-11 whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${filter === value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                  className={`min-h-11 whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${filter === value ? filterSelectedStyles[value] : "border-border text-muted-foreground"}`}
                 >
                   {label}
                 </button>
@@ -222,17 +258,19 @@ export const ThirdPartyJobsPage: React.FC = () => {
               {visibleJobs.map((job) => {
                 const completed = isCompletedJob(job);
                 const jobDate = getJobDate(job.id, shifts, completed);
-                const stateLabel = siteStateLabel(job, completed);
+                const state = siteState(job, completed);
+                const stateLabel = siteStateLabel(state);
+                const styles = siteStateStyles[state];
                 return (
                   <button
                     key={job.id}
                     type="button"
                     onClick={() => openSite(job.id)}
                     aria-label={`Open ${job.siteName} (${stateLabel})`}
-                    className={`grid w-full min-w-0 grid-cols-[2.25rem_minmax(0,1fr)_auto_1rem] items-center gap-3 p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-5 ${completed ? "bg-muted/25 hover:bg-muted/50" : "hover:bg-primary/5"}`}
+                    className={`grid w-full min-w-0 grid-cols-[2.25rem_minmax(0,1fr)_auto_1rem] items-center gap-3 p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary sm:px-5 ${styles.row}`}
                   >
                     <span
-                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black ${completed ? "bg-muted text-muted-foreground" : needsAttention(job) ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-primary/10 text-primary"}`}
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-black ${styles.icon}`}
                     >
                       {completed ? "✓" : "↗"}
                     </span>
@@ -251,7 +289,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
                       </span>
                     </span>
                     <span
-                      className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${needsAttention(job) ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : completed ? "bg-muted text-muted-foreground ring-1 ring-inset ring-border" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
+                      className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${styles.badge}`}
                     >
                       {stateLabel}
                     </span>

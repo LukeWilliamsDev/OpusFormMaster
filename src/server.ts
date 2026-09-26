@@ -16,6 +16,16 @@ const SECURITY_HEADERS: Record<string, string> = {
     "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.supabase.co https://*.tile.openstreetmap.org https://*.basemaps.cartocdn.com; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com https://api.postcodes.io https://api.geoapify.com https://cloudflareinsights.com https://*.cloudflareinsights.com; worker-src 'self' blob:",
 };
 
+const HASH_ROUTE_PREFIXES = [
+  "/portal",
+  "/submit-credentials",
+  "/job-upload",
+  "/privacy",
+  "/cookies",
+  "/modern-slavery",
+  "/right-to-work",
+];
+
 function isLocalRequest(request: Request): boolean {
   const url = new URL(request.url);
   return url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1";
@@ -34,6 +44,23 @@ function withSecurityHeaders(response: Response, request: Request): Response {
     statusText: response.statusText,
     headers,
   });
+}
+
+function redirectDirectHashRoute(request: Request): Response | null {
+  if (request.method !== "GET" && request.method !== "HEAD") return null;
+  const url = new URL(request.url);
+  if (
+    !HASH_ROUTE_PREFIXES.some(
+      (prefix) => url.pathname === prefix || url.pathname.startsWith(`${prefix}/`),
+    )
+  ) {
+    return null;
+  }
+
+  const target = new URL(url.origin);
+  target.search = url.search;
+  target.hash = url.pathname;
+  return Response.redirect(target.toString(), 308);
 }
 
 let serverEntryPromise: Promise<ServerEntry> | undefined;
@@ -81,6 +108,9 @@ export default {
         url.protocol = "https:";
         return Response.redirect(url.toString(), 308);
       }
+
+      const hashRouteRedirect = redirectDirectHashRoute(request);
+      if (hashRouteRedirect) return withSecurityHeaders(hashRouteRedirect, request);
 
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

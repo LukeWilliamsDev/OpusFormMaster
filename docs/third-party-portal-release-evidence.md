@@ -53,6 +53,9 @@ respond to the read-only smoke query.
   was corrected to allow the required Cloudflare observability endpoints in
   commit `fa5a79ca502383b86f36aef78b1c9c35adaee2bf`; the authenticated live
   rerun completed without console errors.
+- Direct `https://opusform.co.uk/portal` now redirects to the HashRouter login
+  entry point. Live authentication returned `200` from Supabase and opened the
+  third-party portal successfully. Fix: `c77a4f55ea0b737033a07d987811e012f7dfce0d`.
 
 ## Coverage limit
 

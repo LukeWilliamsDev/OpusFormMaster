@@ -37,6 +37,30 @@ respond to the read-only smoke query.
   chunk, then shows a recoverable error page instead of leaving a blank route.
 - Route recovery CI: https://github.com/LukeWilliamsDev/OpusFormMaster/actions/runs/36224057507
 
+## Production live-test run
+
+- Read-only baseline before testing: 2 jobs, 3 shifts, 7 staff, 5 tenants,
+  1 third-party submission, 1 third-party note, and 1 third-party attachment.
+- Public routes, invalid upload-link handling, authenticated third-party routes,
+  responsive layouts, keyboard navigation, focus trapping, not-found handling,
+  and live asset loading were exercised against `https://opusform.co.uk`.
+- One uniquely marked staff submission (`LIVE_TEST_1790406158308`) was created
+  to exercise the live submit path, then deleted by exact ID. Final state was
+  2 jobs, 3 shifts, 7 staff, 5 tenants, 1 third-party submission, 1 note, and
+  1 attachment; test-marker count was zero.
+- No invoice or email was sent because no workflow required it.
+- The live run exposed Cloudflare Insights being blocked by the CSP. The CSP
+  was corrected to allow the required Cloudflare observability endpoints in
+  commit `fa5a79ca502383b86f36aef78b1c9c35adaee2bf`; the authenticated live
+  rerun completed without console errors.
+
+## Coverage limit
+
+Authenticated internal management routes (dashboard, ledger, pipeline,
+invoices, users, and certificate checker) were not mutated or fully exercised
+because no internal test account was available. They were checked for route
+availability and access gating only. Existing jobs were never modified.
+
 ## Private staging smoke
 
 Using the local Cloudflare Worker with Wrangler `4.141.0` on loopback:

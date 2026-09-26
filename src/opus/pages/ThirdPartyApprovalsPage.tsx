@@ -26,7 +26,7 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
   const load = async () => {
     const { data, error } = await db
       .from("third_party_staff_submissions")
-      .select("*")
+      .select("id, name, role, email, postcode, notes, created_at")
       .eq("status", "pending")
       .order("created_at", { ascending: true });
     if (error) return toast.error(error.message);

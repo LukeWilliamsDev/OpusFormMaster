@@ -30,7 +30,7 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
     (async () => {
       const { data, error } = await db
         .from("third_party_attachments")
-        .select("*")
+        .select("id, file_name, file_path, mime_type, file_size_bytes, created_at, uploaded_by")
         .eq("job_id", jobId)
         .order("created_at", { ascending: false });
       if (cancelled) return;

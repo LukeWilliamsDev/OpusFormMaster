@@ -12,7 +12,8 @@
     "format": "prettier --write .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:budget": "npm run build && node scripts/check-bundle-budget.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

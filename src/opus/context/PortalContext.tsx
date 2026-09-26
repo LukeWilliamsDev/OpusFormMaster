@@ -140,7 +140,21 @@ export const workerToRow = (w: Worker, tenantId?: string) =>
     // time rather than us silently guessing a tenant.
     ...(tenantId ? { tenant_id: tenantId } : {}),
   }) as StaffInsertRow;
-type StaffRow = Database["public"]["Tables"]["staff"]["Row"];
+type StaffRow = Pick<
+  Database["public"]["Tables"]["staff"]["Row"],
+  | "id"
+  | "name"
+  | "role"
+  | "phone"
+  | "email"
+  | "postcode"
+  | "is_archived"
+  | "tickets"
+  | "uploaded_certificates"
+>;
+
+const STAFF_SELECT =
+  "id, name, role, phone, email, postcode, is_archived, tickets, uploaded_certificates";
 
 const rowToWorker = (r: StaffRow): Worker => ({
   id: r.id,
@@ -171,7 +185,23 @@ export const jobToRow = (j: Job, tenantId?: string) =>
     schedule_value: j.scheduleValue ?? 0,
     ...(tenantId ? { tenant_id: tenantId } : {}),
   }) as JobInsertRow;
-type JobRow = Database["public"]["Tables"]["jobs"]["Row"];
+type JobRow = Pick<
+  Database["public"]["Tables"]["jobs"]["Row"],
+  | "id"
+  | "job_ref"
+  | "site_name"
+  | "main_contractor"
+  | "postcode"
+  | "email"
+  | "current_pours"
+  | "contract_max_pours"
+  | "status"
+  | "schedule_value"
+  | "updated_at"
+>;
+
+const JOB_SELECT =
+  "id, job_ref, site_name, main_contractor, postcode, email, current_pours, contract_max_pours, status, schedule_value, updated_at";
 
 const rowToJob = (r: JobRow): Job => ({
   id: r.id,
@@ -197,7 +227,12 @@ const shiftToRow = (s: ScheduledShift, tenantId?: string) =>
     date: s.date,
     ...(tenantId ? { tenant_id: tenantId } : {}),
   }) as ShiftInsertRow;
-type ShiftRow = Database["public"]["Tables"]["shifts"]["Row"];
+type ShiftRow = Pick<
+  Database["public"]["Tables"]["shifts"]["Row"],
+  "id" | "worker_id" | "job_id" | "date"
+>;
+
+const SHIFT_SELECT = "id, worker_id, job_id, date";
 
 const rowToShift = (r: ShiftRow): ScheduledShift => ({
   id: r.id,
@@ -218,7 +253,12 @@ const calendarEventToRow = (e: CalendarEvent, tenantId?: string) =>
     created_by_email: e.createdByEmail ?? null,
     ...(tenantId ? { tenant_id: tenantId } : {}),
   }) as CalendarEventInsertRow;
-type CalendarEventRow = Database["public"]["Tables"]["calendar_events"]["Row"];
+type CalendarEventRow = Pick<
+  Database["public"]["Tables"]["calendar_events"]["Row"],
+  "id" | "title" | "description" | "date" | "job_id" | "created_by_email"
+>;
+
+const CALENDAR_EVENT_SELECT = "id, title, description, date, job_id, created_by_email";
 
 const rowToCalendarEvent = (r: CalendarEventRow): CalendarEvent => ({
   id: r.id,
@@ -471,12 +511,16 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       const startStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
       const endStr = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
       const [wRes, jRes, sRes, ceRes] = await Promise.all([
-        supabase.from("staff").select("*"),
-        supabase.from("jobs").select("*"),
+        supabase.from("staff").select(STAFF_SELECT),
+        supabase.from("jobs").select(JOB_SELECT),
         role === "third_party"
-          ? supabase.from("shifts").select("*")
-          : supabase.from("shifts").select("*").gte("date", startStr).lte("date", endStr),
-        supabase.from("calendar_events").select("*").gte("date", startStr).lte("date", endStr),
+          ? supabase.from("shifts").select(SHIFT_SELECT)
+          : supabase.from("shifts").select(SHIFT_SELECT).gte("date", startStr).lte("date", endStr),
+        supabase
+          .from("calendar_events")
+          .select(CALENDAR_EVENT_SELECT)
+          .gte("date", startStr)
+          .lte("date", endStr),
       ]);
       if (cancelled) return;
       if (wRes.error) console.error("load workers", wRes.error);
@@ -542,31 +586,40 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // write to `staff` outside this session's own upsert loop below, so without
   // this the compliance tab only refreshes on next login.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !profile?.tenant_id) return;
     const channel = supabase
       .channel(`staff-changes-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "staff" }, (payload) => {
-        setWorkers((prev) => {
-          const next =
-            payload.eventType === "DELETE"
-              ? prev.filter((w) => w.id !== payload.old.id)
-              : (() => {
-                  const updated = rowToWorker(payload.new as StaffRow);
-                  const idx = prev.findIndex((w) => w.id === updated.id);
-                  return idx === -1
-                    ? [...prev, updated]
-                    : prev.map((w, i) => (i === idx ? updated : w));
-                })();
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "staff",
+          filter: `tenant_id=eq.${profile.tenant_id}`,
+        },
+        (payload) => {
+          setWorkers((prev) => {
+            const next =
+              payload.eventType === "DELETE"
+                ? prev.filter((w) => w.id !== payload.old.id)
+                : (() => {
+                    const updated = rowToWorker(payload.new as StaffRow);
+                    const idx = prev.findIndex((w) => w.id === updated.id);
+                    return idx === -1
+                      ? [...prev, updated]
+                      : prev.map((w, i) => (i === idx ? updated : w));
+                  })();
 
-          // Mark this state as already persisted so the auto-save effect
-          // below doesn't immediately echo it back as a redundant upsert.
-          prevWorkerIdsRef.current = new Set(next.map((w) => w.id));
-          lastSavedWorkersRef.current = stableStringify(
-            next.map((w) => workerToRow(w, profile?.tenant_id)),
-          );
-          return next;
-        });
-      })
+            // Mark this state as already persisted so the auto-save effect
+            // below doesn't immediately echo it back as a redundant upsert.
+            prevWorkerIdsRef.current = new Set(next.map((w) => w.id));
+            lastSavedWorkersRef.current = stableStringify(
+              next.map((w) => workerToRow(w, profile?.tenant_id)),
+            );
+            return next;
+          });
+        },
+      )
       .subscribe();
 
     return () => {
@@ -578,31 +631,40 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // (e.g. direct DB edits, another tenant session) should reflect immediately
   // instead of only on next login.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !profile?.tenant_id) return;
     const channel = supabase
       .channel(`jobs-changes-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, (payload) => {
-        setJobs((prev) => {
-          const next =
-            payload.eventType === "DELETE"
-              ? prev.filter((j) => j.id !== payload.old.id)
-              : (() => {
-                  const updated = rowToJob(payload.new as JobRow);
-                  const idx = prev.findIndex((j) => j.id === updated.id);
-                  return idx === -1
-                    ? [...prev, updated]
-                    : prev.map((j, i) => (i === idx ? updated : j));
-                })();
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "jobs",
+          filter: `tenant_id=eq.${profile.tenant_id}`,
+        },
+        (payload) => {
+          setJobs((prev) => {
+            const next =
+              payload.eventType === "DELETE"
+                ? prev.filter((j) => j.id !== payload.old.id)
+                : (() => {
+                    const updated = rowToJob(payload.new as JobRow);
+                    const idx = prev.findIndex((j) => j.id === updated.id);
+                    return idx === -1
+                      ? [...prev, updated]
+                      : prev.map((j, i) => (i === idx ? updated : j));
+                  })();
 
-          // Mark this state as already persisted so the auto-save effect
-          // below doesn't immediately echo it back as a redundant upsert.
-          prevJobIdsRef.current = new Set(next.map((j) => j.id));
-          lastSavedJobsRef.current = stableStringify(
-            next.map((j) => jobToRow(j, profile?.tenant_id)),
-          );
-          return next;
-        });
-      })
+            // Mark this state as already persisted so the auto-save effect
+            // below doesn't immediately echo it back as a redundant upsert.
+            prevJobIdsRef.current = new Set(next.map((j) => j.id));
+            lastSavedJobsRef.current = stableStringify(
+              next.map((j) => jobToRow(j, profile?.tenant_id)),
+            );
+            return next;
+          });
+        },
+      )
       .subscribe();
 
     return () => {
@@ -613,29 +675,38 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Keep the roster's shifts live for the same reason jobs are subscribed
   // above: other sessions/direct edits should reflect immediately.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !profile?.tenant_id) return;
     const channel = supabase
       .channel(`shifts-changes-${user.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "shifts" }, (payload) => {
-        setShifts((prev) => {
-          const next =
-            payload.eventType === "DELETE"
-              ? prev.filter((s) => s.id !== payload.old.id)
-              : (() => {
-                  const updated = rowToShift(payload.new as ShiftRow);
-                  const idx = prev.findIndex((s) => s.id === updated.id);
-                  return idx === -1
-                    ? [...prev, updated]
-                    : prev.map((s, i) => (i === idx ? updated : s));
-                })();
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "shifts",
+          filter: `tenant_id=eq.${profile.tenant_id}`,
+        },
+        (payload) => {
+          setShifts((prev) => {
+            const next =
+              payload.eventType === "DELETE"
+                ? prev.filter((s) => s.id !== payload.old.id)
+                : (() => {
+                    const updated = rowToShift(payload.new as ShiftRow);
+                    const idx = prev.findIndex((s) => s.id === updated.id);
+                    return idx === -1
+                      ? [...prev, updated]
+                      : prev.map((s, i) => (i === idx ? updated : s));
+                  })();
 
-          prevShiftIdsRef.current = new Set(next.map((s) => s.id));
-          lastSavedShiftsRef.current = stableStringify(
-            next.map((s) => shiftToRow(s, profile?.tenant_id)),
-          );
-          return next;
-        });
-      })
+            prevShiftIdsRef.current = new Set(next.map((s) => s.id));
+            lastSavedShiftsRef.current = stableStringify(
+              next.map((s) => shiftToRow(s, profile?.tenant_id)),
+            );
+            return next;
+          });
+        },
+      )
       .subscribe();
 
     return () => {
@@ -646,12 +717,17 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Keep generic calendar events live for the same reason shifts are
   // subscribed above: other sessions/direct edits should reflect immediately.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !profile?.tenant_id) return;
     const channel = supabase
       .channel(`calendar-events-changes-${user.id}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "calendar_events" },
+        {
+          event: "*",
+          schema: "public",
+          table: "calendar_events",
+          filter: `tenant_id=eq.${profile.tenant_id}`,
+        },
         (payload) => {
           setCalendarEvents((prev) => {
             const next =

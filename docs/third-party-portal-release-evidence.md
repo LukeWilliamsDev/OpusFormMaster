@@ -33,6 +33,9 @@ respond to the read-only smoke query.
 - Live keyboard checks passed for skip navigation, mobile-menu focus trapping,
   Escape restoration, invalid staff-record handling, and overflow.
 - All HTML-referenced JavaScript assets returned `200 text/javascript`.
+- Lazy route loading now retries once against fresh HTML after a stale hashed
+  chunk, then shows a recoverable error page instead of leaving a blank route.
+- Route recovery CI: https://github.com/LukeWilliamsDev/OpusFormMaster/actions/runs/36224057507
 
 ## Private staging smoke
 

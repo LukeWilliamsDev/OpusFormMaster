@@ -56,6 +56,16 @@ respond to the read-only smoke query.
 - Direct `https://opusform.co.uk/portal` now redirects to the HashRouter login
   entry point. Live authentication returned `200` from Supabase and opened the
   third-party portal successfully. Fix: `c77a4f55ea0b737033a07d987811e012f7dfce0d`.
+- Third-party site status colours are now shared across the dashboard, list,
+  and detail views: Open is blue, Needs attention is amber, and Completed is
+  green. The consistency deployment is `e464d4761cc9f61f01e7e8ed29c0b74079604ed3`.
+- The all-view live pass covered Home, Staff, Staff New, Sites, both supported
+  Sites/Jobs detail URLs, and Staff Detail at 390, 834, 1440, and 1920px. No
+  overflow, loading residue, server errors, or console errors were found.
+- Completed detail status was verified live with the green semantic treatment;
+  current production data does not expose an assigned Open site to this test
+  account, so Open and Needs attention were also verified from the shared
+  source mapping and dashboard/list implementation.
 
 ## Coverage limit
 

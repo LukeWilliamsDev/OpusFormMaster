@@ -26,6 +26,16 @@ const assertText = async (text, label) => {
   const body = await page.$eval("body", (element) => element.innerText);
   if (!body.includes(text)) throw new Error(`${label}: missing “${text}”`);
 };
+const visitHash = async (hash) => {
+  await page.evaluate((nextHash) => {
+    window.location.hash = nextHash;
+  }, hash);
+  await page.waitForFunction(
+    (expected) => location.hash.includes(expected),
+    { timeout: 10_000 },
+    hash.slice(1),
+  );
+};
 
 try {
   await page.goto(`${baseUrl}/#/portal`, { waitUntil: "networkidle2" });
@@ -39,18 +49,21 @@ try {
   // The hash change confirms the authenticated role guard completed; page content can vary while
   // portal data is still loading, so the first stable content assertion is made on Help.
 
-  await page.goto(`${baseUrl}/#/portal/help`, { waitUntil: "networkidle2" });
+  await visitHash("#/portal/help");
+  await new Promise((resolve) => setTimeout(resolve, 500));
   await assertText("Know what needs doing", "Help page");
   await assertText("Pending review", "Help status glossary");
 
-  await page.goto(`${baseUrl}/#/portal/contact`, { waitUntil: "networkidle2" });
+  await visitHash("#/portal/contact");
+  await new Promise((resolve) => setTimeout(resolve, 500));
   await assertText("Contact IT", "Contact page");
   await page.waitForSelector("#contact-category", { timeout: 10_000 });
 
-  await page.goto(`${baseUrl}/#/portal/legal`, { waitUntil: "networkidle2" });
+  await visitHash("#/portal/legal");
+  await new Promise((resolve) => setTimeout(resolve, 500));
   await assertText("LEGAL & PRIVACY", "Legal hub");
 
-  await page.goto(`${baseUrl}/#/portal/third-party/jobs`, { waitUntil: "networkidle2" });
+  await visitHash("#/portal/third-party/jobs");
   await page.waitForFunction(() => location.hash.includes("/portal/third-party/sites"), {
     timeout: 10_000,
   });

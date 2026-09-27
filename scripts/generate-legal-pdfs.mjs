@@ -10,7 +10,7 @@ const output = path.join(root, "..", "public", "policies");
 
 const styles = StyleSheet.create({
   page: {
-    backgroundColor: "#fff",
+    backgroundColor: "#f7f4ee",
     color: "#20262b",
     fontFamily: "Helvetica",
     fontSize: 9,
@@ -18,17 +18,19 @@ const styles = StyleSheet.create({
     paddingBottom: 42,
   },
   header: {
-    borderBottom: 3,
+    backgroundColor: "#18252a",
+    borderBottom: 4,
     borderBottomColor: "#b5651d",
-    paddingBottom: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
   },
-  logo: { fontSize: 19, fontWeight: "bold", letterSpacing: 2.5 },
+  logo: { color: "#f7f4ee", fontSize: 22, fontWeight: "bold", letterSpacing: 3 },
   dot: { color: "#b5651d" },
   company: {
-    color: "#68645f",
+    color: "#d8d1c6",
     fontSize: 7,
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -43,6 +45,15 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     marginBottom: 14,
   },
+  control: {
+    backgroundColor: "#eee9df",
+    borderLeftWidth: 3,
+    borderLeftColor: "#b5651d",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    marginBottom: 14,
+  },
+  controlText: { color: "#514d48", fontSize: 7.5, letterSpacing: 0.4 },
   section: { marginBottom: 10 },
   sectionTitle: { color: "#18252a", fontSize: 10, fontWeight: "bold", marginBottom: 3 },
   text: { color: "#4d4a46", fontSize: 8.5, lineHeight: 1.35 },
@@ -51,14 +62,14 @@ const styles = StyleSheet.create({
     bottom: 20,
     left: 34,
     right: 34,
-    borderTop: 1,
-    borderTopColor: "#ddd8d0",
-    paddingTop: 7,
+    backgroundColor: "#18252a",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
     flexDirection: "row",
     justifyContent: "space-between",
-    color: "#77716a",
     fontSize: 7,
   },
+  footerText: { color: "#d8d1c6", fontSize: 7 },
 });
 
 const docs = [
@@ -334,6 +345,15 @@ function documentFor(policy) {
         { style: styles.reference },
         `${policy.ref} · Issued September 2026 · Review September 2027`,
       ),
+      h(
+        View,
+        { style: styles.control },
+        h(
+          Text,
+          { style: styles.controlText },
+          "CONTROLLED DOCUMENT · VERSION 1.0 · OWNER: OPUS FORM LTD · CURRENT ONLINE COPY: OPUSFORM.CO.UK",
+        ),
+      ),
       ...policy.sections.map(([title, text]) =>
         h(
           View,
@@ -345,8 +365,12 @@ function documentFor(policy) {
       h(
         View,
         { style: styles.footer },
-        h(Text, null, "Opus Form Ltd · 128 City Road, London EC1V 2NX"),
-        h(Text, null, `${policy.ref} · Page 1 of 1`),
+        h(
+          Text,
+          { style: styles.footerText },
+          "Opus Form Ltd · 128 City Road, London EC1V 2NX · OPUSFORM.CO.UK",
+        ),
+        h(Text, { style: styles.footerText }, `${policy.ref} · Page 1 of 1`),
       ),
     ),
   );

@@ -16,8 +16,10 @@ export const ModernSlaveryStatementPage: React.FC = () => (
         throughout our supply chain.
       </p>
       <p>
-        We are below the £36 million turnover threshold, so this statement is voluntary. We publish
-        it to demonstrate that we take this responsibility seriously.
+        Whether a statement is required depends on the organisation's current worldwide turnover,
+        structure, and the statutory criteria in force at the time. This statement is published as a
+        voluntary control unless those criteria require a formal statement. It is reviewed when the
+        business or the law changes.
       </p>
     </Section>
 
@@ -34,7 +36,9 @@ export const ModernSlaveryStatementPage: React.FC = () => (
 
     <Section title="3. Our Policy">
       <p>
-        We won't tolerate slavery, trafficking, or illegal hiring. We deal fairly with everyone.
+        We won't tolerate slavery, trafficking, or unlawful working. Illegal working and modern
+        slavery are related but separate compliance risks, and one check does not prove that forced
+        labour is absent. We deal fairly with everyone.
       </p>
       <p>
         Our detailed operational requirements are set out in our Right to Work Policy. A tax
@@ -62,8 +66,9 @@ export const ModernSlaveryStatementPage: React.FC = () => (
           processes.
         </li>
         <li>
-          Reserve the right to terminate our relationship with suppliers if instances of modern
-          slavery come to light.
+          Prioritise worker safety, preserve evidence, escalate concerns, and consider remediation,
+          suspension, termination, or referral to the appropriate authorities where a concern is
+          identified.
         </li>
       </ul>
     </Section>

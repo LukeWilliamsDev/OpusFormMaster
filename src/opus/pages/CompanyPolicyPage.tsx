@@ -16,7 +16,11 @@ const POLICIES = {
       ],
       [
         "Gifts and hospitality",
-        "Gifts and hospitality must be reasonable, transparent, and never offered or accepted to influence a decision. Cash gifts and gifts linked to an expected favour are not permitted.",
+        "No gift, hospitality, payment, donation, sponsorship, or other advantage may be offered, promised, given, requested, or accepted to induce improper performance, influence a decision improperly, or create an improper obligation. Internal approval thresholds are controls, not a safe harbour. Cash gifts and gifts linked to an expected favour are not permitted.",
+      ],
+      [
+        "Facilitation payments",
+        "Facilitation payments are prohibited. If an immediate threat to personal safety leaves no practical alternative, prioritise safety, report the circumstances as soon as possible, and record what happened. This is not permission to make such payments.",
       ],
       [
         "Reporting concerns",
@@ -29,7 +33,7 @@ const POLICIES = {
     sections: [
       [
         "Our commitment",
-        "Opus Form aims to protect employees, clients, contractors, visitors, and the public from harm, while reducing the environmental impact of our work.",
+        "This policy sets Opus Form's framework for supporting compliance with applicable health and safety law. Site-specific risk assessments, RAMS, the construction phase plan, and principal-contractor instructions remain the controlling documents.",
       ],
       [
         "Safe work",
@@ -41,7 +45,7 @@ const POLICIES = {
       ],
       [
         "Responsibilities",
-        "Everyone must take reasonable care, follow site instructions, report hazards and incidents, and stop work where there is a serious immediate risk.",
+        "Everyone must take reasonable care, follow site instructions, report hazards and incidents, and stop work where there is a serious immediate risk. Respiratory protective equipment must be selected following the COSHH assessment and relevant HSE guidance; tight-fitting RPE requires suitable face-fit testing.",
       ],
     ],
   },

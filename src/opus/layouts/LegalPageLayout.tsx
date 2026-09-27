@@ -108,6 +108,9 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             <p className="text-[10px] font-mono uppercase tracking-[0.15em] mt-1.5 text-muted-foreground">
               Last updated: {lastUpdated}
             </p>
+            <p className="mt-1 text-[9px] font-mono uppercase tracking-[0.12em] text-muted-foreground">
+              Version 1.0 · Document owner: Opus Form Ltd · Controlled online copy
+            </p>
           </div>
 
           <div className="h-px mb-6" style={{ backgroundColor: "var(--border)" }} />
@@ -214,6 +217,12 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             style={{ color: "var(--muted-foreground)" }}
           >
             Last updated: {lastUpdated}
+          </p>
+          <p
+            className="mt-1 text-[9px] font-mono uppercase tracking-[0.12em]"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            Version 1.0 · Document owner: Opus Form Ltd · Controlled online copy
           </p>
         </div>
 

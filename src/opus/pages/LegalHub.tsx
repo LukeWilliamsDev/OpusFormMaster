@@ -109,26 +109,28 @@ export const LegalHubPage: React.FC = () => {
               className="rounded-xl border border-border bg-card p-4 text-left transition-colors hover:border-primary/50"
             >
               {path ? (
-                <>
-                  <button
-                    onClick={() => navigate(path)}
-                    className="w-full rounded text-left focus:outline-none focus:ring-2 focus:ring-primary/40"
-                  >
+                <div>
+                  <div className="rounded">
                     <Icon className="mb-3 h-5 w-5 text-primary" />
                     <div className="text-sm font-bold uppercase tracking-wide">{label}</div>
                     <p className="mt-1.5 text-xs text-muted-foreground">{description}</p>
-                    <span className="mt-3 inline-block text-[10px] font-mono font-bold uppercase tracking-wider text-primary">
+                  </div>
+                  <div className="mt-4 flex gap-2 border-t border-border pt-3">
+                    <button
+                      onClick={() => navigate(path)}
+                      className="min-h-9 flex-1 rounded-lg border border-border px-2 text-[10px] font-mono font-bold uppercase tracking-wider text-primary hover:border-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    >
                       Read online
-                    </span>
-                  </button>
-                  <a
-                    href={download}
-                    download
-                    className="mt-2 inline-block text-[10px] font-mono font-bold uppercase tracking-wider text-primary hover:underline"
-                  >
-                    Download PDF
-                  </a>
-                </>
+                    </button>
+                    <a
+                      href={download}
+                      download
+                      className="inline-flex min-h-9 flex-1 items-center justify-center rounded-lg bg-primary px-2 text-center text-[10px] font-mono font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
+                    >
+                      Download PDF
+                    </a>
+                  </div>
+                </div>
               ) : (
                 <a
                   href={download}

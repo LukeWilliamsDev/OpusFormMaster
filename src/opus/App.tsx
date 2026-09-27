@@ -130,6 +130,9 @@ const PortalHelpPage = lazyRoute(() =>
 const PortalContactPage = lazyRoute(() =>
   import("./pages/PortalContact").then((module) => ({ default: module.PortalContactPage })),
 );
+const CompanyPolicyPage = lazyRoute(() =>
+  import("./pages/CompanyPolicyPage").then((module) => ({ default: module.CompanyPolicyPage })),
+);
 
 // Immediate recovery URL redirection for HashRouter before React Router initialises and strips the hash
 (() => {
@@ -457,6 +460,14 @@ export default function App() {
                   element={
                     <RoleGuard allow={ALL_ROLES}>
                       <PortalContactPage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/portal/policies/:policySlug"
+                  element={
+                    <RoleGuard allow={ALL_ROLES}>
+                      <CompanyPolicyPage />
                     </RoleGuard>
                   }
                 />

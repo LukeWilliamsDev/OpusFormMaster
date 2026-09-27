@@ -8,6 +8,8 @@ import {
   FileText,
   HelpCircle,
   Image,
+  LayoutDashboard,
+  ListChecks,
   LockKeyhole,
   MessageSquareText,
   Paperclip,
@@ -236,36 +238,53 @@ export const PortalHelpPage: React.FC = () => {
         </header>
 
         <section
-          className="rounded-2xl border border-primary/20 bg-primary/5 p-5 sm:p-6"
+          className="overflow-hidden rounded-2xl border border-[#35464a] bg-[#18252a] text-[#f7f4ee] shadow-lg"
           aria-labelledby="quick-start-heading"
         >
-          <div className="flex items-start gap-4">
-            <div className="rounded-xl bg-primary p-2.5 text-primary-foreground">
-              <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h2 id="quick-start-heading" className="text-base font-bold">
-                Start here
+          <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[0.9fr_1.4fr] lg:items-center">
+            <div>
+              <div className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#d79a5b]">
+                <ListChecks className="h-4 w-4" aria-hidden="true" />
+                Quick start
+              </div>
+              <h2 id="quick-start-heading" className="text-2xl font-black tracking-tight">
+                Know what needs doing
               </h2>
-              <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                {[
-                  "Open Home",
-                  "Review Needs attention",
-                  "Open the linked staff member or site",
-                  "Complete the action and confirm it appears",
-                ].map((step, index) => (
-                  <li
-                    key={step}
-                    className="flex gap-3 rounded-xl border border-border/70 bg-card/70 p-3"
-                  >
-                    <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-xs font-black text-primary-foreground">
-                      {index + 1}
-                    </span>
-                    <span className="text-xs font-semibold leading-5 text-foreground">{step}</span>
-                  </li>
-                ))}
-              </ol>
+              <p className="mt-3 max-w-sm text-sm leading-6 text-[#d8d1c6]">
+                The Home screen brings together staff, certificate, and site actions that need your
+                attention. Start there when you are not sure where to begin.
+              </p>
+              <Link
+                to="/portal/third-party"
+                className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#b5651d] px-4 text-xs font-black uppercase tracking-wider text-white hover:bg-[#c4772c]"
+              >
+                <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
+                Open Home
+              </Link>
             </div>
+            <ol className="grid gap-2 sm:grid-cols-2">
+              {[
+                ["Open Home", "See the current picture."],
+                ["Review Needs attention", "Find the item that needs action."],
+                ["Open the linked record", "Check the staff member or site."],
+                ["Complete and confirm", "Look for the updated status or new item."],
+              ].map(([title, description], index) => (
+                <li
+                  key={title}
+                  className="flex gap-3 rounded-xl border border-[#405257] bg-[#223238] p-3.5"
+                >
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#b5651d] text-xs font-black text-white">
+                    {index + 1}
+                  </span>
+                  <span>
+                    <strong className="block text-xs font-bold text-[#f7f4ee]">{title}</strong>
+                    <span className="mt-1 block text-[11px] leading-4 text-[#c5c0b8]">
+                      {description}
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ol>
           </div>
         </section>
 

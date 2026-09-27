@@ -1,0 +1,24 @@
+name: Third-party portal smoke test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx puppeteer browsers install chrome
+      - run: npm run smoke:third-party
+        env:
+          SMOKE_BASE_URL: https://opusform.co.uk
+          THIRD_PARTY_SMOKE_EMAIL: ${{ secrets.THIRD_PARTY_SMOKE_EMAIL }}
+          THIRD_PARTY_SMOKE_PASSWORD: ${{ secrets.THIRD_PARTY_SMOKE_PASSWORD }}

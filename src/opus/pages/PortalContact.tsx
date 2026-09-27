@@ -4,29 +4,36 @@ import { Link } from "react-router-dom";
 import { supabase } from "../../integrations/supabase/client";
 
 export const PortalContactPage: React.FC = () => {
-  const [form, setForm] = useState({ subject: "", message: "" });
+  const [form, setForm] = useState({ category: "", subject: "", message: "" });
   const [status, setStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [sending, setSending] = useState(false);
+  const subjectLimit = Math.max(1, 120 - (form.category ? form.category.length + 3 : 0));
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setStatus(null);
     setSending(true);
+    const subject = form.category
+      ? `[${form.category}] ${form.subject.trim()}`
+      : form.subject.trim();
 
     const { error } = await supabase.functions.invoke("send-portal-help-request", {
-      body: { subject: form.subject.trim(), message: form.message.trim() },
+      body: {
+        subject: subject.slice(0, 120),
+        message: form.message.trim(),
+      },
     });
 
     setSending(false);
     if (error) {
       setStatus({
         type: "error",
-        text: "Your message could not be sent. Please try again or email IT directly.",
+        text: "Your message could not be sent.",
       });
       return;
     }
 
-    setForm({ subject: "", message: "" });
+    setForm({ category: "", subject: "", message: "" });
     setStatus({ type: "success", text: "Your message has been sent to the Opus Form IT team." });
   };
 
@@ -49,10 +56,12 @@ export const PortalContactPage: React.FC = () => {
               <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-primary">
                 Opus Form IT
               </div>
-              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Contact support</h1>
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+                Contact Opus Form support
+              </h1>
               <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
                 Send a question or report a problem to IT. Your signed-in email address will be
-                included so the team can reply.
+                included so the team can reply. We normally respond during working hours.
               </p>
             </div>
           </div>
@@ -60,6 +69,30 @@ export const PortalContactPage: React.FC = () => {
 
         <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-7">
           <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label
+                htmlFor="contact-category"
+                className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-muted-foreground"
+              >
+                What is this about?
+              </label>
+              <select
+                id="contact-category"
+                value={form.category}
+                onChange={(event) =>
+                  setForm((previous) => ({ ...previous, category: event.target.value }))
+                }
+                className="w-full rounded-lg border border-border bg-background px-3 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+              >
+                <option value="">Select a category (optional)</option>
+                <option>Site access</option>
+                <option>Staff or certificate</option>
+                <option>Upload problem</option>
+                <option>Site note or reply</option>
+                <option>Account or password</option>
+                <option>Other</option>
+              </select>
+            </div>
             <div>
               <label
                 htmlFor="contact-subject"
@@ -70,12 +103,12 @@ export const PortalContactPage: React.FC = () => {
               <input
                 id="contact-subject"
                 required
-                maxLength={120}
+                maxLength={subjectLimit}
                 value={form.subject}
                 onChange={(event) =>
                   setForm((previous) => ({ ...previous, subject: event.target.value }))
                 }
-                placeholder="For example: I cannot open my assigned site"
+                placeholder="For example: Certificate upload failed for Alex Morgan"
                 className="w-full rounded-lg border border-border bg-background px-3 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>
@@ -95,7 +128,7 @@ export const PortalContactPage: React.FC = () => {
                 onChange={(event) =>
                   setForm((previous) => ({ ...previous, message: event.target.value }))
                 }
-                placeholder="Tell us what happened, including the site name and any error message."
+                placeholder="What were you trying to do? What happened? What should happen instead?"
                 className="w-full resize-y rounded-lg border border-border bg-background px-3 py-3 text-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
               <p className="mt-1.5 text-xs text-muted-foreground">
@@ -104,10 +137,21 @@ export const PortalContactPage: React.FC = () => {
             </div>
             {status && (
               <p
-                role="status"
+                role={status.type === "error" ? "alert" : "status"}
+                aria-live="polite"
                 className={`rounded-lg border px-3 py-2.5 text-sm ${status.type === "success" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "border-destructive/30 bg-destructive/10 text-destructive"}`}
               >
                 {status.text}
+                {status.type === "error" && (
+                  <>
+                    {" "}
+                    Try again, or email IT directly at{" "}
+                    <a href="mailto:admin@opusform.co.uk" className="font-bold underline">
+                      admin@opusform.co.uk
+                    </a>
+                    .
+                  </>
+                )}
               </p>
             )}
             <button

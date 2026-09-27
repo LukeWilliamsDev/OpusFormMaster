@@ -46,6 +46,7 @@ export const PortalLayout: React.FC = () => {
     theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuReturnRef = useRef<HTMLElement | null>(null);
   const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mainContentRef = useRef<HTMLElement>(null);
@@ -62,18 +63,13 @@ export const PortalLayout: React.FC = () => {
   };
   const navigate = useNavigate();
   const location = useLocation();
-  const hideThirdPartyBottomNav =
-    role === "third_party" &&
-    /^\/portal\/third-party\/(staff\/(new|[^/]+)|sites\/[^/]+|jobs\/[^/]+)$/.test(
-      location.pathname,
-    );
-  const showThirdPartyBottomNav = role === "third_party" && !hideThirdPartyBottomNav;
+  const showThirdPartyBottomNav = role === "third_party";
 
   useEffect(() => {
     if (isMobileMenuOpen) {
       mobileMenuCloseRef.current?.focus();
     } else if (wasMobileMenuOpenRef.current) {
-      mobileMenuButtonRef.current?.focus();
+      mobileMenuReturnRef.current?.focus();
     }
     wasMobileMenuOpenRef.current = isMobileMenuOpen;
   }, [isMobileMenuOpen]);
@@ -319,7 +315,10 @@ export const PortalLayout: React.FC = () => {
           </button>
           <button
             ref={mobileMenuButtonRef}
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            onClick={(event) => {
+              mobileMenuReturnRef.current = event.currentTarget;
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+            }}
             className={`p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] items-center justify-center ${role === "third_party" ? "hidden" : "flex"}`}
             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={isMobileMenuOpen}
@@ -333,12 +332,13 @@ export const PortalLayout: React.FC = () => {
       {showThirdPartyBottomNav && (
         <nav
           aria-label="Third-party portal navigation"
-          className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 border-t-2 border-border bg-background/95 px-2 py-2 backdrop-blur lg:hidden"
+          className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 border-t-2 border-border bg-background/95 px-2 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
         >
           {[
             { label: "Home", path: "/portal/third-party", icon: LayoutDashboard },
             { label: "Staff", path: "/portal/third-party/staff", icon: Users },
             { label: "Sites", path: "/portal/third-party/sites", icon: Building2 },
+            { label: "Help", path: "/portal/help", icon: HelpCircle },
           ].map(({ label, path, icon: Icon }) => (
             <Link
               key={path}
@@ -346,14 +346,16 @@ export const PortalLayout: React.FC = () => {
               className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${checkIsActive(path) ? "text-primary" : "text-muted-foreground"}`}
               aria-current={checkIsActive(path) ? "page" : undefined}
             >
-              <Icon className="h-4 w-4" />
+              <Icon className="h-4 w-4" aria-hidden="true" />
               {label}
             </Link>
           ))}
           <button
-            ref={mobileMenuButtonRef}
             type="button"
-            onClick={() => setIsMobileMenuOpen(true)}
+            onClick={(event) => {
+              mobileMenuReturnRef.current = event.currentTarget;
+              setIsMobileMenuOpen(true);
+            }}
             className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-muted-foreground"
             aria-label="Open portal menu"
             aria-expanded={isMobileMenuOpen}

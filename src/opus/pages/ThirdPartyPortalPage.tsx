@@ -16,6 +16,7 @@ import { usePortal } from "../context/PortalContext";
 import { STAFF_ROLES } from "../types/erp";
 import { formatUKDate } from "../utils/week";
 import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
+import { getSiteState, siteStateLabel } from "../utils/siteStatus";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
 import { supabase } from "../../integrations/supabase/client";
 
@@ -332,7 +333,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
     });
     setUploadingTicket(false);
     if (error)
-      return toast.error("The certificate uploaded but could not be recorded. Contact support.");
+      return toast.error("The certificate uploaded but could not be recorded. Contact IT.");
     setTicketFile(null);
     setTicketType("");
     setTicketNumber("");
@@ -1113,7 +1114,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                   </span>
                                 </span>
                                 <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-primary">
-                                  {job.status}
+                                  {siteStateLabel(getSiteState(job))}
                                 </span>
                               </Link>
                             ))

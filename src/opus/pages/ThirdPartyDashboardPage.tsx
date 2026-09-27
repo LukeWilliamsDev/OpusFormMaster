@@ -186,7 +186,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-200" />
-              <h2 className="text-sm font-black">Needs your attention</h2>
+              <h2 className="text-sm font-black">Needs attention</h2>
             </div>
             <span className="text-[10px] font-black uppercase tracking-widest text-primary">
               {actionCount} {actionCount === 1 ? "item" : "items"}
@@ -308,7 +308,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             {!workers.length && (
               <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
                 <p>No staff have been approved yet.</p>
-                <p className="mt-1">Add a staff member and submit them for review.</p>
+                <p className="mt-1">Add staff member and submit the record for review.</p>
                 <Link
                   to="/portal/third-party/staff/new"
                   className="mt-3 inline-block font-black uppercase tracking-widest text-primary"

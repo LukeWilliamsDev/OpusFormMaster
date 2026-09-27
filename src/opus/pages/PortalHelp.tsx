@@ -130,8 +130,9 @@ const HelpSections: HelpSection[] = [
           for a new update.
         </p>
         <p>
-          Site attachments are limited to 10 MB per file. Use a clear filename and upload only
-          information relevant to that site. Site photos supplied by Opus Form are view-only.
+          Site attachments are limited to 10 MB per file. Accepted types are PDF, DOC, DOCX, XLS,
+          XLSX, and TXT. Use a clear filename and upload only information relevant to that site.
+          Site photos supplied by Opus Form are view-only.
         </p>
         <p>
           After posting or uploading, confirm the new item appears in the conversation or file list.
@@ -265,7 +266,7 @@ export const PortalHelpPage: React.FC = () => {
             <ol className="grid gap-2 sm:grid-cols-2">
               {[
                 ["Open Home", "See the current picture."],
-                ["Review Needs attention", "Find the item that needs action."],
+                ["Review Needs attention items", "Find the item that needs action."],
                 ["Open the linked record", "Check the staff member or site."],
                 ["Complete and confirm", "Look for the updated status or new item."],
               ].map(([title, description], index) => (
@@ -304,7 +305,7 @@ export const PortalHelpPage: React.FC = () => {
               className="hidden items-center gap-2 text-xs font-bold text-primary hover:underline sm:flex"
             >
               <FileDown className="h-4 w-4" aria-hidden="true" />
-              Download PDF guide · Updated September 2026
+              Download PDF guide · v2.0 · Updated September 2026
             </a>
           </div>
           <div className="space-y-3">
@@ -348,7 +349,7 @@ export const PortalHelpPage: React.FC = () => {
             className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-3 text-xs font-bold text-primary hover:bg-muted sm:hidden"
           >
             <FileDown className="h-4 w-4" aria-hidden="true" />
-            Download the PDF guide · Updated September 2026
+            Download the PDF guide · v2.0 · Updated September 2026
           </a>
         </section>
 
@@ -399,19 +400,19 @@ export const PortalHelpPage: React.FC = () => {
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
             <div>
               <h2 id="support-heading" className="text-base font-bold">
-                Contact Opus Form support
+                Contact IT
               </h2>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
                 Use Contact IT for access problems, missing records, upload errors, or site-note
                 issues. Include the site or staff name, what you were doing, approximate time,
-                device/browser, and exact error. Do not include passwords or unrelated personal
-                information.
+                device/browser, and exact error. Do not include passwords, sign-in links, payment
+                details, or unrelated personal information.
               </p>
               <Link
                 to="/portal/contact"
                 className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
               >
-                Contact Opus Form IT
+                Contact IT
               </Link>
             </div>
           </div>

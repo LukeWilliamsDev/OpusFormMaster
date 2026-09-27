@@ -157,7 +157,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
             to="/portal/contact"
             className="mt-4 inline-block text-xs font-black uppercase tracking-widest text-primary"
           >
-            Contact support if you expected a site →
+            Contact IT if you expected a site →
           </Link>
         </div>
       ) : (

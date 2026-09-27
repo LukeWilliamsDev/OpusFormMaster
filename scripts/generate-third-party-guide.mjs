@@ -141,7 +141,7 @@ pages[0] = h(
       h(Text, { style: styles.quickTitle }, "Start here"),
       [
         "Open Home",
-        "Review Needs attention",
+        "Review Needs attention items",
         "Open the linked staff member or site",
         "Complete the action and confirm it appears",
       ].map((text, i) =>
@@ -160,7 +160,7 @@ pages[0] = h(
       h(
         Text,
         { style: styles.body },
-        "Open Staff to search approved staff and people awaiting review. Add a staff member, enter accurate details, and submit it to Opus Form. A new record stays Pending review until approved; it does not create site access before approval.",
+        "Open Staff to search approved staff and people awaiting review. Add staff member, enter accurate details, and submit the record to Opus Form. A new record stays Pending review until approved; it does not create site access before approval. You can edit the name, role, email, phone, and postcode, and upload certificates after submission.",
       ),
     ),
     h(
@@ -170,7 +170,7 @@ pages[0] = h(
       h(
         Text,
         { style: styles.body },
-        "Open a staff record, choose Add certificate or Replace, enter the type, number, and expiry date, then upload a PDF, JPG, JPEG, or PNG file up to 10 MB. Uploading evidence does not approve it; Opus Form reviews it.",
+        "Open a staff record, choose Add certificate or Replace, enter the type, number, and expiry date, then upload a PDF, JPG, JPEG, or PNG file up to 10 MB. A replacement becomes the current valid record while previous versions remain available to Opus Form for audit. Uploading evidence does not approve it; Opus Form reviews it.",
       ),
     ),
   ),
@@ -213,7 +213,7 @@ pages.push(
         h(
           Text,
           { style: styles.body },
-          "Open an open site and check its name before adding a note or attachment. Keep notes factual and relevant. You can reply to Opus Form responses; use a new note for a new update. Attachments are limited to 10 MB per file. Site photos supplied by Opus Form are view-only.",
+          "Open an open site and check its name before adding a note or attachment. Keep notes factual and relevant. You can reply to Opus Form responses; use a new note for a new update. Attachments are limited to 10 MB per file and accept PDF, DOC, DOCX, XLS, XLSX, and TXT. Site photos supplied by Opus Form are view-only.",
         ),
       ),
       h(
@@ -282,7 +282,7 @@ pages.push(
         ),
         bulletList([
           "Do not include passwords, sign-in links, payment details, or unrelated personal information.",
-          "If the form does not send, try again or email admin@opusform.co.uk.",
+          "If the form does not send, try again or email luke@opusform.co.uk.",
           "We normally respond during working hours.",
         ]),
       ),
@@ -312,11 +312,11 @@ pages.push(
         { style: styles.section },
         h(Text, { style: styles.sectionTitle }, "Direct routes"),
         bulletList([
-          "Home: /portal/third-party",
-          "Staff: /portal/third-party/staff",
-          "Sites: /portal/third-party/sites",
-          "Help: /portal/help",
-          "Contact IT: /portal/contact",
+          "Home: /#/portal/third-party",
+          "Staff: /#/portal/third-party/staff",
+          "Sites: /#/portal/third-party/sites",
+          "Help: /#/portal/help",
+          "Contact IT: /#/portal/contact",
         ]),
       ),
     ),

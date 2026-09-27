@@ -124,7 +124,7 @@ export const ThirdPartySitePage: React.FC = () => {
             to="/portal/contact"
             className="mt-4 inline-block text-xs font-black uppercase tracking-widest text-primary"
           >
-            Contact support →
+            Contact IT →
           </Link>
         </div>
       </div>
@@ -190,7 +190,7 @@ export const ThirdPartySitePage: React.FC = () => {
     setUploadingAttachment(false);
     if (error)
       return toast.error(
-        "The file uploaded but could not be added to the site record. Contact support.",
+        "The file uploaded but could not be added to the site record. Contact IT.",
       );
     setAttachmentRefresh((current) => current + 1);
     setConfirmation("Attachment uploaded to this site.");

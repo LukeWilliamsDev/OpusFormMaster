@@ -63,9 +63,7 @@ export const PortalContactPage: React.FC = () => {
               <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-primary">
                 Opus Form IT
               </div>
-              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
-                Contact Opus Form support
-              </h1>
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Contact IT</h1>
               <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
                 Send a question or report a problem to IT. Your signed-in email address will be
                 included so the team can reply. We normally respond during working hours.
@@ -166,8 +164,8 @@ export const PortalContactPage: React.FC = () => {
                     <>
                       {" "}
                       Try again, or email IT directly at{" "}
-                      <a href="mailto:admin@opusform.co.uk" className="font-bold underline">
-                        admin@opusform.co.uk
+                      <a href="mailto:luke@opusform.co.uk" className="font-bold underline">
+                        luke@opusform.co.uk
                       </a>
                       .
                     </>

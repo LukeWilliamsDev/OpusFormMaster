@@ -4,7 +4,7 @@ import { usePortal } from "../context/PortalContext";
 import {
   ASSIGNED_SHIFT_ROLES,
   DOCUMENT_SEND_ROLES,
-  MANAGEMENT_ROLES,
+  MANAGEMENT_WRITE_ROLES,
 } from "../context/PortalContext";
 import { RosterView } from "../components/RosterView";
 import { CalendarBoard, CalendarGroup } from "../components/calendar/CalendarBoard";
@@ -72,7 +72,7 @@ export const LaborRosterPage: React.FC = () => {
           date={selectedDate}
           onChangeGroup={handleChangeGroup}
           onChangeDate={handleChangeDate}
-          canEdit={!!role && MANAGEMENT_ROLES.includes(role)}
+          canEdit={!!role && MANAGEMENT_WRITE_ROLES.includes(role)}
         />
       )}
     </div>

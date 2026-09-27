@@ -58,12 +58,14 @@ interface PipelineRegistryProps {
   onEditQuote: (quoteId: string) => void;
   onNewQuote: () => void;
   onBack: () => void;
+  readOnly?: boolean;
 }
 
 export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
   onEditQuote,
   onNewQuote,
   onBack,
+  readOnly = false,
 }) => {
   const { jobs, setJobs, profile, user } = usePortal();
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -345,13 +347,15 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         </div>
 
         {/* New Quote Button */}
-        <button
-          onClick={onNewQuote}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-lg text-xs font-bold transition-all shadow-lg select-none"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New quote</span>
-        </button>
+        {!readOnly && (
+          <button
+            onClick={onNewQuote}
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-lg text-xs font-bold transition-all shadow-lg select-none"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New quote</span>
+          </button>
+        )}
       </div>
 
       <main className="mt-0 pb-8 space-y-6">
@@ -775,29 +779,31 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               </div>
 
               {/* Sticky Footer Actions */}
-              <div className="p-6 border-t border-border bg-secondary/30 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <button
-                  onClick={() => {
-                    setSelectedQuoteForControl(null);
-                    onEditQuote(selectedQuoteForControl.id);
-                  }}
-                  className="flex-1 py-3 bg-secondary hover:bg-secondary/80 border border-border text-foreground/85 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all text-center focus:outline-none"
-                >
-                  Edit Quote
-                </button>
-                <button
-                  onClick={() => setConvertingQuote(selectedQuoteForControl)}
-                  className="flex-1 py-3 bg-primary hover:brightness-110 text-primary-foreground rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
-                >
-                  Convert to Job
-                </button>
-                <button
-                  onClick={() => setSelectedQuoteToDelete(selectedQuoteForControl)}
-                  className="w-full sm:w-auto py-3 px-4 bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 text-red-400 hover:text-red-300 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none"
-                >
-                  Delete
-                </button>
-              </div>
+              {!readOnly && (
+                <div className="p-6 border-t border-border bg-secondary/30 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setSelectedQuoteForControl(null);
+                      onEditQuote(selectedQuoteForControl.id);
+                    }}
+                    className="flex-1 py-3 bg-secondary hover:bg-secondary/80 border border-border text-foreground/85 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all text-center focus:outline-none"
+                  >
+                    Edit Quote
+                  </button>
+                  <button
+                    onClick={() => setConvertingQuote(selectedQuoteForControl)}
+                    className="flex-1 py-3 bg-primary hover:brightness-110 text-primary-foreground rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
+                  >
+                    Convert to Job
+                  </button>
+                  <button
+                    onClick={() => setSelectedQuoteToDelete(selectedQuoteForControl)}
+                    className="w-full sm:w-auto py-3 px-4 bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 text-red-400 hover:text-red-300 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

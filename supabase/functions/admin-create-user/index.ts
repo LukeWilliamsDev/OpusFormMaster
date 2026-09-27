@@ -59,6 +59,18 @@ serve(async (req) => {
         headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       });
     }
+    // There is one admin seat: Luke Williams' designated account. Keep this
+    // invariant in the trusted function rather than relying on the UI role
+    // selector.
+    if (role === "admin" && email.toLowerCase() !== ADMIN_EMAIL) {
+      return new Response(
+        JSON.stringify({ error: "The admin role is reserved for Luke Williams." }),
+        {
+          status: 400,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        },
+      );
+    }
 
     const { data: created, error: createError } = await supabase.auth.admin.inviteUserByEmail(
       email,

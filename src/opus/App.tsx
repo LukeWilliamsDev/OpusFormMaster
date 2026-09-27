@@ -13,10 +13,9 @@ import {
   usePortal,
   AppRole,
   ASSIGNED_SHIFT_ROLES,
-  ALL_ROLES,
   MANAGEMENT_ROLES,
   FIELD_ROLES,
-  INTERNAL_ROLES,
+  PORTAL_ACCESS_ROLES,
 } from "./context/PortalContext";
 import { PortalLayout } from "./layouts/PortalLayout";
 const lazyRoute = <T extends React.ComponentType<any>>(
@@ -182,6 +181,27 @@ const RouteFallback: React.FC = () => (
   </div>
 );
 
+const NoPortalAccess: React.FC = () => {
+  const { signOut } = usePortal();
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-6 text-foreground">
+      <div className="max-w-md rounded-2xl border border-border bg-card p-8 text-center">
+        <h1 className="text-xl font-black">Portal access is not enabled</h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          This account has not been assigned access to any Opus Form portal pages.
+        </p>
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="mt-6 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+        >
+          Sign out
+        </button>
+      </div>
+    </div>
+  );
+};
+
 class RouteErrorBoundary extends React.Component<React.PropsWithChildren, { hasError: boolean }> {
   state = { hasError: false };
 
@@ -243,7 +263,7 @@ const RoleGuard: React.FC<{
       role === "third_party"
         ? "/portal/third-party"
         : FIELD_ROLES.includes(role)
-          ? "/portal/roster?view=calendar"
+          ? "/portal/no-access"
           : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
@@ -264,7 +284,7 @@ const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       role === "third_party"
         ? "/portal/third-party"
         : FIELD_ROLES.includes(role)
-          ? "/portal/roster?view=calendar"
+          ? "/portal/no-access"
           : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
@@ -324,7 +344,7 @@ export default function App() {
                 <Route
                   path="/portal/roster"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={MANAGEMENT_ROLES}>
                       <LaborRosterPage />
                     </RoleGuard>
                   }
@@ -332,7 +352,7 @@ export default function App() {
                 <Route
                   path="/portal/calendar"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={MANAGEMENT_ROLES}>
                       <CalendarPage />
                     </RoleGuard>
                   }
@@ -340,7 +360,7 @@ export default function App() {
                 <Route
                   path="/portal/certificate-checker"
                   element={
-                    <RoleGuard allow={INTERNAL_ROLES}>
+                    <RoleGuard allow={MANAGEMENT_ROLES}>
                       <CertificateCheckerPage />
                     </RoleGuard>
                   }
@@ -418,6 +438,14 @@ export default function App() {
                   }
                 />
                 <Route
+                  path="/portal/no-access"
+                  element={
+                    <RoleGuard allow={FIELD_ROLES}>
+                      <NoPortalAccess />
+                    </RoleGuard>
+                  }
+                />
+                <Route
                   path="/portal/third-party-approvals"
                   element={
                     <RoleGuard allow={MANAGEMENT_ROLES}>
@@ -452,7 +480,7 @@ export default function App() {
                 <Route
                   path="/portal/settings"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
                       <SettingsPage />
                     </RoleGuard>
                   }
@@ -460,7 +488,7 @@ export default function App() {
                 <Route
                   path="/portal/legal"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
                       <LegalHubPage />
                     </RoleGuard>
                   }
@@ -468,7 +496,7 @@ export default function App() {
                 <Route
                   path="/portal/help"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
                       <PortalHelpPage />
                     </RoleGuard>
                   }
@@ -476,7 +504,7 @@ export default function App() {
                 <Route
                   path="/portal/contact"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
                       <PortalContactPage />
                     </RoleGuard>
                   }
@@ -484,7 +512,7 @@ export default function App() {
                 <Route
                   path="/portal/policies/:policySlug"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
                       <CompanyPolicyPage />
                     </RoleGuard>
                   }
@@ -492,7 +520,7 @@ export default function App() {
                 <Route
                   path="/portal/terms"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
                       <TermsOfServicePage />
                     </RoleGuard>
                   }
@@ -500,7 +528,7 @@ export default function App() {
                 <Route
                   path="/portal/acceptable-use"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
                       <AcceptableUsePolicyPage />
                     </RoleGuard>
                   }
@@ -508,7 +536,7 @@ export default function App() {
                 <Route
                   path="/portal/privacy"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
                       <PrivacyNoticePage />
                     </RoleGuard>
                   }
@@ -516,7 +544,7 @@ export default function App() {
                 <Route
                   path="/portal/cookies"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
                       <CookieStatementPage />
                     </RoleGuard>
                   }
@@ -524,7 +552,7 @@ export default function App() {
                 <Route
                   path="/portal/modern-slavery"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
                       <ModernSlaveryStatementPage />
                     </RoleGuard>
                   }
@@ -532,7 +560,7 @@ export default function App() {
                 <Route
                   path="/portal/right-to-work"
                   element={
-                    <RoleGuard allow={ALL_ROLES}>
+                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
                       <RightToWorkPolicyPage />
                     </RoleGuard>
                   }
@@ -558,7 +586,7 @@ const RoleAwareFallback: React.FC = () => {
     role === "third_party"
       ? "/portal/third-party"
       : role && ASSIGNED_SHIFT_ROLES.includes(role)
-        ? "/portal/my-shifts"
+        ? "/portal/no-access"
         : role === "logistics_assistant"
           ? "/portal/roster?view=calendar"
           : "/portal/dashboard";

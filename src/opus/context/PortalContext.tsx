@@ -100,27 +100,41 @@ export const ALL_ROLES: AppRole[] = [
 ];
 export const INTERNAL_ROLES: AppRole[] = ALL_ROLES.filter((role) => role !== "third_party");
 
+// Authenticated portal access is intentionally limited to management roles and
+// the separate third-party portal. Site foremen and labourers are defined
+// roles, but are not currently assigned access to any portal page.
+export const PORTAL_ACCESS_ROLES: AppRole[] = [
+  "admin",
+  "director",
+  "logistics_coordinator",
+  "logistics_assistant",
+  "third_party",
+];
+
 export const formatAppRoleLabel = (value: AppRole | string | null | undefined): string =>
   (value || "")
     .split("_")
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
-// Full ops write access — mirrors private.can_write_ops() in the DB.
-export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
-// Document sending is an operational management action, not a field-user action.
-export const DOCUMENT_SEND_ROLES: AppRole[] = MANAGEMENT_ROLES;
-// Restricted access — mirrors the old "operative" tier.
-export const FIELD_ROLES: AppRole[] = ["logistics_assistant", "site_foreman", "labourer"];
-// Field users may see only the shifts assigned to their own staff record.
-export const ASSIGNED_SHIFT_ROLES: AppRole[] = ["site_foreman", "labourer"];
-// Full schedule visibility without granting operational write access.
-export const SCHEDULE_ROLES: AppRole[] = [
+// Management pages are visible to all four internal management roles. The
+// assistant is deliberately read-only for write-sensitive actions.
+export const MANAGEMENT_ROLES: AppRole[] = [
   "admin",
   "director",
   "logistics_coordinator",
   "logistics_assistant",
 ];
+// Full ops write access — mirrors private.can_write_ops() in the DB.
+export const MANAGEMENT_WRITE_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
+// Document sending is an operational management action, not a field-user action.
+export const DOCUMENT_SEND_ROLES: AppRole[] = MANAGEMENT_WRITE_ROLES;
+// Defined but currently unassigned/no portal access.
+export const FIELD_ROLES: AppRole[] = ["site_foreman", "labourer"];
+// Field users may see only the shifts assigned to their own staff record.
+export const ASSIGNED_SHIFT_ROLES: AppRole[] = [];
+// Full schedule visibility without granting operational write access.
+export const SCHEDULE_ROLES: AppRole[] = MANAGEMENT_ROLES;
 
 // ---- Row <-> App mappers -----------------------------------------------
 export const workerToRow = (w: Worker, tenantId?: string) =>
@@ -896,7 +910,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const handleReloadDemoData = () => {
-    if (!role || !MANAGEMENT_ROLES.includes(role)) {
+    if (!role || !MANAGEMENT_WRITE_ROLES.includes(role)) {
       toast.error("Only management roles can seed the demo dataset.");
       return;
     }

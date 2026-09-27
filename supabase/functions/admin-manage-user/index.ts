@@ -81,6 +81,25 @@ serve(async (req) => {
       });
     }
 
+    if (action === "update") {
+      const nextEmail = (email ?? target.email ?? "").toLowerCase();
+      const nextRole = role ?? target.role;
+      if (nextRole === "admin" && nextEmail !== ADMIN_EMAIL) {
+        return new Response(
+          JSON.stringify({ error: "The admin role is reserved for Luke Williams." }),
+          { status: 400, headers: { ...corsHeaders(req), "Content-Type": "application/json" } },
+        );
+      }
+      if (target.role === "admin" && nextEmail !== ADMIN_EMAIL) {
+        return new Response(
+          JSON.stringify({
+            error: "Luke Williams' admin account cannot be renamed or reassigned.",
+          }),
+          { status: 400, headers: { ...corsHeaders(req), "Content-Type": "application/json" } },
+        );
+      }
+    }
+
     if (action === "delete") {
       await supabase.from("audit_logs").insert({
         user_id: caller.id,

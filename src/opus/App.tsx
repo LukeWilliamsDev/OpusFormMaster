@@ -13,6 +13,7 @@ import {
   PortalProvider,
   usePortal,
   AppRole,
+  ALL_ROLES,
   ASSIGNED_SHIFT_ROLES,
   MANAGEMENT_ROLES,
   MANAGEMENT_WRITE_ROLES,
@@ -560,7 +561,7 @@ export default function App() {
                 <Route
                   path="/portal/contact"
                   element={
-                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
+                    <RoleGuard allow={ALL_ROLES}>
                       <PortalContactPage />
                     </RoleGuard>
                   }

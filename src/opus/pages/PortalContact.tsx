@@ -22,27 +22,36 @@ export const PortalContactPage: React.FC = () => {
       ? `[${form.category}] ${form.subject.trim()}`
       : form.subject.trim();
 
-    const { error } = await supabase.functions.invoke("send-portal-help-request", {
-      body: {
-        subject: subject.slice(0, 120),
-        message: form.message.trim(),
-      },
-    });
+    try {
+      const { error } = await supabase.functions.invoke("send-portal-help-request", {
+        body: {
+          subject: subject.slice(0, 120),
+          message: form.message.trim(),
+        },
+      });
 
-    setSending(false);
-    if (error) {
+      if (error) {
+        setStatus({
+          type: "error",
+          text: "Your message could not be sent.",
+        });
+        return;
+      }
+
+      setForm({ category: "", subject: "", message: "" });
+      setStatus({
+        type: "success",
+        text: "Message sent. Opus Form IT has received your request and will reply during working hours.",
+      });
+    } catch (error) {
+      console.error("Failed to send portal help request:", error);
       setStatus({
         type: "error",
         text: "Your message could not be sent.",
       });
-      return;
+    } finally {
+      setSending(false);
     }
-
-    setForm({ category: "", subject: "", message: "" });
-    setStatus({
-      type: "success",
-      text: "Message sent. Opus Form IT has received your request and will reply during working hours.",
-    });
   };
 
   return (

@@ -81,24 +81,8 @@ serve(async (req) => {
       );
     }
 
-    const { data: configRows, error: configError } = await adminClient
-      .from("decrypted_smtp_config")
-      .select("key, value");
-    if (configError || !configRows?.length) {
-      return new Response(
-        JSON.stringify({ error: "Email service configuration is unavailable." }),
-        {
-          status: 500,
-          headers,
-        },
-      );
-    }
-
-    const config: Record<string, string> = {};
-    for (const row of configRows) config[row.key] = row.value;
-    // Prefer the current Edge Function secret. The legacy decrypted config view
-    // can contain an older revoked key and must not override the live secret.
-    const resendApiKey = Deno.env.get("RESEND_API_KEY") || config.RESEND_API_KEY;
+    // Use the current Edge Function secret; the legacy database config may contain a revoked key.
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
       return new Response(
         JSON.stringify({ error: "Email service configuration is unavailable." }),
@@ -114,7 +98,7 @@ serve(async (req) => {
       dateStyle: "medium",
       timeStyle: "short",
     });
-    const sender = config.RESEND_FROM_EMAIL || "support@opusform.co.uk";
+    const sender = Deno.env.get("RESEND_FROM_EMAIL") || "support@opusform.co.uk";
     const bodyHtml = `
       <p class="text-title" style="margin: 0 0 16px; font-size: 16px; font-weight: 700;">${escapeHtml(subject)}</p>
       <p class="text-secondary" style="margin: 0 0 8px; font-size: 12px;">From: <strong class="text-title">${escapeHtml(user.email ?? "Unknown account")}</strong></p>

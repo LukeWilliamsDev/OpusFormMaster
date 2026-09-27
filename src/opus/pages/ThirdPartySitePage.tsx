@@ -263,7 +263,7 @@ export const ThirdPartySitePage: React.FC = () => {
           </p>
         )}
       </section>
-      <div className="grid gap-5 lg:grid-cols-2">
+      <div className={`grid gap-5 ${readOnlyHistory ? "" : "lg:grid-cols-2"}`}>
         <section className="rounded-2xl border-2 border-border bg-card p-5">
           <div className="flex items-center justify-between gap-3">
             <div>

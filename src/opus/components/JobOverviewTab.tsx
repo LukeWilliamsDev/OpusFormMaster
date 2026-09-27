@@ -61,12 +61,12 @@ export function JobOverviewTab({
         {/* Local Suppliers List — stretches to match the map column's
             height, scrolling internally instead of pushing the page down */}
         <div className="p-4 flex flex-col h-full lg:min-h-[420px] max-h-[70vh]">
-          <div className="text-sm font-bold text-foreground mb-4">Closest Local Suppliers</div>
+          <div className="text-sm font-bold text-foreground mb-4">Nearby suppliers</div>
           <div className="flex-1 flex flex-col min-h-0">
             {loadingSuppliers ? (
               <div className="flex items-center gap-2 text-xs text-muted-foreground py-4">
                 <Loader className="w-4 h-4 animate-spin text-primary" />
-                <span>Searching local building merchants...</span>
+                <span>Searching nearby suppliers…</span>
               </div>
             ) : suppliers.length > 0 ? (
               <div className="space-y-2.5 flex-1 overflow-y-auto pr-1">

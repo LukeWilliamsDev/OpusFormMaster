@@ -34,6 +34,8 @@ import { handleError } from "../utils/errorHandler";
 import { InvoiceList } from "./billing/InvoiceList";
 import { FinalBillList } from "./billing/FinalBillList";
 import { QuoteInvoiceBuilder } from "./QuoteInvoiceBuilder";
+import { ThirdPartyAttachmentsPanel } from "./ThirdPartyAttachmentsPanel";
+import { ThirdPartyNotesPanel } from "./ThirdPartyNotesPanel";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 100 * 1024 * 1024;
@@ -1012,7 +1014,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           if (!open) setIsConfirmingJobSave(false);
         }}
         tone="neutral"
-        title="Save Job Details?"
+        title="Save job details?"
         confirmLabel="Save Changes"
         onConfirm={handleSaveJobEdit}
         message={
@@ -1038,20 +1040,20 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         }
       />
 
-      {/* Change Project Status Confirmation */}
+      {/* Change job status confirmation */}
       <ConfirmDialog
         open={!!pendingStatus}
         onOpenChange={(open) => {
           if (!open) setPendingStatus(null);
         }}
         tone="neutral"
-        title="Change Project Status"
+        title="Change job status"
         confirmLabel="Confirm Change"
         onConfirm={executeStatusChange}
         message={
           pendingStatus && (
             <>
-              Change project status from{" "}
+              Change job status from{" "}
               <strong className="text-foreground">{STATUS_LABELS[status]}</strong> to{" "}
               <strong className="text-foreground">{STATUS_LABELS[pendingStatus]}</strong>?
             </>
@@ -1066,7 +1068,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           if (!open) setPourToRemove(null);
         }}
         tone="destructive"
-        title="Remove Scheduled Pour"
+        title="Remove scheduled pour?"
         confirmLabel="Remove Pour"
         onConfirm={executeRemovePour}
         message={
@@ -1345,6 +1347,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           </div>
 
           <FeedTab jobId={job.id} />
+          <ThirdPartyNotesPanel jobId={job.id} />
         </TabsContent>
 
         <TabsContent value="suppliers">
@@ -1386,6 +1389,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             setRenameValue={setRenameValue}
             executeRenameAttachment={executeRenameAttachment}
           />
+          <ThirdPartyAttachmentsPanel jobId={job.id} />
         </TabsContent>
 
         <TabsContent value="history">

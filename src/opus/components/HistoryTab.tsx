@@ -86,7 +86,7 @@ export function HistoryTab({
                   setAuditSearch(e.target.value);
                   setPage(1);
                 }}
-                placeholder="Search actor..."
+                placeholder="Search user…"
                 className="pl-8"
               />
             </div>

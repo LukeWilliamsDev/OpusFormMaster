@@ -20,6 +20,7 @@ import {
   ClipboardList,
   Building2,
   UserCog,
+  BadgeCheck,
   HelpCircle,
   Mail,
 } from "lucide-react";
@@ -30,6 +31,8 @@ import {
   ALL_ROLES,
   MANAGEMENT_ROLES,
   SCHEDULE_ROLES,
+  formatAppRoleLabel,
+  INTERNAL_ROLES,
 } from "../context/PortalContext";
 import { getAvatarPresetClass } from "../pages/Settings";
 import { getAvatarInitials } from "../utils/workerValidation";
@@ -95,15 +98,45 @@ export const PortalLayout: React.FC = () => {
       roles: MANAGEMENT_ROLES,
     },
     {
+      name: "STAFF APPROVALS",
+      path: "/portal/third-party-approvals",
+      icon: UserCog,
+      roles: MANAGEMENT_ROLES,
+    },
+    {
+      name: "CERTIFICATE CHECKER",
+      path: "/portal/certificate-checker",
+      icon: BadgeCheck,
+      roles: INTERNAL_ROLES,
+    },
+    {
       name: "QUOTES",
       path: "/portal/pipeline?view=pipeline-registry",
       icon: Truck,
       roles: MANAGEMENT_ROLES,
     },
     { section: "ADMIN" },
-    { name: "SITE LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
+    { name: "AUDIT LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
     { name: "USERS", path: "/portal/users", icon: UserCog, roles: ["admin"] },
     { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
+    {
+      name: "PORTAL HOME",
+      path: "/portal/third-party",
+      icon: LayoutDashboard,
+      roles: ["third_party"],
+    },
+    {
+      name: "STAFF",
+      path: "/portal/third-party/staff",
+      icon: Users,
+      roles: ["third_party"],
+    },
+    {
+      name: "ASSIGNED SITES",
+      path: "/portal/third-party/jobs",
+      icon: Building2,
+      roles: ["third_party"],
+    },
   ];
 
   // SITE RECORDS/POLICIES (full audit trail) are restricted to the one
@@ -122,11 +155,14 @@ export const PortalLayout: React.FC = () => {
     return true;
   });
   // Drop a section header if every item under it got filtered out (e.g. ADMIN for non-admins).
-  const navItems = visibleNav.filter((item, i) => {
-    if (!("section" in item)) return true;
-    const next = visibleNav[i + 1];
-    return !!next && !("section" in next);
-  });
+  const navItems =
+    role === "third_party"
+      ? visibleNav.filter((item) => !("section" in item))
+      : visibleNav.filter((item, i) => {
+          if (!("section" in item)) return true;
+          const next = visibleNav[i + 1];
+          return !!next && !("section" in next);
+        });
 
   const checkIsActive = (path: string) => {
     const [itemPath, itemQuery] = path.split("?");
@@ -169,10 +205,10 @@ export const PortalLayout: React.FC = () => {
         collapsed={isSidebarCollapsed}
         onToggleCollapse={toggleSidebar}
         logoSrc={logoSrc}
-        logoHref="/portal/dashboard"
+        logoHref={role === "third_party" ? "/portal/third-party" : "/portal/dashboard"}
         profile={{
           name: profile?.full_name || user?.email || "User",
-          role: role || "labourer",
+          role: formatAppRoleLabel(role || "labourer"),
           avatarClass: getAvatarPresetClass(profile?.avatar_url),
           href: "/portal/settings",
         }}
@@ -183,7 +219,10 @@ export const PortalLayout: React.FC = () => {
 
       {/* Mobile Sticky Header */}
       <header className="lg:hidden flex items-center justify-between h-16 bg-background border-b-2 border-border px-4 sticky top-0 z-40">
-        <Link to="/portal/dashboard" className="flex items-center">
+        <Link
+          to={role === "third_party" ? "/portal/third-party" : "/portal/dashboard"}
+          className="flex items-center"
+        >
           <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
         </Link>
         <div className="flex items-center space-x-2">
@@ -202,19 +241,46 @@ export const PortalLayout: React.FC = () => {
           <button
             onClick={handleLogoutClick}
             className="p-2 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
-            title="Logout"
+            title="Log out"
           >
             <LogOut className="w-5 h-5" />
           </button>
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Toggle Menu"
+            className={`p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] items-center justify-center ${role === "third_party" ? "hidden" : "flex"}`}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </header>
+
+      {role === "third_party" && (
+        <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 border-t-2 border-border bg-background/95 px-2 py-2 backdrop-blur lg:hidden">
+          {[
+            { label: "Home", path: "/portal/third-party", icon: LayoutDashboard },
+            { label: "Staff", path: "/portal/third-party/staff", icon: Users },
+            { label: "Sites", path: "/portal/third-party/jobs", icon: Building2 },
+          ].map(({ label, path, icon: Icon }) => (
+            <Link
+              key={path}
+              to={path}
+              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${checkIsActive(path) ? "text-primary" : "text-muted-foreground"}`}
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </Link>
+          ))}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-muted-foreground"
+          >
+            <Menu className="h-4 w-4" />
+            More
+          </button>
+        </nav>
+      )}
 
       {/* Mobile Slide-out Drawer */}
       <AnimatePresence>
@@ -236,7 +302,7 @@ export const PortalLayout: React.FC = () => {
             >
               <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-border">
                 <Link
-                  to="/portal/dashboard"
+                  to={role === "third_party" ? "/portal/third-party" : "/portal/dashboard"}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center"
                 >
@@ -272,7 +338,7 @@ export const PortalLayout: React.FC = () => {
                     {profile?.full_name || user?.email || "User"}
                   </span>
                   <span className="text-[11px] text-emerald-600 dark:text-emerald-400 capitalize font-medium">
-                    {(role || "labourer").replace(/_/g, " ")}
+                    {formatAppRoleLabel(role || "labourer")}
                   </span>
                 </div>
               </Link>
@@ -295,7 +361,7 @@ export const PortalLayout: React.FC = () => {
                   className="flex items-center space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer min-h-[44px]"
                 >
                   <HelpCircle className="w-4 h-4 shrink-0" />
-                  <span>Help & Guidance</span>
+                  <span>Help &amp; Guidance</span>
                 </Link>
                 <Link
                   to="/portal/contact"
@@ -344,7 +410,7 @@ export const PortalLayout: React.FC = () => {
                   className="flex items-center w-full space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all cursor-pointer min-h-[44px]"
                 >
                   <LogOut className="w-4 h-4 shrink-0" />
-                  <span>Log Out</span>
+                  <span>Log out</span>
                 </button>
               </div>
             </motion.div>
@@ -353,8 +419,13 @@ export const PortalLayout: React.FC = () => {
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-h-0 bg-background">
-        <div className="flex-1 w-full relative lg:min-h-0 lg:overflow-y-auto">
+      <main
+        className={`flex-1 flex flex-col min-h-0 bg-background ${role === "third_party" ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}
+      >
+        <div
+          className="flex-1 w-full relative lg:min-h-0 lg:overflow-y-auto"
+          style={{ scrollPaddingBottom: role === "third_party" ? "6.5rem" : undefined }}
+        >
           <Outlet />
         </div>
       </main>

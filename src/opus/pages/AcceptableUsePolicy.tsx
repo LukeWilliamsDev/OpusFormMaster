@@ -5,12 +5,10 @@ import { LegalPageLayout, Section } from "../layouts/LegalPageLayout";
  * Internal Acceptable Use Policy for Opus Form Ltd (Concrete Flooring Contractors).
  */
 export const AcceptableUsePolicyPage: React.FC = () => (
-  <LegalPageLayout title="Acceptable Use Policy" lastUpdated="July 2026">
+  <LegalPageLayout title="Acceptable Use Policy" lastUpdated="September 2026">
     <Section title="1. Purpose">
-      <p>
-        These are our rules for using the portal. It's for managing shifts, sites, and projects.
-      </p>
-      <p>Breaking these rules can get you suspended or fired.</p>
+      <p>This policy explains how staff should use the portal to manage shifts, sites, and jobs.</p>
+      <p>Breaking these rules may result in suspension or termination of access or engagement.</p>
     </Section>
 
     <Section title="2. What You Can Use It For">
@@ -25,13 +23,12 @@ export const AcceptableUsePolicyPage: React.FC = () => (
       </ul>
     </Section>
 
-    <Section title="3. Don't Do This">
-      <p>Don't:</p>
+    <Section title="3. Prohibited uses">
+      <p>You must not:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>Sharing your login credentials with anyone, including colleagues or site managers.</li>
         <li>
-          Attempting to access data, shift patterns, or compliance records belonging to other
-          operatives.
+          Attempting to access data, shift patterns, or compliance records belonging to other staff.
         </li>
         <li>Uploading false, expired, or modified compliance documents.</li>
         <li>Using the portal to store or transmit malicious software.</li>
@@ -49,8 +46,8 @@ export const AcceptableUsePolicyPage: React.FC = () => (
       </p>
     </Section>
 
-    <Section title="5. We Log Everything">
-      <p>We track who logs in, when, and what they upload. If we spot misuse, we investigate.</p>
+    <Section title="5. Activity is logged">
+      <p>We record portal access and uploads so we can investigate suspected misuse.</p>
     </Section>
 
     <Section title="6. Problems?">

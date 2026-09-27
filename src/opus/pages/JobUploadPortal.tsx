@@ -247,7 +247,7 @@ export const JobUploadPortalPage: React.FC = () => {
           </div>
           <div className="min-w-0">
             <h1 className="text-sm font-bold text-foreground font-archivo uppercase tracking-wide truncate">
-              Job Document Portal
+              Upload job documents
             </h1>
             <p className="text-xs text-muted-foreground truncate">{jobData?.siteName}</p>
           </div>
@@ -263,7 +263,7 @@ export const JobUploadPortalPage: React.FC = () => {
                 <Check className="w-8 h-8" />
               </div>
               <div className="space-y-1">
-                <h2 className="text-lg font-bold text-foreground">Upload Complete</h2>
+                <h2 className="text-lg font-bold text-foreground">Upload complete</h2>
                 <p className="text-sm text-muted-foreground">
                   Your documents have been submitted to the site supervisor.
                 </p>
@@ -316,7 +316,7 @@ export const JobUploadPortalPage: React.FC = () => {
               {files.length > 0 && (
                 <div className="space-y-2">
                   <div className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground">
-                    Files to Upload ({files.length})
+                    Selected files ({files.length})
                   </div>
                   <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
                     {files.map((file, idx) => (
@@ -371,7 +371,7 @@ export const JobUploadPortalPage: React.FC = () => {
                     Uploading...
                   </>
                 ) : (
-                  "Submit Documentation"
+                  "Upload documents"
                 )}
               </button>
             </form>

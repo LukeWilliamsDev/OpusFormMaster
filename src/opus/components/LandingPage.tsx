@@ -136,7 +136,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToPortal }) 
               admin@opusform.co.uk
             </a>
             <span>·</span>
-            <span>© {new Date().getFullYear()} All Rights Reserved</span>
+            <span>© {new Date().getFullYear()} All rights reserved.</span>
           </div>
         </div>
       </footer>

@@ -98,7 +98,14 @@ export const ALL_ROLES: AppRole[] = [
   "labourer",
   "third_party",
 ];
-export const THIRD_PARTY_ROLES: AppRole[] = ["third_party"];
+export const INTERNAL_ROLES: AppRole[] = ALL_ROLES.filter((role) => role !== "third_party");
+
+export const formatAppRoleLabel = (value: AppRole | string | null | undefined): string =>
+  (value || "")
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 // Full ops write access — mirrors private.can_write_ops() in the DB.
 export const MANAGEMENT_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
 // Restricted access — mirrors the old "operative" tier.
@@ -454,12 +461,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Load operational data from Supabase whenever we have a signed-in user.
   useEffect(() => {
-    // Third-party accounts use their own scoped portal surfaces and must not
-    // query or sync the internal operational tables.
-    if (!user || !role || role === "third_party") {
-      if (role === "third_party") setDataLoading(false);
-      return;
-    }
+    if (!user) return;
     let cancelled = false;
     (async () => {
       setDataLoading(true);
@@ -514,13 +516,13 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     // to fingerprint already-loaded rows; adding it would re-run this whole
     // fetch a second time once the profile loads.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, role]);
+  }, [user]);
 
   // Keep the roster live: anonymous submissions (e.g. the credential portal)
   // write to `staff` outside this session's own upsert loop below, so without
   // this the compliance tab only refreshes on next login.
   useEffect(() => {
-    if (!user || role === "third_party") return;
+    if (!user) return;
     const channel = supabase
       .channel(`staff-changes-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "staff" }, (payload) => {
@@ -550,13 +552,13 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, profile?.tenant_id, role]);
+  }, [user, profile?.tenant_id]);
 
   // Keep jobs live: changes made outside this session's own upsert loop
   // (e.g. direct DB edits, another tenant session) should reflect immediately
   // instead of only on next login.
   useEffect(() => {
-    if (!user || role === "third_party") return;
+    if (!user) return;
     const channel = supabase
       .channel(`jobs-changes-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, (payload) => {
@@ -586,12 +588,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, profile?.tenant_id, role]);
+  }, [user, profile?.tenant_id]);
 
   // Keep the roster's shifts live for the same reason jobs are subscribed
   // above: other sessions/direct edits should reflect immediately.
   useEffect(() => {
-    if (!user || role === "third_party") return;
+    if (!user) return;
     const channel = supabase
       .channel(`shifts-changes-${user.id}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "shifts" }, (payload) => {
@@ -619,12 +621,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, profile?.tenant_id, role]);
+  }, [user, profile?.tenant_id]);
 
   // Keep generic calendar events live for the same reason shifts are
   // subscribed above: other sessions/direct edits should reflect immediately.
   useEffect(() => {
-    if (!user || role === "third_party") return;
+    if (!user) return;
     const channel = supabase
       .channel(`calendar-events-changes-${user.id}`)
       .on(
@@ -656,10 +658,10 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, profile?.tenant_id, role]);
+  }, [user, profile?.tenant_id]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || role === "third_party" || !profile?.tenant_id) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
     const rows = workers.map((w) => workerToRow(w, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedWorkersRef.current) return;
@@ -681,7 +683,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [workers, user, profile?.tenant_id, role]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || role === "third_party" || !profile?.tenant_id) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
     const rows = jobs.map((j) => jobToRow(j, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedJobsRef.current) return;
@@ -703,7 +705,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [jobs, user, profile?.tenant_id, role]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || role === "third_party" || !profile?.tenant_id) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
     const rows = shifts.map((s) => shiftToRow(s, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedShiftsRef.current) return;
@@ -725,7 +727,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [shifts, user, profile?.tenant_id, role]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || role === "third_party" || !profile?.tenant_id) return;
+    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
     const rows = calendarEvents.map((e) => calendarEventToRow(e, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedCalendarEventsRef.current) return;

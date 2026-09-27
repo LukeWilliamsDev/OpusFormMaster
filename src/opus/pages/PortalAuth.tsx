@@ -113,7 +113,6 @@ export const PortalAuthPage: React.FC = () => {
       search.includes("type=invite");
 
     if (isAuthenticated && role === null) return;
-
     if (isAuthenticated && !isRecovery && formMode !== "reset" && !notification) {
       if (profile?.must_change_password) {
         setFormMode("reset");
@@ -279,7 +278,7 @@ export const PortalAuthPage: React.FC = () => {
             type="button"
             onClick={() => navigate("/")}
             className="focus:outline-none cursor-pointer group"
-            title="Return to Landing Page"
+            title="Back to home"
           >
             <img
               src={logoSrc}
@@ -395,15 +394,15 @@ export const PortalAuthPage: React.FC = () => {
                   onClick={() => setFormMode("login")}
                   className="flex items-center text-[9px] font-bold text-muted-foreground hover:text-foreground mb-8 transition-colors uppercase tracking-widest gap-1.5 cursor-pointer"
                 >
-                  <ArrowLeft className="w-3 h-3" /> Return to Login
+                  <ArrowLeft className="w-3 h-3" /> Back to sign in
                 </button>
 
                 <div className="flex items-center gap-2.5 text-[11px] font-extrabold tracking-widest uppercase text-foreground mb-4">
                   <div className="w-[3px] h-4 bg-foreground rounded-[2px]" />
-                  Password Recovery
+                  Reset your password
                 </div>
                 <p className="text-[10px] text-muted-foreground mb-8 font-bold leading-relaxed uppercase tracking-widest">
-                  Enter your authorized email to receive a secure restoration link.
+                  Enter your email address and we’ll send you a password-reset link.
                 </p>
 
                 <form onSubmit={handleForgot} className="space-y-6">
@@ -412,7 +411,7 @@ export const PortalAuthPage: React.FC = () => {
                       htmlFor="forgot-email"
                       className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest block ml-1 mb-2"
                     >
-                      Email Identifier
+                      Email address
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-muted-foreground">
@@ -437,7 +436,7 @@ export const PortalAuthPage: React.FC = () => {
                     {isSubmitting ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
-                      <span>Request Link</span>
+                      <span>Send reset link</span>
                     )}
                   </button>
                 </form>
@@ -500,7 +499,7 @@ export const PortalAuthPage: React.FC = () => {
                     {password.length > 0 && (
                       <div className="p-3 bg-secondary border border-border rounded-md space-y-2">
                         <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest mb-1">
-                          Strength Criteria:
+                          Password requirements
                         </div>
                         {[
                           { label: "Minimum 8 characters", met: password.length >= 8 },
@@ -571,7 +570,7 @@ export const PortalAuthPage: React.FC = () => {
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                     ) : (
                       <>
-                        <span>Update Password</span>
+                        <span>Set password</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </>
                     )}

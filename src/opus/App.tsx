@@ -8,7 +8,7 @@ import {
   ALL_ROLES,
   MANAGEMENT_ROLES,
   FIELD_ROLES,
-  THIRD_PARTY_ROLES,
+  INTERNAL_ROLES,
 } from "./context/PortalContext";
 import { PortalLayout } from "./layouts/PortalLayout";
 import { LandingPage } from "./components/LandingPage";
@@ -17,6 +17,11 @@ import { DashboardPage } from "./pages/Dashboard";
 import { LaborRosterPage } from "./pages/LaborRoster";
 import { CalendarPage } from "./pages/CalendarPage";
 import { MyShiftsPage } from "./pages/MyShiftsPage";
+import { ThirdPartyPortalPage } from "./pages/ThirdPartyPortalPage";
+import { ThirdPartyApprovalsPage } from "./pages/ThirdPartyApprovalsPage";
+import { ThirdPartyDashboardPage } from "./pages/ThirdPartyDashboardPage";
+import { ThirdPartyJobsPage } from "./pages/ThirdPartyJobsPage";
+import { ThirdPartySitePage } from "./pages/ThirdPartySitePage";
 import { JobLedgerPage } from "./pages/JobLedger";
 import { PipelinePage } from "./pages/Pipeline";
 import { AuditLogPage } from "./pages/AuditLog";
@@ -30,17 +35,11 @@ import { TermsOfServicePage } from "./pages/TermsOfService";
 import { AcceptableUsePolicyPage } from "./pages/AcceptableUsePolicy";
 import { CookieStatementPage } from "./pages/CookieStatement";
 import { ModernSlaveryStatementPage } from "./pages/ModernSlaveryStatement";
-import { RightToWorkPolicyPage } from "./pages/RightToWorkPolicy";
 import { LegalHubPage } from "./pages/LegalHub";
+import { CertificateCheckerPage } from "./pages/CertificateCheckerPage";
+import { RightToWorkPolicyPage } from "./pages/RightToWorkPolicy";
 import { PortalHelpPage } from "./pages/PortalHelp";
 import { PortalContactPage } from "./pages/PortalContact";
-import {
-  ThirdPartyHomePage,
-  ThirdPartyLayout,
-  ThirdPartySitePage,
-  ThirdPartySitesPage,
-  ThirdPartyStaffPage,
-} from "./pages/ThirdPartyPortal";
 
 // Immediate recovery URL redirection for HashRouter before React Router initialises and strips the hash
 (() => {
@@ -61,7 +60,7 @@ import {
 
 // Session gate — any /portal/* view requires a valid Supabase session.
 const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, authLoading, profile, role } = usePortal();
+  const { isAuthenticated, authLoading, profile } = usePortal();
   if (authLoading) {
     return <div className="min-h-screen bg-background" />;
   }
@@ -69,7 +68,7 @@ const ProtectedRoute: React.FC = () => {
   // A must-change-password account has no business in the app until it changes it —
   // send it back to the auth page, which forces the reset form for this state.
   if (profile?.must_change_password) return <Navigate to="/portal" replace />;
-  return role === "third_party" ? <ThirdPartyLayout /> : <PortalLayout />;
+  return <PortalLayout />;
 };
 
 // Role gate — restricts a subtree to a role allowlist. Blocked users go to the
@@ -83,11 +82,12 @@ const RoleGuard: React.FC<{
     return <div className="min-h-screen bg-background" />;
   }
   if (!allow.includes(role)) {
-    const fallback = THIRD_PARTY_ROLES.includes(role)
-      ? "/portal/third-party"
-      : FIELD_ROLES.includes(role)
-        ? "/portal/roster?view=calendar"
-        : "/portal/dashboard";
+    const fallback =
+      role === "third_party"
+        ? "/portal/third-party"
+        : FIELD_ROLES.includes(role)
+          ? "/portal/roster?view=calendar"
+          : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
@@ -103,11 +103,12 @@ const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     return <div className="min-h-screen bg-background" />;
   }
   if (role !== "admin" || user?.email !== "admin@opusform.co.uk") {
-    const fallback = THIRD_PARTY_ROLES.includes(role)
-      ? "/portal/third-party"
-      : FIELD_ROLES.includes(role)
-        ? "/portal/roster?view=calendar"
-        : "/portal/dashboard";
+    const fallback =
+      role === "third_party"
+        ? "/portal/third-party"
+        : FIELD_ROLES.includes(role)
+          ? "/portal/roster?view=calendar"
+          : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
@@ -178,10 +179,58 @@ export default function App() {
               }
             />
             <Route
+              path="/portal/certificate-checker"
+              element={
+                <RoleGuard allow={INTERNAL_ROLES}>
+                  <CertificateCheckerPage />
+                </RoleGuard>
+              }
+            />
+            <Route
               path="/portal/my-shifts"
               element={
                 <RoleGuard allow={ASSIGNED_SHIFT_ROLES}>
                   <MyShiftsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/third-party"
+              element={
+                <RoleGuard allow={["third_party"]}>
+                  <ThirdPartyDashboardPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/third-party/staff"
+              element={
+                <RoleGuard allow={["third_party"]}>
+                  <ThirdPartyPortalPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/third-party/jobs"
+              element={
+                <RoleGuard allow={["third_party"]}>
+                  <ThirdPartyJobsPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/third-party/jobs/:jobId"
+              element={
+                <RoleGuard allow={["third_party"]}>
+                  <ThirdPartySitePage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/third-party-approvals"
+              element={
+                <RoleGuard allow={MANAGEMENT_ROLES}>
+                  <ThirdPartyApprovalsPage />
                 </RoleGuard>
               }
             />
@@ -233,10 +282,6 @@ export default function App() {
                 </RoleGuard>
               }
             />
-            <Route path="/portal/third-party" element={<ThirdPartyHomePage />} />
-            <Route path="/portal/third-party/staff" element={<ThirdPartyStaffPage />} />
-            <Route path="/portal/third-party/sites" element={<ThirdPartySitesPage />} />
-            <Route path="/portal/third-party/sites/:siteId" element={<ThirdPartySitePage />} />
             <Route
               path="/portal/contact"
               element={
@@ -309,10 +354,12 @@ export default function App() {
 const RoleAwareFallback: React.FC = () => {
   const { role } = usePortal();
   const target =
-    role && ASSIGNED_SHIFT_ROLES.includes(role)
-      ? "/portal/my-shifts"
-      : role === "logistics_assistant"
-        ? "/portal/roster?view=calendar"
-        : "/portal/dashboard";
+    role === "third_party"
+      ? "/portal/third-party"
+      : role && ASSIGNED_SHIFT_ROLES.includes(role)
+        ? "/portal/my-shifts"
+        : role === "logistics_assistant"
+          ? "/portal/roster?view=calendar"
+          : "/portal/dashboard";
   return <Navigate to={target} replace />;
 };

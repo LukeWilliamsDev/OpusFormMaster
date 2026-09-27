@@ -5,11 +5,11 @@ import { LegalPageLayout, Section, DataTable } from "../layouts/LegalPageLayout"
  * Internal Cookie Statement for Opus Form Ltd (Concrete Flooring Contractors).
  */
 export const CookieStatementPage: React.FC = () => (
-  <LegalPageLayout title="Cookie Statement" lastUpdated="July 2026">
-    <Section title="1. What This Is About">
+  <LegalPageLayout title="Cookie Statement" lastUpdated="September 2026">
+    <Section title="1. How we use cookies">
       <p>This explains how we use cookies in our portal.</p>
       <p>
-        We don't use marketing cookies, ad trackers, or anything that follows you across the web.
+        We do not use marketing cookies, ad trackers, or anything that follows you across the web.
         This is an internal tool, not a public platform.
       </p>
     </Section>
@@ -23,8 +23,8 @@ export const CookieStatementPage: React.FC = () => (
 
     <Section title="3. Our Cookies">
       <p>
-        We only use essential cookies. You can't turn them off — the portal won't work without them.
-        We set them when you do things like log in or upload docs.
+        We only use essential cookies. You cannot turn them off because the portal will not work
+        without them. We set them when you do things like log in or upload docs.
       </p>
       <DataTable
         headers={["Cookie Name", "Purpose", "Duration"]}
@@ -43,7 +43,7 @@ export const CookieStatementPage: React.FC = () => (
       />
     </Section>
 
-    <Section title="4. You Can't Disable Them">
+    <Section title="4. Essential cookies">
       <p>
         These cookies are essential. If you block them in your browser, you won't be able to log in
         or upload documents.

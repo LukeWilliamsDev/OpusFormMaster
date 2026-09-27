@@ -11,7 +11,7 @@ const ACTION_LABELS: Record<string, string> = {
   PASSWORD_RESET_SUCCESS: "Password changed",
   PROFILE_UPDATE: "Profile updated",
   COMPLIANCE_REMINDER_SENT: "Compliance reminder sent",
-  TICKET_EXPIRED: "Ticket expired",
+  TICKET_EXPIRED: "Certificate expired",
   QUOTE_CONVERTED_TO_JOB: "Quote converted to job",
   INSPECT: "Record viewed",
   VIEW_DOCUMENT: "Document viewed",

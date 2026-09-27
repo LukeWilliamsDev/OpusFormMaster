@@ -7,13 +7,16 @@ import { LegalPageLayout, Section } from "../layouts/LegalPageLayout";
  * Governed by the laws of England & Wales.
  */
 export const TermsOfServicePage: React.FC = () => (
-  <LegalPageLayout title="Portal Usage Policy" lastUpdated="July 2026">
+  <LegalPageLayout title="Portal Usage Policy" lastUpdated="September 2026">
     <Section title="1. About This Policy">
       <p>
         This policy covers how Opus Form Ltd employees, contractors, and operatives use our internal
-        shift and project management system. It's not a commercial agreement — it's our house rules.
+        shift and job management system. It is an internal policy, not a commercial agreement.
       </p>
-      <p>By using the portal, you agree to follow this policy. That's part of working here.</p>
+      <p>
+        By using the portal, you agree to follow this policy. Compliance with it is a condition of
+        access.
+      </p>
     </Section>
 
     <Section title="2. Portal Purpose">
@@ -25,7 +28,7 @@ export const TermsOfServicePage: React.FC = () => (
         <li>Quotes and invoices</li>
         <li>Activity logs for security</li>
       </ul>
-      <p>It's staff only. Not public, not for sale.</p>
+      <p>The portal is for staff use only and is not a public or commercial service.</p>
     </Section>
 
     <Section title="3. Access & Credentials">
@@ -53,7 +56,7 @@ export const TermsOfServicePage: React.FC = () => (
         <a href="#/portal/acceptable-use" className="underline" style={{ color: "var(--primary)" }}>
           Acceptable Use Policy
         </a>
-        . Misuse can get you fired.
+        . Misuse may result in disciplinary action or termination of access.
       </p>
     </Section>
 
@@ -94,7 +97,8 @@ export const TermsOfServicePage: React.FC = () => (
 
     <Section title="8. Availability">
       <p>
-        We'll give you notice when we do maintenance. Emergency fixes might happen without warning.
+        We will give you notice when we carry out planned maintenance. Emergency fixes may happen
+        without warning.
       </p>
     </Section>
 

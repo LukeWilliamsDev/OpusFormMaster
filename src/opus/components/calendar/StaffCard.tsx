@@ -43,7 +43,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
   const ticketWarning = getWorstTicketWarning(worker);
   const blocked = ticketWarning?.status === "EXPIRED";
   const blockedTitle = blocked
-    ? `Cannot deploy: ${ticketWarning.ticket.type} ticket expired ${new Date(ticketWarning.ticket.expiryDate).toLocaleDateString("en-GB")}`
+    ? `Cannot deploy: ${ticketWarning.ticket.type} certificate expired ${new Date(ticketWarning.ticket.expiryDate).toLocaleDateString("en-GB")}`
     : undefined;
 
   // Site office design constants
@@ -115,7 +115,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
         onAssign &&
         (blocked ? (
           <span title={blockedTitle} className={SITE_BUTTON_DANGER}>
-            No Ticket
+            No Certificate
           </span>
         ) : (
           <button type="button" onClick={onAssign} className={SITE_BUTTON_PRIMARY}>
@@ -261,7 +261,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
             title={blockedTitle}
             className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-red-500/50 text-red-400 [.light-theme_&]:text-red-600 font-black uppercase tracking-wider cursor-not-allowed ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}
           >
-            No Valid Ticket
+            No Valid Certificate
           </span>
         )}
 

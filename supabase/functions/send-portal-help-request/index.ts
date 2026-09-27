@@ -80,7 +80,9 @@ serve(async (req) => {
 
     const config: Record<string, string> = {};
     for (const row of configRows) config[row.key] = row.value;
-    const resendApiKey = config.RESEND_API_KEY || Deno.env.get("RESEND_API_KEY");
+    // Prefer the current Edge Function secret. The legacy decrypted config view
+    // can contain an older revoked key and must not override the live secret.
+    const resendApiKey = Deno.env.get("RESEND_API_KEY") || config.RESEND_API_KEY;
     if (!resendApiKey) {
       return new Response(JSON.stringify({ error: "Email service configuration is unavailable." }), {
         status: 500,

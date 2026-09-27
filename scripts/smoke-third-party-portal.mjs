@@ -63,7 +63,9 @@ try {
   await new Promise((resolve) => setTimeout(resolve, 500));
   await assertText("LEGAL & PRIVACY", "Legal hub");
 
-  await visitHash("#/portal/third-party/jobs");
+  await page.evaluate(() => {
+    window.location.hash = "#/portal/third-party/jobs";
+  });
   await page.waitForFunction(() => location.hash.includes("/portal/third-party/sites"), {
     timeout: 10_000,
   });

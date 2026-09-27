@@ -12,7 +12,6 @@
     "format": "prettier --write .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
-    "smoke:third-party": "node scripts/smoke-third-party-portal.mjs",
     "prepare": "husky",
     "build:budget": "npm run build && node scripts/check-bundle-budget.mjs"
   },

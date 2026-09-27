@@ -255,7 +255,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
         </section>
       )}
 
-      <div className="hidden gap-5 sm:grid md:grid-cols-2">
+      <div className="grid gap-5 md:grid-cols-2">
         <section className="rounded-2xl border-2 border-border bg-card p-5">
           <div className="flex items-start justify-between gap-3">
             <div>

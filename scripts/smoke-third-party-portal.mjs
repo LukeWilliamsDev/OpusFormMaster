@@ -36,7 +36,7 @@ try {
   await page.waitForFunction(() => location.hash.includes("/portal/third-party"), {
     timeout: 30_000,
   });
-  await assertText("Good morning", "third-party login");
+  await assertText("Portal home", "third-party login");
 
   await page.goto(`${baseUrl}/#/portal/help`, { waitUntil: "networkidle2" });
   await assertText("Know what needs doing", "Help page");

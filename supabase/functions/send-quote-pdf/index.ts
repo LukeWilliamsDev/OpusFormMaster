@@ -133,11 +133,10 @@ serve(async (req) => {
       config[row.key] = row.value;
     }
 
-    // Resolve Resend API Key (prioritize database config, fallback to env)
-    let resendApiKey = config["RESEND_API_KEY"];
-    if (!resendApiKey) {
-      resendApiKey = Deno.env.get("RESEND_API_KEY");
-    }
+    // Resolve Resend API Key, preferring the current Edge Function secret over
+    // the legacy database config view.
+    let resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) resendApiKey = config["RESEND_API_KEY"];
 
     if (!resendApiKey) {
       console.error("send-quote-pdf: RESEND_API_KEY is not configured");

@@ -270,10 +270,8 @@ serve(async (req) => {
       config[row.key] = row.value;
     }
 
-    let resendApiKey = config["RESEND_API_KEY"];
-    if (!resendApiKey) {
-      resendApiKey = Deno.env.get("RESEND_API_KEY");
-    }
+    let resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) resendApiKey = config["RESEND_API_KEY"];
 
     if (!resendApiKey) {
       console.error("send-final-bill: RESEND_API_KEY is not configured");

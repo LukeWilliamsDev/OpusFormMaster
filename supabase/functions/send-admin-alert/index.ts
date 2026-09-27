@@ -114,7 +114,9 @@ serve(async (req) => {
       config[row.key] = row.value;
     }
 
-    const resendApiKey = config["RESEND_API_KEY"] || Deno.env.get("RESEND_API_KEY");
+    // Prefer the current Edge Function secret; the legacy config view may hold
+    // an older revoked key.
+    const resendApiKey = Deno.env.get("RESEND_API_KEY") || config["RESEND_API_KEY"];
     if (!resendApiKey) {
       return new Response(JSON.stringify({ error: "RESEND_API_KEY not found." }), {
         status: 500,

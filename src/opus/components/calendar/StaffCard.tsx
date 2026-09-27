@@ -41,9 +41,11 @@ export const StaffCard: React.FC<StaffCardProps> = ({
   const roleColors = getRoleColorClasses(worker.role);
   const dense = size === "dense";
   const ticketWarning = getWorstTicketWarning(worker);
-  const blocked = ticketWarning?.status === "EXPIRED";
+  const blocked = ticketWarning?.status === "EXPIRED" || ticketWarning?.status === "INVALID";
   const blockedTitle = blocked
-    ? `Cannot deploy: ${ticketWarning.ticket.type} certificate expired ${new Date(ticketWarning.ticket.expiryDate).toLocaleDateString("en-GB")}`
+    ? ticketWarning.status === "INVALID"
+      ? `Cannot deploy: ${ticketWarning.ticket.type} certificate has an invalid expiry date`
+      : `Cannot deploy: ${ticketWarning.ticket.type} certificate expired ${new Date(ticketWarning.ticket.expiryDate).toLocaleDateString("en-GB")}`
     : undefined;
 
   // Site office design constants

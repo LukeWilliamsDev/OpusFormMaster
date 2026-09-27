@@ -20,28 +20,46 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+const AUTHORIZED_SEND_ROLES = new Set([
+  "admin",
+  "director",
+  "logistics_coordinator",
+  "logistics_assistant",
+]);
+const ALLOWED_UPLOAD_HOSTS = new Set(["opusform.co.uk", "www.opusform.co.uk"]);
+const SAFE_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function isValidEmail(value: unknown): value is string {
+  return typeof value === "string" && value.length <= 320 && SAFE_EMAIL_PATTERN.test(value.trim());
+}
+
+function jsonError(req: Request, error: string, status: number): Response {
+  return new Response(JSON.stringify({ error }), {
+    status,
+    headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+  });
+}
+
 serve(async (req) => {
   // Handle CORS pre-flight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders(req) });
   }
 
+  if (req.method !== "POST") return jsonError(req, "Method not allowed.", 405);
+
   try {
     // 1. Verify Authorization Header (JWT)
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized: Missing Authorization header." }),
-        {
-          status: 401,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
-    }
+    if (!authHeader?.startsWith("Bearer ")) return jsonError(req, "Unauthorized.", 401);
 
-    const token = authHeader.replace("Bearer ", "");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const token = authHeader.slice("Bearer ".length).trim();
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseServiceKey || !token) return jsonError(req, "Unauthorized.", 401);
+    if (token === supabaseServiceKey || token === Deno.env.get("SUPABASE_ANON_KEY")) {
+      return jsonError(req, "Unauthorized.", 401);
+    }
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // 2. Validate token and retrieve user
@@ -50,13 +68,7 @@ serve(async (req) => {
       error: userError,
     } = await supabase.auth.getUser(token);
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized: Invalid token.", details: userError }),
-        {
-          status: 401,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
+      return jsonError(req, "Unauthorized.", 401);
     }
 
     // 3. Verify user's administrative privileges
@@ -66,26 +78,27 @@ serve(async (req) => {
       .eq("id", user.id)
       .single();
 
-    if (profileError || !profile || !["admin", "dispatcher"].includes(profile.role)) {
-      return new Response(
-        JSON.stringify({
-          error: "Forbidden: Only admins and dispatchers can trigger compliance requests.",
-        }),
-        {
-          status: 403,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
+    if (profileError || !profile || !AUTHORIZED_SEND_ROLES.has(profile.role)) {
+      return jsonError(req, "Forbidden.", 403);
     }
 
     const payload: RequestPayload = await req.json();
     const { toEmail, workerName, requestedCerts, uploadUrl, expiresAt } = payload;
 
-    if (!toEmail) {
-      return new Response(JSON.stringify({ error: "Recipient email (toEmail) is required." }), {
-        status: 400,
-        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      });
+    if (!isValidEmail(toEmail)) return jsonError(req, "A valid recipient email is required.", 400);
+
+    let safeUploadUrl: string;
+    try {
+      const parsedUploadUrl = new URL(uploadUrl);
+      if (
+        parsedUploadUrl.protocol !== "https:" ||
+        !ALLOWED_UPLOAD_HOSTS.has(parsedUploadUrl.host)
+      ) {
+        return jsonError(req, "The upload link is invalid.", 400);
+      }
+      safeUploadUrl = escapeHtml(parsedUploadUrl.toString());
+    } catch {
+      return jsonError(req, "The upload link is invalid.", 400);
     }
 
     // Retrieve settings config
@@ -94,13 +107,8 @@ serve(async (req) => {
       .select("key, value");
 
     if (configError || !configRows || configRows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Failed to load config from database.", detail: configError }),
-        {
-          status: 500,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
+      console.error("send-compliance-email: failed to load email configuration", configError);
+      return jsonError(req, "Email service unavailable.", 503);
     }
 
     const config: Record<string, string> = {};
@@ -110,15 +118,8 @@ serve(async (req) => {
 
     const resendApiKey = config["RESEND_API_KEY"] || Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
-      return new Response(
-        JSON.stringify({
-          error: "RESEND_API_KEY not found.",
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
+      console.error("send-compliance-email: RESEND_API_KEY is not configured");
+      return jsonError(req, "Email service unavailable.", 503);
     }
 
     const formattedExpiry = new Date(expiresAt).toLocaleString("en-GB", {
@@ -158,7 +159,7 @@ serve(async (req) => {
     bodyHtml += '      <div style="text-align: center; margin-bottom: 32px;">';
     bodyHtml +=
       '        <a href="' +
-      uploadUrl +
+      safeUploadUrl +
       `" style="display: inline-block; padding: 14px 28px; background-color: ${EMAIL_COLORS.accent}; color: ${EMAIL_COLORS.accentForeground.light}; text-decoration: none; border-radius: 8px; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em; box-shadow: 0 4px 12px rgba(181, 101, 29, 0.3);">Upload Documents</a>`;
     bodyHtml += "      </div>";
     bodyHtml +=
@@ -183,7 +184,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: "Opus Form Support <" + sender + ">",
-        to: [toEmail],
+        to: [toEmail.trim()],
         subject: "Compliance Document Request | Action Required",
         html: emailHtml,
       }),
@@ -195,15 +196,12 @@ serve(async (req) => {
       throw new Error(resendData.message || JSON.stringify(resendData));
     }
 
-    return new Response(JSON.stringify({ success: true, data: resendData }), {
+    return new Response(JSON.stringify({ success: true, id: resendData?.id ?? null }), {
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error sending email via Resend:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      status: 500,
-    });
+    return jsonError(req, "Unable to send the compliance email.", 502);
   }
 });

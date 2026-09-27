@@ -20,25 +20,31 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryKey, setRetryKey] = useState(0);
   const canManage = role === "third_party" && !readOnly;
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
+    setError(null);
     (async () => {
       const { data, error } = await db
         .from("third_party_attachments")
-        .select("*")
+        .select("id, file_name, file_path, mime_type, file_size_bytes, created_at, uploaded_by")
         .eq("job_id", jobId)
         .order("created_at", { ascending: false });
       if (cancelled) return;
-      if (error) toast.error(error.message || "Unable to load third-party attachments");
+      if (error) {
+        setError(error.message || "Unable to load third-party attachments");
+        toast.error(error.message || "Unable to load third-party attachments");
+      }
       setFiles(data ?? []);
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [jobId, refreshKey]);
+  }, [jobId, refreshKey, retryKey]);
 
   const openFile = async (file: any) => {
     const { data, error } = await supabase.storage
@@ -111,6 +117,20 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
           <div className="h-10 animate-pulse rounded-lg bg-muted" />
           <div className="h-10 animate-pulse rounded-lg bg-muted" />
         </div>
+      ) : error ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/5 p-4 text-xs text-muted-foreground"
+        >
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={() => setRetryKey((key) => key + 1)}
+            className="mt-3 font-bold text-primary"
+          >
+            Try again →
+          </button>
+        </div>
       ) : files.length === 0 ? (
         <p className="text-xs text-muted-foreground">No third-party attachments.</p>
       ) : (
@@ -155,6 +175,7 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
                     value={renameValue}
                     onChange={(event) => setRenameValue(event.target.value)}
                     onKeyDown={(event) => event.key === "Enter" && void saveRename()}
+                    aria-label={`New name for ${file.file_name}`}
                     className="min-w-0 flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-xs"
                     autoFocus
                   />

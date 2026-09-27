@@ -375,6 +375,16 @@ interface GatewayRequest {
 }
 
 Deno.serve(async (req) => {
+  // Jinn is retired for the current Opus Form installation. Keep the handler
+  // fail-closed in source as well as in deployment configuration so an old
+  // deployed function cannot silently regain admin capability.
+  if (Deno.env.get("JINN_GATEWAY_ENABLED") !== "true") {
+    return new Response(JSON.stringify({ error: "Jinn gateway retired." }), {
+      status: 410,
+      headers: { "content-type": "application/json" },
+    });
+  }
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders(req) });
   }

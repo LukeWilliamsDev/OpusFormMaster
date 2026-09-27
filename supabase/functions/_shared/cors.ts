@@ -6,14 +6,16 @@ const ALLOWED_ORIGINS = [
   "http://localhost:8080",
 ];
 
-// Every function already requires a valid Bearer JWT, so a wrong Origin can't
-// read/write anything on its own — this is the second layer: it stops a
-// malicious page from riding a logged-in user's browser session at all.
+// Write/send functions perform their own authorization; this header is the
+// browser boundary that prevents an untrusted Origin from reading responses.
 export function corsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("origin");
-  return {
-    "Access-Control-Allow-Origin":
-      origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+  const headers: Record<string, string> = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    Vary: "Origin",
   };
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
 }

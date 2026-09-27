@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from "react";
 import { AlertCircle, Check, ChevronRight, FileUp, Loader, Plus, Search, Send } from "lucide-react";
 import { toast } from "sonner";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { STAFF_ROLES } from "../types/erp";
 import { formatUKDate } from "../utils/week";
 import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
+import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
 import { supabase } from "../../integrations/supabase/client";
 
 const db = supabase as any;
@@ -79,7 +80,24 @@ type WorkerEditDraft = {
 type CertificatePanelMode = "add" | "replace";
 
 export const ThirdPartyPortalPage: React.FC = () => {
-  const { user, profile, workers, setWorkers, jobs, shifts, dataLoading } = usePortal();
+  const {
+    user,
+    profile,
+    workers,
+    setWorkers,
+    jobs,
+    shifts,
+    dataLoading,
+    dataError,
+    reloadPortalData,
+  } = usePortal();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { staffId } = useParams<{ staffId?: string }>();
+  const isNewStaffRoute = location.pathname.endsWith("/new");
+  const isStaffDetailRoute = Boolean(staffId);
+  const showStaffList = !isNewStaffRoute && !isStaffDetailRoute;
+  const showStaffForm = isNewStaffRoute || new URLSearchParams(location.search).get("add") === "1";
   const [form, setForm] = useState<FormState>(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [submissions, setSubmissions] = useState<any[]>([]);
@@ -93,10 +111,19 @@ export const ThirdPartyPortalPage: React.FC = () => {
   const [ticketStaffId, setTicketStaffId] = useState<string | null>(null);
   const [certificatePanelMode, setCertificatePanelMode] = useState<CertificatePanelMode>("add");
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
-  const [showAddStaff, setShowAddStaff] = useState(false);
-  const [staffSearch, setStaffSearch] = useState("");
-  const [staffFilter, setStaffFilter] = useState<"all" | "attention">("all");
+  const [staffSearch, setStaffSearch] = useState(
+    () => new URLSearchParams(location.search).get("search") ?? "",
+  );
+  const [staffFilter, setStaffFilter] = useState<"all" | "attention">(
+    () => (new URLSearchParams(location.search).get("filter") as "all" | "attention") || "all",
+  );
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setStaffSearch(params.get("search") ?? "");
+    setStaffFilter((params.get("filter") as "all" | "attention") || "all");
+  }, [location.search]);
 
   const loadSubmissions = async () => {
     const { data } = await db
@@ -120,15 +147,14 @@ export const ThirdPartyPortalPage: React.FC = () => {
     0,
   );
   React.useEffect(() => {
-    if (!workers.length) return setSelectedWorkerId(null);
-    if (!selectedWorkerId || !workers.some((worker) => worker.id === selectedWorkerId)) {
-      setSelectedWorkerId(workers[0].id);
-    }
-  }, [workers, selectedWorkerId]);
+    setSelectedWorkerId(
+      staffId && workers.some((worker) => worker.id === staffId) ? staffId : null,
+    );
+  }, [workers, staffId]);
   const hasCertificateAttention = (worker: (typeof workers)[number]) =>
     getCurrentTickets(worker.tickets ?? []).some((ticket) => {
       const status = getTicketStatus(ticket);
-      return status === "EXPIRED" || status === "EXPIRING_SOON";
+      return status === "EXPIRED" || status === "EXPIRING_SOON" || status === "INVALID";
     });
   const attentionWorkers = workers.filter(hasCertificateAttention);
   const visibleWorkers = workers.filter((worker) => {
@@ -137,7 +163,24 @@ export const ThirdPartyPortalPage: React.FC = () => {
       .includes(staffSearch.toLowerCase());
     return matchesSearch && (staffFilter === "all" || hasCertificateAttention(worker));
   });
-  const selectedWorker = workers.find((worker) => worker.id === selectedWorkerId) ?? null;
+  const selectedWorker =
+    workers.find((worker) => worker.id === staffId) ??
+    workers.find((worker) => worker.id === selectedWorkerId) ??
+    null;
+  const staffListQuery = new URLSearchParams();
+  if (staffSearch.trim()) staffListQuery.set("search", staffSearch.trim());
+  if (staffFilter !== "all") staffListQuery.set("filter", staffFilter);
+  const staffListPath = `/portal/third-party/staff${staffListQuery.toString() ? `?${staffListQuery}` : ""}`;
+  const updateStaffListState = (nextSearch: string, nextFilter: "all" | "attention") => {
+    const params = new URLSearchParams();
+    if (nextSearch.trim()) params.set("search", nextSearch.trim());
+    if (nextFilter !== "all") params.set("filter", nextFilter);
+    setStaffSearch(nextSearch);
+    setStaffFilter(nextFilter);
+    navigate(`/portal/third-party/staff${params.toString() ? `?${params}` : ""}`, {
+      replace: true,
+    });
+  };
   const assignedJobsForWorker = (workerId: string) =>
     jobs.filter((job) =>
       shifts.some((shift) => shift.jobId === job.id && shift.workerId === workerId),
@@ -145,13 +188,40 @@ export const ThirdPartyPortalPage: React.FC = () => {
 
   if (dataLoading) {
     return (
-      <div className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:px-6 lg:py-12">
+      <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="grid gap-4 md:grid-cols-3">
           {[1, 2, 3].map((item) => (
             <div key={item} className="h-32 animate-pulse rounded-2xl bg-muted" />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (dataError) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+        <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
+      </div>
+    );
+  }
+
+  if (isStaffDetailRoute && !selectedWorker) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+        <Link
+          to="/portal/third-party/staff"
+          className="text-xs font-black uppercase tracking-widest text-primary"
+        >
+          ← Back to staff
+        </Link>
+        <section className="mt-6 rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+          <h1 className="text-xl font-black">Staff record not found</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This staff record may have been removed or is no longer available to your account.
+          </p>
+        </section>
       </div>
     );
   }
@@ -293,7 +363,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-7 px-4 py-8 sm:px-6 lg:py-12">
+    <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
       <datalist id="certificate-types">
         {CERTIFICATE_TYPES.map((type) => (
           <option key={type} value={type} />
@@ -301,24 +371,44 @@ export const ThirdPartyPortalPage: React.FC = () => {
       </datalist>
       <header className="flex flex-wrap items-end justify-between gap-5">
         <div>
+          {(isNewStaffRoute || isStaffDetailRoute) && (
+            <Link
+              to={staffListPath}
+              className="mb-4 inline-flex text-xs font-black uppercase tracking-widest text-primary"
+            >
+              ← Back to staff
+            </Link>
+          )}
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
             People and approvals
           </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground">Your staff</h1>
+          <h1 className="mt-2 break-words text-3xl font-black tracking-tight text-foreground">
+            {isStaffDetailRoute
+              ? selectedWorker?.name || "Staff record"
+              : isNewStaffRoute
+                ? "Add staff member"
+                : "Your staff"}
+          </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Manage submissions, approvals, and compliance documents in one place.
+            {isStaffDetailRoute
+              ? `${selectedWorker?.role || "Staff record"} · Manage contact details, certificates, and assigned sites.`
+              : isNewStaffRoute
+                ? "Submit someone to your team for Opus Form to review."
+                : "Manage approved people, compliance, and submissions in one place."}
           </p>
         </div>
-        <button
-          onClick={() => setShowAddStaff((current) => !current)}
-          className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground"
-        >
-          <Plus className="h-4 w-4" />
-          {showAddStaff ? "Close" : "Add staff member"}
-        </button>
+        {showStaffList && (
+          <Link
+            to="/portal/third-party/staff/new"
+            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground"
+          >
+            <Plus className="h-4 w-4" />
+            Add staff member
+          </Link>
+        )}
       </header>
 
-      <div className="hidden grid gap-4 md:grid-cols-3">
+      <div className={`${showStaffList ? "hidden md:grid md:grid-cols-3" : "hidden"} gap-4`}>
         {[
           ["Approved staff", workers.length, "visible to Opus Form"],
           ["Pending submissions", pendingSubmissions.length, "waiting for review"],
@@ -338,7 +428,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
       </div>
 
       <div className="space-y-8">
-        {showAddStaff && (
+        {showStaffForm && (
           <section className="rounded-2xl border-2 border-primary/50 bg-card p-5 shadow-sm ring-4 ring-primary/5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -442,7 +532,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
               <div className="flex justify-end gap-2 border-t border-border pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddStaff(false)}
+                  onClick={() => navigate(staffListPath)}
                   className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
                 >
                   Cancel
@@ -464,7 +554,9 @@ export const ThirdPartyPortalPage: React.FC = () => {
         )}
 
         <section className="min-w-0 space-y-4">
-          <div className="flex flex-wrap items-end justify-between gap-3">
+          <div
+            className={`${showStaffList ? "" : "hidden"} flex flex-wrap items-end justify-between gap-3`}
+          >
             <div>
               <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
                 Staff directory
@@ -475,8 +567,10 @@ export const ThirdPartyPortalPage: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="grid gap-4 lg:grid-cols-[minmax(280px,360px)_minmax(0,1fr)] lg:items-start">
-            <section className="min-w-0 rounded-2xl border-2 border-border bg-card p-4">
+          <div className="grid gap-4">
+            <section
+              className={`${showStaffList ? "" : "hidden"} min-w-0 rounded-2xl border-2 border-border bg-card p-4`}
+            >
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-sm font-black">People</h3>
                 <span className="text-xs text-muted-foreground">{visibleWorkers.length} shown</span>
@@ -495,13 +589,27 @@ export const ThirdPartyPortalPage: React.FC = () => {
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   value={staffSearch}
-                  onChange={(event) => setStaffSearch(event.target.value)}
+                  onChange={(event) => updateStaffListState(event.target.value, staffFilter)}
                   placeholder="Search staff by name or role"
                   aria-label="Search staff"
                   className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm"
                 />
               </label>
-              <div className="mt-3 flex gap-2 overflow-x-auto">
+              <label className="mt-3 block sm:hidden">
+                <span className="sr-only">Filter staff</span>
+                <select
+                  value={staffFilter}
+                  onChange={(event) =>
+                    updateStaffListState(staffSearch, event.target.value as "all" | "attention")
+                  }
+                  aria-label="Filter staff"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-semibold"
+                >
+                  <option value="all">All staff · {workers.length}</option>
+                  <option value="attention">Needs attention · {attentionWorkers.length}</option>
+                </select>
+              </label>
+              <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
                 {(
                   [
                     ["all", `All staff · ${workers.length}`],
@@ -511,7 +619,8 @@ export const ThirdPartyPortalPage: React.FC = () => {
                   <button
                     key={value}
                     type="button"
-                    onClick={() => setStaffFilter(value)}
+                    onClick={() => updateStaffListState(staffSearch, value)}
+                    aria-pressed={staffFilter === value}
                     className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${staffFilter === value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
                   >
                     {label}
@@ -526,8 +635,12 @@ export const ThirdPartyPortalPage: React.FC = () => {
                     <button
                       key={worker.id}
                       type="button"
-                      onClick={() => setSelectedWorkerId(worker.id)}
-                      className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors ${selectedWorkerId === worker.id ? "border-primary ring-2 ring-primary/10" : "border-border hover:border-primary"}`}
+                      onClick={() =>
+                        navigate(
+                          `/portal/third-party/staff/${worker.id}${staffListQuery.toString() ? `?${staffListQuery}` : ""}`,
+                        )
+                      }
+                      className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     >
                       <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">
                         {worker.name.slice(0, 1).toUpperCase()}
@@ -555,7 +668,9 @@ export const ThirdPartyPortalPage: React.FC = () => {
               </div>
             </section>
 
-            <section className="min-w-0 rounded-2xl border-2 border-border bg-card p-5">
+            <section
+              className={`${isStaffDetailRoute ? "" : "hidden"} min-w-0 rounded-2xl border-2 border-border bg-card p-5`}
+            >
               {selectedWorker ? (
                 <>
                   {editingDraft?.id === selectedWorker.id ? (
@@ -769,13 +884,15 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                   <div className="min-w-0">
                                     <span className="font-bold">{ticket.type}</span>
                                     <span
-                                      className={`ml-2 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${status === "EXPIRED" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
+                                      className={`ml-2 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${status === "EXPIRED" || status === "INVALID" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
                                     >
-                                      {status === "EXPIRED"
-                                        ? "Expired"
-                                        : status === "EXPIRING_SOON"
-                                          ? "Expiring soon"
-                                          : "Valid"}
+                                      {status === "INVALID"
+                                        ? "Needs review"
+                                        : status === "EXPIRED"
+                                          ? "Expired"
+                                          : status === "EXPIRING_SOON"
+                                            ? "Expiring soon"
+                                            : "Valid"}
                                     </span>
                                     <p className="mt-1 truncate text-xs text-muted-foreground">
                                       {document?.name || "No file attached"}
@@ -939,12 +1056,12 @@ export const ThirdPartyPortalPage: React.FC = () => {
                       <div className="mt-6 border-t border-border pt-4">
                         <div className="flex items-center justify-between gap-3">
                           <h4 className="text-sm font-black">Assigned sites</h4>
-                          <a
-                            href="#/portal/third-party/jobs"
+                          <Link
+                            to="/portal/third-party/sites"
                             className="text-[10px] font-black uppercase tracking-widest text-primary"
                           >
                             View all →
-                          </a>
+                          </Link>
                         </div>
                         <div className="mt-3 space-y-2">
                           {assignedJobsForWorker(selectedWorker.id).length === 0 ? (
@@ -953,7 +1070,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                             assignedJobsForWorker(selectedWorker.id).map((job) => (
                               <Link
                                 key={job.id}
-                                to={`/portal/third-party/jobs/${job.id}`}
+                                to={`/portal/third-party/sites/${job.id}`}
                                 className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3 hover:border-primary"
                               >
                                 <span className="min-w-0">
@@ -985,7 +1102,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
         </section>
 
         {pendingSubmissions.length > 0 && (
-          <section className="space-y-3">
+          <section className={`${showStaffList ? "" : "hidden"} space-y-3`}>
             <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
               Pending submissions
             </h2>
@@ -1015,7 +1132,9 @@ export const ThirdPartyPortalPage: React.FC = () => {
         )}
 
         {lastSubmissionId && (
-          <section className="rounded-2xl border-2 border-border bg-card p-5">
+          <section
+            className={`${showStaffList ? "" : "hidden"} rounded-2xl border-2 border-border bg-card p-5`}
+          >
             <div className="mb-4">
               <h2 className="text-sm font-black uppercase tracking-widest">Add certificates</h2>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1031,6 +1150,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                 list="certificate-types"
                 value={ticketType}
                 onChange={(e) => setTicketType(e.target.value)}
+                aria-label="Certificate type"
                 placeholder="Type or select certificate"
                 required
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
@@ -1038,6 +1158,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
               <input
                 value={ticketNumber}
                 onChange={(e) => setTicketNumber(e.target.value)}
+                aria-label="Certificate number"
                 placeholder="Certificate number"
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
               />
@@ -1045,6 +1166,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                 type="date"
                 value={ticketExpiry}
                 onChange={(e) => setTicketExpiry(e.target.value)}
+                aria-label="Certificate expiry date"
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
               />
               <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm">
@@ -1182,13 +1304,15 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                 <div className="min-w-0 truncate">
                                   <span className="font-bold">{ticket.type}</span>
                                   <span
-                                    className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${status === "EXPIRED" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-primary/10 text-primary"}`}
+                                    className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${status === "EXPIRED" || status === "INVALID" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-primary/10 text-primary"}`}
                                   >
-                                    {status === "EXPIRED"
-                                      ? "Expired"
-                                      : status === "EXPIRING_SOON"
-                                        ? "Expiring"
-                                        : "Valid"}
+                                    {status === "INVALID"
+                                      ? "Needs review"
+                                      : status === "EXPIRED"
+                                        ? "Expired"
+                                        : status === "EXPIRING_SOON"
+                                          ? "Expiring"
+                                          : "Valid"}
                                   </span>
                                   <p className="mt-1 truncate text-xs text-muted-foreground">
                                     {document?.name || "No file attached"}
@@ -1221,8 +1345,8 @@ export const ThirdPartyPortalPage: React.FC = () => {
           )}
         </section>
 
-        {false && ticketStaffId && (
-          <section className="rounded-2xl border-2 border-primary/60 bg-card p-5 shadow-sm ring-4 ring-primary/5">
+        {ticketStaffId && (
+          <section className="hidden rounded-2xl border-2 border-primary/60 bg-card p-5 shadow-sm ring-4 ring-primary/5">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-[10px] font-black uppercase tracking-widest text-primary">

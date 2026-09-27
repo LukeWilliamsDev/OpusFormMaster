@@ -1,25 +1,25 @@
 import React, { useMemo, useState } from "react";
-import { ArrowLeft, ChevronLeft, ChevronRight, FileUp, Send } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, FileUp, Send } from "lucide-react";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
 import { ThirdPartyAttachmentsPanel } from "../components/ThirdPartyAttachmentsPanel";
 import { ThirdPartyNotesPanel } from "../components/ThirdPartyNotesPanel";
 import { getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
-import { formatUKDate } from "../utils/week";
+import { formatUKDate, toLondonISODate } from "../utils/week";
+import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
+import { getSiteState, siteStateLabel, siteStateStyles } from "../utils/siteStatus";
 
 const db = supabase as any;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-const isCompletedJob = (job: any) =>
-  ["completed", "complete", "closed"].includes(String(job.status).toLowerCase());
-const statusLabel = (status: string) =>
-  status.replace(/[-_]/g, " ").replace(/\b\w/g, (character) => character.toUpperCase());
 
 export const ThirdPartySitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
-  const { user, profile, workers, jobs, shifts, role, dataLoading } = usePortal();
+  const location = useLocation();
+  const { user, profile, workers, jobs, shifts, role, dataLoading, dataError, reloadPortalData } =
+    usePortal();
   const [note, setNote] = useState("");
   const [postingNote, setPostingNote] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
@@ -33,6 +33,7 @@ export const ThirdPartySitePage: React.FC = () => {
       item.id === jobId &&
       shifts.some((shift) => shift.jobId === item.id && ownedWorkerIds.has(shift.workerId)),
   );
+  const sitesListPath = `/portal/third-party/sites${location.search}`;
 
   React.useEffect(() => {
     if (!jobId || !user) return;
@@ -93,17 +94,24 @@ export const ThirdPartySitePage: React.FC = () => {
 
   if (dataLoading) {
     return (
-      <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="h-40 animate-pulse rounded-2xl bg-muted" />
         <div className="h-64 animate-pulse rounded-2xl bg-muted" />
       </div>
     );
   }
+  if (dataError) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+        <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
+      </div>
+    );
+  }
   if (!job) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-12">
-        <Link to="/portal/third-party/jobs" className="text-sm font-bold text-primary">
+        <Link to={sitesListPath} className="text-sm font-bold text-primary">
           ← Back to assigned sites
         </Link>
         <div className="mt-8 rounded-2xl border-2 border-dashed border-border p-12 text-center text-sm text-muted-foreground">
@@ -116,17 +124,20 @@ export const ThirdPartySitePage: React.FC = () => {
   const assignedStaff = workers.filter((worker) =>
     shifts.some((shift) => shift.jobId === job.id && shift.workerId === worker.id),
   );
-  const readOnlyHistory = role === "third_party" && isCompletedJob(job);
+  const state = getSiteState(job);
+  const readOnlyHistory = role === "third_party" && state === "completed";
+  const stateLabel = siteStateLabel(state);
   const shiftDates = shifts
     .filter((shift) => shift.jobId === job.id && shift.date)
     .map((shift) => shift.date)
     .sort();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = toLondonISODate();
   const pastShiftDates = shiftDates.filter((date) => date <= today);
-  const siteDate = isCompletedJob(job)
-    ? (pastShiftDates.at(-1) ?? shiftDates[0])
-    : (shiftDates.find((date) => date >= today) ?? shiftDates.at(-1));
-  const siteDateLabel = isCompletedJob(job) ? "Last shift" : "Next shift";
+  const siteDate =
+    state === "completed"
+      ? (pastShiftDates.at(-1) ?? shiftDates[0])
+      : (shiftDates.find((date) => date >= today) ?? shiftDates.at(-1));
+  const siteDateLabel = state === "completed" ? "Last shift" : "Next shift";
   const addNote = async () => {
     if (!note.trim()) return;
     setPostingNote(true);
@@ -172,9 +183,9 @@ export const ThirdPartySitePage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8 sm:px-6 lg:py-12">
+    <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
       <Link
-        to="/portal/third-party/jobs"
+        to={sitesListPath}
         className="inline-flex items-center gap-2 text-xs font-bold text-primary"
       >
         <ArrowLeft className="h-3 w-3" />
@@ -190,8 +201,10 @@ export const ThirdPartySitePage: React.FC = () => {
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">{job.postcode}</p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
-              {statusLabel(job.status)}
+            <span
+              className={`rounded-lg border px-3 py-2 text-xs font-semibold ${siteStateStyles[state].detail}`}
+            >
+              {stateLabel}
             </span>
             {siteDate && (
               <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
@@ -205,17 +218,23 @@ export const ThirdPartySitePage: React.FC = () => {
         </div>
       </header>
       {readOnlyHistory && (
-        <p className="rounded-xl bg-muted p-3 text-xs text-muted-foreground">
-          Completed sites are view-only. Photos, attachments, and conversation history remain
-          available.
+        <p
+          className={`flex items-start gap-2 rounded-xl border p-3 text-xs ${siteStateStyles.completed.detail}`}
+        >
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            <strong>Completed · view-only</strong>
+            <br />
+            Photos, attachments, and conversation history remain available.
+          </span>
         </p>
       )}
       <section className="rounded-2xl border-2 border-border bg-card p-5">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-primary">
               Assigned staff
-            </p>
+            </h2>
           </div>
           <span className="rounded-full bg-primary/10 px-3 py-1.5 text-[10px] font-black uppercase tracking-widest text-primary">
             {assignedStaff.length} assigned
@@ -248,9 +267,9 @@ export const ThirdPartySitePage: React.FC = () => {
         <section className="rounded-2xl border-2 border-border bg-card p-5">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+              <h2 className="text-[10px] font-black uppercase tracking-widest text-primary">
                 Site photos
-              </p>
+              </h2>
               <p className="mt-1 text-xs text-muted-foreground">View-only photos.</p>
             </div>
             <button
@@ -307,14 +326,15 @@ export const ThirdPartySitePage: React.FC = () => {
           <section className="rounded-2xl border-2 border-border bg-card p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                <h2 className="text-[10px] font-black uppercase tracking-widest text-primary">
                   Add a note
-                </p>
+                </h2>
               </div>
             </div>
             <textarea
               value={note}
               onChange={(event) => setNote(event.target.value)}
+              aria-label="Add a note to this site"
               placeholder="Write a note…"
               className="mt-5 min-h-24 w-full rounded-xl border border-border bg-background p-4 text-sm"
             />
@@ -331,9 +351,9 @@ export const ThirdPartySitePage: React.FC = () => {
       <section>
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-primary">
               Your conversation
-            </p>
+            </h2>
           </div>
         </div>
         <ThirdPartyNotesPanel jobId={job.id} showHeading={false} readOnly={readOnlyHistory} />
@@ -363,6 +383,10 @@ export const ThirdPartySitePage: React.FC = () => {
         <DialogContent className="max-w-2xl overflow-hidden bg-black p-0 !inset-x-auto !left-1/2 !top-1/2 !bottom-auto !-translate-x-1/2 !-translate-y-1/2 !rounded-lg !w-[calc(100%-2rem)] !max-h-[calc(100dvh-2rem)]">
           {gallery && (
             <div className="relative flex flex-col items-center">
+              <DialogTitle className="sr-only">Site photo gallery</DialogTitle>
+              <DialogDescription className="sr-only">
+                {gallery.index + 1} of {gallery.photos.length} site photos for {job.siteName}
+              </DialogDescription>
               <img
                 src={
                   gallery.photos[gallery.index].full_url || gallery.photos[gallery.index].file_url
@@ -388,7 +412,7 @@ export const ThirdPartySitePage: React.FC = () => {
                         index: (gallery.index - 1 + gallery.photos.length) % gallery.photos.length,
                       })
                     }
-                    className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-foreground transition-colors hover:bg-black/80"
+                    className="absolute left-2 top-1/2 min-h-11 min-w-11 -translate-y-1/2 rounded-full bg-black/60 p-2.5 text-foreground transition-colors hover:bg-black/80"
                   >
                     <ChevronLeft className="h-5 w-5" />
                   </button>
@@ -401,7 +425,7 @@ export const ThirdPartySitePage: React.FC = () => {
                         index: (gallery.index + 1) % gallery.photos.length,
                       })
                     }
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-1.5 text-foreground transition-colors hover:bg-black/80"
+                    className="absolute right-2 top-1/2 min-h-11 min-w-11 -translate-y-1/2 rounded-full bg-black/60 p-2.5 text-foreground transition-colors hover:bg-black/80"
                   >
                     <ChevronRight className="h-5 w-5" />
                   </button>

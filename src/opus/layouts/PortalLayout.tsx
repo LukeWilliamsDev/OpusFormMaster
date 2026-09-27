@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -34,7 +34,7 @@ import {
   formatAppRoleLabel,
   INTERNAL_ROLES,
 } from "../context/PortalContext";
-import { getAvatarPresetClass } from "../pages/Settings";
+import { getAvatarPresetClass } from "../utils/avatar";
 import { getAvatarInitials } from "../utils/workerValidation";
 import { NavList } from "@/components/application/app-navigation/base-components/nav-list";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
@@ -45,6 +45,11 @@ export const PortalLayout: React.FC = () => {
   const logoSrc =
     theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mainContentRef = useRef<HTMLElement>(null);
+  const wasMobileMenuOpenRef = useRef(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
     () => localStorage.getItem("portal-sidebar-collapsed") === "true",
   );
@@ -57,6 +62,66 @@ export const PortalLayout: React.FC = () => {
   };
   const navigate = useNavigate();
   const location = useLocation();
+  const hideThirdPartyBottomNav =
+    role === "third_party" &&
+    /^\/portal\/third-party\/(staff\/(new|[^/]+)|sites\/[^/]+|jobs\/[^/]+)$/.test(
+      location.pathname,
+    );
+  const showThirdPartyBottomNav = role === "third_party" && !hideThirdPartyBottomNav;
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      mobileMenuCloseRef.current?.focus();
+    } else if (wasMobileMenuOpenRef.current) {
+      mobileMenuButtonRef.current?.focus();
+    }
+    wasMobileMenuOpenRef.current = isMobileMenuOpen;
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsMobileMenuOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = mobileMenuRef.current?.querySelectorAll<HTMLElement>(
+        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])",
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [isMobileMenuOpen]);
+
+  const routeAnnouncement = location.pathname.includes("/staff/new")
+    ? "Add staff member"
+    : location.pathname.includes("/staff/")
+      ? "Staff profile"
+      : location.pathname.endsWith("/staff")
+        ? "Staff"
+        : location.pathname.includes("/sites/") || location.pathname.includes("/jobs/")
+          ? "Assigned site"
+          : location.pathname.endsWith("/sites") || location.pathname.endsWith("/jobs")
+            ? "Assigned sites"
+            : role === "third_party"
+              ? "Portal home"
+              : "Portal page";
+
+  useEffect(() => {
+    mainContentRef.current?.focus();
+  }, [location.pathname]);
 
   const handleLogoutClick = async () => {
     await signOut();
@@ -133,7 +198,7 @@ export const PortalLayout: React.FC = () => {
     },
     {
       name: "ASSIGNED SITES",
-      path: "/portal/third-party/jobs",
+      path: "/portal/third-party/sites",
       icon: Building2,
       roles: ["third_party"],
     },
@@ -193,6 +258,12 @@ export const PortalLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-background text-foreground font-sans selection:bg-primary/30 selection:text-white flex flex-col lg:flex-row">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-background focus:px-4 focus:py-3 focus:text-sm focus:font-bold focus:text-foreground focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       {/* Desktop Sidebar */}
       <SidebarNavigationSlim
         items={toNavListItems()}
@@ -241,40 +312,52 @@ export const PortalLayout: React.FC = () => {
           <button
             onClick={handleLogoutClick}
             className="p-2 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Log out"
             title="Log out"
           >
             <LogOut className="w-5 h-5" />
           </button>
           <button
+            ref={mobileMenuButtonRef}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className={`p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] items-center justify-center ${role === "third_party" ? "hidden" : "flex"}`}
             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-portal-menu"
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </header>
 
-      {role === "third_party" && (
-        <nav className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 border-t-2 border-border bg-background/95 px-2 py-2 backdrop-blur lg:hidden">
+      {showThirdPartyBottomNav && (
+        <nav
+          aria-label="Third-party portal navigation"
+          className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 border-t-2 border-border bg-background/95 px-2 py-2 backdrop-blur lg:hidden"
+        >
           {[
             { label: "Home", path: "/portal/third-party", icon: LayoutDashboard },
             { label: "Staff", path: "/portal/third-party/staff", icon: Users },
-            { label: "Sites", path: "/portal/third-party/jobs", icon: Building2 },
+            { label: "Sites", path: "/portal/third-party/sites", icon: Building2 },
           ].map(({ label, path, icon: Icon }) => (
             <Link
               key={path}
               to={path}
               className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${checkIsActive(path) ? "text-primary" : "text-muted-foreground"}`}
+              aria-current={checkIsActive(path) ? "page" : undefined}
             >
               <Icon className="h-4 w-4" />
               {label}
             </Link>
           ))}
           <button
+            ref={mobileMenuButtonRef}
             type="button"
             onClick={() => setIsMobileMenuOpen(true)}
             className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-muted-foreground"
+            aria-label="Open portal menu"
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-portal-menu"
           >
             <Menu className="h-4 w-4" />
             More
@@ -294,6 +377,11 @@ export const PortalLayout: React.FC = () => {
               className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 lg:hidden"
             />
             <motion.div
+              ref={mobileMenuRef}
+              id="mobile-portal-menu"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="mobile-portal-menu-title"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
@@ -308,9 +396,14 @@ export const PortalLayout: React.FC = () => {
                 >
                   <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
                 </Link>
+                <span id="mobile-portal-menu-title" className="sr-only">
+                  Portal menu
+                </span>
                 <button
+                  ref={mobileMenuCloseRef}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="p-2 text-muted-foreground cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  aria-label="Close portal menu"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -345,6 +438,7 @@ export const PortalLayout: React.FC = () => {
 
               {/* Mobile Drawer Menu Links */}
               <nav
+                aria-label="Mobile portal navigation"
                 className="space-y-1.5 flex-1 overflow-y-auto"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -420,11 +514,18 @@ export const PortalLayout: React.FC = () => {
 
       {/* Main Content Area */}
       <main
-        className={`flex-1 flex flex-col min-h-0 bg-background ${role === "third_party" ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}
+        id="main-content"
+        ref={mainContentRef}
+        tabIndex={-1}
+        aria-labelledby="portal-page-announcement"
+        className={`flex-1 flex flex-col min-h-0 bg-background ${showThirdPartyBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}
       >
+        <div id="portal-page-announcement" className="sr-only" aria-live="polite">
+          {routeAnnouncement}
+        </div>
         <div
           className="flex-1 w-full relative lg:min-h-0 lg:overflow-y-auto"
-          style={{ scrollPaddingBottom: role === "third_party" ? "6.5rem" : undefined }}
+          style={{ scrollPaddingBottom: showThirdPartyBottomNav ? "6.5rem" : undefined }}
         >
           <Outlet />
         </div>

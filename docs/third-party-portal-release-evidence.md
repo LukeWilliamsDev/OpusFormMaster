@@ -1,0 +1,95 @@
+# Third-Party Portal Release Evidence
+
+Updated: 2026-09-26 UTC
+
+## Result
+
+The source hardening work and live Supabase policy migration are complete. The
+portal is not approved for a public staging promotion because this repository
+has no public staging route and the disposable staging Supabase target did not
+respond to the read-only smoke query.
+
+## Source and CI
+
+- `npm run typecheck`: passed
+- `npm test -- --run`: 120 passed, 1 skipped
+- `npm run build:budget`: passed
+  - application shell: 9.5 KiB gzip, budget 60 KiB
+  - shared vendor entry: 164.3 KiB gzip, budget 190 KiB
+- CI: https://github.com/LukeWilliamsDev/OpusFormMaster/actions/runs/36209404782
+- Performance commit: `31f2c102d7643b00f619c87940520cff598426cb`
+
+## Live production verification
+
+- Supabase migration `harden_public_document_and_storage_workflows` applied
+  as version `20260926012842` through the approved Composio connection.
+- Public document RPCs return allowlisted fields.
+- Credential submissions validate type, date, document path, tenant, and
+  one-time use.
+- Completed-site attachment deletion is blocked.
+- Third-party storage reads and deletes are tenant-scoped.
+- Live route checks passed for Home, Staff, Assigned Sites, Site Detail, and
+  Staff New at mobile, tablet, desktop, and wide desktop sizes.
+- Live keyboard checks passed for skip navigation, mobile-menu focus trapping,
+  Escape restoration, invalid staff-record handling, and overflow.
+- All HTML-referenced JavaScript assets returned `200 text/javascript`.
+- Lazy route loading now retries once against fresh HTML after a stale hashed
+  chunk, then shows a recoverable error page instead of leaving a blank route.
+- Route recovery CI: https://github.com/LukeWilliamsDev/OpusFormMaster/actions/runs/36224057507
+
+## Production live-test run
+
+- Read-only baseline before testing: 2 jobs, 3 shifts, 7 staff, 5 tenants,
+  1 third-party submission, 1 third-party note, and 1 third-party attachment.
+- Public routes, invalid upload-link handling, authenticated third-party routes,
+  responsive layouts, keyboard navigation, focus trapping, not-found handling,
+  and live asset loading were exercised against `https://opusform.co.uk`.
+- One uniquely marked staff submission (`LIVE_TEST_1790406158308`) was created
+  to exercise the live submit path, then deleted by exact ID. Final state was
+  2 jobs, 3 shifts, 7 staff, 5 tenants, 1 third-party submission, 1 note, and
+  1 attachment; test-marker count was zero.
+- No invoice or email was sent because no workflow required it.
+- The live run exposed Cloudflare Insights being blocked by the CSP. The CSP
+  was corrected to allow the required Cloudflare observability endpoints in
+  commit `fa5a79ca502383b86f36aef78b1c9c35adaee2bf`; the authenticated live
+  rerun completed without console errors.
+- Direct `https://opusform.co.uk/portal` now redirects to the HashRouter login
+  entry point. Live authentication returned `200` from Supabase and opened the
+  third-party portal successfully. Fix: `c77a4f55ea0b737033a07d987811e012f7dfce0d`.
+- Third-party site status colours are now shared across the dashboard, list,
+  and detail views: Open is blue, Needs attention is amber, and Completed is
+  green. The consistency deployment is `e464d4761cc9f61f01e7e8ed29c0b74079604ed3`.
+- The all-view live pass covered Home, Staff, Staff New, Sites, both supported
+  Sites/Jobs detail URLs, and Staff Detail at 390, 834, 1440, and 1920px. No
+  overflow, loading residue, server errors, or console errors were found.
+- Completed detail status was verified live with the green semantic treatment;
+  current production data does not expose an assigned Open site to this test
+  account, so Open and Needs attention were also verified from the shared
+  source mapping and dashboard/list implementation.
+
+## Coverage limit
+
+Authenticated internal management routes (dashboard, ledger, pipeline,
+invoices, users, and certificate checker) were not mutated or fully exercised
+because no internal test account was available. They were checked for route
+availability and access gating only. Existing jobs were never modified.
+
+## Private staging smoke
+
+Using the local Cloudflare Worker with Wrangler `4.141.0` on loopback:
+
+- `/`, `/portal`, `/privacy`, `/cookies`, `/modern-slavery`, and
+  `/right-to-work`: HTTP 200
+- Security headers present: `X-Frame-Options`,
+  `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`
+- No public staging hostname, DNS route, or tunnel was created.
+
+## Remaining external gates
+
+1. A two-tenant authenticated staging matrix still needs disposable staging
+   identities; the available staging database timed out during the read-only
+   smoke query.
+2. No public staging deployment exists, so public staging rollback and external
+   integration checks cannot be performed without an approved isolated origin.
+3. Production deployment remains a separate go/no-go decision; no production
+   deployment was initiated by this work.

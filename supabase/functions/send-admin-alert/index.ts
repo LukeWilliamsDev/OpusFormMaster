@@ -4,6 +4,12 @@ import { EMAIL_COLORS, emailShell } from "../_shared/email-theme.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const ADMIN_EMAIL = "admin@opusform.co.uk";
+const AUTHORIZED_SEND_ROLES = new Set([
+  "admin",
+  "director",
+  "logistics_coordinator",
+  "logistics_assistant",
+]);
 
 function escapeHtml(value: string): string {
   return String(value)
@@ -19,9 +25,16 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(req) });
   }
 
+  if (req.method !== "POST") {
+    return new Response(JSON.stringify({ error: "Method not allowed." }), {
+      status: 405,
+      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
         JSON.stringify({ error: "Unauthorized: Missing Authorization header." }),
         {
@@ -31,9 +44,21 @@ serve(async (req) => {
       );
     }
 
-    const token = authHeader.replace("Bearer ", "");
+    const token = authHeader.slice("Bearer ".length).trim();
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (
+      !supabaseUrl ||
+      !supabaseServiceKey ||
+      !token ||
+      token === supabaseServiceKey ||
+      token === Deno.env.get("SUPABASE_ANON_KEY")
+    ) {
+      return new Response(JSON.stringify({ error: "Unauthorized." }), {
+        status: 401,
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+      });
+    }
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const {
@@ -53,10 +78,10 @@ serve(async (req) => {
       .eq("id", user.id)
       .single();
 
-    if (profileError || !profile || !["admin", "dispatcher"].includes(profile.role)) {
+    if (profileError || !profile || !AUTHORIZED_SEND_ROLES.has(profile.role)) {
       return new Response(
         JSON.stringify({
-          error: "Forbidden: Only admins and dispatchers can trigger admin alerts.",
+          error: "Forbidden.",
         }),
         {
           status: 403,
@@ -138,13 +163,13 @@ serve(async (req) => {
     const resendData = await resendResponse.json();
     if (!resendResponse.ok) throw new Error(resendData.message || JSON.stringify(resendData));
 
-    return new Response(JSON.stringify({ success: true, data: resendData }), {
+    return new Response(JSON.stringify({ success: true, id: resendData?.id ?? null }), {
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error sending admin alert:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "Unable to send the admin alert." }), {
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 500,
     });

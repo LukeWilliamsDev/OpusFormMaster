@@ -114,11 +114,13 @@ async function handleStart(body: BridgeRequest, token: string): Promise<HandlerR
 async function resolveLink(telegramUserId: string) {
   const { data } = await supabase
     .from("telegram_links")
-    .select("target_id")
+    .select("target_id, tenant_id")
     .eq("telegram_user_id", telegramUserId)
     .is("revoked_at", null)
     .maybeSingle();
-  return data?.target_id ?? null;
+  return data?.target_id && data?.tenant_id
+    ? { targetId: data.target_id as string, tenantId: data.tenant_id as string }
+    : null;
 }
 
 // staff.email → profiles.role, the same join notifyDispatchers uses below.
@@ -149,7 +151,7 @@ async function resolveRole(targetId: string): Promise<string | null> {
   return profile?.role ?? null;
 }
 
-async function handleMyWeek(targetId: string): Promise<HandlerResponse> {
+async function handleMyWeek(targetId: string, tenantId: string): Promise<HandlerResponse> {
   const today = new Date().toISOString().slice(0, 10);
   const weekEnd = new Date(Date.now() + 7 * 86_400_000).toISOString().slice(0, 10);
 
@@ -157,6 +159,7 @@ async function handleMyWeek(targetId: string): Promise<HandlerResponse> {
     .from("shifts")
     .select("date, jobs(site_name, postcode)")
     .eq("worker_id", targetId)
+    .eq("tenant_id", tenantId)
     .gte("date", today)
     .lte("date", weekEnd)
     .order("date");
@@ -229,7 +232,7 @@ async function bulkGeocode(
   return { coords, resolved };
 }
 
-async function handleWho(argument: string): Promise<HandlerResponse> {
+async function handleWho(argument: string, tenantId: string): Promise<HandlerResponse> {
   const postcode = argument.trim();
   if (!postcode) return { text: "Usage: /who <postcode>" };
 
@@ -237,6 +240,7 @@ async function handleWho(argument: string): Promise<HandlerResponse> {
     .from("staff")
     .select("name, postcode")
     .eq("is_archived", false)
+    .eq("tenant_id", tenantId)
     .not("postcode", "is", null);
 
   if (error) {
@@ -271,7 +275,7 @@ async function handleWho(argument: string): Promise<HandlerResponse> {
   return { text: renderWho(nearestByDistance(origin, candidates, 5)) };
 }
 
-async function handleJob(argument: string): Promise<HandlerResponse> {
+async function handleJob(argument: string, tenantId: string): Promise<HandlerResponse> {
   const ref = argument.trim();
   if (!ref) return { text: "Usage: /job <ref>" };
 
@@ -279,6 +283,7 @@ async function handleJob(argument: string): Promise<HandlerResponse> {
     .from("jobs")
     .select("id, job_ref, site_name, status, current_pours, contract_max_pours")
     .ilike("job_ref", ref)
+    .eq("tenant_id", tenantId)
     .maybeSingle();
 
   if (error) {
@@ -293,6 +298,7 @@ async function handleJob(argument: string): Promise<HandlerResponse> {
     .from("shifts")
     .select("staff(name)")
     .eq("job_id", job.id)
+    .eq("tenant_id", tenantId)
     .eq("date", today);
   if (shiftsError) {
     console.error("handleJob: shifts query failed", shiftsError.message);
@@ -307,6 +313,7 @@ async function handleJob(argument: string): Promise<HandlerResponse> {
     .from("job_notes")
     .select("body, author_type, author_staff_id, user_email")
     .eq("job_id", job.id)
+    .eq("tenant_id", tenantId)
     .order("created_at", { ascending: false })
     .limit(3);
   if (notesError) {
@@ -323,7 +330,8 @@ async function handleJob(argument: string): Promise<HandlerResponse> {
     const { data: authors, error: authorsError } = await supabase
       .from("staff")
       .select("id, name")
-      .in("id", authorIds);
+      .in("id", authorIds)
+      .eq("tenant_id", tenantId);
     if (authorsError) {
       console.error("handleJob: staff query failed", authorsError.message);
       return { text: "Something went wrong — please try again shortly." };
@@ -342,7 +350,7 @@ async function handleJob(argument: string): Promise<HandlerResponse> {
   return { text: renderJobStatus(job, crew, noteViews) };
 }
 
-async function handleStaff(argument: string): Promise<HandlerResponse> {
+async function handleStaff(argument: string, tenantId: string): Promise<HandlerResponse> {
   const name = argument.trim();
   if (!name) return { text: "Usage: /staff <name>" };
 
@@ -350,6 +358,7 @@ async function handleStaff(argument: string): Promise<HandlerResponse> {
     .from("staff")
     .select("id, name, tickets")
     .eq("is_archived", false)
+    .eq("tenant_id", tenantId)
     .ilike("name", `%${name}%`);
 
   if (error) {
@@ -374,6 +383,7 @@ async function handleStaff(argument: string): Promise<HandlerResponse> {
     .from("shifts")
     .select("date, jobs(site_name)")
     .eq("worker_id", member.id as string)
+    .eq("tenant_id", tenantId)
     .gte("date", today)
     .order("date")
     .limit(1);
@@ -402,13 +412,14 @@ async function handleStaff(argument: string): Promise<HandlerResponse> {
   return { text: renderStaffStatus(member.name as string, ticketLines, nextShift) };
 }
 
-async function handleToday(): Promise<HandlerResponse> {
+async function handleToday(tenantId: string): Promise<HandlerResponse> {
   const today = new Date().toISOString().slice(0, 10);
 
   const { data: shifts, error } = await supabase
     .from("shifts")
     .select("job_id, jobs(site_name, postcode)")
-    .eq("date", today);
+    .eq("date", today)
+    .eq("tenant_id", tenantId);
 
   if (error) {
     console.error("handleToday: shifts query failed", error.message);
@@ -982,16 +993,16 @@ serve(async (req) => {
     if (command?.command === "start") {
       result = await handleStart(body, command.argument);
     } else {
-      const targetId = await resolveLink(body.telegram_user_id);
-      if (!targetId) {
+      const link = await resolveLink(body.telegram_user_id);
+      if (!link) {
         // The bridge only forwards non-/start traffic for senders it believes are
         // allowlisted, so no active link means access was revoked in the portal.
         // Tell the bridge to drop them locally. Senders learn nothing either way.
         result = { text: DENY_TEXT, ack: { link_revoked: body.telegram_user_id } };
       } else if (body.kind === "callback") {
-        result = await handleCallback(body, targetId);
+        result = await handleCallback(body, link.targetId);
       } else if (body.kind === "file") {
-        result = await handleFile(body, targetId);
+        result = await handleFile(body, link.targetId);
       } else {
         await supabase
           .from("telegram_links")
@@ -1000,19 +1011,19 @@ serve(async (req) => {
 
         const cmd = command?.command;
         if (cmd === "myweek") {
-          result = await handleMyWeek(targetId);
+          result = await handleMyWeek(link.targetId, link.tenantId);
         } else if (cmd === "who" || cmd === "job" || cmd === "staff" || cmd === "today") {
-          const role = await resolveRole(targetId);
+          const role = await resolveRole(link.targetId);
           if (!isManagementRole(role)) {
             result = { text: "Commands: /myweek" };
           } else if (cmd === "who") {
-            result = await handleWho(command?.argument ?? "");
+            result = await handleWho(command?.argument ?? "", link.tenantId);
           } else if (cmd === "job") {
-            result = await handleJob(command?.argument ?? "");
+            result = await handleJob(command?.argument ?? "", link.tenantId);
           } else if (cmd === "staff") {
-            result = await handleStaff(command?.argument ?? "");
+            result = await handleStaff(command?.argument ?? "", link.tenantId);
           } else {
-            result = await handleToday();
+            result = await handleToday(link.tenantId);
           }
         } else {
           result = { text: "Commands: /myweek" };

@@ -135,7 +135,10 @@ export const SidebarNavigationSlim = ({
       )}
 
       {/* Primary nav */}
-      <nav className={cx("flex-1 py-4 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-3")}>
+      <nav
+        aria-label="Portal navigation"
+        className={cx("flex-1 py-4 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-3")}
+      >
         <NavList items={items} iconOnly={collapsed} isActive={isActive} />
       </nav>
 
@@ -200,6 +203,7 @@ export const SidebarNavigationSlim = ({
           <button
             onClick={onLogout}
             title={collapsed ? "Log Out" : undefined}
+            aria-label="Log out"
             className={cx(
               "flex items-center w-full py-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all cursor-pointer",
               collapsed ? "justify-center px-0" : "space-x-3 px-3",

@@ -291,6 +291,23 @@ const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   return <>{children}</>;
 };
 
+const UserAdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { role, authLoading } = usePortal();
+  if (authLoading || role === null) {
+    return <div className="min-h-screen bg-background" />;
+  }
+  if (role !== "admin" && role !== "director") {
+    const fallback =
+      role === "third_party"
+        ? "/portal/third-party"
+        : FIELD_ROLES.includes(role)
+          ? "/portal/no-access"
+          : "/portal/dashboard";
+    return <Navigate to={fallback} replace />;
+  }
+  return <>{children}</>;
+};
+
 // Sub-component to wire navigation on the Landing Page
 const LandingPageWrapper: React.FC = () => {
   const navigate = useNavigate();
@@ -472,9 +489,9 @@ export default function App() {
                 <Route
                   path="/portal/users"
                   element={
-                    <AuditLogGuard>
+                    <UserAdminGuard>
                       <AdminUsers />
-                    </AuditLogGuard>
+                    </UserAdminGuard>
                   }
                 />
                 <Route

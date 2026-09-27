@@ -10,6 +10,7 @@ const ROLES = [
   "logistics_assistant",
   "site_foreman",
   "labourer",
+  "third_party",
 ];
 const ACTIONS = ["update", "disable", "archive", "reactivate", "delete"];
 
@@ -39,9 +40,17 @@ serve(async (req) => {
       data: { user: caller },
       error: callerError,
     } = await supabase.auth.getUser(token);
-    if (callerError || !caller || caller.email !== ADMIN_EMAIL) {
+    const { data: callerProfile } = caller
+      ? await supabase.from("profiles").select("role, status").eq("id", caller.id).maybeSingle()
+      : { data: null };
+    const canManageUsers =
+      callerProfile?.status === "active" &&
+      (callerProfile.role === "admin" || callerProfile.role === "director");
+    if (callerError || !caller || !canManageUsers) {
       return new Response(
-        JSON.stringify({ error: "Forbidden: Only the designated admin account can manage users." }),
+        JSON.stringify({
+          error: "Forbidden: Only active admins and directors can manage accounts.",
+        }),
         { status: 403, headers: { ...corsHeaders(req), "Content-Type": "application/json" } },
       );
     }

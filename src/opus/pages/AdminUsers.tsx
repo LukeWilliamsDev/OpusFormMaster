@@ -191,7 +191,7 @@ const CreateUserModal: React.FC<{ onClose: () => void; onCreated: () => void }> 
           >
             {ROLES.map((r) => (
               <option key={r} value={r}>
-                {r}
+                {formatAppRoleLabel(r)}
               </option>
             ))}
           </select>

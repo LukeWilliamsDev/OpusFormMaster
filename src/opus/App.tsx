@@ -1,5 +1,13 @@
 import React, { lazy, Suspense } from "react";
-import { HashRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import {
+  HashRouter,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation,
+  useParams,
+} from "react-router-dom";
 import {
   PortalProvider,
   usePortal,
@@ -30,6 +38,16 @@ const lazyRoute = <T extends React.ComponentType<any>>(
       throw error;
     }
   }) as React.LazyExoticComponent<T>;
+
+const LegacyThirdPartyJobsRedirect: React.FC = () => {
+  const { jobId } = useParams();
+  return (
+    <Navigate
+      to={jobId ? `/portal/third-party/sites/${jobId}` : "/portal/third-party/sites"}
+      replace
+    />
+  );
+};
 
 const LandingPage = lazyRoute(() =>
   import("./components/LandingPage").then((module) => ({ default: module.LandingPage })),
@@ -387,7 +405,7 @@ export default function App() {
                   path="/portal/third-party/jobs"
                   element={
                     <RoleGuard allow={["third_party"]}>
-                      <ThirdPartyJobsPage />
+                      <LegacyThirdPartyJobsRedirect />
                     </RoleGuard>
                   }
                 />
@@ -395,7 +413,7 @@ export default function App() {
                   path="/portal/third-party/jobs/:jobId"
                   element={
                     <RoleGuard allow={["third_party"]}>
-                      <ThirdPartySitePage />
+                      <LegacyThirdPartyJobsRedirect />
                     </RoleGuard>
                   }
                 />

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Check, Download, Loader2, Paperclip, Pencil, Trash2, X } from "lucide-react";
+import { Check, CheckCircle2, Download, Loader2, Paperclip, Pencil, Trash2, X } from "lucide-react";
 import { supabase } from "../../integrations/supabase/client";
 import { toast } from "sonner";
 import { usePortal } from "../context/PortalContext";
@@ -22,6 +22,7 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
+  const [confirmation, setConfirmation] = useState<string | null>(null);
   const canManage = role === "third_party" && !readOnly;
   useEffect(() => {
     let cancelled = false;
@@ -35,8 +36,10 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
         .order("created_at", { ascending: false });
       if (cancelled) return;
       if (error) {
-        setError(error.message || "Unable to load third-party attachments");
-        toast.error(error.message || "Unable to load third-party attachments");
+        setError(
+          "We couldn’t load the files. Try again, or contact support if the problem continues.",
+        );
+        toast.error("We couldn’t load the files. Try again.");
       }
       setFiles(data ?? []);
       setLoading(false);
@@ -50,8 +53,7 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
     const { data, error } = await supabase.storage
       .from("third-party-attachments")
       .createSignedUrl(file.file_path, 300);
-    if (error || !data?.signedUrl)
-      return toast.error(error?.message || "Unable to open attachment");
+    if (error || !data?.signedUrl) return toast.error("We couldn’t open that file. Try again.");
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
     await db.rpc("log_third_party_action", {
       p_action: "THIRD_PARTY_ATTACHMENT_VIEWED",
@@ -70,13 +72,14 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
       p_file_name: fileName,
     });
     setSaving(false);
-    if (error) return toast.error(error.message || "Unable to rename attachment");
+    if (error) return toast.error("We couldn’t rename that file. Try again.");
     setFiles((current) =>
       current.map((file) =>
         file.id === renameTarget.id ? { ...file, file_name: fileName } : file,
       ),
     );
     setRenameTarget(null);
+    setConfirmation("Attachment renamed.");
     toast.success("Attachment renamed");
   };
 
@@ -86,7 +89,7 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
     const { error } = await db.from("third_party_attachments").delete().eq("id", deleteTarget.id);
     if (error) {
       setSaving(false);
-      return toast.error(error.message || "Unable to delete attachment");
+      return toast.error("We couldn’t delete that file. Try again.");
     }
     const { error: storageError } = await supabase.storage
       .from("third-party-attachments")
@@ -96,7 +99,9 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
     setFiles((current) => current.filter((file) => file.id !== deleteTarget.id));
     if (storageError) {
       toast.warning("Attachment record deleted, but file cleanup failed");
+      setConfirmation("Attachment removed from the site record. File cleanup is still pending.");
     } else {
+      setConfirmation("Attachment deleted from the site record.");
       toast.success("Attachment deleted");
     }
   };
@@ -112,6 +117,15 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
         </div>
         {action}
       </div>
+      {confirmation && (
+        <p
+          role="status"
+          className="mb-3 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300"
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          {confirmation}
+        </p>
+      )}
       {loading ? (
         <div className="space-y-2">
           <div className="h-10 animate-pulse rounded-lg bg-muted" />
@@ -132,7 +146,14 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
           </button>
         </div>
       ) : files.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No third-party attachments.</p>
+        <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
+          <p className="font-semibold text-foreground">No files uploaded.</p>
+          {!readOnly && (
+            <p className="mt-1">
+              Upload a relevant site document, such as a report or delivery record.
+            </p>
+          )}
+        </div>
       ) : (
         <div className="space-y-2">
           {files.map((file) => (

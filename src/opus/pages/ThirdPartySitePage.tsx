@@ -27,6 +27,7 @@ export const ThirdPartySitePage: React.FC = () => {
   const [photos, setPhotos] = useState<any[]>([]);
   const [photosLoading, setPhotosLoading] = useState(true);
   const [gallery, setGallery] = useState<{ photos: any[]; index: number } | null>(null);
+  const [confirmation, setConfirmation] = useState<string | null>(null);
   const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
   const job = jobs.find(
     (item) =>
@@ -48,7 +49,7 @@ export const ThirdPartySitePage: React.FC = () => {
         .order("uploaded_at", { ascending: false });
       if (error) {
         setPhotosLoading(false);
-        toast.error(error.message || "Unable to load site photos");
+        toast.error("We couldn’t load the site photos. Try again.");
         return;
       }
       const signedMap = await getSignedJobAttachmentUrlsBatch(
@@ -114,8 +115,17 @@ export const ThirdPartySitePage: React.FC = () => {
         <Link to={sitesListPath} className="text-sm font-bold text-primary">
           ← Back to assigned sites
         </Link>
-        <div className="mt-8 rounded-2xl border-2 border-dashed border-border p-12 text-center text-sm text-muted-foreground">
-          This site is not assigned to your approved staff.
+        <div className="mt-8 rounded-2xl border-2 border-dashed border-border p-12 text-center">
+          <p className="text-sm font-semibold text-foreground">This site is unavailable</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            It may have been removed, reassigned, or you may no longer have access.
+          </p>
+          <Link
+            to="/portal/contact"
+            className="mt-4 inline-block text-xs font-black uppercase tracking-widest text-primary"
+          >
+            Contact support →
+          </Link>
         </div>
       </div>
     );
@@ -148,8 +158,9 @@ export const ThirdPartySitePage: React.FC = () => {
       body: note.trim(),
     });
     setPostingNote(false);
-    if (error) return toast.error(error.message || "Unable to add note");
+    if (error) return toast.error("We couldn’t add the note. Try again.");
     setNote("");
+    setConfirmation("Note added to this site.");
     toast.success("Note added");
   };
   const uploadAttachment = async (file: File) => {
@@ -165,7 +176,7 @@ export const ThirdPartySitePage: React.FC = () => {
       .upload(path, file);
     if (uploadError) {
       setUploadingAttachment(false);
-      return toast.error(uploadError.message || "Unable to upload attachment");
+      return toast.error("We couldn’t upload that file. Check the size and try again.");
     }
     const { error } = await db.from("third_party_attachments").insert({
       tenant_id: profile?.tenant_id,
@@ -177,8 +188,12 @@ export const ThirdPartySitePage: React.FC = () => {
       file_size_bytes: file.size,
     });
     setUploadingAttachment(false);
-    if (error) return toast.error(error.message || "Unable to record attachment");
+    if (error)
+      return toast.error(
+        "The file uploaded but could not be added to the site record. Contact support.",
+      );
     setAttachmentRefresh((current) => current + 1);
+    setConfirmation("Attachment uploaded to this site.");
     toast.success("Attachment uploaded");
   };
 
@@ -217,13 +232,22 @@ export const ThirdPartySitePage: React.FC = () => {
           </div>
         </div>
       </header>
+      {confirmation && (
+        <p
+          role="status"
+          className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300"
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          {confirmation}
+        </p>
+      )}
       {readOnlyHistory && (
         <p
           className={`flex items-start gap-2 rounded-xl border p-3 text-xs ${siteStateStyles.completed.detail}`}
         >
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
           <span>
-            <strong>Completed · view-only</strong>
+            <strong>Completed — view only</strong>
             <br />
             Photos, attachments, and conversation history remain available.
           </span>

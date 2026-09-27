@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { MessageSquare, Send, Trash2 } from "lucide-react";
+import { CheckCircle2, MessageSquare, Send, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "../../integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -22,6 +22,7 @@ export const ThirdPartyNotesPanel: React.FC<{
   const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<string | null>(null);
   const canReply = !readOnly && (INTERNAL_ROLES.has(role ?? "") || role === "third_party");
 
   const load = useCallback(async () => {
@@ -34,8 +35,10 @@ export const ThirdPartyNotesPanel: React.FC<{
       .order("created_at", { ascending: true });
     if (error) {
       setLoading(false);
-      setError(error.message || "Unable to load note history");
-      return toast.error(error.message || "Unable to load note history");
+      setError(
+        "We couldn’t load the conversation. Try again, or contact support if the problem continues.",
+      );
+      return toast.error("We couldn’t load the conversation. Try again.");
     }
     const rows = noteRows ?? [];
     const { data: replies, error: repliesError } = rows.length
@@ -50,8 +53,10 @@ export const ThirdPartyNotesPanel: React.FC<{
       : { data: [] };
     if (repliesError) {
       setLoading(false);
-      setError(repliesError.message || "Unable to load note responses");
-      return toast.error(repliesError.message || "Unable to load note responses");
+      setError(
+        "We couldn’t load note responses. Try again, or contact support if the problem continues.",
+      );
+      return toast.error("We couldn’t load note responses. Try again.");
     }
     const grouped: Record<string, any[]> = {};
     for (const reply of replies ?? []) (grouped[reply.note_id] ??= []).push(reply);
@@ -75,18 +80,20 @@ export const ThirdPartyNotesPanel: React.FC<{
       tenant_id: profile?.tenant_id,
     });
     setReplyingTo(null);
-    if (error) return toast.error(error.message || "Unable to send response");
+    if (error) return toast.error("We couldn’t send the response. Try again.");
     setReplyDrafts((current) => ({ ...current, [noteId]: "" }));
     await load();
+    setConfirmation("Response sent and added to the conversation.");
     toast.success("Response sent");
   };
 
   const deleteNote = async () => {
     if (!deleteTarget) return;
     const { error } = await db.from("third_party_job_notes").delete().eq("id", deleteTarget.id);
-    if (error) return toast.error(error.message || "Unable to delete note");
+    if (error) return toast.error("We couldn’t delete the note. Try again.");
     setDeleteTarget(null);
     await load();
+    setConfirmation("Note deleted from the site record.");
     toast.success("Note deleted");
   };
 
@@ -97,6 +104,15 @@ export const ThirdPartyNotesPanel: React.FC<{
           <MessageSquare className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-black uppercase tracking-widest">Third Party Notes</h3>
         </div>
+      )}
+      {confirmation && (
+        <p
+          role="status"
+          className="mb-3 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300"
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          {confirmation}
+        </p>
       )}
       {loading ? (
         <div className="space-y-2">
@@ -114,7 +130,10 @@ export const ThirdPartyNotesPanel: React.FC<{
           </button>
         </div>
       ) : notes.length === 0 ? (
-        <p className="text-xs text-muted-foreground">No third-party notes.</p>
+        <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
+          <p className="font-semibold text-foreground">No updates yet.</p>
+          {!readOnly && <p className="mt-1">Add a note to share the first update for this site.</p>}
+        </div>
       ) : (
         <div className="space-y-4">
           {notes.map((note) => (

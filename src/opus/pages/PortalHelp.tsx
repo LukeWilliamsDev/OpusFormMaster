@@ -304,7 +304,7 @@ export const PortalHelpPage: React.FC = () => {
               className="hidden items-center gap-2 text-xs font-bold text-primary hover:underline sm:flex"
             >
               <FileDown className="h-4 w-4" aria-hidden="true" />
-              Download PDF guide
+              Download PDF guide · Updated September 2026
             </a>
           </div>
           <div className="space-y-3">
@@ -348,7 +348,7 @@ export const PortalHelpPage: React.FC = () => {
             className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-3 text-xs font-bold text-primary hover:bg-muted sm:hidden"
           >
             <FileDown className="h-4 w-4" aria-hidden="true" />
-            Download the PDF guide
+            Download the PDF guide · Updated September 2026
           </a>
         </section>
 

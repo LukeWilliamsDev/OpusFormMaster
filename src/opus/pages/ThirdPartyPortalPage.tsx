@@ -1,5 +1,15 @@
 import React, { useMemo, useState } from "react";
-import { AlertCircle, Check, ChevronRight, FileUp, Loader, Plus, Search, Send } from "lucide-react";
+import {
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  FileUp,
+  Loader,
+  Plus,
+  Search,
+  Send,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
@@ -118,6 +128,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
     () => (new URLSearchParams(location.search).get("filter") as "all" | "attention") || "all",
   );
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<string | null>(null);
 
   React.useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -242,10 +253,14 @@ export const ThirdPartyPortalPage: React.FC = () => {
       p_notes: form.notes,
     });
     setSubmitting(false);
-    if (error) return toast.error(error.message || "Unable to submit staff member");
+    if (error)
+      return toast.error("We couldn’t submit the staff member. Check the details and try again.");
     setForm(EMPTY_FORM);
     setLastSubmissionId(submissionId);
     await loadSubmissions();
+    setConfirmation(
+      "Staff member submitted. Opus Form will review the record before site access is created.",
+    );
     toast.success("Staff member submitted for approval");
   };
 
@@ -279,7 +294,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
       .from("third-party-staff-documents")
       .createSignedUrl(path, 300);
     if (error || !data?.signedUrl) {
-      return toast.error(error?.message || "Unable to open certificate file");
+      return toast.error("We couldn’t open that certificate file. Try again.");
     }
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   };
@@ -300,7 +315,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
       .upload(path, ticketFile);
     if (uploadError) {
       setUploadingTicket(false);
-      return toast.error(uploadError.message || "Unable to upload certificate");
+      return toast.error("We couldn’t upload that certificate. Check the file size and try again.");
     }
     const { error } = await db.from("third_party_staff_documents").insert({
       tenant_id: profile.tenant_id,
@@ -316,7 +331,8 @@ export const ThirdPartyPortalPage: React.FC = () => {
       file_size_bytes: ticketFile.size,
     });
     setUploadingTicket(false);
-    if (error) return toast.error(error.message || "Unable to record certificate");
+    if (error)
+      return toast.error("The certificate uploaded but could not be recorded. Contact support.");
     setTicketFile(null);
     setTicketType("");
     setTicketNumber("");
@@ -342,6 +358,11 @@ export const ThirdPartyPortalPage: React.FC = () => {
         );
       }
     }
+    setConfirmation(
+      staffId
+        ? "Certificate replaced and saved to the staff record."
+        : "Certificate uploaded and attached to the pending submission.",
+    );
     toast.success("Certificate uploaded");
   };
 
@@ -357,8 +378,9 @@ export const ThirdPartyPortalPage: React.FC = () => {
         postcode: editingDraft.postcode || null,
       })
       .eq("id", editingDraft.id);
-    if (error) return toast.error(error.message || "Unable to save staff member");
+    if (error) return toast.error("We couldn’t save the staff member details. Try again.");
     setEditingDraft(null);
+    setConfirmation("Staff member details updated.");
     toast.success("Staff member updated");
   };
 
@@ -407,12 +429,21 @@ export const ThirdPartyPortalPage: React.FC = () => {
           </Link>
         )}
       </header>
+      {confirmation && (
+        <p
+          role="status"
+          className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300"
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          {confirmation}
+        </p>
+      )}
 
       <div className={`${showStaffList ? "grid md:grid-cols-3" : "hidden"} gap-4`}>
         {[
           ["Approved staff", workers.length, "visible to Opus Form"],
           ["Pending submissions", pendingSubmissions.length, "waiting for review"],
-          ["Current certificates", currentCertificateCount, "latest version per type"],
+          ["Valid certificates", currentCertificateCount, "latest version per type"],
         ].map(([label, value, description]) => (
           <div
             key={String(label)}
@@ -563,7 +594,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
               </h2>
               <p className="mt-1 text-xs text-muted-foreground">
                 {workers.length} approved staff · {attentionWorkers.length} needs attention ·{" "}
-                {currentCertificateCount} current certificates
+                {currentCertificateCount} valid certificates
               </p>
             </div>
           </div>
@@ -852,7 +883,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                       </div>
                       <div className="mt-6 border-t border-border pt-4">
                         <div className="flex items-center justify-between gap-3">
-                          <h4 className="text-sm font-black">Current certificates</h4>
+                          <h4 className="text-sm font-black">Valid certificates</h4>
                           {submissions.some(
                             (submission) => submission.approved_staff_id === selectedWorker.id,
                           ) && (
@@ -1287,7 +1318,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                     {getCurrentTickets(worker.tickets ?? []).length > 0 && (
                       <div className="space-y-2 border-t border-border pt-3">
                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                          Current certificates
+                          Valid certificates
                         </span>
                         {getCurrentTickets(worker.tickets ?? [])
                           .slice(0, 4)

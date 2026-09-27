@@ -153,6 +153,12 @@ export const ThirdPartyJobsPage: React.FC = () => {
           <p className="mt-1 text-xs text-muted-foreground">
             Sites assigned to your approved staff will appear here automatically.
           </p>
+          <Link
+            to="/portal/contact"
+            className="mt-4 inline-block text-xs font-black uppercase tracking-widest text-primary"
+          >
+            Contact support if you expected a site →
+          </Link>
         </div>
       ) : (
         <>

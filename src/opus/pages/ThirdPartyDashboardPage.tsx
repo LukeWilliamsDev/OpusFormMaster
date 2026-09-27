@@ -159,7 +159,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
             Staff needing attention
           </p>
           <p className="mt-3 text-3xl font-black">{attentionWorkerCount}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Review certificates</p>
+          <p className="mt-1 text-xs text-muted-foreground">Review certificate status</p>
         </div>
         <div className={`rounded-2xl border p-4 ${siteStateStyles.open.card}`}>
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
@@ -199,7 +199,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
                 className="flex flex-col gap-2 rounded-xl border border-border bg-background px-3 py-3 hover:border-primary sm:flex-row sm:items-center sm:justify-between"
               >
                 <span>
-                  <span className="block text-sm font-bold">Staff submission needs review</span>
+                  <span className="block text-sm font-bold">Staff submission pending review</span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     {pendingCount} {pendingCount === 1 ? "submission" : "submissions"} waiting
                   </span>
@@ -301,14 +301,21 @@ export const ThirdPartyDashboardPage: React.FC = () => {
                 <span
                   className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${hasAttention(worker) ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
                 >
-                  {hasAttention(worker) ? "Attention" : "Current"}
+                  {hasAttention(worker) ? "Needs attention" : "Valid"}
                 </span>
               </Link>
             ))}
             {!workers.length && (
-              <p className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
-                No approved staff yet. Add your first staff member to get started.
-              </p>
+              <div className="rounded-lg border border-dashed border-border p-4 text-xs text-muted-foreground">
+                <p>No staff have been approved yet.</p>
+                <p className="mt-1">Add a staff member and submit them for review.</p>
+                <Link
+                  to="/portal/third-party/staff/new"
+                  className="mt-3 inline-block font-black uppercase tracking-widest text-primary"
+                >
+                  Add staff member →
+                </Link>
+              </div>
             )}
           </div>
           <Link

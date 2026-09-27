@@ -62,25 +62,6 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
     };
   }, [isAuthenticated]);
 
-  const getFooterLinks = () => {
-    if (isAuthenticated) {
-      return [
-        { label: "Staff Privacy Notice", path: "/portal/privacy" },
-        { label: "Portal Usage Policy", path: "/portal/terms" },
-        { label: "Acceptable Use", path: "/portal/acceptable-use" },
-        { label: "Cookie Statement", path: "/portal/cookies" },
-        { label: "Modern Slavery", path: "/portal/modern-slavery" },
-        { label: "Right to Work", path: "/portal/right-to-work" },
-      ];
-    }
-    return [
-      { label: "Staff Privacy Notice", path: "/privacy" },
-      { label: "Cookie Statement", path: "/cookies" },
-      { label: "Modern Slavery", path: "/modern-slavery" },
-      { label: "Right to Work", path: "/right-to-work" },
-    ];
-  };
-
   const { toc, stamped } = useTableOfContents(children);
 
   if (isAuthenticated) {
@@ -140,19 +121,6 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
 
             {/* Legal content */}
             <div className="legal-content space-y-6 min-w-0 max-w-3xl">{stamped}</div>
-
-            {/* Inline footer links */}
-            <div className="border-t border-border mt-12 pt-6 flex flex-wrap gap-x-6 gap-y-2 justify-center">
-              {getFooterLinks().map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
           </div>
         </div>
       </div>
@@ -274,19 +242,6 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
           transition: "opacity 500ms ease-out",
         }}
       >
-        {/* Legal links row */}
-        <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-x-5 gap-y-2 mb-4">
-          {getFooterLinks().map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-
         {/* Company details + contact */}
         <div
           className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono uppercase text-muted-foreground/80 text-center max-w-xl lg:max-w-none mx-auto"

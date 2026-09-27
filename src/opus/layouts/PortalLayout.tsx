@@ -20,6 +20,8 @@ import {
   ClipboardList,
   Building2,
   UserCog,
+  HelpCircle,
+  Mail,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -158,7 +160,11 @@ export const PortalLayout: React.FC = () => {
       {/* Desktop Sidebar */}
       <SidebarNavigationSlim
         items={toNavListItems()}
-        footerItems={[{ label: "Legal & Privacy", href: "/portal/legal", icon: Shield }]}
+        footerItems={[
+          { label: "Help & Guidance", href: "/portal/help", icon: HelpCircle },
+          { label: "Contact IT", href: "/portal/contact", icon: Mail },
+          { label: "Legal & Privacy", href: "/portal/legal", icon: Shield },
+        ]}
         isActive={(item) => (item.href ? checkIsActive(item.href) : false)}
         collapsed={isSidebarCollapsed}
         onToggleCollapse={toggleSidebar}
@@ -283,6 +289,22 @@ export const PortalLayout: React.FC = () => {
               </nav>
 
               <div className="mt-auto pt-4 border-t-2 border-border space-y-1">
+                <Link
+                  to="/portal/help"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer min-h-[44px]"
+                >
+                  <HelpCircle className="w-4 h-4 shrink-0" />
+                  <span>Help & Guidance</span>
+                </Link>
+                <Link
+                  to="/portal/contact"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer min-h-[44px]"
+                >
+                  <Mail className="w-4 h-4 shrink-0" />
+                  <span>Contact IT</span>
+                </Link>
                 <Link
                   to="/portal/legal"
                   onClick={() => setIsMobileMenuOpen(false)}

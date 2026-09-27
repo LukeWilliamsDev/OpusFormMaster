@@ -8,6 +8,7 @@ import {
   ALL_ROLES,
   MANAGEMENT_ROLES,
   FIELD_ROLES,
+  THIRD_PARTY_ROLES,
 } from "./context/PortalContext";
 import { PortalLayout } from "./layouts/PortalLayout";
 import { LandingPage } from "./components/LandingPage";
@@ -31,6 +32,15 @@ import { CookieStatementPage } from "./pages/CookieStatement";
 import { ModernSlaveryStatementPage } from "./pages/ModernSlaveryStatement";
 import { RightToWorkPolicyPage } from "./pages/RightToWorkPolicy";
 import { LegalHubPage } from "./pages/LegalHub";
+import { PortalHelpPage } from "./pages/PortalHelp";
+import { PortalContactPage } from "./pages/PortalContact";
+import {
+  ThirdPartyHomePage,
+  ThirdPartyLayout,
+  ThirdPartySitePage,
+  ThirdPartySitesPage,
+  ThirdPartyStaffPage,
+} from "./pages/ThirdPartyPortal";
 
 // Immediate recovery URL redirection for HashRouter before React Router initialises and strips the hash
 (() => {
@@ -51,7 +61,7 @@ import { LegalHubPage } from "./pages/LegalHub";
 
 // Session gate — any /portal/* view requires a valid Supabase session.
 const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, authLoading, profile } = usePortal();
+  const { isAuthenticated, authLoading, profile, role } = usePortal();
   if (authLoading) {
     return <div className="min-h-screen bg-background" />;
   }
@@ -59,7 +69,7 @@ const ProtectedRoute: React.FC = () => {
   // A must-change-password account has no business in the app until it changes it —
   // send it back to the auth page, which forces the reset form for this state.
   if (profile?.must_change_password) return <Navigate to="/portal" replace />;
-  return <PortalLayout />;
+  return role === "third_party" ? <ThirdPartyLayout /> : <PortalLayout />;
 };
 
 // Role gate — restricts a subtree to a role allowlist. Blocked users go to the
@@ -73,9 +83,11 @@ const RoleGuard: React.FC<{
     return <div className="min-h-screen bg-background" />;
   }
   if (!allow.includes(role)) {
-    const fallback = FIELD_ROLES.includes(role)
-      ? "/portal/roster?view=calendar"
-      : "/portal/dashboard";
+    const fallback = THIRD_PARTY_ROLES.includes(role)
+      ? "/portal/third-party"
+      : FIELD_ROLES.includes(role)
+        ? "/portal/roster?view=calendar"
+        : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
@@ -91,9 +103,11 @@ const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     return <div className="min-h-screen bg-background" />;
   }
   if (role !== "admin" || user?.email !== "admin@opusform.co.uk") {
-    const fallback = FIELD_ROLES.includes(role)
-      ? "/portal/roster?view=calendar"
-      : "/portal/dashboard";
+    const fallback = THIRD_PARTY_ROLES.includes(role)
+      ? "/portal/third-party"
+      : FIELD_ROLES.includes(role)
+        ? "/portal/roster?view=calendar"
+        : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
@@ -208,6 +222,26 @@ export default function App() {
               element={
                 <RoleGuard allow={ALL_ROLES}>
                   <LegalHubPage />
+                </RoleGuard>
+              }
+            />
+            <Route
+              path="/portal/help"
+              element={
+                <RoleGuard allow={ALL_ROLES}>
+                  <PortalHelpPage />
+                </RoleGuard>
+              }
+            />
+            <Route path="/portal/third-party" element={<ThirdPartyHomePage />} />
+            <Route path="/portal/third-party/staff" element={<ThirdPartyStaffPage />} />
+            <Route path="/portal/third-party/sites" element={<ThirdPartySitesPage />} />
+            <Route path="/portal/third-party/sites/:siteId" element={<ThirdPartySitePage />} />
+            <Route
+              path="/portal/contact"
+              element={
+                <RoleGuard allow={ALL_ROLES}>
+                  <PortalContactPage />
                 </RoleGuard>
               }
             />

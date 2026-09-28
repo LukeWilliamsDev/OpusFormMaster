@@ -1,8 +1,24 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "../_shared/cors.ts";
 
 const ADMIN_EMAIL = "admin@opusform.co.uk";
+const ALLOWED_ORIGINS = new Set([
+  "https://opusform.co.uk",
+  "https://www.opusform.co.uk",
+  "http://localhost:5173",
+  "http://localhost:3000",
+  "http://localhost:8080",
+]);
+
+const corsHeaders = (req: Request): Record<string, string> => {
+  const headers: Record<string, string> = {
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    Vary: "Origin",
+  };
+  const origin = req.headers.get("origin");
+  if (origin && ALLOWED_ORIGINS.has(origin)) headers["Access-Control-Allow-Origin"] = origin;
+  return headers;
+};
 const ROLES = [
   "admin",
   "director",

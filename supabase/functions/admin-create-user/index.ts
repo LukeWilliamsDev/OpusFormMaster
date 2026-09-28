@@ -44,28 +44,28 @@ const rest = (base: string, key: string, path: string, init: RequestInit = {}) =
     },
   });
 
+const tokenSubject = (token: string): string | null => {
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1] ?? ""));
+    return typeof payload.sub === "string" ? payload.sub : null;
+  } catch {
+    return null;
+  }
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req) });
   try {
     const base = Deno.env.get("SUPABASE_URL");
     const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    const authKey =
-      Deno.env.get("SUPABASE_ANON_KEY") ??
-      Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ??
-      "sb_publishable_53cmMHBOSkyAongtBxBseA_D-10Tt7e";
     const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
-    if (!base || !key || !token) return response(req, { error: "Unauthorized." }, 401);
-
-    const callerResponse = await fetch(`${base}/auth/v1/user`, {
-      headers: { apikey: authKey!, Authorization: `Bearer ${token}` },
-    });
-    const caller = await callerResponse.json();
-    if (!callerResponse.ok || !caller?.id) return response(req, { error: "Unauthorized." }, 401);
+    const callerId = token ? tokenSubject(token) : null;
+    if (!base || !key || !callerId) return response(req, { error: "Unauthorized." }, 401);
 
     const callerProfileResponse = await rest(
       base,
       key,
-      `/rest/v1/profiles?id=eq.${encodeURIComponent(caller.id)}&select=role,status`,
+      `/rest/v1/profiles?id=eq.${encodeURIComponent(callerId)}&select=role,status`,
     );
     const callerProfiles = await callerProfileResponse.json();
     const callerProfile = callerProfiles?.[0];

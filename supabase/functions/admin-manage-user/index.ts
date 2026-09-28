@@ -1,4 +1,4 @@
-const ADMIN_EMAIL = "admin@opusform.co.uk";
+const LUKE_ADMIN_EMAIL = "luke@opusform.co.uk";
 const ROLES = [
   "admin",
   "director",
@@ -101,10 +101,14 @@ Deno.serve(async (req) => {
     if (action === "update") {
       const nextEmail = (email ?? target.email ?? "").toLowerCase();
       const nextRole = role ?? target.role;
-      if (nextRole === "admin" && nextEmail !== ADMIN_EMAIL) {
+      if (nextRole === "admin" && nextEmail !== LUKE_ADMIN_EMAIL) {
         return response(req, { error: "The admin role is reserved for Luke Williams." }, 400);
       }
-      if (target.role === "admin" && nextEmail !== ADMIN_EMAIL) {
+      if (
+        target.role === "admin" &&
+        target.email?.toLowerCase() === LUKE_ADMIN_EMAIL &&
+        (nextEmail !== LUKE_ADMIN_EMAIL || nextRole !== "admin")
+      ) {
         return response(
           req,
           { error: "Luke Williams' admin account cannot be renamed or reassigned." },

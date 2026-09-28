@@ -1,4 +1,4 @@
-const ADMIN_EMAIL = "admin@opusform.co.uk";
+const LUKE_ADMIN_EMAIL = "luke@opusform.co.uk";
 const ROLES = [
   "admin",
   "director",
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       return response(req, { error: "email, role and tenant_id are required." }, 400);
     }
     if (!ROLES.includes(role)) return response(req, { error: "Invalid role." }, 400);
-    if (role === "admin" && email.toLowerCase() !== ADMIN_EMAIL) {
+    if (role === "admin" && email.toLowerCase() !== LUKE_ADMIN_EMAIL) {
       return response(req, { error: "The admin role is reserved for Luke Williams." }, 400);
     }
 

@@ -367,7 +367,8 @@ async function sendDispatcherDigest(
               : `expired ${-d.days} day${d.days === -1 ? "" : "s"} ago`
         }`,
     );
-    const more = tenantDue.length > urgent.length ? `\n…and ${tenantDue.length - urgent.length} more.` : "";
+    const more =
+      tenantDue.length > urgent.length ? `\n…and ${tenantDue.length - urgent.length} more.` : "";
     const text = `Certificate expiries — ${tenantDue.length} to action.\n\n${lines.join("\n")}${more}`;
     const dedupeKey = `digest:${todayIso}:${recipient.chatId}`;
     if (!(await claim(recipient.chatId, kind, dedupeKey, recipient.tenantId))) {

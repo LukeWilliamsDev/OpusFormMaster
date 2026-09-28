@@ -52,30 +52,41 @@ serve(async (req) => {
       .eq("id", user.id)
       .single();
     if (profileError || !profile || profile.status !== "active" || profile.role !== "third_party") {
-      return new Response(JSON.stringify({ error: "This account cannot submit portal help requests." }), {
-        status: 403,
-        headers,
-      });
+      return new Response(
+        JSON.stringify({ error: "This account cannot submit portal help requests." }),
+        {
+          status: 403,
+          headers,
+        },
+      );
     }
 
     const payload = await req.json();
     const subject = typeof payload.subject === "string" ? payload.subject.trim() : "";
     const message = typeof payload.message === "string" ? payload.message.trim() : "";
     if (!subject || subject.length > 120 || !message || message.length > 5000) {
-      return new Response(JSON.stringify({ error: "Please provide a subject and message within the allowed lengths." }), {
-        status: 400,
-        headers,
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Please provide a subject and message within the allowed lengths.",
+        }),
+        {
+          status: 400,
+          headers,
+        },
+      );
     }
 
     const { data: configRows, error: configError } = await adminClient
       .from("decrypted_smtp_config")
       .select("key, value");
     if (configError || !configRows?.length) {
-      return new Response(JSON.stringify({ error: "Email service configuration is unavailable." }), {
-        status: 500,
-        headers,
-      });
+      return new Response(
+        JSON.stringify({ error: "Email service configuration is unavailable." }),
+        {
+          status: 500,
+          headers,
+        },
+      );
     }
 
     const config: Record<string, string> = {};
@@ -84,10 +95,13 @@ serve(async (req) => {
     // can contain an older revoked key and must not override the live secret.
     const resendApiKey = Deno.env.get("RESEND_API_KEY") || config.RESEND_API_KEY;
     if (!resendApiKey) {
-      return new Response(JSON.stringify({ error: "Email service configuration is unavailable." }), {
-        status: 500,
-        headers,
-      });
+      return new Response(
+        JSON.stringify({ error: "Email service configuration is unavailable." }),
+        {
+          status: 500,
+          headers,
+        },
+      );
     }
 
     const timestamp = new Date().toLocaleString("en-GB", {
@@ -127,6 +141,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers });
   } catch (error) {
     console.error("Error sending portal help request:", error);
-    return new Response(JSON.stringify({ error: "Email delivery failed." }), { status: 500, headers });
+    return new Response(JSON.stringify({ error: "Email delivery failed." }), {
+      status: 500,
+      headers,
+    });
   }
 });

@@ -200,14 +200,11 @@ export const PortalLayout: React.FC = () => {
     },
   ];
 
-  // SITE RECORDS/POLICIES (full audit trail) are restricted to the one
-  // designated compliance account, not every admin — job-level history is
-  // reached via the job's own History tab instead.
-  const isAuditAdmin = user?.email === "admin@opusform.co.uk";
+  // SITE LOG/POLICIES are available to every admin. Job-level history remains
+  // available through the job's own History tab for the appropriate ops roles.
   const visibleNav = allNav.filter((item) => {
     if ("section" in item) return true;
     if (!role || !item.roles.includes(role)) return false;
-    if (item.path === "/portal/audit" || item.path === "/portal/policies") return isAuditAdmin;
     return true;
   });
   // Drop a section header if every item under it got filtered out (e.g. ADMIN for non-admins).

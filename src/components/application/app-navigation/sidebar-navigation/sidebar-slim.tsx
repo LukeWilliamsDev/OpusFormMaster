@@ -201,6 +201,7 @@ export const SidebarNavigationSlim = ({
         )}
         {onLogout && (
           <button
+            type="button"
             onClick={onLogout}
             title={collapsed ? "Log Out" : undefined}
             aria-label="Log out"

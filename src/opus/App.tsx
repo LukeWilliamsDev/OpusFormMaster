@@ -270,16 +270,15 @@ const RoleGuard: React.FC<{
   return <>{children}</>;
 };
 
-// Audit Log Gate - the full tenant audit trail is intentionally restricted to
-// one designated compliance account, not every admin. Job-level history (a
-// narrower view) is available to all ops roles via JobDetails' History tab,
-// backed by a separate job-scoped audit_logs RLS policy.
+// Audit Log Gate - the full tenant audit trail is restricted to tenant admins.
+// Job-level history (a narrower view) is available to all ops roles via
+// JobDetails' History tab, backed by a separate job-scoped audit_logs RLS policy.
 const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { role, user, authLoading } = usePortal();
   if (authLoading || role === null) {
     return <div className="min-h-screen bg-background" />;
   }
-  if (role !== "admin" || user?.email !== "admin@opusform.co.uk") {
+  if (role !== "admin") {
     const fallback =
       role === "third_party"
         ? "/portal/third-party"

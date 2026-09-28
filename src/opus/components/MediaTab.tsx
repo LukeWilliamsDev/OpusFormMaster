@@ -18,7 +18,7 @@ import {
   Wallet,
   Folder,
 } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -380,9 +380,12 @@ export function MediaTab({
             <span>Sort document</span>
           </div>
           <div>
-            <h2 className="mb-2 text-[13.5px] font-semibold uppercase tracking-[0.02em]">
+            <DialogTitle className="mb-2 text-[13.5px] font-semibold uppercase tracking-[0.02em]">
               What type of document is this?
-            </h2>
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Choose a category for the uploaded document.
+            </DialogDescription>
             <div className="mb-3 flex min-w-0 items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5">
               <FileText className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1 truncate text-[11.5px] font-mono text-foreground">
@@ -419,9 +422,9 @@ export function MediaTab({
             <span>External file</span>
           </div>
           <div>
-            <h2 className="mb-2 text-[15px] font-semibold uppercase tracking-[0.02em]">
+            <DialogTitle className="mb-2 text-[15px] font-semibold uppercase tracking-[0.02em]">
               Manage Document
-            </h2>
+            </DialogTitle>
             <p className="mb-3 text-[13.5px] text-muted-foreground truncate font-mono">
               {viewDocTarget?.file_name}
             </p>
@@ -469,6 +472,8 @@ export function MediaTab({
         <DialogContent className="max-w-2xl p-0 overflow-hidden bg-black !inset-x-auto !left-1/2 !top-1/2 !bottom-auto !-translate-x-1/2 !-translate-y-1/2 !rounded-lg !w-[calc(100%-2rem)] !max-h-[calc(100dvh-2rem)]">
           {gallery && (
             <div className="relative flex flex-col items-center">
+              <DialogTitle className="sr-only">Photo gallery</DialogTitle>
+              <DialogDescription className="sr-only">Browse uploaded job photos.</DialogDescription>
               <img
                 src={gallery.photos[gallery.index].file_url}
                 alt=""
@@ -558,9 +563,9 @@ export function MediaTab({
             <span>Rename file</span>
           </div>
           <div>
-            <h2 className="mb-2 text-[15px] font-semibold uppercase tracking-[0.02em]">
+            <DialogTitle className="mb-2 text-[15px] font-semibold uppercase tracking-[0.02em]">
               Rename This Photo?
-            </h2>
+            </DialogTitle>
             <p className="mb-3 text-[13.5px] text-muted-foreground">
               This changes the file name shown across the job. This action is recorded in the job's
               audit log.

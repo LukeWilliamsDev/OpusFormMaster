@@ -108,13 +108,25 @@ export const NavList = ({
         }
 
         if (item.items?.length) {
+          const sectionId = `nav-section-${String(item.label)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")}`;
+          const sectionOpen = activeItem?.href === item.href;
           return (
             <details
               key={item.label}
-              open={activeItem?.href === item.href}
+              id={sectionId}
+              open={sectionOpen}
               className="appearance-none py-0.25"
             >
-              <NavItemBase href={item.href} icon={item.icon} type="collapsible" iconOnly={iconOnly}>
+              <NavItemBase
+                href={item.href}
+                icon={item.icon}
+                type="collapsible"
+                iconOnly={iconOnly}
+                ariaControls={sectionId}
+                ariaExpanded={sectionOpen}
+              >
                 {item.label}
               </NavItemBase>
 

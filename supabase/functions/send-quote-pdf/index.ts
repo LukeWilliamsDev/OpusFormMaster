@@ -16,6 +16,15 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
+const ALLOWED_ROLES = ["admin", "director", "logistics_coordinator", "logistics_assistant"];
+
+function jsonResponse(req: Request, body: Record<string, unknown>, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+  });
+}
+
 interface RequestPayload {
   toEmail: string;
   clientName?: string;
@@ -51,41 +60,43 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(req) });
   }
 
+  if (req.method !== "POST") {
+    return jsonResponse(req, { error: "Method not allowed." }, 405);
+  }
+
   try {
-    // Verify caller identity before performing any send/relay action (POST is otherwise
-    // unauthenticated since this function must run with verify_jwt: false for the GET logo route)
-    // Connect to Supabase using the built-in service role key
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return jsonResponse(req, { error: "Service unavailable." }, 503);
+    }
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     const authHeader = req.headers.get("Authorization");
-    const token = authHeader ? authHeader.replace("Bearer ", "") : "";
-    if (token && token !== supabaseServiceKey && token !== Deno.env.get("SUPABASE_ANON_KEY")) {
-      const { data } = await supabase.auth.getUser(token);
-      const user = data?.user ?? null;
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        if (profile && !["admin", "dispatcher"].includes(profile.role)) {
-          return new Response(
-            JSON.stringify({
-              error: "Forbidden: Only admins and dispatchers can send quote PDFs.",
-            }),
-            {
-              status: 403,
-              headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-            },
-          );
-        }
-      }
+    const tokenMatch = authHeader?.match(/^Bearer\s+(\S+)$/);
+    const token = tokenMatch?.[1];
+    if (!token || token === supabaseServiceKey || token === Deno.env.get("SUPABASE_ANON_KEY")) {
+      return jsonResponse(req, { error: "Unauthorized." }, 401);
     }
 
-    const payload: RequestPayload = await req.json();
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData.user) {
+      return jsonResponse(req, { error: "Unauthorized." }, 401);
+    }
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userData.user.id)
+      .single();
+    if (profileError || !profile || !ALLOWED_ROLES.includes(profile.role)) {
+      return jsonResponse(req, { error: "Forbidden." }, 403);
+    }
+
+    let payload: RequestPayload;
+    try {
+      payload = await req.json();
+    } catch {
+      return jsonResponse(req, { error: "Invalid request body." }, 400);
+    }
     const {
       toEmail,
       clientName,
@@ -101,11 +112,8 @@ serve(async (req) => {
       fromEmail,
     } = payload;
 
-    if (!toEmail) {
-      return new Response(JSON.stringify({ error: "Recipient email (toEmail) is required." }), {
-        status: 400,
-        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      });
+    if (typeof toEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
+      return jsonResponse(req, { error: "A valid recipient email is required." }, 400);
     }
 
     // Retrieve settings config from the secure smtp_config table
@@ -115,7 +123,7 @@ serve(async (req) => {
 
     if (configError || !configRows || configRows.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Failed to load config from database.", detail: configError }),
+        JSON.stringify({ error: "Service unavailable." }),
         {
           status: 500,
           headers: { ...corsHeaders(req), "Content-Type": "application/json" },
@@ -139,7 +147,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           error:
-            "RESEND_API_KEY not found in Supabase environment variables or smtp_config database table.",
+            "Service unavailable.",
         }),
         {
           status: 500,
@@ -285,15 +293,12 @@ serve(async (req) => {
       throw new Error(resendData.message || JSON.stringify(resendData));
     }
 
-    return new Response(JSON.stringify({ success: true, data: resendData }), {
+    return new Response(JSON.stringify({ success: true }),
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error sending email via Resend:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      status: 500,
-    });
+    return jsonResponse(req, { error: "Unable to send email." }, 500);
   }
 });

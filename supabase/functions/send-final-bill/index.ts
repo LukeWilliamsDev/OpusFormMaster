@@ -23,11 +23,14 @@ const ALLOWED_ORIGINS = [
 
 function corsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("origin");
-  return {
-    "Access-Control-Allow-Origin":
-      origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+  const headers: Record<string, string> = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    Vary: "Origin",
   };
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
 }
 
 const EMAIL_COLORS = {
@@ -138,10 +141,14 @@ function logoSvg(theme: "light" | "dark"): string {
   );
 }
 
-// TEMPORARY: recipient is hardcoded to the requester's own address while this
-// feature is under test, instead of clientInfo.email. Remove OVERRIDE_TO_EMAIL
-// and use payload.toEmail once final bills are ready to go to real clients.
-const OVERRIDE_TO_EMAIL = "lukewilliams141@gmail.com";
+const ALLOWED_ROLES = ["admin", "director", "logistics_coordinator", "logistics_assistant"];
+
+function jsonResponse(req: Request, body: Record<string, unknown>, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+  });
+}
 
 function escapeHtml(value: string): string {
   return String(value)
@@ -153,6 +160,7 @@ function escapeHtml(value: string): string {
 }
 
 interface RequestPayload {
+  toEmail: string;
   finalBillId: string;
   clientName?: string;
   siteName?: string;
@@ -185,39 +193,44 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(req) });
   }
 
+  if (req.method !== "POST") {
+    return jsonResponse(req, { error: "Method not allowed." }, 405);
+  }
+
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return jsonResponse(req, { error: "Service unavailable." }, 503);
+    }
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     const authHeader = req.headers.get("Authorization");
-    const token = authHeader ? authHeader.replace("Bearer ", "") : "";
-    if (token && token !== supabaseServiceKey && token !== Deno.env.get("SUPABASE_ANON_KEY")) {
-      const { data } = await supabase.auth.getUser(token);
-      const user = data?.user ?? null;
-      if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-
-        if (profile && !["admin", "dispatcher"].includes(profile.role)) {
-          return new Response(
-            JSON.stringify({
-              error: "Forbidden: Only admins and dispatchers can send final bills.",
-            }),
-            {
-              status: 403,
-              headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-            },
-          );
-        }
-      }
+    const tokenMatch = authHeader?.match(/^Bearer\s+(\S+)$/);
+    const token = tokenMatch?.[1];
+    if (!token || token === supabaseServiceKey || token === Deno.env.get("SUPABASE_ANON_KEY")) {
+      return jsonResponse(req, { error: "Unauthorized." }, 401);
+    }
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData.user) {
+      return jsonResponse(req, { error: "Unauthorized." }, 401);
+    }
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userData.user.id)
+      .single();
+    if (profileError || !profile || !ALLOWED_ROLES.includes(profile.role)) {
+      return jsonResponse(req, { error: "Forbidden." }, 403);
     }
 
-    const payload: RequestPayload = await req.json();
+    let payload: RequestPayload;
+    try {
+      payload = await req.json();
+    } catch {
+      return jsonResponse(req, { error: "Invalid request body." }, 400);
+    }
     const {
+      toEmail,
       finalBillId,
       clientName,
       siteName,
@@ -230,17 +243,14 @@ serve(async (req) => {
       fromEmail,
     } = payload;
 
-    if (!finalBillId) {
-      return new Response(JSON.stringify({ error: "finalBillId is required." }), {
-        status: 400,
-        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      });
+    if (typeof toEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
+      return jsonResponse(req, { error: "A valid recipient email is required." }, 400);
     }
-    if (!pdfBase64) {
-      return new Response(JSON.stringify({ error: "pdfBase64 is required." }), {
-        status: 400,
-        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      });
+    if (!finalBillId) {
+      return jsonResponse(req, { error: "Invalid request." }, 400);
+    }
+    if (typeof pdfBase64 !== "string" || !pdfBase64) {
+      return jsonResponse(req, { error: "Invalid request." }, 400);
     }
 
     // Retrieve settings config from the secure smtp_config table
@@ -250,7 +260,7 @@ serve(async (req) => {
 
     if (configError || !configRows || configRows.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Failed to load config from database.", detail: configError }),
+        JSON.stringify({ error: "Service unavailable." }),
         {
           status: 500,
           headers: { ...corsHeaders(req), "Content-Type": "application/json" },
@@ -271,8 +281,7 @@ serve(async (req) => {
     if (!resendApiKey) {
       return new Response(
         JSON.stringify({
-          error:
-            "RESEND_API_KEY not found in Supabase environment variables or smtp_config database table.",
+          error: "Service unavailable.",
         }),
         {
           status: 500,
@@ -337,7 +346,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: "Opus Form Billing <" + sender + ">",
-        to: [OVERRIDE_TO_EMAIL],
+        to: [toEmail],
         subject:
           (label || "Invoice #" + billRef) +
           " | " +
@@ -370,15 +379,12 @@ serve(async (req) => {
       console.error("Failed to mark final bill as sent:", updateError);
     }
 
-    return new Response(JSON.stringify({ success: true, data: resendData }), {
+    return new Response(JSON.stringify({ success: true }),
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error sending final bill via Resend:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      status: 500,
-    });
+    return jsonResponse(req, { error: "Unable to send email." }, 500);
   }
 });

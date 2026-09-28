@@ -13,6 +13,9 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    // Keep local development headers limited to protections that do not
+    // interfere with Vite's HMR WebSocket or localhost HTTP origin. The
+    // production CSP and HSTS are applied by src/server.ts/the Worker.
     server: {
       headers: {
         "X-Frame-Options": "DENY",

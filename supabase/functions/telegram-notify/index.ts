@@ -95,6 +95,7 @@ async function sendShiftReminders() {
       .from("telegram_links")
       .select("telegram_user_id")
       .eq("target_id", row.worker_id as string)
+      .eq("tenant_id", row.tenant_id as string)
       .is("revoked_at", null)
       .maybeSingle();
 
@@ -290,6 +291,7 @@ async function sendCertExpiryWarnings() {
       .from("telegram_links")
       .select("telegram_user_id")
       .eq("target_id", item.staffId)
+      .eq("tenant_id", item.tenantId)
       .is("revoked_at", null)
       .maybeSingle();
 
@@ -333,24 +335,10 @@ async function sendCertExpiryWarnings() {
  * message per ticket would make the channel unreadable in a week.
  */
 async function sendDispatcherDigest(
-  due: Array<{ staffName: string; ticket: Ticket; days: number }>,
+  due: Array<{ staffName: string; tenantId: string; ticket: Ticket; days: number }>,
   todayIso: string,
 ) {
   if (due.length === 0) return { recipients: 0, sent: 0, failed: 0, skipped: 0 };
-
-  const urgent = [...due].sort((a, b) => a.days - b.days).slice(0, 5);
-  const lines = urgent.map(
-    (d) =>
-      `• ${d.staffName} — ${d.ticket.type ?? "certificate"} ${
-        d.days > 0
-          ? `expires in ${d.days} day${d.days === 1 ? "" : "s"}`
-          : d.days === 0
-            ? "expires today"
-            : `expired ${-d.days} day${d.days === -1 ? "" : "s"} ago`
-      }`,
-  );
-  const more = due.length > urgent.length ? `\n…and ${due.length - urgent.length} more.` : "";
-  const text = `Certificate expiries — ${due.length} to action.\n\n${lines.join("\n")}${more}`;
 
   const kind = "cert_expiry";
   let sent = 0;
@@ -362,6 +350,22 @@ async function sendDispatcherDigest(
   const recipients = await dispatcherRecipients();
 
   for (const recipient of recipients) {
+    const tenantDue = due.filter((item) => item.tenantId === recipient.tenantId);
+    if (tenantDue.length === 0) continue;
+
+    const urgent = [...tenantDue].sort((a, b) => a.days - b.days).slice(0, 5);
+    const lines = urgent.map(
+      (d) =>
+        `• ${d.staffName} — ${d.ticket.type ?? "certificate"} ${
+          d.days > 0
+            ? `expires in ${d.days} day${d.days === 1 ? "" : "s"}`
+            : d.days === 0
+              ? "expires today"
+              : `expired ${-d.days} day${d.days === -1 ? "" : "s"} ago`
+        }`,
+    );
+    const more = tenantDue.length > urgent.length ? `\n…and ${tenantDue.length - urgent.length} more.` : "";
+    const text = `Certificate expiries — ${tenantDue.length} to action.\n\n${lines.join("\n")}${more}`;
     const dedupeKey = `digest:${todayIso}:${recipient.chatId}`;
     if (!(await claim(recipient.chatId, kind, dedupeKey, recipient.tenantId))) {
       skipped += 1;

@@ -198,8 +198,10 @@ export const SidebarNavigationSlim = ({
         )}
         {onLogout && (
           <button
+            type="button"
             onClick={onLogout}
             title={collapsed ? "Log Out" : undefined}
+            aria-label="Log out"
             className={cx(
               "flex items-center w-full py-2.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all cursor-pointer",
               collapsed ? "justify-center px-0" : "space-x-3 px-3",

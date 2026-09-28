@@ -11,9 +11,12 @@ const ALLOWED_ORIGINS = [
 // malicious page from riding a logged-in user's browser session at all.
 export function corsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get("origin");
-  return {
-    "Access-Control-Allow-Origin":
-      origin && ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+  const headers: Record<string, string> = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    Vary: "Origin",
   };
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers["Access-Control-Allow-Origin"] = origin;
+  }
+  return headers;
 }

@@ -3,6 +3,15 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { EMAIL_COLORS, emailShell } from "../_shared/email-theme.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
+const ALLOWED_ROLES = ["admin", "director", "logistics_coordinator", "logistics_assistant"];
+
+function jsonResponse(req: Request, body: Record<string, unknown>, status: number): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+  });
+}
+
 interface RequestPayload {
   toEmail: string;
   workerName: string;
@@ -26,66 +35,61 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(req) });
   }
 
+  if (req.method !== "POST") {
+    return jsonResponse(req, { error: "Method not allowed." }, 405);
+  }
+
   try {
-    // 1. Verify Authorization Header (JWT)
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized: Missing Authorization header." }),
-        {
-          status: 401,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return jsonResponse(req, { error: "Service unavailable." }, 503);
     }
-
-    const token = authHeader.replace("Bearer ", "");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // 2. Validate token and retrieve user
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser(token);
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized: Invalid token.", details: userError }),
-        {
-          status: 401,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
+    const authHeader = req.headers.get("Authorization");
+    const tokenMatch = authHeader?.match(/^Bearer\s+(\S+)$/);
+    const token = tokenMatch?.[1];
+    if (!token || token === supabaseServiceKey || token === Deno.env.get("SUPABASE_ANON_KEY")) {
+      return jsonResponse(req, { error: "Unauthorized." }, 401);
     }
-
-    // 3. Verify user's administrative privileges
+    const { data: userData, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !userData.user) {
+      return jsonResponse(req, { error: "Unauthorized." }, 401);
+    }
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", user.id)
+      .eq("id", userData.user.id)
       .single();
-
-    if (profileError || !profile || !["admin", "dispatcher"].includes(profile.role)) {
-      return new Response(
-        JSON.stringify({
-          error: "Forbidden: Only admins and dispatchers can trigger compliance requests.",
-        }),
-        {
-          status: 403,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
+    if (profileError || !profile || !ALLOWED_ROLES.includes(profile.role)) {
+      return jsonResponse(req, { error: "Forbidden." }, 403);
     }
 
-    const payload: RequestPayload = await req.json();
+    let payload: RequestPayload;
+    try {
+      payload = await req.json();
+    } catch {
+      return jsonResponse(req, { error: "Invalid request body." }, 400);
+    }
     const { toEmail, workerName, requestedCerts, uploadUrl, expiresAt } = payload;
 
-    if (!toEmail) {
-      return new Response(JSON.stringify({ error: "Recipient email (toEmail) is required." }), {
-        status: 400,
-        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      });
+    if (typeof toEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
+      return jsonResponse(req, { error: "A valid recipient email is required." }, 400);
+    }
+    let validatedUploadUrl: URL;
+    try {
+      validatedUploadUrl = new URL(uploadUrl);
+    } catch {
+      return jsonResponse(req, { error: "Invalid upload URL." }, 400);
+    }
+    if (validatedUploadUrl.protocol !== "https:") {
+      return jsonResponse(req, { error: "Invalid upload URL." }, 400);
+    }
+    if (!Array.isArray(requestedCerts) || requestedCerts.some((cert) => typeof cert !== "string")) {
+      return jsonResponse(req, { error: "Invalid request." }, 400);
+    }
+    if (!expiresAt || Number.isNaN(new Date(expiresAt).getTime())) {
+      return jsonResponse(req, { error: "Invalid request." }, 400);
     }
 
     // Retrieve settings config
@@ -95,7 +99,7 @@ serve(async (req) => {
 
     if (configError || !configRows || configRows.length === 0) {
       return new Response(
-        JSON.stringify({ error: "Failed to load config from database.", detail: configError }),
+        JSON.stringify({ error: "Service unavailable." }),
         {
           status: 500,
           headers: { ...corsHeaders(req), "Content-Type": "application/json" },
@@ -112,7 +116,7 @@ serve(async (req) => {
     if (!resendApiKey) {
       return new Response(
         JSON.stringify({
-          error: "RESEND_API_KEY not found.",
+          error: "Service unavailable.",
         }),
         {
           status: 500,
@@ -158,7 +162,7 @@ serve(async (req) => {
     bodyHtml += '      <div style="text-align: center; margin-bottom: 32px;">';
     bodyHtml +=
       '        <a href="' +
-      uploadUrl +
+      escapeHtml(validatedUploadUrl.toString()) +
       `" style="display: inline-block; padding: 14px 28px; background-color: ${EMAIL_COLORS.accent}; color: ${EMAIL_COLORS.accentForeground.light}; text-decoration: none; border-radius: 8px; font-weight: 900; font-size: 12px; text-transform: uppercase; letter-spacing: 0.15em; box-shadow: 0 4px 12px rgba(181, 101, 29, 0.3);">Upload Documents</a>`;
     bodyHtml += "      </div>";
     bodyHtml +=
@@ -195,15 +199,12 @@ serve(async (req) => {
       throw new Error(resendData.message || JSON.stringify(resendData));
     }
 
-    return new Response(JSON.stringify({ success: true, data: resendData }), {
+    return new Response(JSON.stringify({ success: true }),
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error sending email via Resend:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-      status: 500,
-    });
+    return jsonResponse(req, { error: "Unable to send email." }, 500);
   }
 });

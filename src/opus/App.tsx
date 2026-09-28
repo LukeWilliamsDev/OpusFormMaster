@@ -81,19 +81,31 @@ const RoleGuard: React.FC<{
   return <>{children}</>;
 };
 
-// Audit Log Gate - the full tenant audit trail is intentionally restricted to
-// one designated compliance account, not every admin. Job-level history (a
-// narrower view) is available to all ops roles via JobDetails' History tab,
-// backed by a separate job-scoped audit_logs RLS policy.
+// Audit Log Gate - the full tenant audit trail is restricted to tenant admins.
+// Job-level history (a narrower view) is available to all ops roles via
+// JobDetails' History tab, backed by a separate job-scoped audit_logs RLS policy.
 const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { role, user, authLoading } = usePortal();
   if (authLoading || role === null) {
     return <div className="min-h-screen bg-background" />;
   }
-  if (role !== "admin" || user?.email !== "admin@opusform.co.uk") {
+  if (role !== "admin") {
     const fallback = FIELD_ROLES.includes(role)
       ? "/portal/roster?view=calendar"
       : "/portal/dashboard";
+    return <Navigate to={fallback} replace />;
+  }
+  return <>{children}</>;
+};
+
+const UserAdminGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { role, user, authLoading } = usePortal();
+  if (authLoading || role === null) {
+    return <div className="min-h-screen bg-background" />;
+  }
+  const allowed = (role === "admin" || role === "director") && user?.email;
+  if (!allowed) {
+    const fallback = FIELD_ROLES.includes(role) ? "/portal/no-access" : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
   return <>{children}</>;
@@ -190,9 +202,9 @@ export default function App() {
             <Route
               path="/portal/users"
               element={
-                <AuditLogGuard>
+                <UserAdminGuard>
                   <AdminUsers />
-                </AuditLogGuard>
+                </UserAdminGuard>
               }
             />
             <Route

@@ -5,6 +5,9 @@
   "assets": {
     "directory": ".output/public",
   },
+  "build": {
+    "command": "npm run build",
+  },
   "observability": {
     "enabled": true,
     "logs": {

@@ -6,32 +6,39 @@ import { LegalPageLayout, Section } from "../layouts/LegalPageLayout";
  * Demonstrates best practices for compliance even though turnover is < £36m.
  */
 export const ModernSlaveryStatementPage: React.FC = () => (
-  <LegalPageLayout title="Modern Slavery and Illegal Working Statement" lastUpdated="July 2026">
+  <LegalPageLayout
+    title="Modern Slavery and Illegal Working Statement"
+    lastUpdated="September 2026"
+  >
     <Section title="1. Our Stance">
       <p>
-        We oppose modern slavery and trafficking in everything we do. Our supply chain needs to be
-        clean too.
+        We oppose modern slavery and trafficking in everything we do. We expect the same standards
+        throughout our supply chain.
       </p>
       <p>
-        We're under the £36 million turnover threshold, so this statement is voluntary. But we're
-        publishing it to show we take this seriously.
+        Whether a statement is required depends on the organisation's current worldwide turnover,
+        structure, and the statutory criteria in force at the time. This statement is published as a
+        voluntary control unless those criteria require a formal statement. It is reviewed when the
+        business or the law changes.
       </p>
     </Section>
 
     <Section title="2. What We Do">
       <p>
-        We do concrete flooring across the UK. We hire workers, buy materials, and rent equipment
-        for jobs.
+        We provide concrete flooring services across the UK. We engage staff and contractors, buy
+        materials, and rent equipment for our jobs.
       </p>
       <p>
-        We use subcontractors and labor agencies. Construction has real slavery risks. We work to
-        stop that.
+        We use subcontractors and labour agencies, so we recognise the modern slavery risks in the
+        construction sector and work to reduce them.
       </p>
     </Section>
 
     <Section title="3. Our Policy">
       <p>
-        We won't tolerate slavery, trafficking, or illegal hiring. We deal fairly with everyone.
+        We won't tolerate slavery, trafficking, or unlawful working. Illegal working and modern
+        slavery are related but separate compliance risks, and one check does not prove that forced
+        labour is absent. We deal fairly with everyone.
       </p>
       <p>
         Our detailed operational requirements are set out in our Right to Work Policy. A tax
@@ -59,8 +66,9 @@ export const ModernSlaveryStatementPage: React.FC = () => (
           processes.
         </li>
         <li>
-          Reserve the right to terminate our relationship with suppliers if instances of modern
-          slavery come to light.
+          Prioritise worker safety, preserve evidence, escalate concerns, and consider remediation,
+          suspension, termination, or referral to the appropriate authorities where a concern is
+          identified.
         </li>
       </ul>
     </Section>
@@ -78,7 +86,7 @@ export const ModernSlaveryStatementPage: React.FC = () => (
       </p>
     </Section>
 
-    <Section title="6. We'll Keep It Current">
+    <Section title="6. Review and updates">
       <p>We review this statement when things change in our business or the law.</p>
     </Section>
   </LegalPageLayout>

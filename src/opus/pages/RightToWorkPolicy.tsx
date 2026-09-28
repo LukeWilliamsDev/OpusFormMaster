@@ -5,15 +5,18 @@ export const RightToWorkPolicyPage: React.FC = () => (
   <LegalPageLayout title="Right to Work Policy" lastUpdated="July 2026">
     <Section title="1. Purpose and Scope">
       <p>
-        Opus Form Ltd prevents illegal working where it employs or directly engages an individual to
-        carry out work in the UK. This applies to employees, agency workers, labour-only
-        subcontractors, self-employed operatives, consultants and other individuals working for us
-        or on our behalf where we are responsible for the engagement.
+        Opus Form Ltd prevents illegal working where it employs or is legally responsible for
+        engaging an individual to carry out work in the UK. The process distinguishes employees,
+        agency workers, labour-only subcontractors, genuine self-employed contractors, consultants,
+        and people supplied by another employer. Nothing in this policy determines employment
+        status.
       </p>
       <p>
         We follow the current Home Office right-to-work guidance and carry out checks fairly and
-        consistently before work starts. A supplier's tax status or assurance does not replace our
-        own check where Opus Form directly engages the individual.
+        consistently before work starts. Where a supplier is the individual's employer, we obtain
+        appropriate contractual assurance and may conduct proportionate checks; supplier assurance
+        is not equivalent to Opus Form's own statutory excuse where Opus Form is responsible for the
+        engagement.
       </p>
     </Section>
 
@@ -29,8 +32,9 @@ export const RightToWorkPolicyPage: React.FC = () => (
         </li>
       </ul>
       <p>
-        Nobody may start work until the required check has been completed and recorded, unless an
-        official verification route confirms a lawful exception.
+        Nobody may start work until the required check has been completed and recorded, unless the
+        current prescribed process confirms a lawful exception. No work may be allocated outside a
+        recorded employer, role, hours, permission, or expiry restriction.
       </p>
     </Section>
 
@@ -42,8 +46,9 @@ export const RightToWorkPolicyPage: React.FC = () => (
         using the share code and date of birth; a worker's screenshot is not enough.
       </p>
       <p>
-        We record the checker, date, evidence or verification reference, result, expiry date and any
-        work conditions. Work must not be allocated outside those conditions.
+        We record the checker, date, identity comparison, evidence or verification reference, route,
+        result, expiry date, work conditions, and any follow-up or exception decision. Work must not
+        be allocated outside those conditions.
       </p>
     </Section>
 

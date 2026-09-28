@@ -330,7 +330,8 @@ async function handleJob(argument: string, tenantId: string): Promise<HandlerRes
     const { data: authors, error: authorsError } = await supabase
       .from("staff")
       .select("id, name")
-      .in("id", authorIds);
+      .in("id", authorIds)
+      .eq("tenant_id", tenantId);
     if (authorsError) {
       console.error("handleJob: staff query failed", authorsError.message);
       return { text: "Something went wrong — please try again shortly." };
@@ -417,10 +418,8 @@ async function handleToday(tenantId: string): Promise<HandlerResponse> {
   const { data: shifts, error } = await supabase
     .from("shifts")
     .select("job_id, jobs(site_name, postcode)")
-    .eq("date", today);
-  // The linked Telegram identity supplies the only tenant context. Never let
-  // a service-role query turn this command into a cross-tenant digest.
-  query = query.eq("tenant_id", tenantId);
+    .eq("date", today)
+    .eq("tenant_id", tenantId);
 
   if (error) {
     console.error("handleToday: shifts query failed", error.message);
@@ -994,16 +993,16 @@ serve(async (req) => {
     if (command?.command === "start") {
       result = await handleStart(body, command.argument);
     } else {
-      const targetId = await resolveLink(body.telegram_user_id);
-      if (!targetId) {
+      const link = await resolveLink(body.telegram_user_id);
+      if (!link) {
         // The bridge only forwards non-/start traffic for senders it believes are
         // allowlisted, so no active link means access was revoked in the portal.
         // Tell the bridge to drop them locally. Senders learn nothing either way.
         result = { text: DENY_TEXT, ack: { link_revoked: body.telegram_user_id } };
       } else if (body.kind === "callback") {
-        result = await handleCallback(body, targetId);
+        result = await handleCallback(body, link.targetId);
       } else if (body.kind === "file") {
-        result = await handleFile(body, targetId);
+        result = await handleFile(body, link.targetId);
       } else {
         await supabase
           .from("telegram_links")
@@ -1012,19 +1011,19 @@ serve(async (req) => {
 
         const cmd = command?.command;
         if (cmd === "myweek") {
-          result = await handleMyWeek(targetId);
+          result = await handleMyWeek(link.targetId, link.tenantId);
         } else if (cmd === "who" || cmd === "job" || cmd === "staff" || cmd === "today") {
-          const role = await resolveRole(targetId);
+          const role = await resolveRole(link.targetId);
           if (!isManagementRole(role)) {
             result = { text: "Commands: /myweek" };
           } else if (cmd === "who") {
-            result = await handleWho(command?.argument ?? "");
+            result = await handleWho(command?.argument ?? "", link.tenantId);
           } else if (cmd === "job") {
-            result = await handleJob(command?.argument ?? "");
+            result = await handleJob(command?.argument ?? "", link.tenantId);
           } else if (cmd === "staff") {
-            result = await handleStaff(command?.argument ?? "");
+            result = await handleStaff(command?.argument ?? "", link.tenantId);
           } else {
-            result = await handleToday();
+            result = await handleToday(link.tenantId);
           }
         } else {
           result = { text: "Commands: /myweek" };

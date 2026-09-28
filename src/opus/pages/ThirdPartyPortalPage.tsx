@@ -1,0 +1,1500 @@
+import React, { useMemo, useState } from "react";
+import {
+  AlertCircle,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  FileUp,
+  Loader,
+  Plus,
+  Search,
+  Send,
+} from "lucide-react";
+import { toast } from "sonner";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { usePortal } from "../context/PortalContext";
+import { STAFF_ROLES } from "../types/erp";
+import { formatUKDate } from "../utils/week";
+import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
+import { getSiteState, siteStateLabel } from "../utils/siteStatus";
+import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
+import { supabase } from "../../integrations/supabase/client";
+
+const db = supabase as any;
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+const CERTIFICATE_TYPES = [
+  "CSCS",
+  "CPCS",
+  "NPORS",
+  "Concrete Pump Operator",
+  "Slinger / Signaller",
+  "Banksman / Vehicle Marshal",
+  "Telehandler",
+  "Forward Tipping Dumper",
+  "Ride-on Roller",
+  "Excavator",
+  "Loading Shovel",
+  "NVQ Level 2 Formwork",
+  "NVQ Level 2 Concrete Occupations",
+  "NVQ Level 2 Groundworks",
+  "NVQ Level 2 Screeding",
+  "NVQ Level 3 Occupational Work Supervision",
+  "SSSTS",
+  "SMSTS",
+  "Temporary Works Coordinator",
+  "Temporary Works Supervisor",
+  "Temporary Works Awareness",
+  "First Aid at Work",
+  "Emergency First Aid at Work",
+  "Asbestos Awareness",
+  "Silica Dust / Respirable Crystalline Silica Awareness",
+  "COSHH Awareness",
+  "Manual Handling",
+  "Working at Height",
+  "Harness / Fall Arrest",
+  "PASMA",
+  "IPAF",
+  "Abrasive Wheels",
+  "Confined Space",
+  "Face Fit Test",
+  "Fire Marshal",
+  "Traffic Marshal",
+  "Environmental Awareness",
+  "Spill Response",
+] as const;
+
+type FormState = {
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  postcode: string;
+  notes: string;
+};
+const EMPTY_FORM: FormState = {
+  name: "",
+  role: STAFF_ROLES[0],
+  email: "",
+  phone: "",
+  postcode: "",
+  notes: "",
+};
+type WorkerEditDraft = {
+  id: string;
+  name: string;
+  role: string;
+  email: string;
+  phone: string;
+  postcode: string;
+};
+type CertificatePanelMode = "add" | "replace";
+
+export const ThirdPartyPortalPage: React.FC = () => {
+  const {
+    user,
+    profile,
+    workers,
+    setWorkers,
+    jobs,
+    shifts,
+    dataLoading,
+    dataError,
+    reloadPortalData,
+  } = usePortal();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { staffId } = useParams<{ staffId?: string }>();
+  const isNewStaffRoute = location.pathname.endsWith("/new");
+  const isStaffDetailRoute = Boolean(staffId);
+  const showStaffList = !isNewStaffRoute && !isStaffDetailRoute;
+  const showStaffForm = isNewStaffRoute || new URLSearchParams(location.search).get("add") === "1";
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [submitting, setSubmitting] = useState(false);
+  const [submissions, setSubmissions] = useState<any[]>([]);
+  const [editingDraft, setEditingDraft] = useState<WorkerEditDraft | null>(null);
+  const [lastSubmissionId, setLastSubmissionId] = useState<string | null>(null);
+  const [ticketType, setTicketType] = useState("");
+  const [ticketNumber, setTicketNumber] = useState("");
+  const [ticketExpiry, setTicketExpiry] = useState("");
+  const [ticketFile, setTicketFile] = useState<File | null>(null);
+  const [uploadingTicket, setUploadingTicket] = useState(false);
+  const [ticketStaffId, setTicketStaffId] = useState<string | null>(null);
+  const [certificatePanelMode, setCertificatePanelMode] = useState<CertificatePanelMode>("add");
+  const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
+  const [staffSearch, setStaffSearch] = useState(
+    () => new URLSearchParams(location.search).get("search") ?? "",
+  );
+  const [staffFilter, setStaffFilter] = useState<"all" | "attention">(
+    () => (new URLSearchParams(location.search).get("filter") as "all" | "attention") || "all",
+  );
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
+  const [confirmation, setConfirmation] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setStaffSearch(params.get("search") ?? "");
+    setStaffFilter((params.get("filter") as "all" | "attention") || "all");
+  }, [location.search]);
+
+  const loadSubmissions = async () => {
+    const { data } = await db
+      .from("third_party_staff_submissions")
+      .select("id, name, role, status, approved_staff_id, created_at, review_notes")
+      .order("created_at", { ascending: false });
+    setSubmissions(data ?? []);
+    setLastSubmissionId(
+      data?.find((submission: any) => submission.status === "pending")?.id ?? null,
+    );
+  };
+  React.useEffect(() => {
+    loadSubmissions();
+  }, []);
+  const pendingSubmissions = useMemo(
+    () => submissions.filter((submission) => submission.status === "pending"),
+    [submissions],
+  );
+  const currentCertificateCount = workers.reduce(
+    (total, worker) => total + getCurrentTickets(worker.tickets ?? []).length,
+    0,
+  );
+  React.useEffect(() => {
+    setSelectedWorkerId(
+      staffId && workers.some((worker) => worker.id === staffId) ? staffId : null,
+    );
+  }, [workers, staffId]);
+  const hasCertificateAttention = (worker: (typeof workers)[number]) =>
+    getCurrentTickets(worker.tickets ?? []).some((ticket) => {
+      const status = getTicketStatus(ticket);
+      return status === "EXPIRED" || status === "EXPIRING_SOON" || status === "INVALID";
+    });
+  const attentionWorkers = workers.filter(hasCertificateAttention);
+  const visibleWorkers = workers.filter((worker) => {
+    const matchesSearch = `${worker.name} ${worker.role} ${worker.email ?? ""}`
+      .toLowerCase()
+      .includes(staffSearch.toLowerCase());
+    return matchesSearch && (staffFilter === "all" || hasCertificateAttention(worker));
+  });
+  const selectedWorker =
+    workers.find((worker) => worker.id === staffId) ??
+    workers.find((worker) => worker.id === selectedWorkerId) ??
+    null;
+  const staffListQuery = new URLSearchParams();
+  if (staffSearch.trim()) staffListQuery.set("search", staffSearch.trim());
+  if (staffFilter !== "all") staffListQuery.set("filter", staffFilter);
+  const staffListPath = `/portal/third-party/staff${staffListQuery.toString() ? `?${staffListQuery}` : ""}`;
+  const updateStaffListState = (nextSearch: string, nextFilter: "all" | "attention") => {
+    const params = new URLSearchParams();
+    if (nextSearch.trim()) params.set("search", nextSearch.trim());
+    if (nextFilter !== "all") params.set("filter", nextFilter);
+    setStaffSearch(nextSearch);
+    setStaffFilter(nextFilter);
+    navigate(`/portal/third-party/staff${params.toString() ? `?${params}` : ""}`, {
+      replace: true,
+    });
+  };
+  const assignedJobsForWorker = (workerId: string) =>
+    jobs.filter((job) =>
+      shifts.some((shift) => shift.jobId === job.id && shift.workerId === workerId),
+    );
+
+  if (dataLoading) {
+    return (
+      <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+        <div className="h-24 animate-pulse rounded-2xl bg-muted" />
+        <div className="grid gap-4 md:grid-cols-3">
+          {[1, 2, 3].map((item) => (
+            <div key={item} className="h-32 animate-pulse rounded-2xl bg-muted" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (dataError) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+        <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
+      </div>
+    );
+  }
+
+  if (isStaffDetailRoute && !selectedWorker) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+        <Link
+          to="/portal/third-party/staff"
+          className="text-xs font-black uppercase tracking-widest text-primary"
+        >
+          ← Back to staff
+        </Link>
+        <section className="mt-6 rounded-2xl border border-dashed border-border bg-card p-8 text-center">
+          <h1 className="text-xl font-black">Staff record not found</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            This staff record may have been removed or is no longer available to your account.
+          </p>
+        </section>
+      </div>
+    );
+  }
+
+  const setField = (field: keyof FormState, value: string) =>
+    setForm((current) => ({ ...current, [field]: value }));
+
+  const submitStaff = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!form.name.trim()) return;
+    setSubmitting(true);
+    const { data: submissionId, error } = await db.rpc("submit_third_party_staff", {
+      p_name: form.name,
+      p_role: form.role,
+      p_email: form.email,
+      p_phone: form.phone,
+      p_postcode: form.postcode,
+      p_notes: form.notes,
+    });
+    setSubmitting(false);
+    if (error)
+      return toast.error("We couldn’t submit the staff member. Check the details and try again.");
+    setForm(EMPTY_FORM);
+    setLastSubmissionId(submissionId);
+    await loadSubmissions();
+    setConfirmation(
+      "Staff member submitted. Opus Form will review the record before site access is created.",
+    );
+    toast.success("Staff member submitted for approval");
+  };
+
+  const openCertificatePanel = (
+    staffId: string,
+    mode: CertificatePanelMode,
+    ticket: any | null = null,
+  ) => {
+    setTicketStaffId(staffId);
+    setCertificatePanelMode(mode);
+    setSelectedTicket(ticket);
+    setTicketType(ticket?.type ?? "");
+    setTicketNumber(ticket?.ticketNumber ?? "");
+    setTicketExpiry("");
+    setTicketFile(null);
+  };
+
+  const closeCertificatePanel = () => {
+    setTicketStaffId(null);
+    setSelectedTicket(null);
+    setCertificatePanelMode("add");
+    setTicketType("");
+    setTicketNumber("");
+    setTicketExpiry("");
+    setTicketFile(null);
+  };
+
+  const viewCertificateDocument = async (path?: string) => {
+    if (!path) return toast.error("This certificate file is not available");
+    const { data, error } = await supabase.storage
+      .from("third-party-staff-documents")
+      .createSignedUrl(path, 300);
+    if (error || !data?.signedUrl) {
+      return toast.error("We couldn’t open that certificate file. Try again.");
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const uploadTicket = async (submissionId: string | null, staffId: string | null = null) => {
+    if (!submissionId || !ticketFile || !user || !profile?.tenant_id) return;
+    if (!ticketType.trim()) {
+      return toast.error("Enter the certificate name");
+    }
+    if (ticketFile.size > MAX_UPLOAD_BYTES) {
+      return toast.error("Certificate files must be 10 MB or smaller");
+    }
+    setUploadingTicket(true);
+    const extension = ticketFile.name.split(".").pop() || "bin";
+    const path = `${user.id}/${submissionId}/${crypto.randomUUID()}.${extension}`;
+    const { error: uploadError } = await supabase.storage
+      .from("third-party-staff-documents")
+      .upload(path, ticketFile);
+    if (uploadError) {
+      setUploadingTicket(false);
+      return toast.error("We couldn’t upload that certificate. Check the file size and try again.");
+    }
+    const { error } = await db.from("third_party_staff_documents").insert({
+      tenant_id: profile.tenant_id,
+      submission_id: submissionId,
+      staff_id: staffId,
+      uploaded_by: user.id,
+      ticket_type: ticketType.trim(),
+      ticket_number: ticketNumber || null,
+      expiry_date: ticketExpiry || null,
+      file_name: ticketFile.name,
+      file_path: path,
+      mime_type: ticketFile.type || "application/octet-stream",
+      file_size_bytes: ticketFile.size,
+    });
+    setUploadingTicket(false);
+    if (error)
+      return toast.error("The certificate uploaded but could not be recorded. Contact IT.");
+    setTicketFile(null);
+    setTicketType("");
+    setTicketNumber("");
+    setTicketExpiry("");
+    closeCertificatePanel();
+    if (staffId) {
+      const { data: refreshedStaff } = await db
+        .from("staff")
+        .select("id, name, role, email, phone, postcode, tickets, uploaded_certificates")
+        .eq("id", staffId)
+        .single();
+      if (refreshedStaff) {
+        setWorkers((current) =>
+          current.map((worker) =>
+            worker.id === staffId
+              ? {
+                  ...worker,
+                  tickets: refreshedStaff.tickets ?? [],
+                  uploadedCertificates: refreshedStaff.uploaded_certificates ?? [],
+                }
+              : worker,
+          ),
+        );
+      }
+    }
+    setConfirmation(
+      staffId
+        ? "Certificate replaced and saved to the staff record."
+        : "Certificate uploaded and attached to the pending submission.",
+    );
+    toast.success("Certificate uploaded");
+  };
+
+  const saveWorker = async () => {
+    if (!editingDraft) return;
+    const { error } = await db
+      .from("staff")
+      .update({
+        name: editingDraft.name,
+        role: editingDraft.role,
+        email: editingDraft.email || null,
+        phone: editingDraft.phone || null,
+        postcode: editingDraft.postcode || null,
+      })
+      .eq("id", editingDraft.id);
+    if (error) return toast.error("We couldn’t save the staff member details. Try again.");
+    setEditingDraft(null);
+    setConfirmation("Staff member details updated.");
+    toast.success("Staff member updated");
+  };
+
+  return (
+    <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+      <datalist id="certificate-types">
+        {CERTIFICATE_TYPES.map((type) => (
+          <option key={type} value={type} />
+        ))}
+      </datalist>
+      <header className="flex flex-wrap items-end justify-between gap-5">
+        <div>
+          {(isNewStaffRoute || isStaffDetailRoute) && (
+            <Link
+              to={staffListPath}
+              className="mb-4 inline-flex text-xs font-black uppercase tracking-widest text-primary"
+            >
+              ← Back to staff
+            </Link>
+          )}
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+            People and approvals
+          </p>
+          <h1 className="mt-2 break-words text-3xl font-black tracking-tight text-foreground">
+            {isStaffDetailRoute
+              ? selectedWorker?.name || "Staff record"
+              : isNewStaffRoute
+                ? "Add staff member"
+                : "Your staff"}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {isStaffDetailRoute
+              ? `${selectedWorker?.role || "Staff record"} · Manage contact details, certificates, and assigned sites.`
+              : isNewStaffRoute
+                ? "Submit someone to your team for Opus Form to review."
+                : "Manage approved people, compliance, and submissions in one place."}
+          </p>
+        </div>
+        {showStaffList && (
+          <Link
+            to="/portal/third-party/staff/new"
+            className="flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground"
+          >
+            <Plus className="h-4 w-4" />
+            Add staff member
+          </Link>
+        )}
+      </header>
+      {confirmation && (
+        <p
+          role="status"
+          className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300"
+        >
+          <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+          {confirmation}
+        </p>
+      )}
+
+      <div className={`${showStaffList ? "grid md:grid-cols-3" : "hidden"} gap-4`}>
+        {[
+          ["Approved staff", workers.length, "visible to Opus Form"],
+          ["Pending submissions", pendingSubmissions.length, "waiting for review"],
+          ["Valid certificates", currentCertificateCount, "latest version per type"],
+        ].map(([label, value, description]) => (
+          <div
+            key={String(label)}
+            className="rounded-2xl border-2 border-border bg-card p-5 shadow-sm"
+          >
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              {label}
+            </p>
+            <p className="mt-4 text-3xl font-black tracking-tight">{value}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="space-y-8">
+        {showStaffForm && (
+          <section className="rounded-2xl border-2 border-primary/50 bg-card p-5 shadow-sm ring-4 ring-primary/5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  People and approvals
+                </p>
+                <h2 className="mt-1 text-2xl font-black">Submit staff member</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Add someone to your team for Opus Form to review.
+                </p>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                1 of 1 · Staff details
+              </span>
+            </div>
+            <form onSubmit={submitStaff} className="mt-6 space-y-6">
+              <div>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <div>
+                    <h3 className="text-sm font-black">About the person</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Use the name and role shown on their work records.
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-muted-foreground">
+                    Required fields marked *
+                  </span>
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  <label className="text-xs font-bold text-muted-foreground">
+                    Full name *
+                    <input
+                      required
+                      value={form.name}
+                      onChange={(e) => setField("name", e.target.value)}
+                      aria-label="Full name"
+                      placeholder="e.g. Alex Morgan"
+                      className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    />
+                  </label>
+                  <label className="text-xs font-bold text-muted-foreground">
+                    Role *
+                    <select
+                      value={form.role}
+                      onChange={(e) => setField("role", e.target.value)}
+                      aria-label="Staff role"
+                      className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    >
+                      {STAFF_ROLES.map((role) => (
+                        <option key={role}>{role}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              </div>
+              <div className="border-t border-border pt-5">
+                <h3 className="text-sm font-black">Contact details</h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  These details help us match the person to the correct records.
+                </p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {(
+                    [
+                      ["email", "Email address", "name@company.com"],
+                      ["phone", "Phone number", "07..."],
+                      ["postcode", "Postcode", "M1 1AA"],
+                    ] as const
+                  ).map(([field, label, placeholder]) => (
+                    <label key={field} className="text-xs font-bold text-muted-foreground">
+                      {label}
+                      <input
+                        value={form[field]}
+                        onChange={(e) => setField(field, e.target.value)}
+                        aria-label={label}
+                        placeholder={placeholder}
+                        className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                      />
+                    </label>
+                  ))}
+                  <label className="text-xs font-bold text-muted-foreground">
+                    Notes <span className="font-normal">Optional</span>
+                    <textarea
+                      value={form.notes}
+                      onChange={(e) => setField("notes", e.target.value)}
+                      aria-label="Notes"
+                      placeholder="Anything Opus Form should know"
+                      className="mt-1 min-h-10 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    />
+                  </label>
+                </div>
+              </div>
+              <div className="flex gap-3 rounded-xl bg-primary/5 p-4 text-xs text-muted-foreground">
+                <AlertCircle className="h-5 w-5 shrink-0 text-primary" />
+                <p>
+                  <strong className="text-foreground">What happens next?</strong>
+                  <br />
+                  Submit this person for review. After submission, you can add their certificates
+                  and supporting documents.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 border-t border-border pt-4">
+                <button
+                  type="button"
+                  onClick={() => navigate(staffListPath)}
+                  className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  disabled={submitting}
+                  className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                >
+                  {submitting ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}{" "}
+                  Submit for approval
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
+
+        <section className="min-w-0 space-y-4">
+          <div
+            className={`${showStaffList ? "" : "hidden"} flex flex-wrap items-end justify-between gap-3`}
+          >
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+                Staff directory
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {workers.length} approved staff · {attentionWorkers.length} needs attention ·{" "}
+                {currentCertificateCount} valid certificates
+              </p>
+            </div>
+          </div>
+          <div className="grid gap-4">
+            <section
+              className={`${showStaffList ? "" : "hidden"} min-w-0 rounded-2xl border-2 border-border bg-card p-4`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-black">People</h3>
+                <span className="text-xs text-muted-foreground">{visibleWorkers.length} shown</span>
+              </div>
+              {attentionWorkers.length > 0 && (
+                <div className="mt-4 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-800 dark:bg-amber-400/15 dark:text-amber-100">
+                  <div className="flex items-center gap-2 font-black uppercase tracking-widest">
+                    <AlertCircle className="h-3.5 w-3.5" /> Needs attention
+                  </div>
+                  <p className="mt-1">
+                    {attentionWorkers[0].name} has a certificate expiring soon.
+                  </p>
+                </div>
+              )}
+              <label className="relative mt-4 block">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={staffSearch}
+                  onChange={(event) => updateStaffListState(event.target.value, staffFilter)}
+                  placeholder="Search staff by name or role"
+                  aria-label="Search staff"
+                  className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm"
+                />
+              </label>
+              <label className="mt-3 block sm:hidden">
+                <span className="sr-only">Filter staff</span>
+                <select
+                  value={staffFilter}
+                  onChange={(event) =>
+                    updateStaffListState(staffSearch, event.target.value as "all" | "attention")
+                  }
+                  aria-label="Filter staff"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-semibold"
+                >
+                  <option value="all">All staff · {workers.length}</option>
+                  <option value="attention">Needs attention · {attentionWorkers.length}</option>
+                </select>
+              </label>
+              <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
+                {(
+                  [
+                    ["all", `All staff · ${workers.length}`],
+                    ["attention", `Needs attention · ${attentionWorkers.length}`],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => updateStaffListState(staffSearch, value)}
+                    aria-pressed={staffFilter === value}
+                    className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${staffFilter === value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-3 space-y-2">
+                {visibleWorkers.map((worker) => {
+                  const attention = hasCertificateAttention(worker);
+                  const workerSites = assignedJobsForWorker(worker.id);
+                  return (
+                    <button
+                      key={worker.id}
+                      type="button"
+                      onClick={() =>
+                        navigate(
+                          `/portal/third-party/staff/${worker.id}${staffListQuery.toString() ? `?${staffListQuery}` : ""}`,
+                        )
+                      }
+                      className="flex w-full items-center gap-3 rounded-xl border border-border p-3 text-left transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    >
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-black text-primary">
+                        {worker.name.slice(0, 1).toUpperCase()}
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate text-sm font-black">{worker.name}</span>
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                          {worker.role}
+                        </span>
+                      </span>
+                      <span className="text-right">
+                        <span
+                          className={`block rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${attention ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
+                        >
+                          {attention ? "Expiring" : "Valid"}
+                        </span>
+                        <span className="mt-1 block text-[10px] text-muted-foreground">
+                          {workerSites.length} sites
+                        </span>
+                      </span>
+                      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section
+              className={`${isStaffDetailRoute ? "" : "hidden"} min-w-0 rounded-2xl border-2 border-border bg-card p-5`}
+            >
+              {selectedWorker ? (
+                <>
+                  {editingDraft?.id === selectedWorker.id ? (
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                            Staff record
+                          </p>
+                          <h3 className="mt-1 text-2xl font-black">Edit staff details</h3>
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            Update {selectedWorker.name}&apos;s contact and role information.
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          aria-label="Close edit staff details"
+                          onClick={() => setEditingDraft(null)}
+                          className="text-2xl leading-none text-muted-foreground hover:text-foreground"
+                        >
+                          ×
+                        </button>
+                      </div>
+                      <div className="mt-6 border-t border-border pt-5">
+                        <div className="flex flex-wrap items-baseline justify-between gap-2">
+                          <div>
+                            <h4 className="text-sm font-black">About the person</h4>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Use the name and role shown on their work records.
+                            </p>
+                          </div>
+                          <span className="text-[10px] text-muted-foreground">
+                            Required fields marked *
+                          </span>
+                        </div>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <label className="text-xs font-bold text-muted-foreground">
+                            Full name *
+                            <input
+                              required
+                              aria-label="Staff name"
+                              value={editingDraft.name}
+                              onChange={(event) =>
+                                setEditingDraft({ ...editingDraft, name: event.target.value })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                            />
+                          </label>
+                          <label className="text-xs font-bold text-muted-foreground">
+                            Role *
+                            <select
+                              aria-label="Staff role"
+                              value={editingDraft.role}
+                              onChange={(event) =>
+                                setEditingDraft({ ...editingDraft, role: event.target.value })
+                              }
+                              className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                            >
+                              {STAFF_ROLES.map((role) => (
+                                <option key={role}>{role}</option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                      </div>
+                      <div className="mt-6 border-t border-border pt-5">
+                        <h4 className="text-sm font-black">Contact details</h4>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          These details help us match the person to the correct records.
+                        </p>
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          {(
+                            [
+                              ["email", "Email address"],
+                              ["phone", "Phone number"],
+                              ["postcode", "Postcode"],
+                            ] as const
+                          ).map(([field, label]) => (
+                            <label key={field} className="text-xs font-bold text-muted-foreground">
+                              {label}
+                              <input
+                                aria-label={label}
+                                value={editingDraft[field]}
+                                onChange={(event) =>
+                                  setEditingDraft({ ...editingDraft, [field]: event.target.value })
+                                }
+                                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                              />
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="mt-5 flex gap-3 rounded-xl bg-primary/5 p-4 text-xs text-muted-foreground">
+                        <AlertCircle className="h-5 w-5 shrink-0 text-primary" />
+                        <p>
+                          <strong className="text-foreground">
+                            Compliance records stay unchanged
+                          </strong>
+                          <br />
+                          Editing these details will not replace certificates, files, or audit
+                          history.
+                        </p>
+                      </div>
+                      <div className="mt-5 flex justify-end gap-2 border-t border-border pt-4">
+                        <button
+                          type="button"
+                          onClick={() => setEditingDraft(null)}
+                          className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={saveWorker}
+                          className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+                        >
+                          Save changes <span aria-hidden="true">→</span>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                          Staff record
+                        </p>
+                        <h3 className="mt-1 text-2xl font-black">{selectedWorker.name}</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                          {selectedWorker.role} · {selectedWorker.email || "No email"}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setEditingDraft({
+                            id: selectedWorker.id,
+                            name: selectedWorker.name,
+                            role: selectedWorker.role,
+                            email: selectedWorker.email ?? "",
+                            phone: selectedWorker.phone ?? "",
+                            postcode: selectedWorker.postcode ?? "",
+                          })
+                        }
+                        className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest"
+                      >
+                        Edit details
+                      </button>
+                    </div>
+                  )}
+
+                  {!editingDraft && (
+                    <>
+                      <div className="mt-5 grid grid-cols-3 gap-2">
+                        {[
+                          [
+                            "Certificates",
+                            getCurrentTickets(selectedWorker.tickets ?? []).length,
+                            hasCertificateAttention(selectedWorker) ? "needs renewal" : "current",
+                          ],
+                          [
+                            "Assigned sites",
+                            assignedJobsForWorker(selectedWorker.id).length,
+                            "site records",
+                          ],
+                          [
+                            "Files held",
+                            selectedWorker.uploadedCertificates?.length ?? 0,
+                            "including history",
+                          ],
+                        ].map(([label, value, note]) => (
+                          <div key={String(label)} className="rounded-lg border border-border p-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                              {label}
+                            </p>
+                            <p className="mt-2 text-2xl font-black">{value}</p>
+                            <p className="mt-1 text-[10px] text-muted-foreground">{note}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-6 border-t border-border pt-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="text-sm font-black">Valid certificates</h4>
+                          {submissions.some(
+                            (submission) => submission.approved_staff_id === selectedWorker.id,
+                          ) && (
+                            <button
+                              type="button"
+                              onClick={() => openCertificatePanel(selectedWorker.id, "add")}
+                              className="text-[10px] font-black uppercase tracking-widest text-primary"
+                            >
+                              + Add certificate
+                            </button>
+                          )}
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          {getCurrentTickets(selectedWorker.tickets ?? []).length === 0 ? (
+                            <p className="rounded-lg border border-dashed border-border p-3 text-xs text-muted-foreground">
+                              No certificates on file.
+                            </p>
+                          ) : (
+                            getCurrentTickets(selectedWorker.tickets ?? []).map((ticket) => {
+                              const status = getTicketStatus(ticket);
+                              const document = (selectedWorker.uploadedCertificates ?? []).find(
+                                (candidate) => candidate.id === ticket.id,
+                              );
+                              return (
+                                <div
+                                  key={ticket.id}
+                                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border px-3 py-3"
+                                >
+                                  <div className="min-w-0">
+                                    <span className="font-bold">{ticket.type}</span>
+                                    <span
+                                      className={`ml-2 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${status === "EXPIRED" || status === "INVALID" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
+                                    >
+                                      {status === "INVALID"
+                                        ? "Needs review"
+                                        : status === "EXPIRED"
+                                          ? "Expired"
+                                          : status === "EXPIRING_SOON"
+                                            ? "Expiring soon"
+                                            : "Valid"}
+                                    </span>
+                                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                                      {document?.name || "No file attached"}
+                                      {ticket.expiryDate
+                                        ? ` · expires ${formatUKDate(ticket.expiryDate)}`
+                                        : ""}
+                                    </p>
+                                  </div>
+                                  <div className="flex shrink-0 gap-2">
+                                    {ticket.documentUrl && (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          void viewCertificateDocument(ticket.documentUrl)
+                                        }
+                                        className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-black hover:border-primary"
+                                      >
+                                        View
+                                      </button>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        openCertificatePanel(selectedWorker.id, "replace", {
+                                          ...ticket,
+                                          fileName: document?.name,
+                                        })
+                                      }
+                                      className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-black text-primary hover:border-primary"
+                                    >
+                                      Replace
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                      {ticketStaffId === selectedWorker.id && (
+                        <section className="mt-4 rounded-2xl border-2 border-primary/60 bg-card p-4 shadow-sm ring-4 ring-primary/5">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                                Certificate update
+                              </p>
+                              <h4 className="mt-1 text-xl font-black">
+                                {certificatePanelMode === "replace"
+                                  ? `Replace ${ticketType} certificate`
+                                  : `Add a certificate for ${selectedWorker.name}`}
+                              </h4>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {certificatePanelMode === "replace"
+                                  ? `The new file will become the current ${ticketType} record.`
+                                  : "Add a new certificate type to this staff record."}
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              aria-label="Close certificate panel"
+                              onClick={closeCertificatePanel}
+                              className="text-2xl leading-none text-muted-foreground hover:text-foreground"
+                            >
+                              ×
+                            </button>
+                          </div>
+                          {certificatePanelMode === "replace" && selectedTicket && (
+                            <div className="mt-4 rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground">
+                              <p className="font-black uppercase tracking-widest text-foreground">
+                                Current record
+                              </p>
+                              <p className="mt-1">
+                                {selectedTicket.fileName || "Current certificate file"}
+                                {selectedTicket.expiryDate
+                                  ? ` · expires ${formatUKDate(selectedTicket.expiryDate)}`
+                                  : ""}
+                              </p>
+                            </div>
+                          )}
+                          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                            <label className="text-xs font-bold text-muted-foreground">
+                              Certificate number
+                              <input
+                                value={ticketNumber}
+                                onChange={(e) => setTicketNumber(e.target.value)}
+                                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                              />
+                            </label>
+                            <label className="text-xs font-bold text-muted-foreground">
+                              New expiry date
+                              <input
+                                type="date"
+                                value={ticketExpiry}
+                                onChange={(e) => setTicketExpiry(e.target.value)}
+                                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                              />
+                            </label>
+                          </div>
+                          {certificatePanelMode === "add" && (
+                            <label className="mt-3 block text-xs font-bold text-muted-foreground">
+                              Certificate type
+                              <input
+                                list="certificate-types"
+                                value={ticketType}
+                                onChange={(e) => setTicketType(e.target.value)}
+                                placeholder="Type or select certificate"
+                                required
+                                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                              />
+                            </label>
+                          )}
+                          <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-primary/60 bg-primary/5 px-4 py-4 text-sm text-primary hover:bg-primary/10">
+                            <FileUp className="h-5 w-5" />
+                            <span>
+                              <strong className="block">
+                                {ticketFile?.name || "Choose a PDF or image"}
+                              </strong>
+                              <small className="text-xs text-muted-foreground">Maximum 10 MB</small>
+                            </span>
+                            <input
+                              type="file"
+                              accept=".pdf,.jpg,.jpeg,.png"
+                              className="hidden"
+                              onChange={(e) => setTicketFile(e.target.files?.[0] ?? null)}
+                            />
+                          </label>
+                          <p className="mt-3 text-xs text-muted-foreground">
+                            The previous file stays in Opus Form’s audit history and will not be
+                            shown as the current certificate.
+                          </p>
+                          <div className="mt-5 flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={closeCertificatePanel}
+                              className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() =>
+                                uploadTicket(
+                                  submissions.find(
+                                    (submission) =>
+                                      submission.approved_staff_id === selectedWorker.id,
+                                  )?.id ?? null,
+                                  selectedWorker.id,
+                                )
+                              }
+                              disabled={uploadingTicket || !ticketFile || !ticketType.trim()}
+                              className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+                            >
+                              {uploadingTicket
+                                ? "Uploading..."
+                                : certificatePanelMode === "replace"
+                                  ? "Upload renewal"
+                                  : "Add certificate"}
+                            </button>
+                          </div>
+                        </section>
+                      )}
+                      <div className="mt-6 border-t border-border pt-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <h4 className="text-sm font-black">Assigned sites</h4>
+                          <Link
+                            to="/portal/third-party/sites"
+                            className="text-[10px] font-black uppercase tracking-widest text-primary"
+                          >
+                            View all →
+                          </Link>
+                        </div>
+                        <div className="mt-3 space-y-2">
+                          {assignedJobsForWorker(selectedWorker.id).length === 0 ? (
+                            <p className="text-xs text-muted-foreground">No assigned sites.</p>
+                          ) : (
+                            assignedJobsForWorker(selectedWorker.id).map((job) => (
+                              <Link
+                                key={job.id}
+                                to={`/portal/third-party/sites/${job.id}`}
+                                className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3 hover:border-primary"
+                              >
+                                <span className="min-w-0">
+                                  <span className="block truncate text-xs font-bold">
+                                    {job.siteName}
+                                  </span>
+                                  <span className="mt-1 block text-[10px] text-muted-foreground">
+                                    {job.postcode}
+                                  </span>
+                                </span>
+                                <span className="shrink-0 rounded-full bg-primary/10 px-2 py-1 text-[9px] font-black uppercase tracking-widest text-primary">
+                                  {siteStateLabel(getSiteState(job))}
+                                </span>
+                              </Link>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Select a staff member to view their record.
+                </p>
+              )}
+            </section>
+          </div>
+        </section>
+
+        {pendingSubmissions.length > 0 && (
+          <section className={`${showStaffList ? "" : "hidden"} space-y-3`}>
+            <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+              Pending submissions
+            </h2>
+            {pendingSubmissions.length === 0 ? (
+              <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                No pending submissions.
+              </p>
+            ) : (
+              pendingSubmissions.map((submission) => (
+                <div
+                  key={submission.id}
+                  className="flex items-center justify-between rounded-2xl border-2 border-border bg-card p-4"
+                >
+                  <div>
+                    <p className="font-bold">{submission.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {submission.role} · {formatUKDate(submission.created_at?.slice(0, 10))}
+                    </p>
+                  </div>
+                  <span className="rounded-lg border border-primary/60 bg-primary/10 px-3 py-2 text-[10px] font-black uppercase tracking-widest text-primary">
+                    {submission.status}
+                  </span>
+                </div>
+              ))
+            )}
+          </section>
+        )}
+
+        {lastSubmissionId && (
+          <section
+            className={`${showStaffList ? "" : "hidden"} rounded-2xl border-2 border-border bg-card p-5`}
+          >
+            <div className="mb-4">
+              <h2 className="text-sm font-black uppercase tracking-widest">Add certificates</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Attach compliance documents to your latest pending staff submission. Internal
+                approvers will review them with the staff application.
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Start typing to search the list, or enter a certificate name if it is not listed.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <input
+                list="certificate-types"
+                value={ticketType}
+                onChange={(e) => setTicketType(e.target.value)}
+                aria-label="Certificate type"
+                placeholder="Type or select certificate"
+                required
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+              <input
+                value={ticketNumber}
+                onChange={(e) => setTicketNumber(e.target.value)}
+                aria-label="Certificate number"
+                placeholder="Certificate number"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+              <input
+                type="date"
+                value={ticketExpiry}
+                onChange={(e) => setTicketExpiry(e.target.value)}
+                aria-label="Certificate expiry date"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+              <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border px-3 py-2 text-sm">
+                <FileUp className="h-4 w-4" />
+                {ticketFile?.name || "Choose file"}
+                <input
+                  type="file"
+                  accept=".pdf,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={(e) => setTicketFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+            </div>
+            <button
+              onClick={() => uploadTicket(lastSubmissionId)}
+              disabled={uploadingTicket || !ticketFile}
+              className="mt-3 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+            >
+              {uploadingTicket ? "Uploading..." : "Upload certificate"}
+            </button>
+          </section>
+        )}
+
+        <section className="hidden space-y-3">
+          <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
+            Your approved staff
+          </h2>
+          {workers.length === 0 ? (
+            <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+              No approved staff yet.
+            </p>
+          ) : (
+            workers.map((worker) => (
+              <div key={worker.id} className="rounded-2xl border-2 border-border bg-card p-4">
+                {editingDraft?.id === worker.id ? (
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <input
+                      aria-label="Staff name"
+                      value={editingDraft.name}
+                      onChange={(e) => setEditingDraft({ ...editingDraft, name: e.target.value })}
+                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    />
+                    <input
+                      aria-label="Staff email"
+                      value={editingDraft.email}
+                      onChange={(e) => setEditingDraft({ ...editingDraft, email: e.target.value })}
+                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    />
+                    <input
+                      aria-label="Staff phone"
+                      value={editingDraft.phone}
+                      onChange={(e) => setEditingDraft({ ...editingDraft, phone: e.target.value })}
+                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    />
+                    <input
+                      aria-label="Staff postcode"
+                      value={editingDraft.postcode}
+                      onChange={(e) =>
+                        setEditingDraft({ ...editingDraft, postcode: e.target.value })
+                      }
+                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                    />
+                    <button
+                      onClick={saveWorker}
+                      className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
+                    >
+                      Save changes
+                    </button>
+                    <button
+                      onClick={() => setEditingDraft(null)}
+                      className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500">
+                          <Check className="h-4 w-4" />
+                        </span>
+                        <div>
+                          <p className="font-bold text-foreground">{worker.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {worker.role} · {worker.email || "No email"}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() =>
+                            setEditingDraft({
+                              id: worker.id,
+                              name: worker.name,
+                              role: worker.role,
+                              email: worker.email ?? "",
+                              phone: worker.phone ?? "",
+                              postcode: worker.postcode ?? "",
+                            })
+                          }
+                          className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest"
+                        >
+                          Edit
+                        </button>
+                        {submissions.some(
+                          (submission) => submission.approved_staff_id === worker.id,
+                        ) && (
+                          <button
+                            onClick={() => openCertificatePanel(worker.id, "add")}
+                            className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest"
+                          >
+                            Add another certificate
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    {getCurrentTickets(worker.tickets ?? []).length > 0 && (
+                      <div className="space-y-2 border-t border-border pt-3">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                          Valid certificates
+                        </span>
+                        {getCurrentTickets(worker.tickets ?? [])
+                          .slice(0, 4)
+                          .map((ticket) => {
+                            const status = getTicketStatus(ticket);
+                            const document = (worker.uploadedCertificates ?? []).find(
+                              (candidate) => candidate.id === ticket.id,
+                            );
+                            return (
+                              <div
+                                key={ticket.id}
+                                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs"
+                              >
+                                <div className="min-w-0 truncate">
+                                  <span className="font-bold">{ticket.type}</span>
+                                  <span
+                                    className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${status === "EXPIRED" || status === "INVALID" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-primary/10 text-primary"}`}
+                                  >
+                                    {status === "INVALID"
+                                      ? "Needs review"
+                                      : status === "EXPIRED"
+                                        ? "Expired"
+                                        : status === "EXPIRING_SOON"
+                                          ? "Expiring"
+                                          : "Valid"}
+                                  </span>
+                                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                                    {document?.name || "No file attached"}
+                                    {ticket.expiryDate
+                                      ? ` · expires ${formatUKDate(ticket.expiryDate)}`
+                                      : ""}
+                                  </p>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    openCertificatePanel(worker.id, "replace", {
+                                      ...ticket,
+                                      fileName: document?.name,
+                                    })
+                                  }
+                                  className="shrink-0 font-black text-primary underline decoration-current/40 underline-offset-2 hover:decoration-current"
+                                >
+                                  Replace
+                                </button>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </section>
+
+        {ticketStaffId && (
+          <section className="hidden rounded-2xl border-2 border-primary/60 bg-card p-5 shadow-sm ring-4 ring-primary/5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                  Certificate update
+                </p>
+                <h2 className="mt-1 text-xl font-black">
+                  {certificatePanelMode === "replace"
+                    ? `Replace ${ticketType} certificate`
+                    : `Add a certificate for ${workers.find((worker) => worker.id === ticketStaffId)?.name}`}
+                </h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {certificatePanelMode === "replace"
+                    ? `The new file will become the current ${ticketType} record.`
+                    : "Add a new certificate type to this staff record."}
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close certificate panel"
+                onClick={closeCertificatePanel}
+                className="text-2xl leading-none text-muted-foreground hover:text-foreground"
+              >
+                ×
+              </button>
+            </div>
+            {certificatePanelMode === "replace" && selectedTicket && (
+              <div className="mt-4 rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground">
+                <p className="font-black uppercase tracking-widest text-foreground">
+                  Current record
+                </p>
+                <p className="mt-1">
+                  {selectedTicket.fileName || "Current certificate file"}
+                  {selectedTicket.expiryDate
+                    ? ` · expires ${formatUKDate(selectedTicket.expiryDate)}`
+                    : ""}
+                </p>
+              </div>
+            )}
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <label className="text-xs font-bold text-muted-foreground">
+                Certificate number
+                <input
+                  value={ticketNumber}
+                  onChange={(e) => setTicketNumber(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                />
+              </label>
+              <label className="text-xs font-bold text-muted-foreground">
+                New expiry date
+                <input
+                  type="date"
+                  value={ticketExpiry}
+                  onChange={(e) => setTicketExpiry(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                />
+              </label>
+            </div>
+            {certificatePanelMode === "add" && (
+              <label className="mt-3 block text-xs font-bold text-muted-foreground">
+                Certificate type
+                <input
+                  list="certificate-types"
+                  value={ticketType}
+                  onChange={(e) => setTicketType(e.target.value)}
+                  placeholder="Type or select certificate"
+                  required
+                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                />
+              </label>
+            )}
+            <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-primary/60 bg-primary/5 px-4 py-4 text-sm text-primary hover:bg-primary/10">
+              <FileUp className="h-5 w-5" />
+              <span>
+                <strong className="block">{ticketFile?.name || "Choose a PDF or image"}</strong>
+                <small className="text-xs text-muted-foreground">Maximum 10 MB</small>
+              </span>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={(e) => setTicketFile(e.target.files?.[0] ?? null)}
+              />
+            </label>
+            <p className="mt-3 text-xs text-muted-foreground">
+              The previous file stays in Opus Form’s audit history and will not be shown as the
+              current certificate.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeCertificatePanel}
+                className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() =>
+                  uploadTicket(
+                    submissions.find((submission) => submission.approved_staff_id === ticketStaffId)
+                      ?.id ?? null,
+                    ticketStaffId,
+                  )
+                }
+                disabled={uploadingTicket || !ticketFile || !ticketType.trim()}
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
+              >
+                {uploadingTicket
+                  ? "Uploading..."
+                  : certificatePanelMode === "replace"
+                    ? "Upload renewal"
+                    : "Add certificate"}
+              </button>
+            </div>
+          </section>
+        )}
+      </div>
+    </div>
+  );
+};

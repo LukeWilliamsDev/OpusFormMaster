@@ -493,9 +493,9 @@ export const SubmitCredentialsPage: React.FC = () => {
       return;
     }
 
-    // Validate size (5MB max)
-    if (file.size > 5 * 1024 * 1024) {
-      updateSlot(index, { error: "File size must be under 5 MB." });
+    // Validate size (10MB max; storage enforces the same limit server-side)
+    if (file.size > 10 * 1024 * 1024) {
+      updateSlot(index, { error: "File size must be under 10 MB." });
       return;
     }
 
@@ -578,7 +578,7 @@ export const SubmitCredentialsPage: React.FC = () => {
         const fileExt = slot.file!.name.split(".").pop() || "pdf";
         const slug = certSlug(slot.cert);
         const initials = getInitials(staffName) || "XX";
-        const filePath = `requests/${token}/${initials}_${slug}.${fileExt.toLowerCase()}`;
+        const filePath = `requests/${token}/${crypto.randomUUID()}_${initials}_${slug}.${fileExt.toLowerCase()}`;
 
         // Simulate progress for visual feedback
         let simProgress = 10;
@@ -591,7 +591,7 @@ export const SubmitCredentialsPage: React.FC = () => {
           .from("compliance-documents")
           .upload(filePath, slot.file!, {
             cacheControl: "3600",
-            upsert: true, // We can safely upsert: true on final submit because we want the latest file submitted
+            upsert: false,
           });
 
         clearInterval(progressInterval);

@@ -2,10 +2,13 @@ import React from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { QuoteInvoiceBuilder } from "../components/QuoteInvoiceBuilder";
 import { PipelineRegistry } from "../components/PipelineRegistry";
+import { usePortal } from "../context/PortalContext";
 
 export const PipelinePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { role } = usePortal();
+  const readOnly = role === "logistics_assistant";
 
   const currentView = searchParams.get("view") || "pipeline-registry";
   const quoteToLoadId = searchParams.get("quoteId");
@@ -24,7 +27,7 @@ export const PipelinePage: React.FC = () => {
 
   return (
     <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in">
-      {currentView === "quote-builder" ? (
+      {!readOnly && currentView === "quote-builder" ? (
         <QuoteInvoiceBuilder
           onLogout={() => {}}
           onBack={handleBackToPipeline}
@@ -36,6 +39,7 @@ export const PipelinePage: React.FC = () => {
           onEditQuote={handleEditQuote}
           onNewQuote={() => setSearchParams({ view: "quote-builder" })}
           onBack={() => navigate("/portal/dashboard")}
+          readOnly={readOnly}
         />
       )}
     </div>

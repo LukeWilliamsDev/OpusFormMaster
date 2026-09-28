@@ -16,10 +16,20 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-const ALLOWED_ROLES = ["admin", "director", "logistics_coordinator", "logistics_assistant"];
+const AUTHORIZED_SEND_ROLES = new Set([
+  "admin",
+  "director",
+  "logistics_coordinator",
+  "logistics_assistant",
+]);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-function jsonResponse(req: Request, body: Record<string, unknown>, status: number): Response {
-  return new Response(JSON.stringify(body), {
+function isValidEmail(value: unknown): value is string {
+  return typeof value === "string" && value.length <= 320 && EMAIL_PATTERN.test(value.trim());
+}
+
+function jsonError(req: Request, error: string, status: number): Response {
+  return new Response(JSON.stringify({ error }), {
     status,
     headers: { ...corsHeaders(req), "Content-Type": "application/json" },
   });
@@ -60,43 +70,36 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders(req) });
   }
 
-  if (req.method !== "POST") {
-    return jsonResponse(req, { error: "Method not allowed." }, 405);
-  }
+  if (req.method !== "POST") return jsonError(req, "Method not allowed.", 405);
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return jsonResponse(req, { error: "Service unavailable." }, 503);
-    }
+    if (!supabaseUrl || !supabaseServiceKey) return jsonError(req, "Service unavailable.", 503);
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     const authHeader = req.headers.get("Authorization");
-    const tokenMatch = authHeader?.match(/^Bearer\s+(\S+)$/);
-    const token = tokenMatch?.[1];
+    if (!authHeader?.startsWith("Bearer ")) return jsonError(req, "Unauthorized.", 401);
+    const token = authHeader.slice("Bearer ".length).trim();
     if (!token || token === supabaseServiceKey || token === Deno.env.get("SUPABASE_ANON_KEY")) {
-      return jsonResponse(req, { error: "Unauthorized." }, 401);
+      return jsonError(req, "Unauthorized.", 401);
     }
 
-    const { data: userData, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !userData.user) {
-      return jsonResponse(req, { error: "Unauthorized." }, 401);
-    }
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser(token);
+    if (userError || !user) return jsonError(req, "Unauthorized.", 401);
+
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("role")
-      .eq("id", userData.user.id)
-      .single();
-    if (profileError || !profile || !ALLOWED_ROLES.includes(profile.role)) {
-      return jsonResponse(req, { error: "Forbidden." }, 403);
-    }
+      .eq("id", user.id)
+      .maybeSingle();
+    if (profileError || !profile) return jsonError(req, "Forbidden.", 403);
+    if (!AUTHORIZED_SEND_ROLES.has(profile.role)) return jsonError(req, "Forbidden.", 403);
 
-    let payload: RequestPayload;
-    try {
-      payload = await req.json();
-    } catch {
-      return jsonResponse(req, { error: "Invalid request body." }, 400);
-    }
+    const payload: RequestPayload = await req.json();
     const {
       toEmail,
       clientName,
@@ -112,9 +115,7 @@ serve(async (req) => {
       fromEmail,
     } = payload;
 
-    if (typeof toEmail !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
-      return jsonResponse(req, { error: "A valid recipient email is required." }, 400);
-    }
+    if (!isValidEmail(toEmail)) return jsonError(req, "A valid recipient email is required.", 400);
 
     // Retrieve settings config from the secure smtp_config table
     const { data: configRows, error: configError } = await supabase
@@ -122,13 +123,8 @@ serve(async (req) => {
       .select("key, value");
 
     if (configError || !configRows || configRows.length === 0) {
-      return new Response(
-        JSON.stringify({ error: "Service unavailable." }),
-        {
-          status: 500,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
+      console.error("send-quote-pdf: failed to load email configuration", configError);
+      return jsonError(req, "Email service unavailable.", 503);
     }
 
     // Convert rows to a keyed object
@@ -137,23 +133,14 @@ serve(async (req) => {
       config[row.key] = row.value;
     }
 
-    // Resolve Resend API Key (prioritize database config, fallback to env)
-    let resendApiKey = config["RESEND_API_KEY"];
-    if (!resendApiKey) {
-      resendApiKey = Deno.env.get("RESEND_API_KEY");
-    }
+    // Resolve Resend API Key, preferring the current Edge Function secret over
+    // the legacy database config view.
+    let resendApiKey = Deno.env.get("RESEND_API_KEY");
+    if (!resendApiKey) resendApiKey = config["RESEND_API_KEY"];
 
     if (!resendApiKey) {
-      return new Response(
-        JSON.stringify({
-          error:
-            "Service unavailable.",
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
-        },
-      );
+      console.error("send-quote-pdf: RESEND_API_KEY is not configured");
+      return jsonError(req, "Email service unavailable.", 503);
     }
 
     // Resolve PDF attachment content (handles Base64 or Public URL pointer)
@@ -186,7 +173,7 @@ serve(async (req) => {
       // Fetch PDF binary from the public URL and convert to Base64
       const response = await fetch(pdfUrl);
       if (!response.ok) {
-        throw new Error(`Failed to fetch PDF from URL: ${pdfUrl}`);
+        throw new Error("Failed to fetch the PDF attachment");
       }
       const arrayBuffer = await response.arrayBuffer();
       const uint8Array = new Uint8Array(arrayBuffer);
@@ -269,7 +256,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: "Opus Form Billing <" + sender + ">",
-        to: [toEmail],
+        to: [toEmail.trim()],
         subject:
           (label || "Quote #" + quoteRef) +
           " | " +
@@ -293,12 +280,12 @@ serve(async (req) => {
       throw new Error(resendData.message || JSON.stringify(resendData));
     }
 
-    return new Response(JSON.stringify({ success: true }),
+    return new Response(JSON.stringify({ success: true, id: resendData?.id ?? null }), {
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
     console.error("Error sending email via Resend:", error);
-    return jsonResponse(req, { error: "Unable to send email." }, 500);
+    return jsonError(req, "Unable to send the quote email.", 502);
   }
 });

@@ -23,7 +23,7 @@ export const AdminPolicies: React.FC = () => {
       } = supabase.storage.from("policies").getPublicUrl(file);
       return {
         name: file.replace(/-/g, " ").replace(".pdf", ""),
-        url: publicUrl,
+        url: file === "Right-to-Work-Policy.pdf" ? `/policies/${file}` : publicUrl,
       };
     });
 

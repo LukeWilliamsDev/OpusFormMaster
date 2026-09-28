@@ -10,6 +10,7 @@ const ROLES = [
   "logistics_assistant",
   "site_foreman",
   "labourer",
+  "third_party",
 ];
 const ACTIONS = ["update", "disable", "archive", "reactivate", "delete"];
 
@@ -39,9 +40,17 @@ serve(async (req) => {
       data: { user: caller },
       error: callerError,
     } = await supabase.auth.getUser(token);
-    if (callerError || !caller || caller.email !== ADMIN_EMAIL) {
+    const { data: callerProfile } = caller
+      ? await supabase.from("profiles").select("role, status").eq("id", caller.id).maybeSingle()
+      : { data: null };
+    const canManageUsers =
+      callerProfile?.status === "active" &&
+      (callerProfile.role === "admin" || callerProfile.role === "director");
+    if (callerError || !caller || !canManageUsers) {
       return new Response(
-        JSON.stringify({ error: "Forbidden: Only the designated admin account can manage users." }),
+        JSON.stringify({
+          error: "Forbidden: Only active admins and directors can manage accounts.",
+        }),
         { status: 403, headers: { ...corsHeaders(req), "Content-Type": "application/json" } },
       );
     }
@@ -79,6 +88,25 @@ serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       });
+    }
+
+    if (action === "update") {
+      const nextEmail = (email ?? target.email ?? "").toLowerCase();
+      const nextRole = role ?? target.role;
+      if (nextRole === "admin" && nextEmail !== ADMIN_EMAIL) {
+        return new Response(
+          JSON.stringify({ error: "The admin role is reserved for Luke Williams." }),
+          { status: 400, headers: { ...corsHeaders(req), "Content-Type": "application/json" } },
+        );
+      }
+      if (target.role === "admin" && nextEmail !== ADMIN_EMAIL) {
+        return new Response(
+          JSON.stringify({
+            error: "Luke Williams' admin account cannot be renamed or reassigned.",
+          }),
+          { status: 400, headers: { ...corsHeaders(req), "Content-Type": "application/json" } },
+        );
+      }
     }
 
     if (action === "delete") {
@@ -173,7 +201,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("admin-manage-user error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "Unable to manage the user." }), {
       status: 500,
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
     });

@@ -5,11 +5,11 @@ import { LegalPageLayout, Section, DataTable } from "../layouts/LegalPageLayout"
  * Internal Cookie Statement for Opus Form Ltd (Concrete Flooring Contractors).
  */
 export const CookieStatementPage: React.FC = () => (
-  <LegalPageLayout title="Cookie Statement" lastUpdated="July 2026">
-    <Section title="1. What This Is About">
+  <LegalPageLayout title="Cookie Statement" lastUpdated="September 2026">
+    <Section title="1. How we use cookies">
       <p>This explains how we use cookies in our portal.</p>
       <p>
-        We don't use marketing cookies, ad trackers, or anything that follows you across the web.
+        We do not use marketing cookies, ad trackers, or anything that follows you across the web.
         This is an internal tool, not a public platform.
       </p>
     </Section>
@@ -23,8 +23,10 @@ export const CookieStatementPage: React.FC = () => (
 
     <Section title="3. Our Cookies">
       <p>
-        We only use essential cookies. You can't turn them off — the portal won't work without them.
-        We set them when you do things like log in or upload docs.
+        We use strictly necessary authentication and security storage for the portal to work. We
+        also use preference storage for features such as your selected theme and navigation state;
+        that preference storage is not used for advertising or tracking. This page distinguishes
+        browser cookies from local storage so the description remains accurate.
       </p>
       <DataTable
         headers={["Cookie Name", "Purpose", "Duration"]}
@@ -35,18 +37,24 @@ export const CookieStatementPage: React.FC = () => (
             "Session / Persistent",
           ],
           [
-            "opus-portal-theme",
-            "Remembers your UI preferences (e.g., dark mode settings) for the internal portal.",
-            "1 Year",
+            "opus_portal_theme (local storage)",
+            "Remembers your UI preference, such as light or dark mode.",
+            "Until cleared / 1 year",
+          ],
+          [
+            "portal-sidebar-collapsed (local storage)",
+            "Remembers whether the internal navigation is collapsed.",
+            "Until cleared",
           ],
         ]}
       />
     </Section>
 
-    <Section title="4. You Can't Disable Them">
+    <Section title="4. Your choices">
       <p>
-        These cookies are essential. If you block them in your browser, you won't be able to log in
-        or upload documents.
+        Authentication and security storage cannot be disabled without preventing sign-in or secure
+        portal functions. Preference storage can be cleared through your browser settings and does
+        not contain advertising identifiers. We do not use non-essential tracking cookies.
       </p>
     </Section>
 

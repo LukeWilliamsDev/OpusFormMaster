@@ -62,23 +62,6 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
     };
   }, [isAuthenticated]);
 
-  const getFooterLinks = () => {
-    if (isAuthenticated) {
-      return [
-        { label: "Staff Privacy Notice", path: "/portal/privacy" },
-        { label: "Usage Policy", path: "/portal/terms" },
-        { label: "Acceptable Use", path: "/portal/acceptable-use" },
-        { label: "Cookie Statement", path: "/portal/cookies" },
-        { label: "Modern Slavery", path: "/portal/modern-slavery" },
-      ];
-    }
-    return [
-      { label: "Staff Privacy Notice", path: "/privacy" },
-      { label: "Cookie Statement", path: "/cookies" },
-      { label: "Modern Slavery", path: "/modern-slavery" },
-    ];
-  };
-
   const { toc, stamped } = useTableOfContents(children);
 
   if (isAuthenticated) {
@@ -95,7 +78,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             aria-label="Go back"
           >
             <ArrowLeft className="w-3.5 h-3.5" />
-            Back to previous page
+            Back
           </button>
 
           {/* Title block */}
@@ -106,6 +89,9 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             <p className="text-[10px] font-mono uppercase tracking-[0.15em] mt-1.5 text-muted-foreground">
               Last updated: {lastUpdated}
             </p>
+            <p className="mt-1 text-[9px] font-mono uppercase tracking-[0.12em] text-muted-foreground">
+              Version 1.0 · Document owner: Opus Form Ltd · Controlled online copy
+            </p>
           </div>
 
           <div className="h-px mb-6" style={{ backgroundColor: "var(--border)" }} />
@@ -115,7 +101,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
             {toc.length > 0 && (
               <nav className="hidden lg:block sticky top-6 self-start">
                 <span className="block text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground mb-3">
-                  ON THIS PAGE
+                  On this page
                 </span>
                 <ul className="space-y-2">
                   {toc.map((item) => (
@@ -135,19 +121,6 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
 
             {/* Legal content */}
             <div className="legal-content space-y-6 min-w-0 max-w-3xl">{stamped}</div>
-
-            {/* Inline footer links */}
-            <div className="border-t border-border mt-12 pt-6 flex flex-wrap gap-x-6 gap-y-2 justify-center">
-              {getFooterLinks().map((link) => (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  className="text-[9px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
           </div>
         </div>
       </div>
@@ -213,6 +186,12 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
           >
             Last updated: {lastUpdated}
           </p>
+          <p
+            className="mt-1 text-[9px] font-mono uppercase tracking-[0.12em]"
+            style={{ color: "var(--muted-foreground)" }}
+          >
+            Version 1.0 · Document owner: Opus Form Ltd · Controlled online copy
+          </p>
         </div>
 
         {/* Divider */}
@@ -263,19 +242,6 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
           transition: "opacity 500ms ease-out",
         }}
       >
-        {/* Legal links row */}
-        <div className="max-w-3xl mx-auto flex flex-wrap justify-center gap-x-5 gap-y-2 mb-4">
-          {getFooterLinks().map((link) => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className="text-[10px] font-mono font-bold uppercase tracking-[0.18em] text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-colors duration-200"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-
         {/* Company details + contact */}
         <div
           className="flex flex-col lg:flex-row justify-center items-center gap-x-2 gap-y-1.5 text-[9px] font-mono uppercase text-muted-foreground/80 text-center max-w-xl lg:max-w-none mx-auto"
@@ -297,7 +263,7 @@ export const LegalPageLayout: React.FC<LegalPageLayoutProps> = ({
               ADMIN@OPUSFORM.CO.UK
             </a>
             <span>·</span>
-            <span>© {new Date().getFullYear()} ALL RIGHTS RESERVED</span>
+            <span>© {new Date().getFullYear()} All rights reserved.</span>
           </div>
         </div>
       </footer>

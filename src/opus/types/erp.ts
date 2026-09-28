@@ -22,6 +22,7 @@ export interface Ticket {
   isValid?: boolean;
   verified?: boolean;
   documentUrl?: string;
+  createdAt?: string;
 }
 
 export const STAFF_ROLES = [
@@ -62,6 +63,7 @@ export interface Worker {
     name: string;
     size: string;
     uploadedAt: string;
+    documentUrl?: string;
   }[];
   isArchived?: boolean;
 }

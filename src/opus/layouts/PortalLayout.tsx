@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Outlet, useNavigate, Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -20,6 +20,9 @@ import {
   ClipboardList,
   Building2,
   UserCog,
+  BadgeCheck,
+  HelpCircle,
+  Mail,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -28,8 +31,10 @@ import {
   ALL_ROLES,
   MANAGEMENT_ROLES,
   SCHEDULE_ROLES,
+  formatAppRoleLabel,
+  INTERNAL_ROLES,
 } from "../context/PortalContext";
-import { getAvatarPresetClass } from "../pages/Settings";
+import { getAvatarPresetClass } from "../utils/avatar";
 import { getAvatarInitials } from "../utils/workerValidation";
 import { NavList } from "@/components/application/app-navigation/base-components/nav-list";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
@@ -40,6 +45,12 @@ export const PortalLayout: React.FC = () => {
   const logoSrc =
     theme === "light" ? "/opus-form-primary-light.svg" : "/opus-form-primary-dark.svg";
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuReturnRef = useRef<HTMLElement | null>(null);
+  const mobileMenuCloseRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const mainContentRef = useRef<HTMLElement>(null);
+  const wasMobileMenuOpenRef = useRef(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(
     () => localStorage.getItem("portal-sidebar-collapsed") === "true",
   );
@@ -52,6 +63,61 @@ export const PortalLayout: React.FC = () => {
   };
   const navigate = useNavigate();
   const location = useLocation();
+  const showThirdPartyBottomNav = role === "third_party";
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      mobileMenuCloseRef.current?.focus();
+    } else if (wasMobileMenuOpenRef.current) {
+      mobileMenuReturnRef.current?.focus();
+    }
+    wasMobileMenuOpenRef.current = isMobileMenuOpen;
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsMobileMenuOpen(false);
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = mobileMenuRef.current?.querySelectorAll<HTMLElement>(
+        "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled])",
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [isMobileMenuOpen]);
+
+  const routeAnnouncement = location.pathname.includes("/staff/new")
+    ? "Add staff member"
+    : location.pathname.includes("/staff/")
+      ? "Staff profile"
+      : location.pathname.endsWith("/staff")
+        ? "Staff"
+        : location.pathname.includes("/sites/") || location.pathname.includes("/jobs/")
+          ? "Assigned site"
+          : location.pathname.endsWith("/sites") || location.pathname.endsWith("/jobs")
+            ? "Assigned sites"
+            : role === "third_party"
+              ? "Portal home"
+              : "Portal page";
+
+  useEffect(() => {
+    mainContentRef.current?.focus();
+  }, [location.pathname]);
 
   const handleLogoutClick = async () => {
     await signOut();
@@ -93,15 +159,45 @@ export const PortalLayout: React.FC = () => {
       roles: MANAGEMENT_ROLES,
     },
     {
+      name: "STAFF APPROVALS",
+      path: "/portal/third-party-approvals",
+      icon: UserCog,
+      roles: MANAGEMENT_ROLES,
+    },
+    {
+      name: "CERTIFICATE CHECKER",
+      path: "/portal/certificate-checker",
+      icon: BadgeCheck,
+      roles: INTERNAL_ROLES,
+    },
+    {
       name: "QUOTES",
       path: "/portal/pipeline?view=pipeline-registry",
       icon: Truck,
       roles: MANAGEMENT_ROLES,
     },
     { section: "ADMIN" },
-    { name: "SITE LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
+    { name: "AUDIT LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
     { name: "USERS", path: "/portal/users", icon: UserCog, roles: ["admin", "director"] },
     { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
+    {
+      name: "PORTAL HOME",
+      path: "/portal/third-party",
+      icon: LayoutDashboard,
+      roles: ["third_party"],
+    },
+    {
+      name: "STAFF",
+      path: "/portal/third-party/staff",
+      icon: Users,
+      roles: ["third_party"],
+    },
+    {
+      name: "ASSIGNED SITES",
+      path: "/portal/third-party/sites",
+      icon: Building2,
+      roles: ["third_party"],
+    },
   ];
 
   // SITE LOG/POLICIES are available to every admin. Job-level history remains
@@ -112,11 +208,14 @@ export const PortalLayout: React.FC = () => {
     return true;
   });
   // Drop a section header if every item under it got filtered out (e.g. ADMIN for non-admins).
-  const navItems = visibleNav.filter((item, i) => {
-    if (!("section" in item)) return true;
-    const next = visibleNav[i + 1];
-    return !!next && !("section" in next);
-  });
+  const navItems =
+    role === "third_party"
+      ? visibleNav.filter((item) => !("section" in item))
+      : visibleNav.filter((item, i) => {
+          if (!("section" in item)) return true;
+          const next = visibleNav[i + 1];
+          return !!next && !("section" in next);
+        });
 
   const checkIsActive = (path: string) => {
     const [itemPath, itemQuery] = path.split("?");
@@ -147,18 +246,28 @@ export const PortalLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-background text-foreground font-sans selection:bg-primary/30 selection:text-white flex flex-col lg:flex-row">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-background focus:px-4 focus:py-3 focus:text-sm focus:font-bold focus:text-foreground focus:shadow-lg"
+      >
+        Skip to main content
+      </a>
       {/* Desktop Sidebar */}
       <SidebarNavigationSlim
         items={toNavListItems()}
-        footerItems={[{ label: "Legal & Privacy", href: "/portal/legal", icon: Shield }]}
+        footerItems={[
+          { label: "Help & Guidance", href: "/portal/help", icon: HelpCircle },
+          { label: "Contact IT", href: "/portal/contact", icon: Mail },
+          { label: "Legal & Privacy", href: "/portal/legal", icon: Shield },
+        ]}
         isActive={(item) => (item.href ? checkIsActive(item.href) : false)}
         collapsed={isSidebarCollapsed}
         onToggleCollapse={toggleSidebar}
         logoSrc={logoSrc}
-        logoHref="/portal/dashboard"
+        logoHref={role === "third_party" ? "/portal/third-party" : "/portal/dashboard"}
         profile={{
           name: profile?.full_name || user?.email || "User",
-          role: role || "labourer",
+          role: formatAppRoleLabel(role || "labourer"),
           avatarClass: getAvatarPresetClass(profile?.avatar_url),
           href: "/portal/settings",
         }}
@@ -169,7 +278,10 @@ export const PortalLayout: React.FC = () => {
 
       {/* Mobile Sticky Header */}
       <header className="lg:hidden flex items-center justify-between h-16 bg-background border-b-2 border-border px-4 sticky top-0 z-40">
-        <Link to="/portal/dashboard" className="flex items-center">
+        <Link
+          to={role === "third_party" ? "/portal/third-party" : "/portal/dashboard"}
+          className="flex items-center"
+        >
           <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
         </Link>
         <div className="flex items-center space-x-2">
@@ -188,19 +300,64 @@ export const PortalLayout: React.FC = () => {
           <button
             onClick={handleLogoutClick}
             className="p-2 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
-            title="Logout"
+            aria-label="Log out"
+            title="Log out"
           >
             <LogOut className="w-5 h-5" />
           </button>
           <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Toggle Menu"
+            ref={mobileMenuButtonRef}
+            onClick={(event) => {
+              mobileMenuReturnRef.current = event.currentTarget;
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+            }}
+            className={`p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] items-center justify-center ${role === "third_party" ? "hidden" : "flex"}`}
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-portal-menu"
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </header>
+
+      {showThirdPartyBottomNav && (
+        <nav
+          aria-label="Third-party portal navigation"
+          className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 border-t-2 border-border bg-background/95 px-2 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
+        >
+          {[
+            { label: "Home", path: "/portal/third-party", icon: LayoutDashboard },
+            { label: "Staff", path: "/portal/third-party/staff", icon: Users },
+            { label: "Sites", path: "/portal/third-party/sites", icon: Building2 },
+            { label: "Help", path: "/portal/help", icon: HelpCircle },
+          ].map(({ label, path, icon: Icon }) => (
+            <Link
+              key={path}
+              to={path}
+              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${checkIsActive(path) ? "text-primary" : "text-muted-foreground"}`}
+              aria-current={checkIsActive(path) ? "page" : undefined}
+            >
+              <Icon className="h-4 w-4" aria-hidden="true" />
+              {label}
+            </Link>
+          ))}
+          <button
+            type="button"
+            onClick={(event) => {
+              mobileMenuReturnRef.current = event.currentTarget;
+              setIsMobileMenuOpen(true);
+            }}
+            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-muted-foreground"
+            aria-label="Open portal menu"
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="mobile-portal-menu"
+          >
+            <Menu className="h-4 w-4" />
+            More
+          </button>
+        </nav>
+      )}
 
       {/* Mobile Slide-out Drawer */}
       <AnimatePresence>
@@ -214,6 +371,11 @@ export const PortalLayout: React.FC = () => {
               className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 lg:hidden"
             />
             <motion.div
+              ref={mobileMenuRef}
+              id="mobile-portal-menu"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="mobile-portal-menu-title"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
@@ -222,15 +384,20 @@ export const PortalLayout: React.FC = () => {
             >
               <div className="flex items-center justify-between mb-6 pb-4 border-b-2 border-border">
                 <Link
-                  to="/portal/dashboard"
+                  to={role === "third_party" ? "/portal/third-party" : "/portal/dashboard"}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="flex items-center"
                 >
                   <img src={logoSrc} alt="Opus Form" className="h-8 w-auto" />
                 </Link>
+                <span id="mobile-portal-menu-title" className="sr-only">
+                  Portal menu
+                </span>
                 <button
+                  ref={mobileMenuCloseRef}
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="p-2 text-muted-foreground cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+                  aria-label="Close portal menu"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -258,13 +425,14 @@ export const PortalLayout: React.FC = () => {
                     {profile?.full_name || user?.email || "User"}
                   </span>
                   <span className="text-[11px] text-emerald-600 dark:text-emerald-400 capitalize font-medium">
-                    {(role || "labourer").replace(/_/g, " ")}
+                    {formatAppRoleLabel(role || "labourer")}
                   </span>
                 </div>
               </Link>
 
               {/* Mobile Drawer Menu Links */}
               <nav
+                aria-label="Mobile portal navigation"
                 className="space-y-1.5 flex-1 overflow-y-auto"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
@@ -275,6 +443,22 @@ export const PortalLayout: React.FC = () => {
               </nav>
 
               <div className="mt-auto pt-4 border-t-2 border-border space-y-1">
+                <Link
+                  to="/portal/help"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer min-h-[44px]"
+                >
+                  <HelpCircle className="w-4 h-4 shrink-0" />
+                  <span>Help &amp; Guidance</span>
+                </Link>
+                <Link
+                  to="/portal/contact"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer min-h-[44px]"
+                >
+                  <Mail className="w-4 h-4 shrink-0" />
+                  <span>Contact IT</span>
+                </Link>
                 <Link
                   to="/portal/legal"
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -314,7 +498,7 @@ export const PortalLayout: React.FC = () => {
                   className="flex items-center w-full space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-all cursor-pointer min-h-[44px]"
                 >
                   <LogOut className="w-4 h-4 shrink-0" />
-                  <span>Log Out</span>
+                  <span>Log out</span>
                 </button>
               </div>
             </motion.div>
@@ -323,8 +507,20 @@ export const PortalLayout: React.FC = () => {
       </AnimatePresence>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-h-0 bg-background">
-        <div className="flex-1 w-full relative lg:min-h-0 lg:overflow-y-auto">
+      <main
+        id="main-content"
+        ref={mainContentRef}
+        tabIndex={-1}
+        aria-labelledby="portal-page-announcement"
+        className={`flex-1 flex flex-col min-h-0 bg-background ${showThirdPartyBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}
+      >
+        <div id="portal-page-announcement" className="sr-only" aria-live="polite">
+          {routeAnnouncement}
+        </div>
+        <div
+          className="flex-1 w-full relative lg:min-h-0 lg:overflow-y-auto"
+          style={{ scrollPaddingBottom: showThirdPartyBottomNav ? "6.5rem" : undefined }}
+        >
           <Outlet />
         </div>
       </main>

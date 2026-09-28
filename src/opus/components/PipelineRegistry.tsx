@@ -58,12 +58,14 @@ interface PipelineRegistryProps {
   onEditQuote: (quoteId: string) => void;
   onNewQuote: () => void;
   onBack: () => void;
+  readOnly?: boolean;
 }
 
 export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
   onEditQuote,
   onNewQuote,
   onBack,
+  readOnly = false,
 }) => {
   const { jobs, setJobs, profile, user } = usePortal();
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -329,9 +331,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
       {/* Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-            Quote Management
-          </h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Quotes</h1>
 
           {/* Search Bar */}
           <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 w-full sm:max-w-xs">
@@ -347,19 +347,21 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         </div>
 
         {/* New Quote Button */}
-        <button
-          onClick={onNewQuote}
-          className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-lg text-xs font-bold transition-all shadow-lg select-none"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Quote</span>
-        </button>
+        {!readOnly && (
+          <button
+            onClick={onNewQuote}
+            className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-lg text-xs font-bold transition-all shadow-lg select-none"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New quote</span>
+          </button>
+        )}
       </div>
 
       <main className="mt-0 pb-8 space-y-6">
         {!isLoading && sortedQuotes.length === 0 && (
           <div className="bg-card border border-border rounded-xl px-4 py-12 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            No Quotes
+            No quotes
           </div>
         )}
 
@@ -385,7 +387,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                   onClick={() => handleSort("client")}
                   className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-left"
                 >
-                  Client / Site
+                  Client / site
                   {sortField === "client" &&
                     (sortDirection === "asc" ? (
                       <ChevronUp className="w-3 h-3" />
@@ -451,7 +453,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                       {/* Site / Contractor */}
                       <div className="space-y-0.5">
                         <div className="text-sm font-semibold text-foreground">
-                          {quote.clientInfo?.entity || "No Contractor Data"}
+                          {quote.clientInfo?.entity || "No client recorded"}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {quote.clientInfo?.site || "No site info"}
@@ -463,7 +465,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                         {quote.date || "Pending"}
                       </div>
 
-                      {/* Estimated Value */}
+                      {/* Quote value */}
                       <div className="text-right">
                         <span className="text-[14px] font-mono font-bold text-foreground tracking-wide">
                           £
@@ -522,7 +524,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 {/* Contractor / Site */}
                 <div className="space-y-0.5">
                   <div className="text-sm font-semibold text-foreground">
-                    {quote.clientInfo?.entity || "No Contractor Data"}
+                    {quote.clientInfo?.entity || "No client recorded"}
                   </div>
                   <div className="text-xs text-muted-foreground">
                     {quote.clientInfo?.site || "No site info"}
@@ -559,7 +561,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         }}
         tone="destructive"
         tag="This Cannot Be Undone"
-        title="Delete Quote"
+        title="Delete quote"
         message={
           <>
             Are you sure you want to delete the quote{" "}
@@ -574,7 +576,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
             </div>
           </>
         }
-        confirmLabel="Delete Quote"
+        confirmLabel="Delete quote"
         onConfirm={handleDelete}
       />
 
@@ -588,11 +590,11 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
           }
         }}
         tone="neutral"
-        tag="Create a Job From This Quote"
+        tag="Create job from quote"
         title="Job Creation"
         message={
           <>
-            You are about to create a job from quote{" "}
+            You are about to create a job from this quote{" "}
             <span className="font-bold text-foreground">{convertingQuote?.reference}</span>.
             <div className="mt-3 bg-muted border border-border rounded-lg p-4 space-y-3">
               <div className="flex justify-between items-center">
@@ -608,7 +610,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 </span>
               </div>
               <div className="flex justify-between items-center pt-2 border-t border-border">
-                <span className="text-xs font-medium text-muted-foreground">Schedule Value:</span>
+                <span className="text-xs font-medium text-muted-foreground">Quote value:</span>
                 <span className="text-sm font-bold text-primary">
                   £
                   {(convertingQuote?.totals?.grossTotal || 0).toLocaleString(undefined, {
@@ -619,7 +621,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
             </div>
           </>
         }
-        confirmLabel="Accept Job"
+        confirmLabel="Create job"
         onConfirm={handleConvertToJob}
       />
 
@@ -642,7 +644,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               <div className="p-6 border-b border-border bg-secondary/30 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-foreground/85">
-                    Quote Control Center
+                    Quote details
                   </h3>
                   <span
                     className={`px-1.5 py-0.5 rounded text-[11px] font-black uppercase tracking-widest ${
@@ -684,7 +686,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                   </div>
                   <div className="bg-card border border-border p-4 rounded-xl">
                     <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block mb-1">
-                      Site / Project
+                      Site
                     </span>
                     <span className="text-xs font-semibold text-foreground">
                       {selectedQuoteForControl.clientInfo?.site || "N/A"}
@@ -703,7 +705,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 {/* Items list */}
                 <div className="space-y-2">
                   <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block">
-                    Bill of Quantities
+                    Quote line items
                   </span>
                   <div className="bg-card border border-border rounded-xl overflow-hidden">
                     <div className="hidden sm:grid sm:grid-cols-[1fr_60px_60px_80px] gap-2 p-3 bg-background border-b border-border text-[11px] font-black uppercase text-muted-foreground tracking-widest">
@@ -777,29 +779,31 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               </div>
 
               {/* Sticky Footer Actions */}
-              <div className="p-6 border-t border-border bg-secondary/30 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                <button
-                  onClick={() => {
-                    setSelectedQuoteForControl(null);
-                    onEditQuote(selectedQuoteForControl.id);
-                  }}
-                  className="flex-1 py-3 bg-secondary hover:bg-secondary/80 border border-border text-foreground/85 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all text-center focus:outline-none"
-                >
-                  Edit Quote
-                </button>
-                <button
-                  onClick={() => setConvertingQuote(selectedQuoteForControl)}
-                  className="flex-1 py-3 bg-primary hover:brightness-110 text-primary-foreground rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
-                >
-                  Convert to Job
-                </button>
-                <button
-                  onClick={() => setSelectedQuoteToDelete(selectedQuoteForControl)}
-                  className="w-full sm:w-auto py-3 px-4 bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 text-red-400 hover:text-red-300 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none"
-                >
-                  Delete
-                </button>
-              </div>
+              {!readOnly && (
+                <div className="p-6 border-t border-border bg-secondary/30 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                  <button
+                    onClick={() => {
+                      setSelectedQuoteForControl(null);
+                      onEditQuote(selectedQuoteForControl.id);
+                    }}
+                    className="flex-1 py-3 bg-secondary hover:bg-secondary/80 border border-border text-foreground/85 rounded-lg text-[11px] font-bold uppercase tracking-widest transition-all text-center focus:outline-none"
+                  >
+                    Edit Quote
+                  </button>
+                  <button
+                    onClick={() => setConvertingQuote(selectedQuoteForControl)}
+                    className="flex-1 py-3 bg-primary hover:brightness-110 text-primary-foreground rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
+                  >
+                    Convert to Job
+                  </button>
+                  <button
+                    onClick={() => setSelectedQuoteToDelete(selectedQuoteForControl)}
+                    className="w-full sm:w-auto py-3 px-4 bg-red-600/10 hover:bg-red-600/20 border border-red-500/20 text-red-400 hover:text-red-300 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all focus:outline-none"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

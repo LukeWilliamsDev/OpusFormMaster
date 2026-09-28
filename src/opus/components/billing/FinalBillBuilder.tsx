@@ -127,7 +127,7 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
       onSaved();
     } catch (err) {
       const { message } = handleError(err, { message: "Failed to save invoice" });
-      toast.error("SAVE FAILED", { description: message });
+      toast.error("Couldn’t save invoice", { description: message });
     } finally {
       setSaving(false);
     }
@@ -144,7 +144,7 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
     }
     setSending(true);
     const sendingToastId = toast.loading("SENDING INVOICE", {
-      description: "Generating PDF and sending...",
+      description: "Generating the PDF and sending it to the client…",
     });
     try {
       const id = await saveDraft();
@@ -186,7 +186,7 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
 
       toast.success("INVOICE SENT", {
         id: sendingToastId,
-        description: "Email sent successfully.",
+        description: "The invoice was emailed to the client.",
       });
       onSaved();
       onClose();

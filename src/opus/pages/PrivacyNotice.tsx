@@ -5,7 +5,7 @@ import { LegalPageLayout, Section, DataTable } from "../layouts/LegalPageLayout"
  * UK GDPR-compliant Staff Privacy Notice for Opus Form Ltd (Concrete Flooring Contractors).
  */
 export const PrivacyNoticePage: React.FC = () => (
-  <LegalPageLayout title="Staff Privacy Notice" lastUpdated="July 2026">
+  <LegalPageLayout title="Staff Privacy Notice" lastUpdated="September 2026">
     <Section title="1. Who We Are">
       <p>
         Opus Form Ltd is a concrete flooring contractor and data controller for this internal
@@ -68,7 +68,7 @@ export const PrivacyNoticePage: React.FC = () => (
     </Section>
 
     <Section title="4. Sharing Your Data">
-      <p>We don't sell your data. We only share it when we have to for running the business:</p>
+      <p>We do not sell your data. We only share it when necessary to run the business:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>
           <strong>Main Contractors:</strong> We may need to share your compliance data (e.g., CSCS
@@ -85,21 +85,55 @@ export const PrivacyNoticePage: React.FC = () => (
       </ul>
     </Section>
 
-    <Section title="5. Data Retention">
+    <Section title="5. Sources and Responsibilities">
       <p>
-        We keep your personal data only as long as necessary. Training certificates and
-        right-to-work documentation are kept for the duration of your engagement and for at least
-        two years after it ends, or longer where a documented legal or regulatory requirement
-        applies. Site diaries, health and safety records, and payment data are retained for up to 7
-        years in compliance with UK tax and safety legislation.
+        We may receive information directly from you, from a company administrator, from a client or
+        principal contractor, from a labour provider, or from a service used to verify a record. The
+        party responsible for a particular record can vary by the work arrangement. Where Opus Form
+        processes information for another organisation, the parties will document their controller,
+        joint-controller, or processor responsibilities.
       </p>
     </Section>
 
-    <Section title="6. Your Rights">
+    <Section title="6. Sensitive Information">
+      <p>
+        Some compliance, health and safety, equality, or incident information may be sensitive or
+        special-category data. We only ask for it where it is necessary, restrict access to people
+        who need it, and apply the additional legal condition and safeguards required for that
+        processing. Please do not upload unrelated medical, biometric, criminal-offence, or family
+        information.
+      </p>
+    </Section>
+
+    <Section title="7. Providers and International Transfers">
+      <p>
+        We use selected providers for hosting, authentication, storage, communications, and
+        security. They process information under contractual instructions and confidentiality and
+        security obligations. If information is processed outside the UK, we use an applicable
+        adequacy decision or an approved safeguard such as the UK International Data Transfer
+        Agreement or UK Addendum, together with any required transfer assessment.
+      </p>
+    </Section>
+
+    <Section title="8. Data Retention">
+      <p>
+        We keep each category of personal data only for the period needed for its purpose, legal or
+        contractual duties, insurance, dispute handling, and limitation periods. Right-to-work
+        records are normally retained for the duration of the engagement and two years afterwards,
+        subject to the documented retention schedule, legal holds, and secure deletion or
+        anonymisation when the period ends. A stated period does not mean every record is retained
+        for that period.
+      </p>
+    </Section>
+
+    <Section title="9. Your Rights and Requests">
       <p>Under the UK GDPR, you have the right to:</p>
       <ul className="list-disc list-inside space-y-1.5 ml-1">
         <li>Request access to the personal data we hold about you.</li>
         <li>Request correction of inaccurate data (e.g., updating an expired CSCS card).</li>
+        <li>Request restriction of processing in appropriate circumstances.</li>
+        <li>Object to processing based on legitimate interests.</li>
+        <li>Request portability where the legal conditions apply.</li>
         <li>
           Request deletion of your data (subject to our legal obligations to retain H&S records).
         </li>
@@ -116,6 +150,18 @@ export const PrivacyNoticePage: React.FC = () => (
           style={{ color: "var(--primary)" }}
         >
           admin@opusform.co.uk
+        </a>
+        . We normally respond within one month, although the law allows an extension for complex
+        requests. We may ask for proportionate information to verify your identity.
+      </p>
+      <p>
+        You can complain to the Information Commissioner's Office at{" "}
+        <a
+          href="https://ico.org.uk/make-a-complaint/"
+          className="underline"
+          style={{ color: "var(--primary)" }}
+        >
+          ico.org.uk/make-a-complaint
         </a>
         .
       </p>

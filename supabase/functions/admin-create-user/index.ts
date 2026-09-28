@@ -30,9 +30,17 @@ serve(async (req) => {
       data: { user: caller },
       error: callerError,
     } = await supabase.auth.getUser(token);
-    if (callerError || !caller || caller.email !== ADMIN_EMAIL) {
+    const { data: callerProfile } = caller
+      ? await supabase.from("profiles").select("role, status").eq("id", caller.id).maybeSingle()
+      : { data: null };
+    const canInvite =
+      callerProfile?.status === "active" &&
+      (callerProfile.role === "admin" || callerProfile.role === "director");
+    if (callerError || !caller || !canInvite) {
       return new Response(
-        JSON.stringify({ error: "Forbidden: Only the designated admin account can create users." }),
+        JSON.stringify({
+          error: "Forbidden: Only active admins and directors can invite accounts.",
+        }),
         { status: 403, headers: { ...corsHeaders(req), "Content-Type": "application/json" } },
       );
     }
@@ -52,12 +60,25 @@ serve(async (req) => {
         "logistics_assistant",
         "site_foreman",
         "labourer",
+        "third_party",
       ].includes(role)
     ) {
       return new Response(JSON.stringify({ error: "Invalid role." }), {
         status: 400,
         headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       });
+    }
+    // There is one admin seat: Luke Williams' designated account. Keep this
+    // invariant in the trusted function rather than relying on the UI role
+    // selector.
+    if (role === "admin" && email.toLowerCase() !== ADMIN_EMAIL) {
+      return new Response(
+        JSON.stringify({ error: "The admin role is reserved for Luke Williams." }),
+        {
+          status: 400,
+          headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        },
+      );
     }
 
     const { data: created, error: createError } = await supabase.auth.admin.inviteUserByEmail(
@@ -70,7 +91,7 @@ serve(async (req) => {
         const existing = existingUsers?.users.find(
           (u) => u.email?.toLowerCase() === email.toLowerCase(),
         );
-        let staffLabel = email;
+        let accountLabel = email;
         if (existing) {
           const { data: existingProfile } = await supabase
             .from("profiles")
@@ -78,12 +99,12 @@ serve(async (req) => {
             .eq("id", existing.id)
             .single();
           if (existingProfile?.full_name) {
-            staffLabel = `${existingProfile.full_name} (${existingProfile.role})`;
+            accountLabel = `${existingProfile.full_name} (${existingProfile.role})`;
           }
         }
         return new Response(
           JSON.stringify({
-            error: `A staff account already exists for ${email} — ${staffLabel}. Use Edit User instead of Create User.`,
+            error: `An account already exists for ${email} — ${accountLabel}. Use Edit User instead of Create User.`,
           }),
           {
             status: 400,
@@ -122,7 +143,7 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("admin-create-user error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: "Unable to create the user." }), {
       status: 500,
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
     });

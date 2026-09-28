@@ -368,7 +368,7 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
 
               <div className="space-y-1.5">
                 <h4 className="text-sm font-bold uppercase tracking-wide text-card-foreground">
-                  {emailSent ? "Email Sent" : "Link Generated"}
+                  {emailSent ? "Email sent" : "Link generated"}
                 </h4>
                 <p className="text-[12px] text-muted-foreground font-medium tracking-normal max-w-sm mx-auto leading-relaxed px-4">
                   {emailSent

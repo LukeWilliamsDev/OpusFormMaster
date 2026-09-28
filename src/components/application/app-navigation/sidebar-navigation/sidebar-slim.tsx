@@ -135,7 +135,10 @@ export const SidebarNavigationSlim = ({
       )}
 
       {/* Primary nav */}
-      <nav className={cx("flex-1 py-4 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-3")}>
+      <nav
+        aria-label="Portal navigation"
+        className={cx("flex-1 py-4 space-y-1 overflow-y-auto", collapsed ? "px-2" : "px-3")}
+      >
         <NavList items={items} iconOnly={collapsed} isActive={isActive} />
       </nav>
 

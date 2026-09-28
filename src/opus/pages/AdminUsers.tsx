@@ -34,6 +34,7 @@ type ProfileRow = {
   full_name: string | null;
   role: (typeof ROLES)[number];
   status: "active" | "disabled" | "archived";
+  last_sign_in_at: string | null;
 };
 
 const STATUS_STYLE: Record<ProfileRow["status"], string> = {
@@ -45,6 +46,20 @@ const STATUS_STYLE: Record<ProfileRow["status"], string> = {
 const inputClass =
   "bg-background border border-border rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary";
 const labelClass = "text-xs font-bold uppercase tracking-wider text-muted-foreground";
+
+const formatLastLogin = (value: string | null) => {
+  if (!value) return "Never";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown";
+  return date.toLocaleString("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/London",
+  });
+};
 
 const callManageUser = async (body: Record<string, unknown>) => {
   const {
@@ -383,12 +398,33 @@ export const AdminUsers: React.FC = () => {
 
   const loadUsers = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, email, full_name, role, status")
-      .order("email");
-    setUsers((data as ProfileRow[]) ?? []);
-    setLoading(false);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const { data, error: fnError } = await supabase.functions.invoke("admin-list-users", {
+        headers: session ? { Authorization: `Bearer ${session.access_token}` } : undefined,
+      });
+      if (fnError || data?.error) {
+        let message = data?.error ?? fnError?.message ?? "Unable to load users.";
+        if (!data?.error && fnError && "context" in fnError) {
+          try {
+            const responseBody = await (fnError as { context: Response }).context.json();
+            if (responseBody?.error) message = responseBody.error;
+          } catch {
+            // response body wasn't JSON, fall back to fnError.message
+          }
+        }
+        throw new Error(message);
+      }
+      setUsers((data?.users as ProfileRow[]) ?? []);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to load users.";
+      setActionError(message);
+      setUsers([]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -575,7 +611,7 @@ export const AdminUsers: React.FC = () => {
                 >
                   {/* Desktop / tablet row */}
                   <div className="hidden sm:flex sm:items-center gap-3">
-                    <div className="min-w-0 flex-1 grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_100px] items-center gap-x-6">
+                    <div className="min-w-0 flex-1 grid grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_140px_100px] items-center gap-x-6">
                       <div className="min-w-0">
                         <div className="text-[14px] font-semibold text-foreground truncate">
                           {u.full_name || u.email}
@@ -588,6 +624,17 @@ export const AdminUsers: React.FC = () => {
                       </div>
                       <div className="text-[12px] font-mono text-muted-foreground truncate">
                         {formatAppRoleLabel(u.role)}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Last login
+                        </div>
+                        <div
+                          className="text-[12px] font-mono text-muted-foreground truncate"
+                          title={u.last_sign_in_at ?? "Never"}
+                        >
+                          {formatLastLogin(u.last_sign_in_at)}
+                        </div>
                       </div>
                       <span
                         key={u.status}
@@ -620,9 +667,14 @@ export const AdminUsers: React.FC = () => {
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <span className="text-[11px] font-mono text-muted-foreground truncate min-w-0 flex-1">
-                        {formatAppRoleLabel(u.role)}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
+                          {formatAppRoleLabel(u.role)} · Last login
+                        </div>
+                        <div className="text-[11px] font-mono text-muted-foreground truncate">
+                          {formatLastLogin(u.last_sign_in_at)}
+                        </div>
+                      </div>
                       <div className="flex flex-wrap justify-end gap-1.5 shrink-0">
                         {actionButtons}
                       </div>

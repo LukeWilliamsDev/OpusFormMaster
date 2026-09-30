@@ -25,3 +25,5 @@ jobs:
           # the real deploy pipeline supplies actual Supabase project secrets.
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key
+      - run: npm run check:build-assets
+      - run: npx wrangler deploy --dry-run --config wrangler.jsonc

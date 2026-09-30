@@ -7,7 +7,7 @@
 **Source of truth:** User request for an always-on agentic/critic loop, existing Opus Form QMS, and repository instructions
 **Evidence base:** `working tree`
 **Evidence head:** `working tree`
-**Evidence fingerprint:** `e47d989aa364de3e8d2df0afe121446122b64500ca4d9775fae4f1fb26161a0a`
+**Evidence fingerprint:** `fb134bf7f439bbe2b6d2e69ad7dd03143ff42c705e91804b87a7c14c3584ec8b`
 
 ## Intent
 

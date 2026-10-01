@@ -6,15 +6,15 @@ import {
   ArrowRight,
   Camera,
   CheckCircle2,
-  FileText,
+  ChevronLeft,
+  ChevronRight,
   Loader2,
   MapPin,
-  MessageSquareText,
-  Paperclip,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { usePortal } from "../context/PortalContext";
@@ -22,7 +22,7 @@ import { ForemanJobNotesPanel } from "../components/ForemanJobNotesPanel";
 import { ForemanTodaySiteUpdate } from "../components/ForemanTodaySiteUpdate";
 import type { ScheduledShift, Worker } from "../types/erp";
 import { compressImageFile } from "../lib/compressImage";
-import { getSignedJobAttachmentUrl, getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
+import { getSignedJobAttachmentUrl } from "../lib/attachmentUrl";
 import { formatUKDate, toLondonISODate } from "../utils/week";
 
 type DiaryRow = Pick<
@@ -70,12 +70,6 @@ function isCompletedStatus(status: string): boolean {
   return ["completed", "complete", "closed"].includes(status.toLowerCase().trim());
 }
 
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function diarySummary(entry: DiaryRow): string {
   return (
     entry.work_summary?.trim() ||
@@ -121,9 +115,8 @@ export const ForemanSitePage: React.FC = () => {
   const siteContentLoadedRef = useRef(false);
   const [diaryRows, setDiaryRows] = useState<DiaryRow[]>([]);
   const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
-  const [signedUrls, setSignedUrls] = useState<
-    Map<string, { fullUrl: string | null; thumbUrl: string | null }>
-  >(new Map());
+  const [signedUrls, setSignedUrls] = useState<Map<string, string>>(new Map());
+  const [gallery, setGallery] = useState<{ photos: AttachmentRow[]; index: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshingSite, setRefreshingSite] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -142,17 +135,21 @@ export const ForemanSitePage: React.FC = () => {
         (shift.date >= today || (job ? isCompletedStatus(job.status) : false)),
     ),
   );
+  const shiftDates = useMemo(() => {
+    const grouped = new Map<string, { total: number; mine: number }>();
+    for (const shift of assignedShifts) {
+      const current = grouped.get(shift.date) ?? { total: 0, mine: 0 };
+      current.total += 1;
+      if (shift.workerId === currentStaffId) current.mine += 1;
+      grouped.set(shift.date, current);
+    }
+    return [...grouped.entries()]
+      .map(([date, summary]) => ({ date, ...summary }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }, [assignedShifts, currentStaffId]);
   const nextShift = useMemo(
-    () =>
-      assignedShifts
-        .map((shift) => shift.date)
-        .filter((date) => date >= today)
-        .sort()[0] ??
-      assignedShifts
-        .map((shift) => shift.date)
-        .sort()
-        .at(-1),
-    [assignedShifts, today],
+    () => shiftDates.find((shift) => shift.date >= today)?.date ?? shiftDates.at(-1)?.date,
+    [shiftDates, today],
   );
   const crew = useMemo(
     () => assignedWorkers(jobId ?? "", shifts, workers, nextShift),
@@ -247,6 +244,7 @@ export const ForemanSitePage: React.FC = () => {
           .from("job_attachments")
           .select("id,job_id,type,file_name,file_url,file_size_bytes,uploaded_at")
           .eq("job_id", jobId)
+          .in("type", ["image_before", "image_after"])
           .order("uploaded_at", { ascending: false }),
       ]);
       if (diaryResult.error || attachmentResult.error) {
@@ -259,12 +257,20 @@ export const ForemanSitePage: React.FC = () => {
         setDiaryRows(diaryResult.data ?? []);
         const nextAttachments = attachmentResult.data ?? [];
         setAttachments(nextAttachments);
-        const imageUrls = await getSignedJobAttachmentUrlsBatch(
-          nextAttachments
-            .filter((item) => item.type === "image_before" || item.type === "image_after")
-            .map((item) => item.file_url),
+        const previewEntries = await Promise.all(
+          nextAttachments.map(async (item) => {
+            const previewUrl = await getSignedJobAttachmentUrl(item.file_url, 3600, {
+              width: 1200,
+              height: 900,
+              quality: 78,
+              resize: "contain",
+            });
+            return [item.file_url, previewUrl] as const;
+          }),
         );
-        setSignedUrls(imageUrls);
+        setSignedUrls(
+          new Map(previewEntries.filter((entry): entry is [string, string] => Boolean(entry[1]))),
+        );
       }
     } catch (loadError) {
       console.error("Failed to load Foreman site content", loadError);
@@ -327,9 +333,7 @@ export const ForemanSitePage: React.FC = () => {
       } catch {
         // The in-memory fixture remains usable if storage is unavailable.
       }
-      setSignedUrls((current) =>
-        new Map(current).set(localPath, { fullUrl: previewUrl, thumbUrl: previewUrl }),
-      );
+      setSignedUrls((current) => new Map(current).set(localPath, previewUrl));
       toast.success("Local test photo added");
       if (photoInputRef.current) photoInputRef.current.value = "";
       return;
@@ -422,9 +426,8 @@ export const ForemanSitePage: React.FC = () => {
   const imageAttachments = attachments.filter(
     (item) => item.type === "image_before" || item.type === "image_after",
   );
-  const fileAttachments = attachments.filter(
-    (item) => item.type !== "image_before" && item.type !== "image_after",
-  );
+  const galleryPhoto = gallery ? gallery.photos[gallery.index] : null;
+  const galleryPreviewUrl = galleryPhoto ? signedUrls.get(galleryPhoto.file_url) : null;
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 pb-12 sm:px-6 lg:py-10">
       <Link
@@ -478,7 +481,7 @@ export const ForemanSitePage: React.FC = () => {
           <div>
             <strong>Completed · view only</strong>
             <p className="mt-1 text-muted-foreground">
-              Photos, updates, files, and shift history remain available. New changes are closed.
+              Photos, updates, and shift history remain available. New changes are closed.
             </p>
           </div>
         </div>
@@ -534,53 +537,34 @@ export const ForemanSitePage: React.FC = () => {
           ) : (
             <p className="mt-4 text-sm text-muted-foreground">No crew is listed for this site.</p>
           )}
-          <div className="mt-5 flex flex-col gap-2 border-t border-border pt-4 sm:flex-row">
-            <a
-              href="#site-updates"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <MessageSquareText className="h-4 w-4" /> View updates
-            </a>
-            <a
-              href="#site-photos"
-              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-md border border-border bg-background px-4 text-sm font-medium text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-            >
-              <Camera className="h-4 w-4" /> View photos
-            </a>
-          </div>
         </section>
         <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-          <h2 className="text-xs font-black uppercase tracking-[0.14em]">Next shift</h2>
-          <p className="mt-4 text-xl font-black">
-            {nextShift ? formatUKDate(nextShift) : "No shift date"}
-          </p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {assignedShifts.length} assignment{assignedShifts.length === 1 ? "" : "s"} linked to
-            this site
-          </p>
-          <div className="mt-5 rounded-xl bg-secondary p-3 text-sm text-muted-foreground">
-            Contact operations for questions or blockers. Photos and files keep the authorised site
-            record together.
-          </div>
-          <div className="mt-4 border-t border-border pt-4">
-            <h3 className="text-xs font-black uppercase tracking-[0.14em]">Before you start</h3>
-            <dl className="mt-3 space-y-2 text-xs">
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Shift times</dt>
-                <dd className="font-semibold text-foreground">Not provided</dd>
+          <h2 className="text-xs font-black uppercase tracking-[0.14em]">Site shifts</h2>
+          <p className="mt-2 text-sm text-muted-foreground">Assignments grouped by date.</p>
+          <div className="mt-4 divide-y divide-border">
+            {shiftDates.map((shift) => (
+              <div
+                key={shift.date}
+                className="flex min-h-14 items-center justify-between gap-3 py-3"
+              >
+                <div>
+                  <p className="text-sm font-bold">{formatUKDate(shift.date)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {shift.mine ? "Your assignment" : "Assigned crew"} · {shift.total} crew
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${shift.date < today ? "bg-secondary text-muted-foreground" : "bg-primary/10 text-primary"}`}
+                >
+                  {shift.date < today ? "Past" : shift.date === today ? "Today" : "Upcoming"}
+                </span>
               </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Site contact</dt>
-                <dd className="font-semibold text-foreground">Not provided</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Access information</dt>
-                <dd className="font-semibold text-foreground">Not provided</dd>
-              </div>
-            </dl>
-            <p className="mt-3 text-xs leading-5 text-muted-foreground">
-              Contact operations if any of this information is needed for the shift.
-            </p>
+            ))}
+            {!shiftDates.length && (
+              <p className="py-6 text-center text-sm text-muted-foreground">
+                No scheduled shifts are available for this site.
+              </p>
+            )}
           </div>
         </section>
       </div>
@@ -626,21 +610,32 @@ export const ForemanSitePage: React.FC = () => {
         </div>
         <div className="mt-4 rounded-xl border border-border bg-background p-3">
           <div className="flex min-h-11 items-center justify-between gap-3 px-2 text-xs font-black uppercase tracking-[0.14em]">
-            <span>View photos</span>
+            <span>View-only gallery</span>
             <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
-              {imageAttachments.length ? "Available on this record" : "No photos yet"}
+              Before and after photos
             </span>
           </div>
           {imageAttachments.length ? (
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {imageAttachments.map((photo) => {
-                const urls = signedUrls.get(photo.file_url);
-                const card = (
-                  <>
-                    {urls?.thumbUrl ? (
+                const previewUrl = signedUrls.get(photo.file_url);
+                return (
+                  <button
+                    key={photo.id}
+                    type="button"
+                    onClick={() =>
+                      setGallery({
+                        photos: imageAttachments,
+                        index: imageAttachments.indexOf(photo),
+                      })
+                    }
+                    className="group relative overflow-hidden rounded-xl border border-border bg-background text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                    aria-label={`${photo.type === "image_before" ? "Before" : "After"} site photo`}
+                  >
+                    {previewUrl ? (
                       <img
-                        src={urls.thumbUrl}
-                        alt={photo.file_name}
+                        src={previewUrl}
+                        alt=""
                         loading="lazy"
                         className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
                       />
@@ -649,31 +644,10 @@ export const ForemanSitePage: React.FC = () => {
                         Preview unavailable
                       </div>
                     )}
-                    <p className="truncate px-2 py-2 text-xs text-muted-foreground">
-                      {photo.file_name}
-                    </p>
-                  </>
-                );
-                return urls?.fullUrl ? (
-                  <a
-                    key={photo.id}
-                    href={urls.fullUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="group overflow-hidden rounded-xl border border-border bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                  >
-                    {card}
-                  </a>
-                ) : (
-                  <div
-                    key={photo.id}
-                    className="overflow-hidden rounded-xl border border-border bg-background"
-                  >
-                    {card}
-                    <p className="border-t border-border px-2 py-2 text-xs text-muted-foreground">
-                      Preview unavailable
-                    </p>
-                  </div>
+                    <span className="absolute left-2 top-2 rounded bg-slate-900/80 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white">
+                      {photo.type === "image_before" ? "Before" : "After"}
+                    </span>
+                  </button>
                 );
               })}
             </div>
@@ -685,6 +659,72 @@ export const ForemanSitePage: React.FC = () => {
           )}
         </div>
       </section>
+
+      <Dialog open={!!gallery} onOpenChange={(open) => !open && setGallery(null)}>
+        <DialogContent className="max-w-2xl overflow-hidden bg-black p-0 !inset-x-auto !left-1/2 !top-1/2 !bottom-auto !-translate-x-1/2 !-translate-y-1/2 !rounded-lg !w-[calc(100%-2rem)] !max-h-[calc(100dvh-2rem)]">
+          {gallery && (
+            <div className="relative flex flex-col items-center">
+              <DialogTitle className="sr-only">Site photo gallery</DialogTitle>
+              <DialogDescription className="sr-only">
+                View-only {gallery.index + 1} of {gallery.photos.length} site photos.
+              </DialogDescription>
+              {galleryPreviewUrl ? (
+                <img
+                  src={galleryPreviewUrl}
+                  alt={
+                    gallery.photos[gallery.index].type === "image_before"
+                      ? "Before site photo"
+                      : "After site photo"
+                  }
+                  className="max-h-[70vh] w-full bg-black object-contain"
+                />
+              ) : (
+                <div className="flex h-64 w-full items-center justify-center bg-black text-sm text-white/70">
+                  Preview unavailable
+                </div>
+              )}
+              {gallery.photos.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    aria-label="Previous photo"
+                    onClick={() =>
+                      setGallery({
+                        photos: gallery.photos,
+                        index: (gallery.index - 1 + gallery.photos.length) % gallery.photos.length,
+                      })
+                    }
+                    className="absolute left-2 top-1/2 min-h-11 min-w-11 -translate-y-1/2 rounded-full bg-black/60 p-2.5 text-white hover:bg-black/80"
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Next photo"
+                    onClick={() =>
+                      setGallery({
+                        photos: gallery.photos,
+                        index: (gallery.index + 1) % gallery.photos.length,
+                      })
+                    }
+                    className="absolute right-2 top-1/2 min-h-11 min-w-11 -translate-y-1/2 rounded-full bg-black/60 p-2.5 text-white hover:bg-black/80"
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </button>
+                </>
+              )}
+              <div className="flex w-full items-center justify-between gap-3 bg-card px-4 py-3 text-xs text-muted-foreground">
+                <span className="font-bold text-foreground">
+                  {gallery.photos[gallery.index].type === "image_before" ? "Before" : "After"}
+                </span>
+                <span>
+                  {gallery.index + 1}/{gallery.photos.length} · View only
+                </span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
         <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
@@ -727,72 +767,25 @@ export const ForemanSitePage: React.FC = () => {
       </section>
 
       <section
-        id="site-files"
-        className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
-      >
-        <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
-          <span>Site files</span>
-          <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
-            {fileAttachments.length} file{fileAttachments.length === 1 ? "" : "s"}
-          </span>
-        </div>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Files authorised for this assigned site.
-        </p>
-        {fileAttachments.length ? (
-          <div className="mt-5 divide-y divide-border">
-            {fileAttachments.map((file) => (
-              <button
-                key={file.id}
-                type="button"
-                className="flex min-h-16 w-full items-center gap-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                onClick={async () => {
-                  const url = await getSignedJobAttachmentUrl(file.file_url, 300);
-                  if (url) window.open(url, "_blank", "noopener,noreferrer");
-                  else toast.error("This file could not be opened");
-                }}
-              >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-secondary">
-                  <Paperclip className="h-4 w-4" aria-hidden="true" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold">{file.file_name}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    {formatBytes(file.file_size_bytes)} · Site file
-                  </span>
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-5 rounded-xl border border-dashed border-border px-5 py-10 text-center">
-            <Paperclip className="mx-auto h-7 w-7 text-muted-foreground/60" aria-hidden="true" />
-            <p className="mt-3 text-sm text-muted-foreground">No site files yet.</p>
-          </div>
-        )}
-      </section>
-
-      <section
         id="site-shifts"
         className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
       >
         <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
           <span>Site shifts</span>
           <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
-            {assignedShifts.length} shift{assignedShifts.length === 1 ? "" : "s"}
+            {shiftDates.length} date{shiftDates.length === 1 ? "" : "s"}
           </span>
         </div>
         <p className="mt-3 text-sm text-muted-foreground">
-          Assignments linked to this site and your staff record.
+          Assignments grouped by date for this site.
         </p>
         <div className="mt-5 divide-y divide-border">
-          {assignedShifts.map((shift) => (
-            <div key={shift.id} className="flex min-h-14 items-center justify-between gap-3 py-3">
+          {shiftDates.map((shift) => (
+            <div key={shift.date} className="flex min-h-14 items-center justify-between gap-3 py-3">
               <div>
                 <p className="text-sm font-bold">{formatUKDate(shift.date)}</p>
                 <p className="text-xs text-muted-foreground">
-                  {shift.workerId === currentStaffId ? "Your assignment" : "Assigned crew"}
+                  {shift.mine ? "Your assignment" : "Assigned crew"} · {shift.total} crew
                 </p>
               </div>
               <span
@@ -802,7 +795,7 @@ export const ForemanSitePage: React.FC = () => {
               </span>
             </div>
           ))}
-          {!assignedShifts.length && (
+          {!shiftDates.length && (
             <p className="py-8 text-center text-sm text-muted-foreground">
               No shifts are available for this site.
             </p>

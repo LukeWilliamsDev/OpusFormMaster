@@ -279,7 +279,11 @@ export const ForemanWorkspacePage: React.FC = () => {
         )
         .in("job_id", assignedJobIds)
         .order("updated_at", { ascending: false }),
-      supabase.from("job_attachments").select("job_id").in("job_id", assignedJobIds),
+      supabase
+        .from("job_attachments")
+        .select("job_id")
+        .in("job_id", assignedJobIds)
+        .in("type", ["image_before", "image_after"]),
     ]);
 
     if (diaryResult.error) {
@@ -291,7 +295,7 @@ export const ForemanWorkspacePage: React.FC = () => {
 
     if (attachmentResult.error) {
       console.error("Failed to load assigned site attachments", attachmentResult.error);
-      setSiteDataError((previous) => previous ?? "Site files could not be loaded.");
+      setSiteDataError((previous) => previous ?? "Site photos could not be loaded.");
     } else {
       const counts: Record<string, number> = {};
       for (const row of attachmentResult.data ?? []) {

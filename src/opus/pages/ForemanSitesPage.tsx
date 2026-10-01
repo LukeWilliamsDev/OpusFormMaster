@@ -197,7 +197,7 @@ export const ForemanSitesPage: React.FC = () => {
             to="/portal/contact"
             className="mt-4 inline-flex min-h-11 items-center text-xs font-black uppercase tracking-widest text-primary underline-offset-4 hover:underline"
           >
-            Contact operations if you expected a site{" "}
+            Contact IT if you expected a site{" "}
             <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </section>

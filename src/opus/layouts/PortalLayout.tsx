@@ -306,7 +306,7 @@ export const PortalLayout: React.FC = () => {
               icon: HelpCircle,
             },
             {
-              label: role === "site_foreman" ? "Contact operations" : "Contact IT",
+              label: "Contact IT",
               href: "/portal/contact",
               icon: Mail,
             },
@@ -550,7 +550,7 @@ export const PortalLayout: React.FC = () => {
                       className="flex items-center space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer min-h-[44px]"
                     >
                       <Mail className="w-4 h-4 shrink-0" />
-                      <span>{role === "site_foreman" ? "Contact operations" : "Contact IT"}</span>
+                      <span>Contact IT</span>
                     </Link>
                     <Link
                       to="/portal/legal"

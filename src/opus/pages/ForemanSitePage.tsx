@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -114,6 +114,7 @@ function assignedWorkers(
 export const ForemanSitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const location = useLocation();
+  const navigate = useNavigate();
   const {
     user,
     profile,
@@ -141,7 +142,7 @@ export const ForemanSitePage: React.FC = () => {
     index: number;
   } | null>(null);
   const [activeSection, setActiveSection] = useState<SiteSection>(() =>
-    typeof window === "undefined" ? "work" : siteSectionFromHash(window.location.hash),
+    siteSectionFromHash(location.hash),
   );
   const [documentViewer, setDocumentViewer] = useState<{
     name: string;
@@ -193,17 +194,17 @@ export const ForemanSitePage: React.FC = () => {
   const isLocalFixture = Boolean(jobId?.startsWith("local-foreman-"));
 
   useEffect(() => {
-    const onHashChange = () => setActiveSection(siteSectionFromHash(window.location.hash));
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
+    setActiveSection(siteSectionFromHash(location.hash));
+  }, [location.hash]);
 
   const selectSiteSection = (section: SiteSection) => {
-    setActiveSection(section);
-    window.history.replaceState(
-      null,
-      "",
-      `${location.pathname}${location.search}#${SITE_SECTION_HASHES[section]}`,
+    navigate(
+      {
+        pathname: location.pathname,
+        search: location.search,
+        hash: `#${SITE_SECTION_HASHES[section]}`,
+      },
+      { replace: true },
     );
   };
 

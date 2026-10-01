@@ -26,12 +26,16 @@ type HelpItem = {
   content: React.ReactNode;
 };
 
-const ActionLink: React.FC<{ to: string; children: React.ReactNode }> = ({ to, children }) => (
+const InlineActionLink: React.FC<{ to: string; children: React.ReactNode }> = ({
+  to,
+  children,
+}) => (
   <Link
     to={to}
-    className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold uppercase tracking-wider text-primary-foreground"
+    className="inline-flex items-center gap-1 font-bold text-primary underline decoration-primary/40 underline-offset-4 hover:decoration-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
   >
-    {children} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+    {children}
+    <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
   </Link>
 );
 
@@ -323,11 +327,10 @@ const ThirdPartyHelp: React.FC = () => {
       content: (
         <>
           <p>
-            Open <strong className="text-foreground">Home</strong>, review{" "}
+            Open <InlineActionLink to="/portal/third-party">Home</InlineActionLink>, review{" "}
             <strong className="text-foreground">Needs attention</strong>, open the linked record,
             and confirm the new status or item.
           </p>
-          <ActionLink to="/portal/third-party">Open Home</ActionLink>
         </>
       ),
     },
@@ -338,12 +341,11 @@ const ThirdPartyHelp: React.FC = () => {
       content: (
         <>
           <p>
-            Open <strong className="text-foreground">Staff</strong>, choose{" "}
+            Open <InlineActionLink to="/portal/third-party/staff">Staff</InlineActionLink>, choose{" "}
             <strong className="text-foreground">Add staff member</strong>, and submit accurate
             details. Pending submissions await Opus Form review. You can update your own staff
             details.
           </p>
-          <ActionLink to="/portal/third-party/staff">Open Staff</ActionLink>
         </>
       ),
     },
@@ -366,14 +368,13 @@ const ThirdPartyHelp: React.FC = () => {
       content: (
         <>
           <p>
-            Open <strong className="text-foreground">Assigned Sites</strong> (shown as{" "}
-            <strong className="text-foreground">Sites</strong> on mobile), search by site name or
-            postcode, and use <strong className="text-foreground">All</strong>,{" "}
+            Open <InlineActionLink to="/portal/third-party/sites">Assigned Sites</InlineActionLink>{" "}
+            (shown as <strong className="text-foreground">Sites</strong> on mobile), search by site
+            name or postcode, and use <strong className="text-foreground">All</strong>,{" "}
             <strong className="text-foreground">Open</strong>,{" "}
             <strong className="text-foreground">Needs attention</strong>, or{" "}
             <strong className="text-foreground">Completed</strong>.
           </p>
-          <ActionLink to="/portal/third-party/sites">Open Sites</ActionLink>
         </>
       ),
     },
@@ -445,12 +446,11 @@ const ForemanHelp: React.FC = () => (
         content: (
           <>
             <p>
-              Open <strong className="text-foreground">Today</strong>, complete the update, then
-              choose <strong className="text-foreground">Save draft</strong> or{" "}
+              Open <InlineActionLink to="/portal/foreman">Today</InlineActionLink>, complete the
+              update, then choose <strong className="text-foreground">Save draft</strong> or{" "}
               <strong className="text-foreground">Submit update</strong>. At risk and Blocked
               statuses need blocker details.
             </p>
-            <ActionLink to="/portal/foreman">Open Today</ActionLink>
           </>
         ),
       },

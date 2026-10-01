@@ -1,2 +1,2 @@
 npx lint-staged
-npm run quality:contract -- --staged-only
+QUALITY_BASE_REF="${QUALITY_BASE_REF:-origin/main}" npm run quality:contract -- --staged-only

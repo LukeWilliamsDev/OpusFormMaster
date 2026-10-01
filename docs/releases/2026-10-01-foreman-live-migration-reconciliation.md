@@ -12,16 +12,16 @@ canonical repository versions below were then recorded in
 `supabase_migrations.schema_migrations` so future direct migration work does
 not replay these changes.
 
-| Repository migration | Generated remote version |
-| --- | --- |
-| `20260928085000_foreman_remote_tenant_compatibility.sql` | `20261001012930` |
-| `20260928090100_site_foreman_workspace_access.sql` | `20261001012946` |
-| `20260929090000_foreman_job_note_conversations.sql` | `20261001013015` |
-| `20260929100000_foreman_access_hardening.sql` | `20261001013022` |
-| `20260929110000_foreman_release_security.sql` | `20261001013031` |
-| `20260929120000_reconciled_foreman_schema.sql` | `20261001013039` |
-| `20260929130000_management_certificate_access.sql` | `20261001013045` |
-| `20260930100000_exclude_labourer_operational_data.sql` | `20261001013054` |
+| Repository migration                                     | Generated remote version |
+| -------------------------------------------------------- | ------------------------ |
+| `20260928085000_foreman_remote_tenant_compatibility.sql` | `20261001012930`         |
+| `20260928090100_site_foreman_workspace_access.sql`       | `20261001012946`         |
+| `20260929090000_foreman_job_note_conversations.sql`      | `20261001013015`         |
+| `20260929100000_foreman_access_hardening.sql`            | `20261001013022`         |
+| `20260929110000_foreman_release_security.sql`            | `20261001013031`         |
+| `20260929120000_reconciled_foreman_schema.sql`           | `20261001013039`         |
+| `20260929130000_management_certificate_access.sql`       | `20261001013045`         |
+| `20260930100000_exclude_labourer_operational_data.sql`   | `20261001013054`         |
 
 ## Verification
 

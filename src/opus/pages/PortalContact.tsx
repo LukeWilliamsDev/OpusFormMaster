@@ -2,8 +2,12 @@ import React, { useState } from "react";
 import { ArrowLeft, CheckCircle2, Clock3, Mail, Send, ShieldCheck } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "../../integrations/supabase/client";
+import { usePortal } from "../context/PortalContext";
 
 export const PortalContactPage: React.FC = () => {
+  const { role } = usePortal();
+  const isForeman = role === "site_foreman";
+  const contactTeam = isForeman ? "operations" : "IT";
   const [form, setForm] = useState({ category: "", subject: "", message: "" });
   const [status, setStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [sending, setSending] = useState(false);
@@ -40,7 +44,9 @@ export const PortalContactPage: React.FC = () => {
     setForm({ category: "", subject: "", message: "" });
     setStatus({
       type: "success",
-      text: "Message sent. Opus Form IT has received your request and will reply during working hours.",
+      text: isForeman
+        ? "Message sent. Operations has received your request and will reply during working hours."
+        : "Message sent. Opus Form IT has received your request and will reply during working hours.",
     });
   };
 
@@ -61,12 +67,14 @@ export const PortalContactPage: React.FC = () => {
             </div>
             <div>
               <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-primary">
-                Opus Form IT
+                {isForeman ? "Opus Form operations" : "Opus Form IT"}
               </div>
-              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Contact IT</h1>
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+                Contact {contactTeam}
+              </h1>
               <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-                Send a question or report a problem to IT. Your signed-in email address will be
-                included so the team can reply. We normally respond during working hours.
+                Send a question or report a problem to {contactTeam}. Your signed-in email address
+                will be included so the team can reply. We normally respond during working hours.
               </p>
             </div>
           </div>
@@ -160,16 +168,19 @@ export const PortalContactPage: React.FC = () => {
                   className={`rounded-lg border px-3 py-2.5 text-sm ${status.type === "success" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "border-destructive/30 bg-destructive/10 text-destructive"}`}
                 >
                   {status.text}
-                  {status.type === "error" && (
-                    <>
-                      {" "}
-                      Try again, or email IT directly at{" "}
-                      <a href="mailto:luke@opusform.co.uk" className="font-bold underline">
-                        luke@opusform.co.uk
-                      </a>
-                      .
-                    </>
-                  )}
+                  {status.type === "error" &&
+                    (isForeman ? (
+                      <> Try again, or contact operations directly.</>
+                    ) : (
+                      <>
+                        {" "}
+                        Try again, or email IT directly at{" "}
+                        <a href="mailto:luke@opusform.co.uk" className="font-bold underline">
+                          luke@opusform.co.uk
+                        </a>
+                        .
+                      </>
+                    ))}
                 </p>
               )}
               <button
@@ -192,8 +203,8 @@ export const PortalContactPage: React.FC = () => {
                 </h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-[#d8d1c6]">
-                Your signed-in email address is included automatically. IT normally replies during
-                working hours.
+                Your signed-in email address is included automatically. {contactTeam} normally
+                replies during working hours.
               </p>
               <div className="mt-4 flex items-start gap-2 border-t border-[#405257] pt-4 text-xs leading-5 text-[#c5c0b8]">
                 <CheckCircle2
@@ -221,7 +232,7 @@ export const PortalContactPage: React.FC = () => {
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          Your message will be sent securely to the Opus Form IT team.
+          Your message will be sent securely to the Opus Form {contactTeam} team.
         </p>
       </div>
     </div>

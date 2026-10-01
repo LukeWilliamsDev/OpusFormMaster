@@ -14,6 +14,7 @@ import {
   AppRole,
   ASSIGNED_SHIFT_ROLES,
   MANAGEMENT_ROLES,
+  MANAGEMENT_WRITE_ROLES,
   FIELD_ROLES,
   PORTAL_ACCESS_ROLES,
 } from "./context/PortalContext";
@@ -65,6 +66,17 @@ const CalendarPage = lazyRoute(() =>
 );
 const MyShiftsPage = lazyRoute(() =>
   import("./pages/MyShiftsPage").then((module) => ({ default: module.MyShiftsPage })),
+);
+const ForemanWorkspacePage = lazyRoute(() =>
+  import("./pages/ForemanWorkspace").then((module) => ({
+    default: module.ForemanWorkspacePage,
+  })),
+);
+const ForemanSitesPage = lazyRoute(() =>
+  import("./pages/ForemanSitesPage").then((module) => ({ default: module.ForemanSitesPage })),
+);
+const ForemanSitePage = lazyRoute(() =>
+  import("./pages/ForemanSitePage").then((module) => ({ default: module.ForemanSitePage })),
 );
 const ThirdPartyPortalPage = lazyRoute(() =>
   import("./pages/ThirdPartyPortalPage").then((module) => ({
@@ -390,6 +402,30 @@ export default function App() {
                   }
                 />
                 <Route
+                  path="/portal/foreman"
+                  element={
+                    <RoleGuard allow={["site_foreman"]}>
+                      <ForemanWorkspacePage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/portal/foreman/sites/:jobId"
+                  element={
+                    <RoleGuard allow={["site_foreman"]}>
+                      <ForemanSitePage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/portal/foreman/sites"
+                  element={
+                    <RoleGuard allow={["site_foreman"]}>
+                      <ForemanSitesPage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
                   path="/portal/third-party"
                   element={
                     <RoleGuard allow={["third_party"]}>
@@ -464,7 +500,7 @@ export default function App() {
                 <Route
                   path="/portal/third-party-approvals"
                   element={
-                    <RoleGuard allow={MANAGEMENT_ROLES}>
+                    <RoleGuard allow={MANAGEMENT_WRITE_ROLES}>
                       <ThirdPartyApprovalsPage />
                     </RoleGuard>
                   }
@@ -601,10 +637,14 @@ const RoleAwareFallback: React.FC = () => {
   const target =
     role === "third_party"
       ? "/portal/third-party"
-      : role && ASSIGNED_SHIFT_ROLES.includes(role)
-        ? "/portal/no-access"
-        : role === "logistics_assistant"
-          ? "/portal/roster?view=calendar"
-          : "/portal/dashboard";
+      : role === "site_foreman"
+        ? "/portal/foreman"
+        : role === "labourer"
+          ? "/portal/no-access"
+          : role && ASSIGNED_SHIFT_ROLES.includes(role)
+            ? "/portal/no-access"
+            : role === "logistics_assistant"
+              ? "/portal/roster?view=calendar"
+              : "/portal/dashboard";
   return <Navigate to={target} replace />;
 };

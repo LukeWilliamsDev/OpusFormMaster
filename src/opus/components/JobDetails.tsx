@@ -473,17 +473,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("job-attachments").getPublicUrl(filePath);
-
       // Insert attachment record
       const { error: insertError } = await supabase.from("job_attachments").insert({
         job_id: job.id,
         type,
         file_name: file.name,
-        file_url: publicUrl,
+        // The bucket is private; store the object path and sign it at read time.
+        file_url: filePath,
         file_size_bytes: uploadFile.size,
         uploaded_by: "Supervisor",
       });

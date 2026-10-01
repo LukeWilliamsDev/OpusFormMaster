@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import {
   AlertCircle,
   ArrowRight,
+  CalendarDays,
   CheckCircle2,
   ChevronDown,
   FileDown,
@@ -10,215 +11,44 @@ import {
   Image,
   LayoutDashboard,
   ListChecks,
-  LockKeyhole,
   MessageSquareText,
   Paperclip,
   Smartphone,
   Users,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { usePortal } from "../context/PortalContext";
 
-type HelpSection = {
-  id: string;
+type HelpItem = {
   title: string;
   summary: string;
   icon: React.ComponentType<{ className?: string }>;
   content: React.ReactNode;
 };
 
-const HelpSections: HelpSection[] = [
-  {
-    id: "staff",
-    title: "Add or manage staff",
-    summary: "Submit people for review and keep their records current.",
-    icon: Users,
-    content: (
-      <div className="space-y-3 text-sm leading-6 text-muted-foreground">
-        <p>
-          Open <strong className="text-foreground">Staff</strong> to search approved staff and
-          people awaiting review. Select{" "}
-          <strong className="text-foreground">Add staff member</strong>, enter accurate details, and
-          submit the record to Opus Form.
-        </p>
-        <p>
-          A new submission is <strong className="text-foreground">Pending review</strong> until Opus
-          Form checks it. It will not create site access until approved. You can upload certificates
-          after submitting and edit the staff member’s name, role, email, phone, and postcode.
-        </p>
-        <Link
-          to="/portal/third-party/staff"
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold uppercase tracking-wider text-primary-foreground"
-        >
-          Open Staff <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </Link>
-      </div>
-    ),
-  },
-  {
-    id: "certificates",
-    title: "Upload or renew a certificate",
-    summary: "Add evidence, replace an expiry, and understand the review status.",
-    icon: FileText,
-    content: (
-      <div className="space-y-3 text-sm leading-6 text-muted-foreground">
-        <p>
-          Open a staff record and choose{" "}
-          <strong className="text-foreground">Add certificate</strong> or{" "}
-          <strong className="text-foreground">Replace</strong>. Enter the certificate type, number,
-          and expiry date, then upload a PDF, JPG, JPEG, or PNG file no larger than 10 MB.
-        </p>
-        <p>
-          Replacing evidence creates a new current record; previous versions remain available to
-          Opus Form for audit. Uploading a document does not approve it: Opus Form completes the
-          review.
-        </p>
-        <p>
-          <strong className="text-foreground">Valid</strong> means current.{" "}
-          <strong className="text-foreground">Expiring</strong> means renewal may be needed soon.{" "}
-          <strong className="text-foreground">Expired</strong> means it is no longer current.{" "}
-          <strong className="text-foreground">Needs review</strong> means Opus Form needs to check
-          it.
-        </p>
-        <Link
-          to="/portal/third-party/staff"
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold uppercase tracking-wider text-primary-foreground"
-        >
-          Open Staff <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </Link>
-      </div>
-    ),
-  },
-  {
-    id: "sites",
-    title: "Find an assigned site",
-    summary: "Search sites, filter by status, and open the right record.",
-    icon: Image,
-    content: (
-      <div className="space-y-3 text-sm leading-6 text-muted-foreground">
-        <p>
-          Select <strong className="text-foreground">Sites</strong> to see locations linked to your
-          approved staff through their assignments. Sites are assigned by Opus Form; they are not
-          added manually by third-party users.
-        </p>
-        <p>
-          Search by site name or postcode and use the filters for{" "}
-          <strong className="text-foreground">All</strong>,{" "}
-          <strong className="text-foreground">Open</strong>,{" "}
-          <strong className="text-foreground">Needs attention</strong>, or{" "}
-          <strong className="text-foreground">Completed</strong>.
-        </p>
-        <Link
-          to="/portal/third-party/sites"
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold uppercase tracking-wider text-primary-foreground"
-        >
-          Open Sites <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </Link>
-      </div>
-    ),
-  },
-  {
-    id: "updates",
-    title: "Add a note or upload a file",
-    summary: "Share a site update and confirm that it was saved.",
-    icon: MessageSquareText,
-    content: (
-      <div className="space-y-3 text-sm leading-6 text-muted-foreground">
-        <p>
-          Open an open site and check its name before using{" "}
-          <strong className="text-foreground">Add a note</strong> or the attachment upload control.
-          Keep notes factual and relevant. You can reply to Opus Form’s responses; use a new note
-          for a new update.
-        </p>
-        <p>
-          Site attachments are limited to 10 MB per file. Accepted types are PDF, DOC, DOCX, XLS,
-          XLSX, and TXT. Use a clear filename and upload only information relevant to that site.
-          Site photos supplied by Opus Form are view-only.
-        </p>
-        <p>
-          After posting or uploading, confirm the new item appears in the conversation or file list.
-          If an upload fails, check the size and file type before trying again.
-        </p>
-        <Link
-          to="/portal/third-party/sites"
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold uppercase tracking-wider text-primary-foreground"
-        >
-          Open Sites <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </Link>
-      </div>
-    ),
-  },
-  {
-    id: "completed",
-    title: "View a completed site",
-    summary: "Completed records stay available as read-only history.",
-    icon: CheckCircle2,
-    content: (
-      <div className="space-y-3 text-sm leading-6 text-muted-foreground">
-        <p>
-          Completed sites remain in <strong className="text-foreground">Sites</strong> so you can
-          view their photos, attachments, notes, replies, assigned staff, and completion details.
-        </p>
-        <p>
-          A completed site is <strong className="text-foreground">view-only</strong>. You cannot add
-          notes, upload attachments, rename files, or delete content from it.
-        </p>
-        <Link
-          to="/portal/third-party/sites?filter=completed"
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold uppercase tracking-wider text-primary-foreground"
-        >
-          View Site History <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-        </Link>
-      </div>
-    ),
-  },
-  {
-    id: "mobile",
-    title: "Use the portal on a phone",
-    summary: "Home, Staff, Sites, Help, and More stay available on small screens.",
-    icon: Smartphone,
-    content: (
-      <ul className="list-disc space-y-2 pl-5 text-sm leading-6 text-muted-foreground">
-        <li>Use the bottom navigation to move between Home, Staff, Sites, and Help.</li>
-        <li>
-          Use <strong className="text-foreground">More</strong> for Contact IT, settings, legal,
-          theme, and logout.
-        </li>
-        <li>
-          On a detail page, the bottom navigation remains available so you do not need to go back
-          repeatedly.
-        </li>
-        <li>Cards and actions stack vertically. Scroll down to see the complete record.</li>
-      </ul>
-    ),
-  },
-];
+const ActionLink: React.FC<{ to: string; children: React.ReactNode }> = ({ to, children }) => (
+  <Link
+    to={to}
+    className="inline-flex min-h-10 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold uppercase tracking-wider text-primary-foreground"
+  >
+    {children} <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+  </Link>
+);
 
-const STATUS_ITEMS = [
-  [
-    "Needs attention",
-    "A certificate, submission, or site update needs action. Open the linked item.",
-  ],
-  [
-    "Pending review",
-    "Submitted to Opus Form and awaiting review. No further action is needed unless requested.",
-  ],
-  ["Valid", "The certificate is current."],
-  ["Expiring", "Renewal may be needed before the expiry date."],
-  ["Expired", "The certificate is no longer current; upload a replacement."],
-  ["Needs review", "Opus Form needs to check the certificate or supporting evidence."],
-  [
-    "Completed — view only",
-    "Site work is complete. History remains available, but new updates are disabled.",
-  ],
-];
-
-export const PortalHelpPage: React.FC = () => {
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set(["staff"]));
-  const toggleSection = (id: string) =>
+const HelpLayout: React.FC<{
+  label: string;
+  title: string;
+  intro: string;
+  items: HelpItem[];
+  support: "it" | "operations";
+  pdf?: boolean;
+}> = ({ label, title, intro, items, support, pdf = false }) => {
+  const [openSections, setOpenSections] = useState<Set<string>>(new Set([items[0]?.title]));
+  const toggle = (title: string) =>
     setOpenSections((current) => {
       const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(title)) next.delete(title);
+      else next.add(title);
       return next;
     });
 
@@ -228,66 +58,11 @@ export const PortalHelpPage: React.FC = () => {
         <header className="max-w-3xl">
           <div className="mb-3 flex items-center gap-2 text-xs font-black uppercase tracking-[0.18em] text-primary">
             <HelpCircle className="h-4 w-4" aria-hidden="true" />
-            Third-party portal help
+            {label}
           </div>
-          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Complete a task</h1>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-            Use the links below to manage staff, check certificates, and update assigned sites. If
-            you are unsure what to do next, start with{" "}
-            <strong className="text-foreground">Needs attention</strong> on Home.
-          </p>
+          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{title}</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">{intro}</p>
         </header>
-
-        <section
-          className="overflow-hidden rounded-2xl border border-[#35464a] bg-[#18252a] text-[#f7f4ee] shadow-lg"
-          aria-labelledby="quick-start-heading"
-        >
-          <div className="grid gap-6 p-5 sm:p-7 lg:grid-cols-[0.9fr_1.4fr] lg:items-center">
-            <div>
-              <div className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#d79a5b]">
-                <ListChecks className="h-4 w-4" aria-hidden="true" />
-                Quick start
-              </div>
-              <h2 id="quick-start-heading" className="text-2xl font-black tracking-tight">
-                Know what needs doing
-              </h2>
-              <p className="mt-3 max-w-sm text-sm leading-6 text-[#d8d1c6]">
-                The Home screen brings together staff, certificate, and site actions that need your
-                attention. Start there when you are not sure where to begin.
-              </p>
-              <Link
-                to="/portal/third-party"
-                className="mt-5 inline-flex min-h-11 items-center gap-2 rounded-lg bg-[#b5651d] px-4 text-xs font-black uppercase tracking-wider text-white hover:bg-[#c4772c]"
-              >
-                <LayoutDashboard className="h-4 w-4" aria-hidden="true" />
-                Open Home
-              </Link>
-            </div>
-            <ol className="grid gap-2 sm:grid-cols-2">
-              {[
-                ["Open Home", "See the current picture."],
-                ["Review Needs attention items", "Find the item that needs action."],
-                ["Open the linked record", "Check the staff member or site."],
-                ["Complete and confirm", "Look for the updated status or new item."],
-              ].map(([title, description], index) => (
-                <li
-                  key={title}
-                  className="flex gap-3 rounded-xl border border-[#405257] bg-[#223238] p-3.5"
-                >
-                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#b5651d] text-xs font-black text-white">
-                    {index + 1}
-                  </span>
-                  <span>
-                    <strong className="block text-xs font-bold text-[#f7f4ee]">{title}</strong>
-                    <span className="mt-1 block text-[11px] leading-4 text-[#c5c0b8]">
-                      {description}
-                    </span>
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </div>
-        </section>
 
         <section aria-labelledby="help-topics-heading">
           <div className="mb-4 flex items-end justify-between gap-4">
@@ -296,37 +71,43 @@ export const PortalHelpPage: React.FC = () => {
                 What do you need to do?
               </h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                Open one or more tasks for the steps and the correct place to start.
+                Open a task for the steps and the correct place to start.
               </p>
             </div>
-            <a
-              href="/guides/third-party-portal-user-guide.pdf"
-              download
-              className="hidden items-center gap-2 text-xs font-bold text-primary hover:underline sm:flex"
-            >
-              <FileDown className="h-4 w-4" aria-hidden="true" />
-              Download PDF guide · v2.0 · Updated September 2026
-            </a>
+            {pdf && (
+              <a
+                href="/guides/third-party-portal-user-guide.pdf"
+                download
+                className="hidden items-center gap-2 text-xs font-bold text-primary hover:underline sm:flex"
+              >
+                <FileDown className="h-4 w-4" aria-hidden="true" /> Download PDF guide · v2.0
+              </a>
+            )}
           </div>
           <div className="space-y-3">
-            {HelpSections.map(({ id, title, summary, icon: Icon, content }) => {
-              const isOpen = openSections.has(id);
+            {items.map((item) => {
+              const Icon = item.icon;
+              const isOpen = openSections.has(item.title);
               return (
-                <div key={id} className="overflow-hidden rounded-xl border border-border bg-card">
+                <div
+                  key={item.title}
+                  className="overflow-hidden rounded-xl border border-border bg-card"
+                >
                   <h3 className="m-0">
                     <button
                       type="button"
                       aria-expanded={isOpen}
-                      aria-controls={`help-${id}`}
-                      onClick={() => toggleSection(id)}
-                      className="flex min-h-[72px] w-full items-center gap-4 px-4 py-4 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50 sm:px-5"
+                      onClick={() => toggle(item.title)}
+                      className="flex min-h-[72px] w-full items-center gap-4 px-4 py-4 text-left hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/50 sm:px-5"
                     >
                       <span className="rounded-lg bg-primary/10 p-2 text-primary">
                         <Icon className="h-5 w-5" aria-hidden="true" />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block text-sm font-bold">{title}</span>
-                        <span className="mt-1 block text-xs text-muted-foreground">{summary}</span>
+                        <span className="block text-sm font-bold">{item.title}</span>
+                        <span className="mt-1 block text-xs text-muted-foreground">
+                          {item.summary}
+                        </span>
                       </span>
                       <ChevronDown
                         className={`h-5 w-5 shrink-0 text-muted-foreground transition-transform ${isOpen ? "rotate-180" : ""}`}
@@ -335,62 +116,48 @@ export const PortalHelpPage: React.FC = () => {
                     </button>
                   </h3>
                   {isOpen && (
-                    <div id={`help-${id}`} className="border-t border-border px-4 py-4 sm:px-5">
-                      {content}
+                    <div className="border-t border-border px-4 py-4 text-sm leading-6 text-muted-foreground sm:px-5">
+                      {item.content}
                     </div>
                   )}
                 </div>
               );
             })}
           </div>
-          <a
-            href="/guides/third-party-portal-user-guide.pdf"
-            download
-            className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-3 text-xs font-bold text-primary hover:bg-muted sm:hidden"
-          >
-            <FileDown className="h-4 w-4" aria-hidden="true" />
-            Download the PDF guide · v2.0 · Updated September 2026
-          </a>
+          {pdf && (
+            <a
+              href="/guides/third-party-portal-user-guide.pdf"
+              download
+              className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-border px-4 py-3 text-xs font-bold text-primary hover:bg-muted sm:hidden"
+            >
+              <FileDown className="h-4 w-4" aria-hidden="true" /> Download the PDF guide · v2.0
+            </a>
+          )}
         </section>
 
-        <div className="grid gap-5 lg:grid-cols-2">
-          <section
-            className="rounded-xl border border-border bg-card p-5"
-            aria-labelledby="status-heading"
-          >
-            <div className="flex items-center gap-3">
-              <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
-              <h2 id="status-heading" className="text-base font-bold">
-                Status words
-              </h2>
-            </div>
-            <dl className="mt-4 divide-y divide-border">
-              {STATUS_ITEMS.map(([term, description]) => (
-                <div key={term} className="py-3 first:pt-0 last:pb-0">
-                  <dt className="text-sm font-semibold">{term}</dt>
-                  <dd className="mt-1 text-xs leading-5 text-muted-foreground">{description}</dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-          <section
-            className="rounded-xl border border-border bg-card p-5"
-            aria-labelledby="rules-heading"
-          >
-            <div className="flex items-center gap-3">
-              <Paperclip className="h-5 w-5 text-primary" aria-hidden="true" />
-              <h2 id="rules-heading" className="text-base font-bold">
-                File and access rules
-              </h2>
-            </div>
-            <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
-              <li>Certificates: PDF, JPG, JPEG, or PNG; maximum 10 MB.</li>
-              <li>Site attachments: maximum 10 MB per file; upload only relevant information.</li>
-              <li>Never share your password or sign-in link.</li>
-              <li>Completed sites are view-only.</li>
-            </ul>
-          </section>
-        </div>
+        <section
+          className="rounded-xl border border-border bg-card p-5"
+          aria-labelledby="rules-heading"
+        >
+          <div className="flex items-center gap-3">
+            <Paperclip className="h-5 w-5 text-primary" aria-hidden="true" />
+            <h2 id="rules-heading" className="text-base font-bold">
+              Access and mobile guidance
+            </h2>
+          </div>
+          <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+            <li>
+              Use the exact navigation labels shown in this guide. On a phone, open{" "}
+              <strong className="text-foreground">More</strong> for navigation that is not in the
+              bottom bar.
+            </li>
+            <li>
+              Cards and actions stack vertically on small screens; scroll to see the complete
+              record.
+            </li>
+            <li>Never share your password or sign-in link.</li>
+          </ul>
+        </section>
 
         <section
           className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-5"
@@ -400,19 +167,18 @@ export const PortalHelpPage: React.FC = () => {
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
             <div>
               <h2 id="support-heading" className="text-base font-bold">
-                Contact IT
+                {support === "it" ? "Contact IT" : "Contact operations"}
               </h2>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Use Contact IT for access problems, missing records, upload errors, or site-note
-                issues. Include the site or staff name, what you were doing, approximate time,
-                device/browser, and exact error. Do not include passwords, sign-in links, payment
-                details, or unrelated personal information.
+                {support === "it"
+                  ? "Use Contact IT for access problems, missing records, or errors. Include what you were doing, the approximate time, device/browser, and exact error."
+                  : "Use Contact operations for access problems, missing assignments, blockers, or questions about a site update."}
               </p>
               <Link
                 to="/portal/contact"
-                className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
+                className="mt-4 inline-flex min-h-[44px] items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-primary-foreground"
               >
-                Contact IT
+                {support === "it" ? "Contact IT" : "Contact operations"}
               </Link>
             </div>
           </div>
@@ -420,4 +186,338 @@ export const PortalHelpPage: React.FC = () => {
       </div>
     </div>
   );
+};
+
+const InternalHelp: React.FC<{
+  role: "admin" | "director" | "logistics_coordinator" | "logistics_assistant";
+}> = ({ role }) => {
+  const assistant = role === "logistics_assistant";
+  const coordinator = role === "logistics_coordinator";
+  const director = role === "director";
+  const title =
+    role === "admin"
+      ? "Manage the whole portal"
+      : director
+        ? "Manage operations and people"
+        : coordinator
+          ? "Coordinate site operations"
+          : "Review operational information";
+  const restriction = assistant
+    ? "Most operational pages are read-only for this role. Staff Approvals and general job, staff, schedule, note, attachment, quote, and document edits are not available. Certificate Checker is a separate exception for recording a CSCS outcome."
+    : director
+      ? "Users is available. Tenant-wide Audit Log and Policies are not available to this role."
+      : coordinator
+        ? "Users, tenant-wide Audit Log, and Policies are not available to this role."
+        : "You can manage portal users, review the tenant-wide Audit Log, and manage Policies.";
+  const items: HelpItem[] = [
+    {
+      title: "Review operations",
+      summary: "Use the operational pages available to your role.",
+      icon: LayoutDashboard,
+      content: (
+        <p>
+          Use <strong className="text-foreground">Dashboard</strong>,{" "}
+          <strong className="text-foreground">Job Ledger</strong>,{" "}
+          <strong className="text-foreground">Site Schedule</strong>, and{" "}
+          <strong className="text-foreground">Calendar</strong> to see jobs, schedules, and events.{" "}
+          {assistant
+            ? "The verified assistant access is for review; treat these records as read-only."
+            : "Your role can update operational records where the page provides an edit action."}
+        </p>
+      ),
+    },
+    {
+      title: "Staff and certificates",
+      summary: assistant
+        ? "Find staff records and read certificate status."
+        : "Manage staff records and certificate checks.",
+      icon: Users,
+      content: (
+        <p>
+          Open <strong className="text-foreground">Staff</strong> to find staff and certificate
+          information.{" "}
+          {assistant
+            ? "Review staff records and status. Use Certificate Checker only when you need to record a CSCS outcome; other certificate and evidence changes are not available here."
+            : "You can manage staff and certificates according to your role."}
+        </p>
+      ),
+    },
+    {
+      title: "Schedule and approvals",
+      summary: assistant
+        ? "Review schedules without promising edits."
+        : "Assign people and review submissions.",
+      icon: CalendarDays,
+      content: (
+        <p>
+          Use <strong className="text-foreground">Site Schedule</strong> and{" "}
+          <strong className="text-foreground">Calendar</strong> to plan work.{" "}
+          {assistant ? (
+            "Staff Approvals are not available to this role. You can review the staff view and schedule; schedule changes are not available."
+          ) : (
+            <>
+              Use <strong className="text-foreground">Staff Approvals</strong> to review
+              submissions, then assign staff to sites.
+            </>
+          )}
+        </p>
+      ),
+    },
+    {
+      title: "Quotes and documents",
+      summary: assistant
+        ? "Review financial records only."
+        : "Create and manage operational documents.",
+      icon: FileText,
+      content: (
+        <p>
+          Open <strong className="text-foreground">Quotes</strong> to track quotes and related
+          documents.{" "}
+          {assistant
+            ? "The verified UI presents Pipeline and financial records as view-only; do not create or edit quotes or documents."
+            : "You can create and manage quotes and operational documents."}
+        </p>
+      ),
+    },
+    {
+      title: "Your access boundaries",
+      summary: "Know what this role can see and change.",
+      icon: CheckCircle2,
+      content: <p>{restriction}</p>,
+    },
+    {
+      title: "Use the portal on mobile",
+      summary: "Navigate internal pages on a small screen.",
+      icon: Smartphone,
+      content: (
+        <p>
+          Use the bottom navigation where available. Open{" "}
+          <strong className="text-foreground">More</strong> for{" "}
+          <strong className="text-foreground">Help</strong>,{" "}
+          <strong className="text-foreground">Contact IT</strong>, settings, legal, theme, and sign
+          out. Scroll through stacked cards to reach all actions.
+        </p>
+      ),
+    },
+  ];
+  return (
+    <HelpLayout
+      label={`${role.replaceAll("_", " ")} help`}
+      title={title}
+      intro="Use the pages and exact navigation labels below to complete your role’s work. Help describes verified access, not every control that may appear on screen."
+      items={items}
+      support="it"
+    />
+  );
+};
+
+const ThirdPartyHelp: React.FC = () => {
+  const items: HelpItem[] = [
+    {
+      title: "Start from Portal Home",
+      summary: "See staff, certificate, and site items needing attention.",
+      icon: LayoutDashboard,
+      content: (
+        <>
+          <p>
+            Open <strong className="text-foreground">Home</strong>, review{" "}
+            <strong className="text-foreground">Needs attention</strong>, open the linked record,
+            and confirm the new status or item.
+          </p>
+          <ActionLink to="/portal/third-party">Open Home</ActionLink>
+        </>
+      ),
+    },
+    {
+      title: "Add or manage your staff",
+      summary: "Submit people and keep your records current.",
+      icon: Users,
+      content: (
+        <>
+          <p>
+            Open <strong className="text-foreground">Staff</strong>, choose{" "}
+            <strong className="text-foreground">Add staff member</strong>, and submit accurate
+            details. Pending submissions await Opus Form review. You can update your own staff
+            details.
+          </p>
+          <ActionLink to="/portal/third-party/staff">Open Staff</ActionLink>
+        </>
+      ),
+    },
+    {
+      title: "Upload or renew a certificate",
+      summary: "Add evidence and understand review status.",
+      icon: FileText,
+      content: (
+        <p>
+          On a staff record choose <strong className="text-foreground">Add certificate</strong> or{" "}
+          <strong className="text-foreground">Replace</strong>. Upload PDF, JPG, JPEG, or PNG files
+          up to 10 MB. Uploading does not approve the certificate; Opus Form reviews it.
+        </p>
+      ),
+    },
+    {
+      title: "Find an assigned site",
+      summary: "Search sites linked to your approved staff.",
+      icon: Image,
+      content: (
+        <>
+          <p>
+            Open <strong className="text-foreground">Assigned Sites</strong> (shown as{" "}
+            <strong className="text-foreground">Sites</strong> on mobile), search by site name or
+            postcode, and use <strong className="text-foreground">All</strong>,{" "}
+            <strong className="text-foreground">Open</strong>,{" "}
+            <strong className="text-foreground">Needs attention</strong>, or{" "}
+            <strong className="text-foreground">Completed</strong>.
+          </p>
+          <ActionLink to="/portal/third-party/sites">Open Sites</ActionLink>
+        </>
+      ),
+    },
+    {
+      title: "Add a note or upload a file",
+      summary: "Update an open assigned site.",
+      icon: MessageSquareText,
+      content: (
+        <p>
+          On an open site choose <strong className="text-foreground">Add a note</strong> or the
+          attachment upload control. Files are limited to 10 MB. Your conversation contains your
+          notes and replies attached to those notes; it does not expose internal-only notes.
+        </p>
+      ),
+    },
+    {
+      title: "View completed site history",
+      summary: "Completed sites remain read-only.",
+      icon: CheckCircle2,
+      content: (
+        <p>
+          Open <strong className="text-foreground">Sites</strong> and filter{" "}
+          <strong className="text-foreground">Completed</strong>. You can view history, but cannot
+          add notes or upload, rename, or delete content.
+        </p>
+      ),
+    },
+    {
+      title: "Use the portal on mobile",
+      summary: "Find Home, Staff, Sites, Help, and More.",
+      icon: Smartphone,
+      content: (
+        <p>
+          Use the bottom navigation for <strong className="text-foreground">Home</strong>,{" "}
+          <strong className="text-foreground">Staff</strong>,{" "}
+          <strong className="text-foreground">Sites</strong>, and{" "}
+          <strong className="text-foreground">Help</strong>. Use{" "}
+          <strong className="text-foreground">More</strong> for{" "}
+          <strong className="text-foreground">Contact IT</strong>, settings, legal, theme, and
+          logout.
+        </p>
+      ),
+    },
+  ];
+  return (
+    <HelpLayout
+      label="Third-party portal help"
+      title="Complete a task"
+      intro="Use the links below to manage your staff, certificates, and assigned sites. Start with Home when you are unsure what needs attention."
+      items={items}
+      support="it"
+      pdf
+    />
+  );
+};
+
+const ForemanHelp: React.FC = () => (
+  <HelpLayout
+    label="Foreman help"
+    title="Run today’s site work"
+    intro="Use Today, Sites, Shifts, and More to complete assigned site work. Completed sites stay read-only."
+    support="operations"
+    items={[
+      {
+        title: "Complete Today’s Site Update",
+        summary: "Record progress and the next-shift handoff.",
+        icon: ListChecks,
+        content: (
+          <>
+            <p>
+              Open <strong className="text-foreground">Today</strong>, complete the update, then
+              choose <strong className="text-foreground">Save draft</strong> or{" "}
+              <strong className="text-foreground">Submit update</strong>. At risk and Blocked
+              statuses need blocker details.
+            </p>
+            <ActionLink to="/portal/foreman">Open Today</ActionLink>
+          </>
+        ),
+      },
+      {
+        title: "Report a blocker or risk",
+        summary: "Give operations the detail they need.",
+        icon: AlertCircle,
+        content: (
+          <p>
+            Use the update form on <strong className="text-foreground">Today</strong> to record a
+            blocker or risk. Contact operations if an assignment or site is missing.
+          </p>
+        ),
+      },
+      {
+        title: "Add a site photo",
+        summary: "Keep an assigned site record current.",
+        icon: Image,
+        content: (
+          <p>
+            Open the site and choose <strong className="text-foreground">Add photo</strong>. Photos
+            must be 10 MB or smaller. Completed sites cannot be changed.
+          </p>
+        ),
+      },
+      {
+        title: "Find assigned sites and shifts",
+        summary: "Review current, upcoming, and past assignments.",
+        icon: CalendarDays,
+        content: (
+          <p>
+            Use <strong className="text-foreground">Sites</strong> to search and{" "}
+            <strong className="text-foreground">Shifts</strong> for assignments. On mobile, open{" "}
+            <strong className="text-foreground">More</strong> for{" "}
+            <strong className="text-foreground">Help</strong>,{" "}
+            <strong className="text-foreground">Contact operations</strong>, settings, legal, theme,
+            and sign out.
+          </p>
+        ),
+      },
+      {
+        title: "Contact operations",
+        summary: "Ask about blockers, assignments, or missing sites.",
+        icon: MessageSquareText,
+        content: (
+          <p>
+            Use <strong className="text-foreground">Contact operations</strong> on the site record
+            to send an internal update to operations. Completed sites are{" "}
+            <strong className="text-foreground">view-only</strong>.
+          </p>
+        ),
+      },
+    ]}
+  />
+);
+
+const NoAccess: React.FC = () => (
+  <div className="flex flex-1 items-center justify-center bg-background px-6 py-12 text-foreground">
+    <section className="max-w-lg rounded-2xl border border-border bg-card p-6 text-center">
+      <h1 className="text-xl font-black">Portal access is not enabled for this account.</h1>
+      <p className="mt-3 text-sm leading-6 text-muted-foreground">
+        Contact Opus Form if you expected access.
+      </p>
+    </section>
+  </div>
+);
+
+export const PortalHelpPage: React.FC = () => {
+  const { role } = usePortal();
+  if (role === "labourer" || !role) return <NoAccess />;
+  if (role === "site_foreman") return <ForemanHelp />;
+  if (role === "third_party") return <ThirdPartyHelp />;
+  return <InternalHelp role={role} />;
 };

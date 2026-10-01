@@ -49,7 +49,15 @@ export function isRelevantFile(file) {
 
 export function changedFiles({ baseRef = process.env.QUALITY_BASE_REF, stagedOnly = false } = {}) {
   if (stagedOnly) {
-    return uniquePaths(runGit(["diff", "--cached", "--name-only", "--diff-filter=ACMRD", "HEAD"]));
+    const staged = runGit(["diff", "--cached", "--name-only", "--diff-filter=ACMRD", "HEAD"]);
+    if (baseRef && hasGitRevision(baseRef)) {
+      return uniquePaths(
+        [runGit(["diff", "--name-only", "--diff-filter=ACMRD", `${baseRef}...HEAD`]), staged].join(
+          "\n",
+        ),
+      );
+    }
+    return uniquePaths(staged);
   }
 
   if (hasGitRevision(baseRef)) {

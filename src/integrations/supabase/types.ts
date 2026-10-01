@@ -310,34 +310,40 @@ export type Database = {
       };
       job_attachments: {
         Row: {
+          foreman_visible: boolean;
           file_name: string;
           file_size_bytes: number;
           file_url: string;
           id: string;
           job_id: string;
           tenant_id: string;
+          third_party_visible: boolean;
           type: string;
           uploaded_at: string | null;
           uploaded_by: string;
         };
         Insert: {
+          foreman_visible?: boolean;
           file_name: string;
           file_size_bytes?: number;
           file_url: string;
           id?: string;
           job_id: string;
           tenant_id?: string;
+          third_party_visible?: boolean;
           type: string;
           uploaded_at?: string | null;
           uploaded_by: string;
         };
         Update: {
+          foreman_visible?: boolean;
           file_name?: string;
           file_size_bytes?: number;
           file_url?: string;
           id?: string;
           job_id?: string;
           tenant_id?: string;
+          third_party_visible?: boolean;
           type?: string;
           uploaded_at?: string | null;
           uploaded_by?: string;

@@ -52,6 +52,11 @@ interface MediaTabProps {
   renameValue: string;
   setRenameValue: (v: string) => void;
   executeRenameAttachment: () => Promise<void>;
+  updateDocumentVisibility: (
+    attachmentId: string,
+    audience: "foreman_visible" | "third_party_visible",
+    visible: boolean,
+  ) => Promise<void>;
 }
 
 export interface Attachment {
@@ -64,6 +69,8 @@ export interface Attachment {
   uploaded_by?: string;
   thumb_url?: string;
   raw_file_url?: string;
+  foreman_visible?: boolean;
+  third_party_visible?: boolean;
 }
 
 const DOC_GROUPS: { label: string; match: RegExp }[] = [
@@ -99,6 +106,7 @@ export function MediaTab({
   renameValue,
   setRenameValue,
   executeRenameAttachment,
+  updateDocumentVisibility,
 }: MediaTabProps) {
   // Before/after now share one grid (see below) — newest first, each
   // thumbnail carries its own Before/After badge instead of a toggle
@@ -342,7 +350,7 @@ export function MediaTab({
                         {docs.map((d) => (
                           <div
                             key={d.id}
-                            className="group relative flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-lg hover:border-muted-foreground/40 transition-all"
+                            className="group relative flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background p-2.5 transition-all hover:border-muted-foreground/40"
                           >
                             <button
                               type="button"
@@ -353,9 +361,41 @@ export function MediaTab({
                                 {d.file_name}
                               </span>
                             </button>
-                            <span className="text-[10.5px] text-muted-foreground font-medium shrink-0">
-                              {new Date(d.uploaded_at || 0).toLocaleDateString("en-GB")}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-2 text-[10.5px] font-medium text-muted-foreground">
+                              <label className="inline-flex cursor-pointer items-center gap-1.5">
+                                <input
+                                  type="checkbox"
+                                  checked={d.foreman_visible === true}
+                                  onChange={(event) =>
+                                    void updateDocumentVisibility(
+                                      d.id,
+                                      "foreman_visible",
+                                      event.target.checked,
+                                    )
+                                  }
+                                  className="h-3.5 w-3.5 accent-primary"
+                                />
+                                Foreman
+                              </label>
+                              <label className="inline-flex cursor-pointer items-center gap-1.5">
+                                <input
+                                  type="checkbox"
+                                  checked={d.third_party_visible === true}
+                                  onChange={(event) =>
+                                    void updateDocumentVisibility(
+                                      d.id,
+                                      "third_party_visible",
+                                      event.target.checked,
+                                    )
+                                  }
+                                  className="h-3.5 w-3.5 accent-primary"
+                                />
+                                Third party
+                              </label>
+                              <span>
+                                {new Date(d.uploaded_at || 0).toLocaleDateString("en-GB")}
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>

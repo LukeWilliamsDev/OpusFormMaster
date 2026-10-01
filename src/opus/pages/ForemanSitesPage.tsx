@@ -49,14 +49,22 @@ const buildQuery = (search: string, filter: SiteFilter) => {
 
 function foremanStatusLabel(status: string): string {
   const normalized = status.toLowerCase().trim();
-  if (["completed", "complete", "closed"].includes(normalized)) return "Complete";
+  if (["completed", "complete", "closed"].includes(normalized)) return "Completed";
   if (["in-progress", "active"].includes(normalized)) return "In progress";
   if (normalized === "on-hold") return "Blocked";
   return "Ready to start";
 }
 
 export const ForemanSitesPage: React.FC = () => {
-  const { currentStaffId, jobs, shifts, dataLoading, dataError, reloadPortalData } = usePortal();
+  const {
+    currentStaffId,
+    jobs,
+    shifts,
+    dataLoading,
+    dataRefreshError,
+    dataError,
+    reloadPortalData,
+  } = usePortal();
   const location = useLocation();
   const navigate = useNavigate();
   const params = useMemo(() => new URLSearchParams(location.search), [location.search]);
@@ -162,6 +170,11 @@ export const ForemanSitesPage: React.FC = () => {
             {todayJobs.length} today · {upcomingJobs.length} upcoming · {completedJobs.length}{" "}
             completed
           </p>
+          {dataRefreshError && (
+            <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" role="status">
+              {dataRefreshError}
+            </p>
+          )}
         </div>
         {todayJobs[0] && (
           <Link

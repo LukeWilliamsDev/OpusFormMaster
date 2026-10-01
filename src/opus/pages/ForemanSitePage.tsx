@@ -52,7 +52,7 @@ function initials(name: string): string {
 }
 
 function statusLabel(status: string): string {
-  if (["completed", "complete", "closed"].includes(status.toLowerCase().trim())) return "Complete";
+  if (["completed", "complete", "closed"].includes(status.toLowerCase().trim())) return "Completed";
   if (status === "in-progress" || status === "active") return "In progress";
   if (status === "on-hold") return "Blocked";
   return "Ready to start";
@@ -60,7 +60,7 @@ function statusLabel(status: string): string {
 
 function statusClasses(status: string): string {
   if (["completed", "complete", "closed"].includes(status.toLowerCase().trim()))
-    return "bg-secondary text-muted-foreground";
+    return "bg-emerald-100 text-emerald-800 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-400/20 dark:text-emerald-100 dark:ring-emerald-400/30";
   if (status === "in-progress" || status === "active")
     return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
   return "bg-amber-500/10 text-amber-700 dark:text-amber-300";
@@ -111,17 +111,21 @@ export const ForemanSitePage: React.FC = () => {
     jobs,
     shifts,
     dataLoading,
+    dataRefreshing,
+    dataRefreshError,
     dataError,
     reloadPortalData,
   } = usePortal();
   const today = londonToday();
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const siteContentLoadedRef = useRef(false);
   const [diaryRows, setDiaryRows] = useState<DiaryRow[]>([]);
   const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
   const [signedUrls, setSignedUrls] = useState<
     Map<string, { fullUrl: string | null; thumbUrl: string | null }>
   >(new Map());
   const [loading, setLoading] = useState(false);
+  const [refreshingSite, setRefreshingSite] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -167,9 +171,12 @@ export const ForemanSitePage: React.FC = () => {
       setAttachments([]);
       setSignedUrls(new Map());
       setError(null);
+      siteContentLoadedRef.current = true;
       return;
     }
-    setLoading(true);
+    const initialLoad = !siteContentLoadedRef.current;
+    if (initialLoad) setLoading(true);
+    else setRefreshingSite(true);
     setError(null);
     try {
       if (isLocalFixture) {
@@ -264,8 +271,18 @@ export const ForemanSitePage: React.FC = () => {
       setError("Site details could not be loaded. Try again.");
     } finally {
       setLoading(false);
+      setRefreshingSite(false);
+      siteContentLoadedRef.current = true;
     }
   }, [hasCurrentAssignment, isLocalFixture, jobId, today]);
+
+  useEffect(() => {
+    siteContentLoadedRef.current = false;
+    setDiaryRows([]);
+    setAttachments([]);
+    setSignedUrls(new Map());
+    setLoading(true);
+  }, [jobId]);
 
   useEffect(() => {
     void loadSiteContent();
@@ -428,6 +445,20 @@ export const ForemanSitePage: React.FC = () => {
             <MapPin className="h-4 w-4" aria-hidden="true" />{" "}
             {job.postcode || "Postcode not provided"} · {job.jobRef}
           </p>
+          <p
+            className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"
+            aria-live="polite"
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${dataRefreshError ? "bg-amber-500" : dataRefreshing || refreshingSite ? "animate-pulse bg-primary" : "bg-emerald-600"}`}
+              aria-hidden="true"
+            />
+            {dataRefreshError
+              ? dataRefreshError
+              : dataRefreshing || refreshingSite
+                ? "Updating site record…"
+                : "Live updates enabled"}
+          </p>
         </div>
         <span
           className={`w-fit rounded-full px-3 py-1.5 text-xs font-black uppercase tracking-wider ${statusClasses(job.status)}`}
@@ -438,14 +469,14 @@ export const ForemanSitePage: React.FC = () => {
       {readOnly && (
         <div
           role="status"
-          className="flex items-start gap-3 rounded-2xl border border-border bg-secondary p-4 text-sm"
+          className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-400/30 dark:bg-emerald-950/30 dark:text-emerald-100"
         >
           <CheckCircle2
-            className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground"
+            className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-300"
             aria-hidden="true"
           />
           <div>
-            <strong className="text-foreground">Completed — view only</strong>
+            <strong>Completed · view only</strong>
             <p className="mt-1 text-muted-foreground">
               Photos, updates, files, and shift history remain available. New changes are closed.
             </p>
@@ -473,13 +504,13 @@ export const ForemanSitePage: React.FC = () => {
         id="site-overview"
         className="scroll-mt-24 grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]"
       >
-        <details className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em] [&::-webkit-details-marker]:hidden">
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
             <span>Assigned crew</span>
             <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-black text-muted-foreground">
               {crew.length} assigned
             </span>
-          </summary>
+          </div>
           {crew.length ? (
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {crew.map((member) => (
@@ -517,7 +548,7 @@ export const ForemanSitePage: React.FC = () => {
               <Camera className="h-4 w-4" /> View photos
             </a>
           </div>
-        </details>
+        </section>
         <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
           <h2 className="text-xs font-black uppercase tracking-[0.14em]">Next shift</h2>
           <p className="mt-4 text-xl font-black">
@@ -593,13 +624,13 @@ export const ForemanSitePage: React.FC = () => {
             </>
           )}
         </div>
-        <details className="mt-4 rounded-xl border border-border bg-background p-3">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-2 text-xs font-black uppercase tracking-[0.14em] [&::-webkit-details-marker]:hidden">
+        <div className="mt-4 rounded-xl border border-border bg-background p-3">
+          <div className="flex min-h-11 items-center justify-between gap-3 px-2 text-xs font-black uppercase tracking-[0.14em]">
             <span>View photos</span>
             <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
-              {imageAttachments.length ? "Expand gallery" : "No photos yet"}
+              {imageAttachments.length ? "Available on this record" : "No photos yet"}
             </span>
-          </summary>
+          </div>
           {imageAttachments.length ? (
             <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
               {imageAttachments.map((photo) => {
@@ -652,16 +683,16 @@ export const ForemanSitePage: React.FC = () => {
               <p className="mt-3 text-sm text-muted-foreground">No site photos yet.</p>
             </div>
           )}
-        </details>
+        </div>
       </section>
 
-      <details className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em] [&::-webkit-details-marker]:hidden">
+      <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
           <span>Previous updates</span>
           <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
             {legacyDiaryRows.length} older record{legacyDiaryRows.length === 1 ? "" : "s"}
           </span>
-        </summary>
+        </div>
         <p className="mt-3 text-sm text-muted-foreground">
           Older diary records retained for reference. New updates appear in Today&apos;s site
           update.
@@ -693,18 +724,18 @@ export const ForemanSitePage: React.FC = () => {
             No previous updates are available.
           </p>
         )}
-      </details>
+      </section>
 
-      <details
+      <section
         id="site-files"
         className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
       >
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em] [&::-webkit-details-marker]:hidden">
+        <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
           <span>Site files</span>
           <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
             {fileAttachments.length} file{fileAttachments.length === 1 ? "" : "s"}
           </span>
-        </summary>
+        </div>
         <p className="mt-3 text-sm text-muted-foreground">
           Files authorised for this assigned site.
         </p>
@@ -740,18 +771,18 @@ export const ForemanSitePage: React.FC = () => {
             <p className="mt-3 text-sm text-muted-foreground">No site files yet.</p>
           </div>
         )}
-      </details>
+      </section>
 
-      <details
+      <section
         id="site-shifts"
         className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
       >
-        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em] [&::-webkit-details-marker]:hidden">
+        <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
           <span>Site shifts</span>
           <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
             {assignedShifts.length} shift{assignedShifts.length === 1 ? "" : "s"}
           </span>
-        </summary>
+        </div>
         <p className="mt-3 text-sm text-muted-foreground">
           Assignments linked to this site and your staff record.
         </p>
@@ -777,7 +808,7 @@ export const ForemanSitePage: React.FC = () => {
             </p>
           )}
         </div>
-      </details>
+      </section>
     </div>
   );
 };

@@ -322,6 +322,8 @@ interface PortalContextType {
   isAuthenticated: boolean;
   authLoading: boolean;
   dataLoading: boolean;
+  dataRefreshing: boolean;
+  dataRefreshError: string | null;
   dataError: string | null;
   reloadPortalData: () => void;
   session: Session | null;
@@ -372,6 +374,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [dataRefreshing, setDataRefreshing] = useState(false);
+  const [dataRefreshError, setDataRefreshError] = useState<string | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
   const [dataLoadAttempt, setDataLoadAttempt] = useState(0);
 
@@ -547,10 +551,20 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Load operational data from Supabase whenever we have a signed-in user.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !role) {
+      if (!user) {
+        setDataLoading(true);
+        setDataRefreshing(false);
+        setDataRefreshError(null);
+      }
+      return;
+    }
     let cancelled = false;
     (async () => {
-      setDataLoading(true);
+      const initialDataLoad = !hydratedRef.current;
+      setDataRefreshing(true);
+      setDataRefreshError(null);
+      if (initialDataLoad) setDataLoading(true);
       setDataError(null);
       const startStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
       const endStr = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -607,18 +621,26 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         foremanIdentityRes.error && "foreman identity",
       ].filter(Boolean) as string[];
       if (failedResources.length) {
-        // Never retain an earlier assignment set after a failed refresh. A
-        // stale set is an authorization leak for revoked foreman assignments.
-        setCurrentStaffId(null);
-        setWorkers([]);
-        setJobs([]);
-        setShifts([]);
-        setCalendarEvents([]);
-        hydratedRef.current = false;
-        setDataError(
-          `We could not load ${failedResources.join(", ")}. Check your connection and try again.`,
-        );
+        const message = `We could not refresh ${failedResources.join(", ")}.`;
+        if (initialDataLoad) {
+          // Do not retain an earlier assignment set after the initial load
+          // fails; there is no verified content to keep on screen yet.
+          setCurrentStaffId(null);
+          setWorkers([]);
+          setJobs([]);
+          setShifts([]);
+          setCalendarEvents([]);
+          hydratedRef.current = false;
+          setDataError(`${message} Check your connection and try again.`);
+        } else {
+          // A transient background failure must not blank a page the user is
+          // actively reading. A successful response with no assignments still
+          // replaces the data, so revoked access is not retained indefinitely.
+          setDataRefreshError(`${message} Showing the last loaded data.`);
+          setDataError(null);
+        }
         setDataLoading(false);
+        setDataRefreshing(false);
         return;
       }
       setCurrentStaffId(
@@ -782,6 +804,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setTimeout(() => {
         hydratedRef.current = true;
         setDataLoading(false);
+        setDataRefreshing(false);
       }, 50);
     })();
     return () => {
@@ -1310,6 +1333,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isAuthenticated: !!session,
         authLoading,
         dataLoading,
+        dataRefreshing,
+        dataRefreshError,
         dataError,
         reloadPortalData,
         session,

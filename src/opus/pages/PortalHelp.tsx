@@ -42,8 +42,11 @@ const HelpLayout: React.FC<{
   items: HelpItem[];
   support: "it" | "operations";
   pdf?: boolean;
-}> = ({ label, title, intro, items, support, pdf = false }) => {
-  const [openSections, setOpenSections] = useState<Set<string>>(new Set([items[0]?.title]));
+  openAll?: boolean;
+}> = ({ label, title, intro, items, support, pdf = false, openAll = false }) => {
+  const [openSections, setOpenSections] = useState<Set<string>>(
+    new Set(openAll ? items.map((item) => item.title) : items[0] ? [items[0].title] : []),
+  );
   const toggle = (title: string) =>
     setOpenSections((current) => {
       const next = new Set(current);
@@ -430,13 +433,14 @@ const ThirdPartyHelp: React.FC = () => {
 const ForemanHelp: React.FC = () => (
   <HelpLayout
     label="Foreman help"
-    title="Run today’s site work"
-    intro="Use Today, Sites, Shifts, and More to complete assigned site work. Completed sites stay read-only."
+    title="Run assigned site work"
+    intro="Use Today, Assigned sites, Shifts, and More to manage assigned site work. Completed sites stay available as green, view-only records."
     support="operations"
+    openAll
     items={[
       {
-        title: "Complete Today’s Site Update",
-        summary: "Record progress and the next-shift handoff.",
+        title: "Submit today’s site update",
+        summary: "Record progress and hand off clearly to the next shift.",
         icon: ListChecks,
         content: (
           <>
@@ -452,7 +456,7 @@ const ForemanHelp: React.FC = () => (
       },
       {
         title: "Report a blocker or risk",
-        summary: "Give operations the detail they need.",
+        summary: "Give operations the detail they need to respond.",
         icon: AlertCircle,
         content: (
           <p>
@@ -463,7 +467,7 @@ const ForemanHelp: React.FC = () => (
       },
       {
         title: "Add a site photo",
-        summary: "Keep an assigned site record current.",
+        summary: "Keep the assigned site record current.",
         icon: Image,
         content: (
           <p>
@@ -474,11 +478,12 @@ const ForemanHelp: React.FC = () => (
       },
       {
         title: "Find assigned sites and shifts",
-        summary: "Review current, upcoming, and past assignments.",
+        summary: "Review today’s, upcoming, and completed assignments.",
         icon: CalendarDays,
         content: (
           <p>
-            Use <strong className="text-foreground">Sites</strong> to search and{" "}
+            Use <strong className="text-foreground">Assigned sites</strong> (shown as{" "}
+            <strong className="text-foreground">Sites</strong> on mobile) to search and{" "}
             <strong className="text-foreground">Shifts</strong> for assignments. On mobile, open{" "}
             <strong className="text-foreground">More</strong> for{" "}
             <strong className="text-foreground">Help</strong>,{" "}
@@ -489,7 +494,7 @@ const ForemanHelp: React.FC = () => (
       },
       {
         title: "Contact operations",
-        summary: "Ask about blockers, assignments, or missing sites.",
+        summary: "Ask about blockers, assignments, or missing site information.",
         icon: MessageSquareText,
         content: (
           <p>

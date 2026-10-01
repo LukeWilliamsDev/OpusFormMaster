@@ -84,7 +84,7 @@ function initials(name: string): string {
 
 function statusLabel(status: Job["status"]): string {
   if (status === "in-progress" || status === "active") return "In progress";
-  if (isCompletedStatus(status)) return "Complete";
+  if (isCompletedStatus(status)) return "Completed";
   if (status === "on-hold") return "Blocked";
   return "Ready to start";
 }
@@ -93,7 +93,8 @@ function statusClasses(status: Job["status"]): string {
   if (status === "in-progress" || status === "active") {
     return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
   }
-  if (isCompletedStatus(status)) return "bg-secondary text-muted-foreground";
+  if (isCompletedStatus(status))
+    return "bg-emerald-100 text-emerald-800 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-400/20 dark:text-emerald-100 dark:ring-emerald-400/30";
   return "bg-amber-500/10 text-amber-700 dark:text-amber-300";
 }
 
@@ -144,11 +145,14 @@ export const ForemanWorkspacePage: React.FC = () => {
     jobs,
     shifts,
     dataLoading,
+    dataRefreshing,
+    dataRefreshError,
     dataError,
     reloadPortalData,
   } = usePortal();
   const today = londonToday();
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const siteDataLoadedRef = useRef(false);
   const [diaryRows, setDiaryRows] = useState<DiaryRow[]>([]);
   const [photoCounts, setPhotoCounts] = useState<Record<string, number>>({});
   const [loadingSiteData, setLoadingSiteData] = useState(false);
@@ -219,13 +223,17 @@ export const ForemanWorkspacePage: React.FC = () => {
       setDiaryRows([]);
       setPhotoCounts({});
       setSiteDataError(null);
+      siteDataLoadedRef.current = true;
       return;
     }
 
+    const initialSiteDataLoad = !siteDataLoadedRef.current;
     setLoadingSiteData(true);
     setSiteDataError(null);
-    setDiaryRows([]);
-    setPhotoCounts({});
+    if (initialSiteDataLoad) {
+      setDiaryRows([]);
+      setPhotoCounts({});
+    }
     const localJobIds = assignedJobIds.filter((jobId) =>
       jobId.startsWith(LOCAL_FOREMAN_JOB_PREFIX),
     );
@@ -260,6 +268,7 @@ export const ForemanWorkspacePage: React.FC = () => {
         ),
       );
       setLoadingSiteData(false);
+      siteDataLoadedRef.current = true;
       return;
     }
     const [diaryResult, attachmentResult] = await Promise.all([
@@ -291,6 +300,7 @@ export const ForemanWorkspacePage: React.FC = () => {
       setPhotoCounts(counts);
     }
     setLoadingSiteData(false);
+    siteDataLoadedRef.current = true;
   };
 
   useEffect(() => {
@@ -410,6 +420,20 @@ export const ForemanWorkspacePage: React.FC = () => {
             {formatUKDate(today)} · Open today&apos;s site to see the work, photos, site log, and
             operations conversation.
           </p>
+          <p
+            className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"
+            aria-live="polite"
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${dataRefreshError ? "bg-amber-500" : dataRefreshing ? "animate-pulse bg-primary" : "bg-emerald-600"}`}
+              aria-hidden="true"
+            />
+            {dataRefreshError
+              ? dataRefreshError
+              : dataRefreshing
+                ? "Updating assignments…"
+                : "Live updates enabled"}
+          </p>
         </div>
       </header>
 
@@ -462,11 +486,13 @@ export const ForemanWorkspacePage: React.FC = () => {
                 <h2 className="text-xs font-black uppercase tracking-[0.14em] text-foreground">
                   Today&apos;s site
                 </h2>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary px-2.5 py-1 text-[10px] font-black uppercase tracking-wider text-muted-foreground">
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${currentSiteIsReadOnly ? "bg-emerald-100 text-emerald-800 ring-1 ring-inset ring-emerald-200 dark:bg-emerald-400/20 dark:text-emerald-100 dark:ring-emerald-400/30" : "bg-secondary text-muted-foreground"}`}
+                >
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
                   {currentJob
                     ? currentSiteIsReadOnly
-                      ? "Completed — view only"
+                      ? "Completed · view only"
                       : "Assigned today"
                     : "No site today"}
                 </span>
@@ -532,7 +558,11 @@ export const ForemanWorkspacePage: React.FC = () => {
                         to={`/portal/foreman/sites/${currentJob.id}#today-site-update`}
                         className="inline-flex min-h-11 items-center text-xs font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
-                        {currentTodayDiary ? "Edit today&apos;s update" : "Add today&apos;s update"}
+                        {currentSiteIsReadOnly
+                          ? "View today's update"
+                          : currentTodayDiary
+                            ? "Edit today's update"
+                            : "Add today's update"}
                         <ArrowRight className="ml-1 h-3.5 w-3.5" aria-hidden="true" />
                       </Link>
                     </div>
@@ -603,7 +633,7 @@ export const ForemanWorkspacePage: React.FC = () => {
               </h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 {currentSiteIsReadOnly
-                  ? "This completed site is view only. New updates are closed."
+                  ? "This site is completed and view only. New updates are closed."
                   : currentJob
                     ? "Need help or want to report a blocker?"
                     : "Open an assigned site to contact operations."}
@@ -645,13 +675,13 @@ export const ForemanWorkspacePage: React.FC = () => {
             </article>
           </section>
 
-          <details className="rounded-2xl border border-border bg-card p-5 md:hidden">
-            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+          <section className="rounded-2xl border border-border bg-card p-5 md:hidden">
+            <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
               Assigned crew
               <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] tracking-normal text-muted-foreground">
                 {currentCrew.length} assigned
               </span>
-            </summary>
+            </div>
             <div className="mt-4 divide-y divide-border border-t border-border pt-2">
               {currentCrew.length > 0 ? (
                 currentCrew.map((worker) => (
@@ -676,7 +706,7 @@ export const ForemanWorkspacePage: React.FC = () => {
                 </p>
               )}
             </div>
-          </details>
+          </section>
 
           <section
             id="foreman-site-diary"

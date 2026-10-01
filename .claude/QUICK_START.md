@@ -9,6 +9,7 @@ npm run dev      # Start dev server (vite)
 npm run test     # Run tests (vitest run)
 npm run build    # Build for production
 npm run lint     # eslint .
+npm run quality:gate  # contract + lint/format/typecheck/tests/build/bundle budget
 npm run format   # prettier --write .
 ```
 

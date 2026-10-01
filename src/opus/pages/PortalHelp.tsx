@@ -434,8 +434,8 @@ const ForemanHelp: React.FC = () => (
   <HelpLayout
     label="Foreman help"
     title="Run assigned site work"
-    intro="Use Today, Assigned sites, Shifts, and More to manage assigned site work. Completed sites stay available as green, view-only records."
-    support="operations"
+    intro="Use Today, Sites, Shifts, and More to manage assigned site work. Use Contact operations inside a site for work questions; use Contact IT for portal or technical problems."
+    support="it"
     openAll
     items={[
       {
@@ -461,7 +461,10 @@ const ForemanHelp: React.FC = () => (
         content: (
           <p>
             Use the update form on <strong className="text-foreground">Today</strong> to record a
-            blocker or risk. Contact operations if an assignment or site is missing.
+            blocker or risk. Contact operations in the site&apos;s{" "}
+            <strong className="text-foreground">Work</strong> section for assignment or site
+            questions. Use <strong className="text-foreground">Contact IT</strong> for portal
+            access, sign-in, or technical problems.
           </p>
         ),
       },
@@ -471,8 +474,10 @@ const ForemanHelp: React.FC = () => (
         icon: Image,
         content: (
           <p>
-            Open the site and choose <strong className="text-foreground">Add photo</strong>. Photos
-            must be 10 MB or smaller. Completed sites cannot be changed.
+            Open the site and use <strong className="text-foreground">Add before</strong> or{" "}
+            <strong className="text-foreground">Add after</strong>. Photos must be 10 MB or smaller.
+            Completed sites remain read-only for updates, but Before and After photos can still be
+            added; photos cannot be deleted.
           </p>
         ),
       },
@@ -487,20 +492,21 @@ const ForemanHelp: React.FC = () => (
             <strong className="text-foreground">Shifts</strong> for assignments. On mobile, open{" "}
             <strong className="text-foreground">More</strong> for{" "}
             <strong className="text-foreground">Help</strong>,{" "}
-            <strong className="text-foreground">Contact operations</strong>, settings, legal, theme,
-            and sign out.
+            <strong className="text-foreground">Contact IT</strong>, settings, legal, theme, and
+            sign out.
           </p>
         ),
       },
       {
-        title: "Contact operations",
-        summary: "Ask about blockers, assignments, or missing site information.",
+        title: "Contact operations on a site",
+        summary: "Ask about work, blockers, assignments, or site information.",
         icon: MessageSquareText,
         content: (
           <p>
-            Use <strong className="text-foreground">Contact operations</strong> on the site record
-            to send an internal update to operations. Completed sites are{" "}
-            <strong className="text-foreground">view-only</strong>.
+            Use <strong className="text-foreground">Contact operations</strong> in the site&apos;s{" "}
+            <strong className="text-foreground">Work</strong> section for work questions and
+            blockers. Use <strong className="text-foreground">Contact IT</strong> in More for portal
+            access, sign-in, or technical problems.
           </p>
         ),
       },

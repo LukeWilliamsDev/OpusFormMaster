@@ -464,7 +464,7 @@ export const ForemanSitePage: React.FC = () => {
             to="/portal/contact"
             className="mt-4 inline-flex min-h-11 items-center gap-2 text-xs font-black uppercase tracking-widest text-primary"
           >
-            Contact operations <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+            Contact IT <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </section>
       </div>

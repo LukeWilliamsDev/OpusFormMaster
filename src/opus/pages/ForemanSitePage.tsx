@@ -71,19 +71,20 @@ function isCompletedStatus(status: string): boolean {
   return ["completed", "complete", "closed"].includes(status.toLowerCase().trim());
 }
 
-type SiteSection = "overview" | "today" | "photos" | "documents" | "shifts";
+type SiteSection = "work" | "files" | "shifts";
 
 const SITE_SECTION_HASHES: Record<SiteSection, string> = {
-  overview: "site-overview",
-  today: "site-updates",
-  photos: "site-photos",
-  documents: "site-documents",
+  work: "site-work",
+  files: "site-files",
   shifts: "site-shifts",
 };
 
 function siteSectionFromHash(hash: string): SiteSection {
-  const match = Object.entries(SITE_SECTION_HASHES).find(([, value]) => `#${value}` === hash);
-  return (match?.[0] as SiteSection | undefined) ?? "overview";
+  if (hash === "#site-shifts") return "shifts";
+  if (hash === "#site-photos" || hash === "#site-documents" || hash === "#site-files") {
+    return "files";
+  }
+  return "work";
 }
 
 function diarySummary(entry: DiaryRow): string {
@@ -140,7 +141,7 @@ export const ForemanSitePage: React.FC = () => {
     index: number;
   } | null>(null);
   const [activeSection, setActiveSection] = useState<SiteSection>(() =>
-    typeof window === "undefined" ? "overview" : siteSectionFromHash(window.location.hash),
+    typeof window === "undefined" ? "work" : siteSectionFromHash(window.location.hash),
   );
   const [documentViewer, setDocumentViewer] = useState<{
     name: string;
@@ -561,10 +562,12 @@ export const ForemanSitePage: React.FC = () => {
         className="sticky top-0 z-10 -mx-4 flex gap-1 overflow-x-auto border-y border-border bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-0 lg:rounded-xl lg:border"
       >
         {[
-          { key: "overview" as const, label: "Overview" },
-          { key: "today" as const, label: "Today" },
-          { key: "photos" as const, label: "Photos", count: imageAttachments.length },
-          { key: "documents" as const, label: "Documents", count: documentAttachments.length },
+          { key: "work" as const, label: "Work" },
+          {
+            key: "files" as const,
+            label: "Files",
+            count: imageAttachments.length + documentAttachments.length,
+          },
           { key: "shifts" as const, label: "Shifts", count: shiftDates.length },
         ].map(({ key, label, count }) => (
           <button
@@ -580,14 +583,16 @@ export const ForemanSitePage: React.FC = () => {
         ))}
       </nav>
 
-      {activeSection === "today" && (
-        <div id="site-updates" className="scroll-mt-24 space-y-5">
-          <ForemanTodaySiteUpdate jobId={job.id} readOnly={readOnly} />
-          <ForemanJobNotesPanel jobId={job.id} readOnly={readOnly} />
+      {activeSection === "work" && (
+        <div id="site-work" className="scroll-mt-24 space-y-5">
+          <div id="site-updates" className="space-y-5">
+            <ForemanTodaySiteUpdate jobId={job.id} readOnly={readOnly} />
+            <ForemanJobNotesPanel jobId={job.id} readOnly={readOnly} />
+          </div>
         </div>
       )}
 
-      {activeSection === "overview" && (
+      {activeSection === "work" && (
         <div
           id="site-overview"
           className="scroll-mt-24 grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]"
@@ -633,7 +638,7 @@ export const ForemanSitePage: React.FC = () => {
             <div className="mt-4 divide-y divide-border">
               <button
                 type="button"
-                onClick={() => selectSiteSection("today")}
+                onClick={() => selectSiteSection("work")}
                 className="flex min-h-14 w-full items-center justify-between gap-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <span>
@@ -646,7 +651,7 @@ export const ForemanSitePage: React.FC = () => {
               </button>
               <button
                 type="button"
-                onClick={() => selectSiteSection("photos")}
+                onClick={() => selectSiteSection("files")}
                 className="flex min-h-14 w-full items-center justify-between gap-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
                 <span>
@@ -675,7 +680,7 @@ export const ForemanSitePage: React.FC = () => {
         </div>
       )}
 
-      {activeSection === "photos" && (
+      {activeSection === "files" && (
         <section
           id="site-photos"
           className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
@@ -853,7 +858,7 @@ export const ForemanSitePage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {activeSection === "documents" && (
+      {activeSection === "files" && (
         <section
           id="site-documents"
           className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
@@ -919,7 +924,7 @@ export const ForemanSitePage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {activeSection === "today" && (
+      {activeSection === "work" && (
         <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
           <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
             <span>Previous updates</span>

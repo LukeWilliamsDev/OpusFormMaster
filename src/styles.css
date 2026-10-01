@@ -83,13 +83,13 @@
   --popover: #232429;
   --popover-foreground: #edebe6;
   --primary: #b5651d; /* Brand burnt-orange */
-  --primary-foreground: #edebe6;
+  --primary-foreground: #1b1c20;
   --secondary: #2e3036; /* Subtle raised surface */
   --secondary-foreground: #dad6cf;
   --muted: #232429;
   --muted-foreground: #aca89f; /* Warm mid-tone grey, boosted to ~7:1 (AAA) for readability */
   --accent: #b5651d;
-  --accent-foreground: #edebe6;
+  --accent-foreground: #1b1c20;
   --destructive: #e5484d; /* Brighter red for dark surfaces — #C0392B read too dark/muddy at low opacity on dark backgrounds */
   --destructive-foreground: #fdfaf5;
   --success: #2e7d52;

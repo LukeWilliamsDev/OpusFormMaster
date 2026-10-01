@@ -83,7 +83,7 @@ export type Database = {
           created_by: string | null;
           created_by_email: string | null;
           date: string;
-          description: string | null;
+          description: string;
           id: string;
           job_id: string | null;
           tenant_id: string;
@@ -95,7 +95,7 @@ export type Database = {
           created_by?: string | null;
           created_by_email?: string | null;
           date: string;
-          description?: string | null;
+          description: string;
           id?: string;
           job_id?: string | null;
           tenant_id?: string;
@@ -107,7 +107,7 @@ export type Database = {
           created_by?: string | null;
           created_by_email?: string | null;
           date?: string;
-          description?: string | null;
+          description?: string;
           id?: string;
           job_id?: string | null;
           tenant_id?: string;
@@ -315,6 +315,7 @@ export type Database = {
           file_url: string;
           id: string;
           job_id: string;
+          tenant_id: string;
           type: string;
           uploaded_at: string | null;
           uploaded_by: string;
@@ -325,6 +326,7 @@ export type Database = {
           file_url: string;
           id?: string;
           job_id: string;
+          tenant_id?: string;
           type: string;
           uploaded_at?: string | null;
           uploaded_by: string;
@@ -335,6 +337,7 @@ export type Database = {
           file_url?: string;
           id?: string;
           job_id?: string;
+          tenant_id?: string;
           type?: string;
           uploaded_at?: string | null;
           uploaded_by?: string;
@@ -352,30 +355,66 @@ export type Database = {
       job_diary: {
         Row: {
           created_at: string | null;
+          created_by: string | null;
+          blocker_details: string | null;
           date: string;
+          entry_status: string;
           hs_checklist: Json;
           id: string;
+          issue_id: string | null;
           job_id: string;
+          next_steps: string | null;
           notes: string | null;
+          progress_status: string;
+          ready_for_next_shift: string;
+          submitted_at: string | null;
+          submitted_by: string | null;
+          tenant_id: string;
           updated_at: string | null;
+          updated_by: string | null;
+          work_summary: string | null;
         };
         Insert: {
           created_at?: string | null;
+          created_by?: string | null;
+          blocker_details?: string | null;
           date?: string;
+          entry_status?: string;
           hs_checklist?: Json;
           id?: string;
+          issue_id?: string | null;
           job_id: string;
+          next_steps?: string | null;
           notes?: string | null;
+          progress_status?: string;
+          ready_for_next_shift?: string;
+          submitted_at?: string | null;
+          submitted_by?: string | null;
+          tenant_id?: string;
           updated_at?: string | null;
+          updated_by?: string | null;
+          work_summary?: string | null;
         };
         Update: {
           created_at?: string | null;
+          created_by?: string | null;
+          blocker_details?: string | null;
           date?: string;
+          entry_status?: string;
           hs_checklist?: Json;
           id?: string;
+          issue_id?: string | null;
           job_id?: string;
+          next_steps?: string | null;
           notes?: string | null;
+          progress_status?: string;
+          ready_for_next_shift?: string;
+          submitted_at?: string | null;
+          submitted_by?: string | null;
+          tenant_id?: string;
           updated_at?: string | null;
+          updated_by?: string | null;
+          work_summary?: string | null;
         };
         Relationships: [
           {
@@ -383,6 +422,76 @@ export type Database = {
             columns: ["job_id"];
             isOneToOne: false;
             referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "job_diary_issue_id_fkey";
+            columns: ["issue_id"];
+            isOneToOne: false;
+            referencedRelation: "job_issues";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      job_issues: {
+        Row: {
+          created_at: string;
+          description: string;
+          id: string;
+          job_id: string;
+          reported_by: string;
+          resolution_summary: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          severity: string;
+          status: string;
+          tenant_id: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          description: string;
+          id?: string;
+          job_id: string;
+          reported_by: string;
+          resolution_summary?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          severity?: string;
+          status?: string;
+          tenant_id?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string;
+          id?: string;
+          job_id?: string;
+          reported_by?: string;
+          resolution_summary?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          severity?: string;
+          status?: string;
+          tenant_id?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "job_issues_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "job_issues_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
             referencedColumns: ["id"];
           },
         ];
@@ -424,6 +533,8 @@ export type Database = {
       };
       job_notes: {
         Row: {
+          author_staff_id: string | null;
+          author_type: string;
           body: string;
           created_at: string;
           id: string;
@@ -434,6 +545,8 @@ export type Database = {
           user_id: string | null;
         };
         Insert: {
+          author_staff_id?: string | null;
+          author_type?: string;
           body: string;
           created_at?: string;
           id?: string;
@@ -444,6 +557,8 @@ export type Database = {
           user_id?: string | null;
         };
         Update: {
+          author_staff_id?: string | null;
+          author_type?: string;
           body?: string;
           created_at?: string;
           id?: string;
@@ -459,6 +574,44 @@ export type Database = {
             columns: ["job_id"];
             isOneToOne: false;
             referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      job_note_replies: {
+        Row: {
+          author_first_name: string | null;
+          author_id: string;
+          body: string;
+          created_at: string;
+          id: string;
+          note_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          author_first_name?: string | null;
+          author_id: string;
+          body: string;
+          created_at?: string;
+          id?: string;
+          note_id: string;
+          tenant_id?: string;
+        };
+        Update: {
+          author_first_name?: string | null;
+          author_id?: string;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          note_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "job_note_replies_note_id_fkey";
+            columns: ["note_id"];
+            isOneToOne: false;
+            referencedRelation: "job_notes";
             referencedColumns: ["id"];
           },
         ];

@@ -118,9 +118,13 @@ export const PortalAuthPage: React.FC = () => {
         setFormMode("reset");
         return;
       }
-      navigate(role === "third_party" ? "/portal/third-party" : "/portal/dashboard", {
-        replace: true,
-      });
+      const destination =
+        role === "third_party"
+          ? "/portal/third-party"
+          : role === "site_foreman"
+            ? "/portal/foreman"
+            : "/portal/dashboard";
+      navigate(destination, { replace: true });
     }
   }, [isAuthenticated, navigate, formMode, notification, profile?.must_change_password, role]);
 
@@ -255,7 +259,7 @@ export const PortalAuthPage: React.FC = () => {
         "Your password has been reset successfully. You will now be redirected to the portal.",
     });
     setTimeout(() => {
-      navigate("/portal/dashboard");
+      navigate(role === "site_foreman" ? "/portal/foreman" : "/portal/dashboard");
     }, 3000);
   };
   return (

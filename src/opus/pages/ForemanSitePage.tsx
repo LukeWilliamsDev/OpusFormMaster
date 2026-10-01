@@ -71,6 +71,21 @@ function isCompletedStatus(status: string): boolean {
   return ["completed", "complete", "closed"].includes(status.toLowerCase().trim());
 }
 
+type SiteSection = "overview" | "today" | "photos" | "documents" | "shifts";
+
+const SITE_SECTION_HASHES: Record<SiteSection, string> = {
+  overview: "site-overview",
+  today: "site-updates",
+  photos: "site-photos",
+  documents: "site-documents",
+  shifts: "site-shifts",
+};
+
+function siteSectionFromHash(hash: string): SiteSection {
+  const match = Object.entries(SITE_SECTION_HASHES).find(([, value]) => `#${value}` === hash);
+  return (match?.[0] as SiteSection | undefined) ?? "overview";
+}
+
 function diarySummary(entry: DiaryRow): string {
   return (
     entry.work_summary?.trim() ||
@@ -124,6 +139,9 @@ export const ForemanSitePage: React.FC = () => {
     photos: ForemanAttachmentRow[];
     index: number;
   } | null>(null);
+  const [activeSection, setActiveSection] = useState<SiteSection>(() =>
+    typeof window === "undefined" ? "overview" : siteSectionFromHash(window.location.hash),
+  );
   const [documentViewer, setDocumentViewer] = useState<{
     name: string;
     url: string;
@@ -172,6 +190,21 @@ export const ForemanSitePage: React.FC = () => {
   );
   const listPath = `/portal/foreman/sites${location.search}`;
   const isLocalFixture = Boolean(jobId?.startsWith("local-foreman-"));
+
+  useEffect(() => {
+    const onHashChange = () => setActiveSection(siteSectionFromHash(window.location.hash));
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  const selectSiteSection = (section: SiteSection) => {
+    setActiveSection(section);
+    window.history.replaceState(
+      null,
+      "",
+      `${location.pathname}${location.search}#${SITE_SECTION_HASHES[section]}`,
+    );
+  };
 
   const loadSiteContent = useCallback(async () => {
     if (!jobId || !hasCurrentAssignment) {
@@ -523,157 +556,236 @@ export const ForemanSitePage: React.FC = () => {
         </div>
       )}
 
-      <div id="site-updates" className="scroll-mt-24 space-y-5">
-        <ForemanTodaySiteUpdate jobId={job.id} readOnly={readOnly} />
-        <ForemanJobNotesPanel jobId={job.id} readOnly={readOnly} />
-      </div>
-
-      <div
-        id="site-overview"
-        className="scroll-mt-24 grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]"
+      <nav
+        aria-label="Site record sections"
+        className="sticky top-0 z-10 -mx-4 flex gap-1 overflow-x-auto border-y border-border bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-0 lg:rounded-xl lg:border"
       >
-        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-          <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
-            <span>Assigned crew</span>
-            <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-black text-muted-foreground">
-              {crew.length} assigned
-            </span>
-          </div>
-          {crew.length ? (
-            <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              {crew.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center gap-3 rounded-xl bg-background p-3"
-                >
-                  <span
-                    className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-xs font-black"
-                    aria-hidden="true"
-                  >
-                    {initials(member.name)}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold">{member.name}</p>
-                    <p className="text-xs text-muted-foreground">{member.role}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="mt-4 text-sm text-muted-foreground">No crew is listed for this site.</p>
-          )}
-        </section>
-      </div>
+        {[
+          { key: "overview" as const, label: "Overview" },
+          { key: "today" as const, label: "Today" },
+          { key: "photos" as const, label: "Photos", count: imageAttachments.length },
+          { key: "documents" as const, label: "Documents", count: documentAttachments.length },
+          { key: "shifts" as const, label: "Shifts", count: shiftDates.length },
+        ].map(({ key, label, count }) => (
+          <button
+            key={key}
+            type="button"
+            onClick={() => selectSiteSection(key)}
+            aria-current={activeSection === key ? "page" : undefined}
+            className={`min-h-10 shrink-0 rounded-lg px-3 text-xs font-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${activeSection === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
+          >
+            {label}
+            {count !== undefined && <span className="ml-1 opacity-70">{count}</span>}
+          </button>
+        ))}
+      </nav>
 
-      <section
-        id="site-photos"
-        className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-xs font-black uppercase tracking-[0.14em]">Site photos</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {imageAttachments.length} photo{imageAttachments.length === 1 ? "" : "s"} authorised
-              for this assigned site.
-            </p>
-          </div>
-          <>
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(event) => {
-                const file = event.target.files?.[0];
-                if (file) void uploadPhoto(file, photoUploadType);
-              }}
-            />
-            <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                className="min-h-11"
-                disabled={uploading}
-                onClick={() => {
-                  setPhotoUploadType("image_before");
-                  photoInputRef.current?.click();
-                }}
-              >
-                {uploading && photoUploadType === "image_before" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Camera className="h-4 w-4" />
-                )}{" "}
-                Add before
-              </Button>
-              <Button
-                className="min-h-11"
-                disabled={uploading}
-                onClick={() => {
-                  setPhotoUploadType("image_after");
-                  photoInputRef.current?.click();
-                }}
-              >
-                {uploading && photoUploadType === "image_after" ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Camera className="h-4 w-4" />
-                )}{" "}
-                Add after
-              </Button>
-            </div>
-          </>
+      {activeSection === "today" && (
+        <div id="site-updates" className="scroll-mt-24 space-y-5">
+          <ForemanTodaySiteUpdate jobId={job.id} readOnly={readOnly} />
+          <ForemanJobNotesPanel jobId={job.id} readOnly={readOnly} />
         </div>
-        <div className="mt-4 rounded-xl border border-border bg-background p-3">
-          <div className="flex min-h-11 items-center justify-between gap-3 px-2 text-xs font-black uppercase tracking-[0.14em]">
-            <span>View-only gallery</span>
-            <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
-              Before and after photos
-            </span>
-          </div>
-          {imageAttachments.length ? (
-            <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {imageAttachments.map((photo) => {
-                const previewUrl = signedUrls.get(photo.file_url);
-                return (
-                  <button
-                    key={photo.id}
-                    type="button"
-                    onClick={() =>
-                      setGallery({
-                        photos: imageAttachments,
-                        index: imageAttachments.indexOf(photo),
-                      })
-                    }
-                    className="group relative overflow-hidden rounded-xl border border-border bg-background text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-                    aria-label={`${photo.type === "image_before" ? "Before" : "After"} site photo`}
+      )}
+
+      {activeSection === "overview" && (
+        <div
+          id="site-overview"
+          className="scroll-mt-24 grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,.8fr)]"
+        >
+          <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
+              <span>Assigned crew</span>
+              <span className="rounded-full bg-secondary px-2.5 py-1 text-[10px] font-black text-muted-foreground">
+                {crew.length} assigned
+              </span>
+            </div>
+            {crew.length ? (
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                {crew.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center gap-3 rounded-xl bg-background p-3"
                   >
-                    {previewUrl ? (
-                      <img
-                        src={previewUrl}
-                        alt=""
-                        loading="lazy"
-                        className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="grid aspect-square place-items-center text-xs text-muted-foreground">
-                        Preview unavailable
-                      </div>
-                    )}
-                    <span className="absolute left-2 top-2 rounded bg-slate-900/80 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white">
-                      {photo.type === "image_before" ? "Before" : "After"}
+                    <span
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-secondary text-xs font-black"
+                      aria-hidden="true"
+                    >
+                      {initials(member.name)}
                     </span>
-                  </button>
-                );
-              })}
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold">{member.name}</p>
+                      <p className="text-xs text-muted-foreground">{member.role}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-4 text-sm text-muted-foreground">No crew is listed for this site.</p>
+            )}
+          </section>
+          <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
+              <span>Site summary</span>
+              <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
+                Quick access
+              </span>
             </div>
-          ) : (
-            <div className="mt-5 rounded-xl border border-dashed border-border px-5 py-10 text-center">
-              <Camera className="mx-auto h-7 w-7 text-muted-foreground/60" aria-hidden="true" />
-              <p className="mt-3 text-sm text-muted-foreground">No site photos yet.</p>
+            <div className="mt-4 divide-y divide-border">
+              <button
+                type="button"
+                onClick={() => selectSiteSection("today")}
+                className="flex min-h-14 w-full items-center justify-between gap-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <span>
+                  <span className="block text-sm font-bold">Today&apos;s update</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {legacyDiaryRows.length ? "Latest update available" : "Not started"}
+                  </span>
+                </span>
+                <ArrowRight className="h-4 w-4 text-primary" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => selectSiteSection("photos")}
+                className="flex min-h-14 w-full items-center justify-between gap-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <span>
+                  <span className="block text-sm font-bold">Site photos</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {imageAttachments.length} photo{imageAttachments.length === 1 ? "" : "s"}
+                  </span>
+                </span>
+                <ArrowRight className="h-4 w-4 text-primary" aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                onClick={() => selectSiteSection("shifts")}
+                className="flex min-h-14 w-full items-center justify-between gap-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <span>
+                  <span className="block text-sm font-bold">Site shifts</span>
+                  <span className="block text-xs text-muted-foreground">
+                    {shiftDates.length} scheduled date{shiftDates.length === 1 ? "" : "s"}
+                  </span>
+                </span>
+                <ArrowRight className="h-4 w-4 text-primary" aria-hidden="true" />
+              </button>
             </div>
-          )}
+          </section>
         </div>
-      </section>
+      )}
+
+      {activeSection === "photos" && (
+        <section
+          id="site-photos"
+          className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
+        >
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-xs font-black uppercase tracking-[0.14em]">Site photos</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {imageAttachments.length} photo{imageAttachments.length === 1 ? "" : "s"} authorised
+                for this assigned site.
+              </p>
+            </div>
+            <>
+              <input
+                ref={photoInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void uploadPhoto(file, photoUploadType);
+                }}
+              />
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  variant="outline"
+                  className="min-h-11"
+                  disabled={uploading}
+                  onClick={() => {
+                    setPhotoUploadType("image_before");
+                    photoInputRef.current?.click();
+                  }}
+                >
+                  {uploading && photoUploadType === "image_before" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}{" "}
+                  Add before
+                </Button>
+                <Button
+                  className="min-h-11"
+                  disabled={uploading}
+                  onClick={() => {
+                    setPhotoUploadType("image_after");
+                    photoInputRef.current?.click();
+                  }}
+                >
+                  {uploading && photoUploadType === "image_after" ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Camera className="h-4 w-4" />
+                  )}{" "}
+                  Add after
+                </Button>
+              </div>
+            </>
+          </div>
+          <div className="mt-4 rounded-xl border border-border bg-background p-3">
+            <div className="flex min-h-11 items-center justify-between gap-3 px-2 text-xs font-black uppercase tracking-[0.14em]">
+              <span>View-only gallery</span>
+              <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
+                Before and after photos
+              </span>
+            </div>
+            {imageAttachments.length ? (
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+                {imageAttachments.map((photo) => {
+                  const previewUrl = signedUrls.get(photo.file_url);
+                  return (
+                    <button
+                      key={photo.id}
+                      type="button"
+                      onClick={() =>
+                        setGallery({
+                          photos: imageAttachments,
+                          index: imageAttachments.indexOf(photo),
+                        })
+                      }
+                      className="group relative overflow-hidden rounded-xl border border-border bg-background text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      aria-label={`${photo.type === "image_before" ? "Before" : "After"} site photo`}
+                    >
+                      {previewUrl ? (
+                        <img
+                          src={previewUrl}
+                          alt=""
+                          loading="lazy"
+                          className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="grid aspect-square place-items-center text-xs text-muted-foreground">
+                          Preview unavailable
+                        </div>
+                      )}
+                      <span className="absolute left-2 top-2 rounded bg-slate-900/80 px-2 py-1 text-[9px] font-black uppercase tracking-wider text-white">
+                        {photo.type === "image_before" ? "Before" : "After"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="mt-5 rounded-xl border border-dashed border-border px-5 py-10 text-center">
+                <Camera className="mx-auto h-7 w-7 text-muted-foreground/60" aria-hidden="true" />
+                <p className="mt-3 text-sm text-muted-foreground">No site photos yet.</p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <Dialog open={!!gallery} onOpenChange={(open) => !open && setGallery(null)}>
         <DialogContent className="max-w-2xl overflow-hidden bg-black p-0 !inset-x-auto !left-1/2 !top-1/2 !bottom-auto !-translate-x-1/2 !-translate-y-1/2 !rounded-lg !w-[calc(100%-2rem)] !max-h-[calc(100dvh-2rem)]">
@@ -741,49 +853,51 @@ export const ForemanSitePage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <section
-        id="site-documents"
-        className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
-      >
-        <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
-          <span>Site documents</span>
-          <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
-            Shared by operations
-          </span>
-        </div>
-        <p className="mt-3 text-sm text-muted-foreground">
-          View-only documents that operations has shared for this site.
-        </p>
-        {documentAttachments.length ? (
-          <div className="mt-4 divide-y divide-border">
-            {documentAttachments.map((document) => (
-              <button
-                key={document.id}
-                type="button"
-                onClick={() => void openDocument(document)}
-                className="flex min-h-16 w-full items-center gap-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-              >
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-secondary text-sm">
-                  ▤
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-bold">{document.file_name}</span>
-                  <span className="block text-xs text-muted-foreground">
-                    View only · Shared by operations
+      {activeSection === "documents" && (
+        <section
+          id="site-documents"
+          className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
+        >
+          <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
+            <span>Site documents</span>
+            <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
+              Shared by operations
+            </span>
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            View-only documents that operations has shared for this site.
+          </p>
+          {documentAttachments.length ? (
+            <div className="mt-4 divide-y divide-border">
+              {documentAttachments.map((document) => (
+                <button
+                  key={document.id}
+                  type="button"
+                  onClick={() => void openDocument(document)}
+                  className="flex min-h-16 w-full items-center gap-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-secondary text-sm">
+                    ▤
                   </span>
-                </span>
-                <span className="shrink-0 text-xs font-black uppercase tracking-wider text-primary">
-                  View
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="mt-4 rounded-xl border border-dashed border-border px-5 py-8 text-center">
-            <p className="text-sm text-muted-foreground">No site documents have been shared.</p>
-          </div>
-        )}
-      </section>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-bold">{document.file_name}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      View only · Shared by operations
+                    </span>
+                  </span>
+                  <span className="shrink-0 text-xs font-black uppercase tracking-wider text-primary">
+                    View
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-4 rounded-xl border border-dashed border-border px-5 py-8 text-center">
+              <p className="text-sm text-muted-foreground">No site documents have been shared.</p>
+            </div>
+          )}
+        </section>
+      )}
 
       <Dialog open={!!documentViewer} onOpenChange={(open) => !open && setDocumentViewer(null)}>
         <DialogContent className="max-w-4xl overflow-hidden p-0">
@@ -805,82 +919,89 @@ export const ForemanSitePage: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-        <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
-          <span>Previous updates</span>
-          <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
-            {legacyDiaryRows.length} older record{legacyDiaryRows.length === 1 ? "" : "s"}
-          </span>
-        </div>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Older diary records retained for reference. New updates appear in Today&apos;s site
-          update.
-        </p>
-        {legacyDiaryRows.length ? (
-          <div className="mt-5 divide-y divide-border">
-            {legacyDiaryRows.map((entry) => (
-              <article key={entry.id} className="flex gap-3 py-4 first:pt-0">
-                <span
-                  className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary"
-                  aria-hidden="true"
-                />
-                <div className="min-w-0">
-                  <p className="break-words whitespace-pre-line text-sm leading-6">
-                    {diarySummary(entry)}
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {formatUKDate(entry.date)}
-                    {entry.updated_at
-                      ? ` · updated ${new Date(entry.updated_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
-                      : ""}
-                  </p>
-                </div>
-              </article>
-            ))}
+      {activeSection === "today" && (
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+          <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
+            <span>Previous updates</span>
+            <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
+              {legacyDiaryRows.length} older record{legacyDiaryRows.length === 1 ? "" : "s"}
+            </span>
           </div>
-        ) : (
-          <p className="mt-5 rounded-xl border border-dashed border-border px-5 py-8 text-center text-sm text-muted-foreground">
-            No previous updates are available.
+          <p className="mt-3 text-sm text-muted-foreground">
+            Older diary records retained for reference. New updates appear in Today&apos;s site
+            update.
           </p>
-        )}
-      </section>
-
-      <section
-        id="site-shifts"
-        className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
-      >
-        <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
-          <span>Site shifts</span>
-          <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
-            {shiftDates.length} date{shiftDates.length === 1 ? "" : "s"}
-          </span>
-        </div>
-        <p className="mt-3 text-sm text-muted-foreground">
-          Assignments grouped by date for this site.
-        </p>
-        <div className="mt-5 divide-y divide-border">
-          {shiftDates.map((shift) => (
-            <div key={shift.date} className="flex min-h-14 items-center justify-between gap-3 py-3">
-              <div>
-                <p className="text-sm font-bold">{formatUKDate(shift.date)}</p>
-                <p className="text-xs text-muted-foreground">
-                  {shift.mine ? "Your assignment" : "Assigned crew"} · {shift.total} crew
-                </p>
-              </div>
-              <span
-                className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${shift.date < today ? "bg-secondary text-muted-foreground" : "bg-primary/10 text-primary"}`}
-              >
-                {shift.date < today ? "Past" : shift.date === today ? "Today" : "Upcoming"}
-              </span>
+          {legacyDiaryRows.length ? (
+            <div className="mt-5 divide-y divide-border">
+              {legacyDiaryRows.map((entry) => (
+                <article key={entry.id} className="flex gap-3 py-4 first:pt-0">
+                  <span
+                    className="mt-2 h-2 w-2 shrink-0 rounded-full bg-primary"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0">
+                    <p className="break-words whitespace-pre-line text-sm leading-6">
+                      {diarySummary(entry)}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {formatUKDate(entry.date)}
+                      {entry.updated_at
+                        ? ` · updated ${new Date(entry.updated_at).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
+                        : ""}
+                    </p>
+                  </div>
+                </article>
+              ))}
             </div>
-          ))}
-          {!shiftDates.length && (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              No shifts are available for this site.
+          ) : (
+            <p className="mt-5 rounded-xl border border-dashed border-border px-5 py-8 text-center text-sm text-muted-foreground">
+              No previous updates are available.
             </p>
           )}
-        </div>
-      </section>
+        </section>
+      )}
+
+      {activeSection === "shifts" && (
+        <section
+          id="site-shifts"
+          className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
+        >
+          <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
+            <span>Site shifts</span>
+            <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
+              {shiftDates.length} date{shiftDates.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">
+            Assignments grouped by date for this site.
+          </p>
+          <div className="mt-5 divide-y divide-border">
+            {shiftDates.map((shift) => (
+              <div
+                key={shift.date}
+                className="flex min-h-14 items-center justify-between gap-3 py-3"
+              >
+                <div>
+                  <p className="text-sm font-bold">{formatUKDate(shift.date)}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {shift.mine ? "Your assignment" : "Assigned crew"} · {shift.total} crew
+                  </p>
+                </div>
+                <span
+                  className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${shift.date < today ? "bg-secondary text-muted-foreground" : "bg-primary/10 text-primary"}`}
+                >
+                  {shift.date < today ? "Past" : shift.date === today ? "Today" : "Upcoming"}
+                </span>
+              </div>
+            ))}
+            {!shiftDates.length && (
+              <p className="py-8 text-center text-sm text-muted-foreground">
+                No shifts are available for this site.
+              </p>
+            )}
+          </div>
+        </section>
+      )}
     </div>
   );
 };

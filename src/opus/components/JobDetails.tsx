@@ -568,6 +568,45 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     }
   };
 
+  const updateDocumentVisibility = async (
+    attachmentId: string,
+    audience: "foreman_visible" | "third_party_visible",
+    visible: boolean,
+  ) => {
+    const previous = attachments.find((attachment) => attachment.id === attachmentId);
+    if (!previous) return;
+    setAttachments((current) =>
+      current.map((attachment) =>
+        attachment.id === attachmentId ? { ...attachment, [audience]: visible } : attachment,
+      ),
+    );
+    const payload =
+      audience === "foreman_visible"
+        ? { foreman_visible: visible }
+        : { third_party_visible: visible };
+    const { error } = await supabase
+      .from("job_attachments")
+      .update(payload)
+      .eq("id", attachmentId)
+      .eq("job_id", job.id);
+    if (error) {
+      setAttachments((current) =>
+        current.map((attachment) =>
+          attachment.id === attachmentId
+            ? { ...attachment, [audience]: previous[audience] }
+            : attachment,
+        ),
+      );
+      toast.error("Document visibility could not be updated");
+      return;
+    }
+    logAttachmentAudit("UPDATE_DOCUMENT_VISIBILITY", {
+      attachment_id: attachmentId,
+      audience,
+      visible,
+    });
+  };
+
   const generateUploadLink = async () => {
     setGeneratingLink(true);
     try {
@@ -1384,6 +1423,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             renameValue={renameValue}
             setRenameValue={setRenameValue}
             executeRenameAttachment={executeRenameAttachment}
+            updateDocumentVisibility={updateDocumentVisibility}
           />
           <ThirdPartyAttachmentsPanel jobId={job.id} />
         </TabsContent>

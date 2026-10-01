@@ -40,6 +40,7 @@ type AttachmentRow = Pick<
   Database["public"]["Tables"]["job_attachments"]["Row"],
   "id" | "job_id" | "type" | "file_name" | "file_url" | "file_size_bytes" | "uploaded_at"
 >;
+type ForemanAttachmentRow = AttachmentRow & { foreman_visible?: boolean };
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
 
 function londonToday(): string {
@@ -112,11 +113,21 @@ export const ForemanSitePage: React.FC = () => {
   } = usePortal();
   const today = londonToday();
   const photoInputRef = useRef<HTMLInputElement>(null);
+  const [photoUploadType, setPhotoUploadType] = useState<"image_before" | "image_after">(
+    "image_after",
+  );
   const siteContentLoadedRef = useRef(false);
   const [diaryRows, setDiaryRows] = useState<DiaryRow[]>([]);
-  const [attachments, setAttachments] = useState<AttachmentRow[]>([]);
+  const [attachments, setAttachments] = useState<ForemanAttachmentRow[]>([]);
   const [signedUrls, setSignedUrls] = useState<Map<string, string>>(new Map());
-  const [gallery, setGallery] = useState<{ photos: AttachmentRow[]; index: number } | null>(null);
+  const [gallery, setGallery] = useState<{
+    photos: ForemanAttachmentRow[];
+    index: number;
+  } | null>(null);
+  const [documentViewer, setDocumentViewer] = useState<{
+    name: string;
+    url: string;
+  } | null>(null);
   const [loading, setLoading] = useState(false);
   const [refreshingSite, setRefreshingSite] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -242,9 +253,8 @@ export const ForemanSitePage: React.FC = () => {
           .order("updated_at", { ascending: false }),
         supabase
           .from("job_attachments")
-          .select("id,job_id,type,file_name,file_url,file_size_bytes,uploaded_at")
+          .select("id,job_id,type,file_name,file_url,file_size_bytes,uploaded_at,foreman_visible")
           .eq("job_id", jobId)
-          .in("type", ["image_before", "image_after"])
           .order("uploaded_at", { ascending: false }),
       ]);
       if (diaryResult.error || attachmentResult.error) {
@@ -302,8 +312,11 @@ export const ForemanSitePage: React.FC = () => {
     }
   }, [hasCurrentAssignment]);
 
-  const uploadPhoto = async (file: File) => {
-    if (!jobId || readOnly) return;
+  const uploadPhoto = async (
+    file: File,
+    type: "image_before" | "image_after" = photoUploadType,
+  ) => {
+    if (!jobId) return;
     if (file.size > MAX_PHOTO_BYTES) {
       toast.error("Photos must be 10MB or smaller");
       return;
@@ -315,7 +328,7 @@ export const ForemanSitePage: React.FC = () => {
         {
           id: localPath,
           job_id: jobId,
-          type: "image_after",
+          type,
           file_name: file.name,
           file_url: localPath,
           file_size_bytes: file.size,
@@ -350,7 +363,7 @@ export const ForemanSitePage: React.FC = () => {
       if (uploadError) throw uploadError;
       const { error: insertError } = await supabase.from("job_attachments").insert({
         job_id: jobId,
-        type: "image_after",
+        type,
         file_name: file.name,
         file_url: uploadedPath,
         file_size_bytes: compressed.size,
@@ -426,8 +439,19 @@ export const ForemanSitePage: React.FC = () => {
   const imageAttachments = attachments.filter(
     (item) => item.type === "image_before" || item.type === "image_after",
   );
+  const documentAttachments = attachments.filter(
+    (item) => item.type === "document" && item.foreman_visible,
+  );
   const galleryPhoto = gallery ? gallery.photos[gallery.index] : null;
   const galleryPreviewUrl = galleryPhoto ? signedUrls.get(galleryPhoto.file_url) : null;
+  const openDocument = async (document: ForemanAttachmentRow) => {
+    const url = await getSignedJobAttachmentUrl(document.file_url, 300);
+    if (!url) {
+      toast.error("This document could not be opened");
+      return;
+    }
+    setDocumentViewer({ name: document.file_name, url });
+  };
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 pb-12 sm:px-6 lg:py-10">
       <Link
@@ -479,9 +503,10 @@ export const ForemanSitePage: React.FC = () => {
             aria-hidden="true"
           />
           <div>
-            <strong>Completed · view only</strong>
+            <strong>Completed · updates view only</strong>
             <p className="mt-1 text-muted-foreground">
-              Photos, updates, and shift history remain available. New changes are closed.
+              Updates and shift history remain read-only. You can still add Before or After photos;
+              photos cannot be deleted here.
             </p>
           </div>
         </div>
@@ -538,35 +563,6 @@ export const ForemanSitePage: React.FC = () => {
             <p className="mt-4 text-sm text-muted-foreground">No crew is listed for this site.</p>
           )}
         </section>
-        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-          <h2 className="text-xs font-black uppercase tracking-[0.14em]">Site shifts</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Assignments grouped by date.</p>
-          <div className="mt-4 divide-y divide-border">
-            {shiftDates.map((shift) => (
-              <div
-                key={shift.date}
-                className="flex min-h-14 items-center justify-between gap-3 py-3"
-              >
-                <div>
-                  <p className="text-sm font-bold">{formatUKDate(shift.date)}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {shift.mine ? "Your assignment" : "Assigned crew"} · {shift.total} crew
-                  </p>
-                </div>
-                <span
-                  className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${shift.date < today ? "bg-secondary text-muted-foreground" : "bg-primary/10 text-primary"}`}
-                >
-                  {shift.date < today ? "Past" : shift.date === today ? "Today" : "Upcoming"}
-                </span>
-              </div>
-            ))}
-            {!shiftDates.length && (
-              <p className="py-6 text-center text-sm text-muted-foreground">
-                No scheduled shifts are available for this site.
-              </p>
-            )}
-          </div>
-        </section>
       </div>
 
       <section
@@ -581,32 +577,51 @@ export const ForemanSitePage: React.FC = () => {
               for this assigned site.
             </p>
           </div>
-          {!readOnly && (
-            <>
-              <input
-                ref={photoInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => {
-                  const file = event.target.files?.[0];
-                  if (file) void uploadPhoto(file);
-                }}
-              />
+          <>
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void uploadPhoto(file, photoUploadType);
+              }}
+            />
+            <div className="flex flex-wrap gap-2">
               <Button
+                variant="outline"
                 className="min-h-11"
                 disabled={uploading}
-                onClick={() => photoInputRef.current?.click()}
+                onClick={() => {
+                  setPhotoUploadType("image_before");
+                  photoInputRef.current?.click();
+                }}
               >
-                {uploading ? (
+                {uploading && photoUploadType === "image_before" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <Camera className="h-4 w-4" />
                 )}{" "}
-                {uploading ? "Uploading..." : "Add photo"}
+                Add before
               </Button>
-            </>
-          )}
+              <Button
+                className="min-h-11"
+                disabled={uploading}
+                onClick={() => {
+                  setPhotoUploadType("image_after");
+                  photoInputRef.current?.click();
+                }}
+              >
+                {uploading && photoUploadType === "image_after" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Camera className="h-4 w-4" />
+                )}{" "}
+                Add after
+              </Button>
+            </div>
+          </>
         </div>
         <div className="mt-4 rounded-xl border border-border bg-background p-3">
           <div className="flex min-h-11 items-center justify-between gap-3 px-2 text-xs font-black uppercase tracking-[0.14em]">
@@ -721,6 +736,70 @@ export const ForemanSitePage: React.FC = () => {
                   {gallery.index + 1}/{gallery.photos.length} · View only
                 </span>
               </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <section
+        id="site-documents"
+        className="scroll-mt-24 rounded-2xl border border-border bg-card p-5 sm:p-6"
+      >
+        <div className="flex min-h-11 items-center justify-between gap-3 text-xs font-black uppercase tracking-[0.14em]">
+          <span>Site documents</span>
+          <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
+            Shared by operations
+          </span>
+        </div>
+        <p className="mt-3 text-sm text-muted-foreground">
+          View-only documents that operations has shared for this site.
+        </p>
+        {documentAttachments.length ? (
+          <div className="mt-4 divide-y divide-border">
+            {documentAttachments.map((document) => (
+              <button
+                key={document.id}
+                type="button"
+                onClick={() => void openDocument(document)}
+                className="flex min-h-16 w-full items-center gap-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-secondary text-sm">
+                  ▤
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold">{document.file_name}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    View only · Shared by operations
+                  </span>
+                </span>
+                <span className="shrink-0 text-xs font-black uppercase tracking-wider text-primary">
+                  View
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 rounded-xl border border-dashed border-border px-5 py-8 text-center">
+            <p className="text-sm text-muted-foreground">No site documents have been shared.</p>
+          </div>
+        )}
+      </section>
+
+      <Dialog open={!!documentViewer} onOpenChange={(open) => !open && setDocumentViewer(null)}>
+        <DialogContent className="max-w-4xl overflow-hidden p-0">
+          {documentViewer && (
+            <div className="flex h-[80vh] flex-col">
+              <DialogTitle className="border-b border-border px-5 py-4 text-sm font-bold">
+                {documentViewer.name}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                View-only site document shared by operations.
+              </DialogDescription>
+              <iframe
+                title={documentViewer.name}
+                src={documentViewer.url}
+                className="min-h-0 flex-1 bg-muted"
+              />
             </div>
           )}
         </DialogContent>

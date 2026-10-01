@@ -496,7 +496,7 @@ export const ForemanWorkspacePage: React.FC = () => {
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
                   {currentJob
                     ? currentSiteIsReadOnly
-                      ? "Completed · view only"
+                      ? "Completed · updates view only"
                       : "Assigned today"
                     : "No site today"}
                 </span>
@@ -594,19 +594,12 @@ export const ForemanWorkspacePage: React.FC = () => {
                       <ArrowRight className="h-4 w-4" aria-hidden="true" />
                     </Link>
                     <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1">
-                      <Button
-                        variant="ghost"
-                        className="min-h-11 px-0 text-xs font-bold text-muted-foreground hover:bg-transparent hover:text-foreground"
-                        onClick={() => photoInputRef.current?.click()}
-                        disabled={uploadingPhoto || currentSiteIsReadOnly}
+                      <Link
+                        to={`/portal/foreman/sites/${currentJob.id}#site-photos`}
+                        className="inline-flex min-h-11 items-center gap-1 text-xs font-bold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
-                        {uploadingPhoto ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <Camera className="h-4 w-4" />
-                        )}
-                        {uploadingPhoto ? "Uploading..." : "Add photo"}
-                      </Button>
+                        View / add photos
+                      </Link>
                       <Link
                         to={`/portal/foreman/sites/${currentJob.id}#site-updates`}
                         className="inline-flex min-h-11 items-center gap-1 text-xs font-bold text-muted-foreground underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -614,16 +607,6 @@ export const ForemanWorkspacePage: React.FC = () => {
                         Contact operations
                       </Link>
                     </div>
-                    <input
-                      ref={photoInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(event) => {
-                        const file = event.target.files?.[0];
-                        if (file) void uploadPhoto(file);
-                      }}
-                    />
                   </div>
                 </>
               ) : (
@@ -637,7 +620,7 @@ export const ForemanWorkspacePage: React.FC = () => {
               </h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">
                 {currentSiteIsReadOnly
-                  ? "This site is completed and view only. New updates are closed."
+                  ? "Updates are read-only on completed sites. You can still add Before or After photos from the site page."
                   : currentJob
                     ? "Need help or want to report a blocker?"
                     : "Open an assigned site to contact operations."}

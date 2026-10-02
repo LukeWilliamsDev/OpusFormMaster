@@ -15,7 +15,6 @@ import {
   X,
   User as UserIcon,
   Shield,
-  ShieldCheck,
   Truck,
   ClipboardList,
   Building2,
@@ -199,7 +198,6 @@ export const PortalLayout: React.FC = () => {
     { section: "ADMIN" },
     { name: "AUDIT LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
     { name: "USERS", path: "/portal/users", icon: UserCog, roles: ["admin", "director"] },
-    { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
     {
       name: "PORTAL HOME",
       path: "/portal/third-party",
@@ -220,8 +218,8 @@ export const PortalLayout: React.FC = () => {
     },
   ];
 
-  // SITE LOG/POLICIES are available to every admin. Job-level history remains
-  // available through the job's own History tab for the appropriate ops roles.
+  // Job-level history remains available through the job's own History tab for
+  // the appropriate ops roles. Company policies live under Legal & Privacy.
   const visibleNav = allNav.filter((item) => {
     if ("section" in item) return true;
     if (!role || !item.roles.includes(role)) return false;

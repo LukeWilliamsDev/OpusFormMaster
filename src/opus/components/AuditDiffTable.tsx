@@ -1,4 +1,5 @@
 import React from "react";
+import { formatAuditValue, getAuditFieldLabel } from "../utils/auditDiff";
 
 interface DiffItem {
   field: string;
@@ -20,23 +21,12 @@ export const AuditDiffTable: React.FC<AuditDiffTableProps> = ({ diff }) => {
   }
 
   const renderValue = (val: unknown) => {
-    if (val === undefined || val === null) {
+    if (val === undefined || val === null || val === "") {
       return (
         <span className="text-muted-foreground font-mono italic text-[10px]">&lt;empty&gt;</span>
       );
     }
-    if (typeof val === "object") {
-      return (
-        <span className="font-mono text-[10px] text-muted-foreground break-all">
-          {JSON.stringify(val)}
-        </span>
-      );
-    }
-    return <span className="break-all">{String(val)}</span>;
-  };
-
-  const getFriendlyFieldName = (field: string) => {
-    return field.replace(/_/g, " ");
+    return <span className="break-all">{formatAuditValue(val)}</span>;
   };
 
   return (
@@ -53,7 +43,7 @@ export const AuditDiffTable: React.FC<AuditDiffTableProps> = ({ diff }) => {
           {diff.map((item) => (
             <tr key={item.field} className="hover:bg-secondary/50 transition-colors">
               <td className="py-2 px-3 font-mono text-muted-foreground uppercase text-[9px] tracking-wide align-top">
-                {getFriendlyFieldName(item.field)}
+                {getAuditFieldLabel(item.field)}
               </td>
               <td className="py-2 px-3 bg-destructive/10 text-destructive line-through align-top">
                 {renderValue(item.before)}

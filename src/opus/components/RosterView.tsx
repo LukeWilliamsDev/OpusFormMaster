@@ -54,39 +54,15 @@ import {
 import { supabase } from "../../integrations/supabase/client";
 import type { Json, Database } from "../../integrations/supabase/types";
 import { workerToRow, usePortal } from "../context/PortalContext";
-import { computeDiff, DiffEntry, getEventLabel, getActorName } from "../utils/auditDiff";
+import { computeDiff, getAuditDetails, getRevertibleDiff } from "../utils/auditDiff";
+import { AuditEventCard } from "./AuditEventCard";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TelegramLinkControl } from "./TelegramLinkControl";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
-// Only these fields count as a real "profile change" worth surfacing a
-// generic "Staff Details Have Been Updated" entry + Revert button for.
-// Everything else (tickets, uploaded_certificates, is_archived, postcode)
-// is either covered by its own dedicated entry or too noisy to gate on.
-const REVERTIBLE_FIELDS = ["name", "role", "phone", "email"];
-const FIELD_LABELS: Record<string, string> = {
-  name: "Name",
-  role: "Job Title",
-  phone: "Phone",
-  email: "Email",
-};
-
-interface RosterEventDetails {
-  old?: Record<string, unknown>;
-  new?: Record<string, unknown>;
-  ticket_type?: string;
-  ticket_number?: string;
-  tickets_submitted?: Record<string, unknown>[];
-  requested_certs?: string[];
-  worker_name?: string;
-  job_name?: string;
-  status?: string;
-  expires_at?: string;
-  completed_at?: string | null;
-  uploadUrl?: string;
-}
-
+// The server-side revert RPC intentionally restores only profile fields. It
+// never replays compliance tickets or uploaded certificate snapshots.
 const STAFF_PRIORITY_ORDER = [
   "Toby Green",
   "Roya Nasimi",
@@ -182,6 +158,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     useState<Worker | null>(null);
   const [selectedWorkerToRestore, setSelectedWorkerToRestore] = useState<Worker | null>(null);
   const [revertConfirmTarget, setRevertConfirmTarget] = useState<{
+    auditLogId: string;
     oldDetails: Record<string, unknown>;
     currentDetails: Record<string, unknown>;
     workerId: string;
@@ -228,6 +205,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [auditLogPage, setAuditLogPage] = useState(1);
   const [auditSearch, setAuditSearch] = useState("");
   const [auditActionFilter, setAuditActionFilter] = useState("all");
+  const canRevertAudit = role === "admin" || role === "director";
 
   useEffect(() => {
     setShowAllHistory(false);
@@ -514,35 +492,29 @@ export const RosterView: React.FC<RosterViewProps> = ({
     else window.open(documentUrl, "_blank");
   };
 
-  const executeRevertUpdate = async (oldDetails: Record<string, unknown>, workerId: string) => {
-    if (!oldDetails || !workerId) return;
+  const executeRevertUpdate = async (target: {
+    auditLogId: string;
+    oldDetails: Record<string, unknown>;
+    workerId: string;
+  }) => {
+    if (!target.oldDetails || !target.workerId || !target.auditLogId) return;
     try {
-      const name = oldDetails.name as string;
-      const role = oldDetails.role as StaffRole;
-      const phone = (oldDetails.phone as string | null) ?? null;
-      const email = (oldDetails.email as string | null) ?? null;
-      const postcode = (oldDetails.postcode as string | null) ?? null;
-
-      // Only restore the fields the "Revert Profile" dialog actually shows the
-      // admin. Reverting also wrote tickets/uploaded_certificates/is_archived
-      // from the old snapshot, silently undoing any compliance documents
-      // uploaded after that snapshot was taken.
-      const { error } = await supabase
-        .from("staff")
-        .update({
-          name,
-          role,
-          phone,
-          email,
-          postcode,
-        })
-        .eq("id", workerId);
+      const { error } = await supabase.rpc("revert_audit_log", {
+        p_audit_log_id: target.auditLogId,
+      });
 
       if (error) throw error;
 
+      const name = target.oldDetails.name as string;
+      const role = target.oldDetails.role as StaffRole;
+      const phone = (target.oldDetails.phone as string | null) ?? null;
+      const email = (target.oldDetails.email as string | null) ?? null;
+      const postcode = (target.oldDetails.postcode as string | null) ?? null;
+      const isArchived = (target.oldDetails.is_archived as boolean | undefined) ?? undefined;
+
       setWorkers((prev) =>
         prev.map((w) =>
-          w.id === workerId
+          w.id === target.workerId
             ? {
                 ...w,
                 name,
@@ -550,6 +522,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 phone: phone ?? undefined,
                 email: email ?? undefined,
                 postcode: postcode ?? undefined,
+                ...(isArchived === undefined ? {} : { isArchived }),
               }
             : w,
         ),
@@ -1257,7 +1230,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
       }
     };
 
-    // Prepare events feed for Audit Log tab
+    // Prepare one consistent event feed for the Audit Log tab. Document
+    // requests are not themselves audit rows, so link each request to its
+    // matching CREATE_DOCUMENT_REQUEST event when available instead of
+    // inventing an admin actor or timestamp.
     const requestEvents = dossierDocRequests.map((r) => {
       const isExpired = new Date(r.expires_at) < new Date();
       const isCompleted = !!r.completed_at;
@@ -1265,60 +1241,35 @@ export const RosterView: React.FC<RosterViewProps> = ({
       if (isCompleted) status = "completed";
       else if (isExpired) status = "expired";
 
-      // If the request was resent, expires_at is renewed to now + 48 hours.
-      // So effective date of the action is expires_at - 48 hours.
-      const effectiveDate = new Date(new Date(r.expires_at).getTime() - 48 * 60 * 60 * 1000);
-      const isResent = effectiveDate.getTime() > new Date(r.created_at || 0).getTime();
-      const actionDate = isResent ? effectiveDate.toISOString() : r.created_at || r.expires_at;
+      const requestAudit = dossierAuditLogs.find((log) => {
+        const details = getAuditDetails(log.details);
+        return log.action === "CREATE_DOCUMENT_REQUEST" && details?.request_id === r.id;
+      });
 
       return {
-        id: `req-${r.id}`,
-        rawId: r.id,
-        type: "request",
+        id: requestAudit?.id || `request-${r.id}`,
+        created_at: requestAudit?.created_at || r.created_at || r.expires_at,
+        user_id: requestAudit?.user_id || null,
+        user_email: requestAudit?.user_email || null,
         action: "CREATE_DOCUMENT_REQUEST",
-        created_at: actionDate,
-        actor: "admin@opusform.co.uk",
+        target_type: "staff",
+        target_id: selectedWorkerDetails.id,
+        tenant_id: requestAudit?.tenant_id || "",
         details: {
+          request_id: r.id,
           requested_certs: r.requested_certs,
           expires_at: r.expires_at,
           completed_at: r.completed_at,
           status,
           uploadUrl: `${window.location.origin}/#/submit-credentials?token=${r.id}`,
-        } as RosterEventDetails,
-        rawRecord: r,
+        } as unknown as Database["public"]["Tables"]["audit_logs"]["Row"]["details"],
       };
     });
 
-    const auditEvents = dossierAuditLogs
-      .map((l) => ({
-        id: `audit-${l.id}`,
-        rawId: l.id,
-        type: "audit",
-        action: l.action,
-        created_at: l.created_at,
-        actor: l.user_email || "System / Operative",
-        details: (l.details ?? undefined) as RosterEventDetails | undefined,
-        rawRecord: l,
-      }))
-      .filter((event) => {
-        if (event.action === "CREATE_DOCUMENT_REQUEST") {
-          return false;
-        }
-        if (event.action === "UPDATE") {
-          const diff = event.details?.old ? computeDiff(event.details.old, event.details.new) : [];
-          if (diff.length === 0) return false;
-          // Only show the generic "Staff Details Have Been Updated" entry
-          // when a real profile field changed — other columns (tickets,
-          // uploaded_certificates, is_archived, postcode) are either covered
-          // by their own dedicated entries or too noisy to surface here.
-          if (!diff.some((d) => REVERTIBLE_FIELDS.includes(d.field))) return false;
-          return true;
-        }
-        return true;
-      });
+    const auditEvents = dossierAuditLogs.filter((log) => log.action !== "CREATE_DOCUMENT_REQUEST");
 
     const allEvents = [...requestEvents, ...auditEvents].sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(),
     );
 
     const auditActionOptions = Array.from(new Set(allEvents.map((e) => e.action))).sort();
@@ -1327,10 +1278,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
     const filteredEvents = allEvents.filter((event) => {
       if (auditActionFilter !== "all" && event.action !== auditActionFilter) return false;
       if (!searchLower) return true;
-      return (
-        event.actor?.toLowerCase().includes(searchLower) ||
-        event.action?.toLowerCase().includes(searchLower)
-      );
+      return [event.user_email, event.action, JSON.stringify(event.details)]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(searchLower);
     });
 
     const ITEMS_PER_PAGE = 10;
@@ -1748,166 +1700,51 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 {filteredEvents.length > 0 ? (
                   <div className="divide-y divide-border px-1">
                     {paginatedEvents.map((event) => {
-                      const date = new Date(event.created_at).toLocaleString("en-GB", {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      });
-
-                      // Icon + color matching the event's action
-                      let bulletColor = "bg-primary";
-                      let LogIcon = FileText;
-                      let iconColorClass = "text-primary";
-
-                      if (event.type === "request") {
-                        const status = event.details?.status;
-                        if (status === "completed") {
-                          bulletColor = "bg-success";
-                          LogIcon = CheckCircle2;
-                          iconColorClass = "text-success";
-                        } else if (status === "expired") {
-                          bulletColor = "bg-destructive";
-                          LogIcon = Trash2;
-                          iconColorClass = "text-destructive";
-                        } else {
-                          bulletColor = "bg-warning"; // pending
-                          LogIcon = Send;
-                          iconColorClass = "text-warning";
-                        }
-                      } else {
-                        const action = event.action;
-                        if (action === "APPROVE_DOCUMENT" || action === "SUBMIT_DOCUMENTS") {
-                          bulletColor = "bg-success";
-                          LogIcon = CheckCircle2;
-                          iconColorClass = "text-success";
-                        } else if (action === "REJECT_DOCUMENT") {
-                          bulletColor = "bg-destructive";
-                          LogIcon = Trash2;
-                          iconColorClass = "text-destructive";
-                        } else if (action === "CREATE") {
-                          bulletColor = "bg-primary";
-                          LogIcon = Plus;
-                          iconColorClass = "text-primary";
-                        } else if (action === "UPDATE") {
-                          bulletColor = "bg-primary";
-                          LogIcon = PencilLine;
-                          iconColorClass = "text-primary";
-                        } else if (action === "INSPECT") {
-                          bulletColor = "bg-warning";
-                          LogIcon = Eye;
-                          iconColorClass = "text-purple-600 dark:text-purple-400";
-                        } else {
-                          bulletColor = "bg-warning";
-                          LogIcon = Send;
-                          iconColorClass = "text-warning";
-                        }
-                      }
-
-                      // Badge color by action, summary is generic "label · actor" to match Site Log
-                      let summaryText = "";
-                      let diff: DiffEntry[] = [];
-                      let badgeColor = "bg-secondary border-border text-muted-foreground";
-
-                      if (event.type !== "request") {
-                        const action = event.action;
-                        if (action === "UPDATE") {
-                          diff = event.details?.old
-                            ? computeDiff(event.details.old, event.details.new)
-                            : [];
-                        }
-                        if (action === "APPROVE_DOCUMENT" || action === "SUBMIT_DOCUMENTS") {
-                          badgeColor = "bg-success/10 border-success/20 text-success";
-                        } else if (action === "REJECT_DOCUMENT" || action === "REMOVE_STAFF") {
-                          badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
-                        } else if (action === "REALLOCATE_STAFF") {
-                          badgeColor = "bg-warning/15 border-warning/30 text-warning";
-                        } else if (action === "INSPECT") {
-                          badgeColor =
-                            "bg-purple-500/10 border-purple-500/30 text-purple-600 dark:text-purple-400";
-                        } else if (
-                          action === "RESEND_DOCUMENT_REQUEST" ||
-                          action === "VIEW_DOCUMENT" ||
-                          action === "COMPLIANCE_REMINDER_SENT" ||
-                          action === "ASSIGN_STAFF"
-                        ) {
-                          badgeColor = "bg-primary/5 border-primary/20 text-primary";
-                        }
-                        summaryText = `${getEventLabel(action)} · ${getActorName(event.actor)}`;
-                      }
-
-                      // Single-line badge + summary shown in the header row
-                      let headerBadgeText = getEventLabel(event.action);
-                      let headerBadgeColor = badgeColor;
-                      let headerSummary = summaryText;
-
-                      if (event.type === "request") {
-                        const status = event.details?.status || "pending";
-                        headerBadgeText = status;
-                        headerBadgeColor =
-                          status === "completed"
-                            ? "bg-success/10 border-success/20 text-success"
-                            : status === "expired"
-                              ? "bg-red-500/10 border-red-500/30 text-red-400"
-                              : "bg-warning/15 border-warning/20 text-warning";
-                        headerSummary = `Requested: ${(event.details?.requested_certs || []).join(", ")}`;
-                      }
+                      const details = getAuditDetails(event.details);
+                      const requestId = details?.request_id as string | undefined;
+                      const request = requestId
+                        ? dossierDocRequests.find((record) => record.id === requestId)
+                        : undefined;
+                      const diff =
+                        event.action === "UPDATE" ? computeDiff(details?.old, details?.new) : [];
+                      const canRevertEvent =
+                        canRevertAudit && getRevertibleDiff("staff", diff).length > 0;
 
                       return (
-                        <div key={event.id} className="py-2.5">
-                          <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-2.5 gap-y-1.5 px-2.5">
-                            <div
-                              className={`w-6 h-6 rounded-full ${bulletColor}/10 flex items-center justify-center shrink-0`}
-                            >
-                              <LogIcon className={`w-3.5 h-3.5 ${iconColorClass}`} />
-                            </div>
-                            <span
-                              className={`px-1.5 py-0.5 rounded text-[8.5px] font-black uppercase tracking-widest border shrink-0 ${headerBadgeColor}`}
-                            >
-                              {headerBadgeText}
-                            </span>
-                            <p className="flex-1 min-w-0 basis-full sm:basis-auto order-3 sm:order-none truncate sm:whitespace-normal text-[13px] text-foreground/90">
-                              {headerSummary}
-                            </p>
-                            {event.type === "request" && event.details?.status === "pending" && (
+                        <AuditEventCard
+                          key={event.id}
+                          log={event}
+                          targetName={selectedWorkerDetails.name}
+                          canRevert={canRevertEvent}
+                          reverting={revertConfirmTarget?.auditLogId === event.id}
+                          onRevert={() => {
+                            if (!details?.old || !details?.new) return;
+                            setRevertConfirmTarget({
+                              auditLogId: event.id,
+                              oldDetails: details.old as Record<string, unknown>,
+                              currentDetails: details.new as Record<string, unknown>,
+                              workerId: event.target_id || selectedWorkerDetails.id,
+                            });
+                          }}
+                          extraActions={
+                            request && details?.status === "pending" ? (
                               <button
                                 type="button"
-                                onClick={() => handleResendRequest(event.rawRecord)}
-                                disabled={resendingRequestMap[event.rawRecord.id]}
-                                className="flex items-center justify-center gap-1.5 px-2.5 py-1 bg-secondary hover:bg-secondary/80 rounded text-[9px] font-bold uppercase border border-border disabled:opacity-50 cursor-pointer text-foreground shrink-0"
+                                onClick={(clickEvent) => {
+                                  clickEvent.stopPropagation();
+                                  handleResendRequest(request);
+                                }}
+                                disabled={resendingRequestMap[request.id]}
+                                className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wider text-foreground transition-colors hover:bg-secondary/80 disabled:opacity-50"
                               >
-                                {resendingRequestMap[event.rawRecord.id] ? (
-                                  <RefreshCw className="h-3 w-3 animate-spin" />
-                                ) : (
-                                  <RefreshCw className="h-3 w-3 text-muted-foreground" />
-                                )}
-                                <span>Resend</span>
+                                <RefreshCw
+                                  className={`h-3 w-3 ${resendingRequestMap[request.id] ? "animate-spin" : "text-muted-foreground"}`}
+                                />
+                                Resend
                               </button>
-                            )}
-                            {diff.some((d) => REVERTIBLE_FIELDS.includes(d.field)) && (
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setRevertConfirmTarget({
-                                    oldDetails: event.details?.old ?? {},
-                                    currentDetails: event.details?.new ?? {},
-                                    workerId:
-                                      (event.rawRecord as { target_id?: string })?.target_id ||
-                                      selectedWorkerDetailsId ||
-                                      "",
-                                  })
-                                }
-                                className="shrink-0 px-2.5 py-1 rounded bg-secondary hover:bg-warning/10 text-foreground/85 hover:text-warning border border-border hover:border-warning/30 text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer"
-                              >
-                                Revert
-                              </button>
-                            )}
-                            <span className="text-[12px] text-muted-foreground shrink-0 whitespace-nowrap">
-                              {date}
-                            </span>
-                          </div>
-                        </div>
+                            ) : null
+                          }
+                        />
                       );
                     })}
 
@@ -2057,13 +1894,16 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       { key: "phone", label: "Phone" },
                       { key: "email", label: "Email" },
                       { key: "postcode", label: "Postcode" },
+                      { key: "is_archived", label: "Archived" },
                     ];
                     return fields
-                      .filter((f) => old?.[f.key])
+                      .filter((f) => Object.prototype.hasOwnProperty.call(old, f.key))
                       .map((f) => {
                         const oldVal = old?.[f.key] as React.ReactNode;
                         const curVal = cur?.[f.key] as React.ReactNode;
                         const changed = oldVal !== curVal;
+                        const hasCurrentValue =
+                          curVal !== undefined && curVal !== null && curVal !== "";
                         return (
                           <div
                             key={f.key}
@@ -2083,12 +1923,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
                               {f.label}
                             </span>
                             <div className="flex items-center gap-2 text-right">
-                              {changed && curVal && (
+                              {changed && hasCurrentValue && (
                                 <span className="line-through text-muted-foreground text-[11px]">
                                   {curVal}
                                 </span>
                               )}
-                              {changed && curVal && (
+                              {changed && hasCurrentValue && (
                                 <span className="text-muted-foreground text-[10px]">→</span>
                               )}
                               <span
@@ -2110,7 +1950,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           confirmLabel="Revert Profile"
           onConfirm={() => {
             if (!revertConfirmTarget) return;
-            executeRevertUpdate(revertConfirmTarget.oldDetails, revertConfirmTarget.workerId);
+            executeRevertUpdate(revertConfirmTarget);
           }}
         />
 

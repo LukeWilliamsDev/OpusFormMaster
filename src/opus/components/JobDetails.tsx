@@ -857,7 +857,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   );
 
   return (
-    <div className="space-y-6 font-sans text-foreground p-4 md:p-6 max-w-7xl mx-auto bg-background min-h-screen">
+    <div className="mx-auto min-h-screen w-full max-w-[2200px] space-y-6 bg-background p-4 font-sans text-foreground md:p-6 lg:px-8 2xl:px-10">
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
@@ -1398,6 +1398,41 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             loadingJobAuditLogs={loadingJobAuditLogs}
             auditSearch={auditSearch}
             setAuditSearch={setAuditSearch}
+            jobName={job.siteName}
+            onAuditRefresh={fetchJobAuditLogs}
+            onJobReverted={(oldDetails) => {
+              onUpdateJob({
+                ...job,
+                siteName:
+                  typeof oldDetails.site_name === "string" ? oldDetails.site_name : job.siteName,
+                mainContractor:
+                  typeof oldDetails.main_contractor === "string"
+                    ? oldDetails.main_contractor
+                    : oldDetails.main_contractor === null
+                      ? ""
+                      : job.mainContractor,
+                postcode:
+                  typeof oldDetails.postcode === "string"
+                    ? oldDetails.postcode
+                    : oldDetails.postcode === null
+                      ? ""
+                      : job.postcode,
+                email:
+                  typeof oldDetails.email === "string"
+                    ? oldDetails.email
+                    : oldDetails.email === null
+                      ? undefined
+                      : job.email,
+                contractMaxPours:
+                  typeof oldDetails.contract_max_pours === "number"
+                    ? oldDetails.contract_max_pours
+                    : job.contractMaxPours,
+                status:
+                  typeof oldDetails.status === "string"
+                    ? (oldDetails.status as Job["status"])
+                    : job.status,
+              });
+            }}
           />
         </TabsContent>
 

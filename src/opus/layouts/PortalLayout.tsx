@@ -32,12 +32,27 @@ import {
   MANAGEMENT_ROLES,
   SCHEDULE_ROLES,
   formatAppRoleLabel,
-  INTERNAL_ROLES,
 } from "../context/PortalContext";
 import { getAvatarPresetClass } from "../utils/avatar";
 import { getAvatarInitials } from "../utils/workerValidation";
+import {
+  getMobilePortalNavItems,
+  isPortalNavItemActive,
+  type MobileNavIcon,
+} from "../utils/portalNavigation";
 import { NavList } from "@/components/application/app-navigation/base-components/nav-list";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
+
+const mobileNavIcons: Record<MobileNavIcon, typeof LayoutDashboard> = {
+  dashboard: LayoutDashboard,
+  ledger: ClipboardList,
+  schedule: Calendar,
+  staff: Users,
+  home: LayoutDashboard,
+  sites: Building2,
+  help: HelpCircle,
+  more: Menu,
+};
 
 export const PortalLayout: React.FC = () => {
   const { signOut, role, user, profile, theme, setTheme } = usePortal();
@@ -63,7 +78,8 @@ export const PortalLayout: React.FC = () => {
   };
   const navigate = useNavigate();
   const location = useLocation();
-  const showThirdPartyBottomNav = role === "third_party";
+  const mobileNavItems = getMobilePortalNavItems(role, MANAGEMENT_ROLES);
+  const showMobileBottomNav = mobileNavItems.length > 0;
 
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -168,7 +184,7 @@ export const PortalLayout: React.FC = () => {
       name: "CERTIFICATE CHECKER",
       path: "/portal/certificate-checker",
       icon: BadgeCheck,
-      roles: INTERNAL_ROLES,
+      roles: MANAGEMENT_ROLES,
     },
     {
       name: "QUOTES",
@@ -177,7 +193,7 @@ export const PortalLayout: React.FC = () => {
       roles: MANAGEMENT_ROLES,
     },
     { section: "ADMIN" },
-    { name: "AUDIT LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
+    { name: "AUDIT LOG", path: "/portal/audit", icon: History, roles: ["admin", "director"] },
     { name: "USERS", path: "/portal/users", icon: UserCog, roles: ["admin", "director"] },
     { name: "POLICIES", path: "/portal/policies", icon: ShieldCheck, roles: ["admin"] },
     {
@@ -200,14 +216,13 @@ export const PortalLayout: React.FC = () => {
     },
   ];
 
-  // SITE RECORDS/POLICIES (full audit trail) are restricted to the one
-  // designated compliance account, not every admin — job-level history is
-  // reached via the job's own History tab instead.
+  // Policies remain restricted to the designated compliance account. The full
+  // audit trail is tenant-scoped and available to every admin/director.
   const isAuditAdmin = user?.email === "admin@opusform.co.uk";
   const visibleNav = allNav.filter((item) => {
     if ("section" in item) return true;
     if (!role || !item.roles.includes(role)) return false;
-    if (item.path === "/portal/audit" || item.path === "/portal/policies") return isAuditAdmin;
+    if (item.path === "/portal/policies") return isAuditAdmin;
     return true;
   });
   // Drop a section header if every item under it got filtered out (e.g. ADMIN for non-admins).
@@ -221,23 +236,7 @@ export const PortalLayout: React.FC = () => {
         });
 
   const checkIsActive = (path: string) => {
-    const [itemPath, itemQuery] = path.split("?");
-    if (location.pathname !== itemPath) return false;
-
-    const params = new URLSearchParams(location.search);
-    const itemParams = new URLSearchParams(itemQuery || "");
-
-    if (itemPath === "/portal/roster") {
-      const currentView = params.get("view") || "calendar";
-      const itemView = itemParams.get("view") || "calendar";
-      return currentView === itemView;
-    }
-
-    if (itemPath === "/portal/pipeline") {
-      return true;
-    }
-
-    return true;
+    return isPortalNavItemActive(location.pathname, location.search, path);
   };
 
   const toNavListItems = () =>
@@ -314,7 +313,7 @@ export const PortalLayout: React.FC = () => {
               mobileMenuReturnRef.current = event.currentTarget;
               setIsMobileMenuOpen(!isMobileMenuOpen);
             }}
-            className={`p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] items-center justify-center ${role === "third_party" ? "hidden" : "flex"}`}
+            className={`p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] items-center justify-center ${showMobileBottomNav ? "hidden" : "flex"}`}
             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={isMobileMenuOpen}
             aria-controls="mobile-portal-menu"
@@ -324,41 +323,47 @@ export const PortalLayout: React.FC = () => {
         </div>
       </header>
 
-      {showThirdPartyBottomNav && (
+      {showMobileBottomNav && (
         <nav
-          aria-label="Third-party portal navigation"
+          aria-label="Portal navigation"
           className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 border-t-2 border-border bg-background/95 px-2 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
         >
-          {[
-            { label: "Home", path: "/portal/third-party", icon: LayoutDashboard },
-            { label: "Staff", path: "/portal/third-party/staff", icon: Users },
-            { label: "Sites", path: "/portal/third-party/sites", icon: Building2 },
-            { label: "Help", path: "/portal/help", icon: HelpCircle },
-          ].map(({ label, path, icon: Icon }) => (
-            <Link
-              key={path}
-              to={path}
-              className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${checkIsActive(path) ? "text-primary" : "text-muted-foreground"}`}
-              aria-current={checkIsActive(path) ? "page" : undefined}
-            >
-              <Icon className="h-4 w-4" aria-hidden="true" />
-              {label}
-            </Link>
-          ))}
-          <button
-            type="button"
-            onClick={(event) => {
-              mobileMenuReturnRef.current = event.currentTarget;
-              setIsMobileMenuOpen(true);
-            }}
-            className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-muted-foreground"
-            aria-label="Open portal menu"
-            aria-expanded={isMobileMenuOpen}
-            aria-controls="mobile-portal-menu"
-          >
-            <Menu className="h-4 w-4" />
-            More
-          </button>
+          {mobileNavItems.map((item) => {
+            const Icon = mobileNavIcons[item.icon];
+
+            if (item.kind === "more") {
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={(event) => {
+                    mobileMenuReturnRef.current = event.currentTarget;
+                    setIsMobileMenuOpen(true);
+                  }}
+                  className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-muted-foreground"
+                  aria-label="Open portal menu"
+                  aria-expanded={isMobileMenuOpen}
+                  aria-controls="mobile-portal-menu"
+                >
+                  <Icon className="h-4 w-4" aria-hidden="true" />
+                  {item.label}
+                </button>
+              );
+            }
+
+            const isActive = checkIsActive(item.path);
+            return (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                {item.label}
+              </Link>
+            );
+          })}
         </nav>
       )}
 
@@ -515,14 +520,18 @@ export const PortalLayout: React.FC = () => {
         ref={mainContentRef}
         tabIndex={-1}
         aria-labelledby="portal-page-announcement"
-        className={`flex-1 flex flex-col min-h-0 bg-background ${showThirdPartyBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}
+        className={`flex-1 flex flex-col min-h-0 bg-background ${showMobileBottomNav ? "pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0" : ""}`}
       >
         <div id="portal-page-announcement" className="sr-only" aria-live="polite">
           {routeAnnouncement}
         </div>
         <div
           className="flex-1 w-full relative lg:min-h-0 lg:overflow-y-auto"
-          style={{ scrollPaddingBottom: showThirdPartyBottomNav ? "6.5rem" : undefined }}
+          style={{
+            scrollPaddingBottom: showMobileBottomNav
+              ? "calc(6.5rem + env(safe-area-inset-bottom))"
+              : undefined,
+          }}
         >
           <Outlet />
         </div>

@@ -108,9 +108,6 @@ const PipelinePage = lazyRoute(() =>
 const AuditLogPage = lazyRoute(() =>
   import("./pages/AuditLog").then((module) => ({ default: module.AuditLogPage })),
 );
-const AdminPolicies = lazyRoute(() =>
-  import("./pages/AdminPolicies").then((module) => ({ default: module.AdminPolicies })),
-);
 const AdminUsers = lazyRoute(() =>
   import("./pages/AdminUsers").then((module) => ({ default: module.AdminUsers })),
 );
@@ -510,14 +507,6 @@ export default function App() {
                   element={
                     <AuditLogGuard>
                       <AuditLogPage />
-                    </AuditLogGuard>
-                  }
-                />
-                <Route
-                  path="/portal/policies"
-                  element={
-                    <AuditLogGuard>
-                      <AdminPolicies />
                     </AuditLogGuard>
                   }
                 />

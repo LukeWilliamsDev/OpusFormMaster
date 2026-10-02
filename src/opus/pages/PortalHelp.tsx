@@ -210,12 +210,12 @@ const InternalHelp: React.FC<{
           ? "Coordinate site operations"
           : "Review operational information";
   const restriction = assistant
-    ? "Most operational pages are read-only for this role. Staff Approvals and general job, staff, schedule, note, attachment, quote, and document edits are not available. Certificate Checker is a separate exception for recording a CSCS outcome."
+    ? "Most operational pages are read-only for this role. Staff Approvals and general job, staff, schedule, note, attachment, quote, and document edits are not available. Certificate Checker is a separate exception for recording a CSCS outcome. Company policies are available under Legal & Privacy."
     : director
-      ? "Users is available. Tenant-wide Audit Log and Policies are not available to this role."
+      ? "Users is available. Tenant-wide Audit Log is not available to this role. Company policies are available under Legal & Privacy."
       : coordinator
-        ? "Users, tenant-wide Audit Log, and Policies are not available to this role."
-        : "You can manage portal users, review the tenant-wide Audit Log, and manage Policies.";
+        ? "Users, tenant-wide Audit Log, and policy management are not available to this role. Company policies are available under Legal & Privacy."
+        : "You can manage portal users and review the tenant-wide Audit Log. Read company policies under Legal & Privacy.";
   const items: HelpItem[] = [
     {
       title: "Review operations",

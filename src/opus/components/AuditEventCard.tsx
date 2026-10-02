@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Activity,
   CheckCircle2,
@@ -17,13 +17,21 @@ import type { Database } from "@/integrations/supabase/types";
 import { AuditDiffTable } from "./AuditDiffTable";
 import {
   computeDiff,
-  formatAuditValue,
+  formatSafeAuditDetail,
   getActorName,
-  getAuditChangeSummary,
+  getAuditCategory,
+  getAuditCategoryLabel,
   getAuditDetails,
+  getAuditEventSentence,
+  getAuditActorIdentifier,
   getAuditFieldLabel,
+  getAuditOutcomeSummary,
+  getAuditRecordLabel,
+  getAuditSourceLabel,
+  getAuditTargetLabel,
   getEventLabel,
   getRevertibleDiff,
+  isDerivedAuditRecord,
 } from "../utils/auditDiff";
 
 type AuditLogRow = Database["public"]["Tables"]["audit_logs"]["Row"];
@@ -86,23 +94,19 @@ function getActionPresentation(action: string) {
   };
 }
 
-function getTargetTypeLabel(targetType: string): string {
-  return (
-    {
-      auth: "Account",
-      jobs: "Site",
-      quotes: "Quote",
-      staff: "Staff",
-    }[targetType] || targetType.replace(/_/g, " ")
-  );
-}
-
 function formatEventTime(createdAt: string | null): string {
   if (!createdAt) return "Time not recorded";
-  return new Date(createdAt).toLocaleString("en-GB", {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  const date = new Date(createdAt);
+  if (Number.isNaN(date.getTime())) return "Time not recorded";
+  return new Intl.DateTimeFormat("en-GB", {
+    year: "numeric",
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/London",
+    timeZoneName: "short",
+  }).format(date);
 }
 
 interface AuditInspectorProps {
@@ -122,18 +126,55 @@ function AuditInspector({
   onClose,
   onRevert,
 }: AuditInspectorProps) {
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   const details = getAuditDetails(log.details);
+  const isDerivedRequest = isDerivedAuditRecord(log);
   const diff = log.action === "UPDATE" ? computeDiff(details?.old, details?.new) : [];
   const revertibleDiff = getRevertibleDiff(log.target_type, diff);
   const presentation = getActionPresentation(log.action);
   const LogIcon = presentation.icon;
   const actor = log.user_email ? getActorName(log.user_email) : "System / Automated";
-  const targetLabel = targetName
-    ? `${getTargetTypeLabel(log.target_type)} · ${targetName}`
-    : getTargetTypeLabel(log.target_type);
+  const actorIdentifier = getAuditActorIdentifier(log.user_email);
+  const targetLabel = getAuditRecordLabel(log, targetName);
+  const targetTypeLabel = getAuditTargetLabel(log.target_type);
   const detailEntries = Object.entries(details ?? {}).filter(
-    ([key]) => key !== "old" && key !== "new",
+    ([key]) =>
+      key !== "old" &&
+      key !== "new" &&
+      key !== "uploadUrl" &&
+      key !== "is_derived_request" &&
+      key !== "audit_source",
   );
+
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab") return;
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => !element.hasAttribute("disabled"));
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
 
   return (
     <div
@@ -143,10 +184,12 @@ function AuditInspector({
       <button
         type="button"
         aria-label="Close audit details"
+        tabIndex={-1}
         className="absolute inset-0 cursor-default"
         onClick={onClose}
       />
       <aside
+        ref={dialogRef}
         className="relative z-10 flex h-full w-full max-w-xl flex-col border-l border-border bg-card shadow-2xl animate-in slide-in-from-right duration-200"
         role="dialog"
         aria-modal="true"
@@ -160,64 +203,58 @@ function AuditInspector({
               <LogIcon className={`h-4 w-4 ${presentation.iconClass}`} aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <span
-                className={`inline-flex rounded border px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-widest ${presentation.badge}`}
-              >
-                {getEventLabel(log.action)}
+              <span className="text-xs font-semibold text-muted-foreground">
+                {getAuditCategoryLabel(getAuditCategory(log.action))}
               </span>
-              <h2 className="mt-2 truncate text-lg font-bold text-foreground">{targetLabel}</h2>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {getAuditChangeSummary(log, targetName)}
+              <h2 className="mt-1 text-xl font-bold text-foreground">
+                {isDerivedRequest ? "Request status" : getEventLabel(log.action)}
+              </h2>
+              <p className="mt-1 text-sm font-semibold text-foreground">
+                {targetTypeLabel} · {targetLabel}
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {isDerivedRequest
+                  ? "This status is derived from the current compliance request, not a separate audit event."
+                  : getAuditEventSentence(log, targetName)}
               </p>
             </div>
           </div>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={onClose}
             aria-label="Close audit details"
-            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+            className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary"
           >
             <X className="h-4 w-4" />
           </button>
         </header>
 
         <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5 sm:px-6">
-          <div className="grid gap-3 rounded-xl border border-border bg-background/60 p-4 text-xs sm:grid-cols-2">
+          <div className="grid gap-4 rounded-xl border border-border bg-background/60 p-4 text-sm sm:grid-cols-2">
             <div>
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                Who
-              </p>
-              <p className="mt-1 font-semibold text-foreground" title={log.user_email || undefined}>
-                {actor}
-              </p>
+              <p className="text-xs font-semibold text-muted-foreground">Actor</p>
+              <p className="mt-1 font-semibold text-foreground">{actor}</p>
               {log.user_email && (
-                <p className="mt-0.5 break-all text-[11px] text-muted-foreground">
-                  {log.user_email}
-                </p>
+                <p className="mt-0.5 break-all text-xs text-muted-foreground">{actorIdentifier}</p>
               )}
             </div>
             <div>
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                When
-              </p>
+              <p className="text-xs font-semibold text-muted-foreground">When (Europe/London)</p>
               <p className="mt-1 font-semibold text-foreground">
                 {formatEventTime(log.created_at)}
               </p>
             </div>
             <div className="sm:col-span-2">
-              <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">
-                Record
-              </p>
-              <p className="mt-1 break-all font-mono text-[11px] text-foreground">
-                {targetLabel} · {log.target_id}
-              </p>
+              <p className="text-xs font-semibold text-muted-foreground">Outcome</p>
+              <p className="mt-1 font-semibold text-foreground">{getAuditOutcomeSummary(log)}</p>
             </div>
           </div>
 
           {diff.length > 0 ? (
             <section>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                <PencilLine className="h-3.5 w-3.5" />
+              <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                <PencilLine className="h-4 w-4 text-muted-foreground" />
                 Field changes
               </div>
               <AuditDiffTable diff={diff} />
@@ -229,38 +266,55 @@ function AuditInspector({
           )}
 
           {detailEntries.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                <Info className="h-3.5 w-3.5" />
-                Event details
-              </div>
-              <dl className="mt-2 grid gap-3 rounded-xl border border-border bg-background/60 p-4 text-xs sm:grid-cols-2">
+            <details className="rounded-xl border border-border bg-background/60 p-4">
+              <summary className="cursor-pointer text-sm font-semibold text-foreground">
+                Additional evidence
+              </summary>
+              <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                 {detailEntries.map(([key, value]) => (
                   <div key={key} className="min-w-0">
-                    <dt className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">
+                    <dt className="text-xs font-semibold text-muted-foreground">
                       {getAuditFieldLabel(key)}
                     </dt>
-                    <dd className="mt-1 break-words font-medium text-foreground">
-                      {formatAuditValue(value)}
+                    <dd className="mt-1 break-words text-foreground">
+                      {formatSafeAuditDetail(key, value)}
                     </dd>
                   </div>
                 ))}
               </dl>
-            </section>
+            </details>
           )}
 
+          <div className="rounded-xl border border-border bg-background/60 p-4">
+            <p className="text-sm font-semibold text-foreground">Evidence source</p>
+            <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-xs font-semibold text-muted-foreground">Source</dt>
+                <dd className="mt-1 text-foreground">{getAuditSourceLabel(log)}</dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold text-muted-foreground">Evidence status</dt>
+                <dd className="mt-1 text-foreground">
+                  {isDerivedRequest
+                    ? "Derived status; source event may be unavailable"
+                    : "Recorded event"}
+                </dd>
+              </div>
+            </dl>
+          </div>
+
           {details?.reverted_audit_log_id != null && (
-            <p className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning">
-              This update reverted audit entry {String(details.reverted_audit_log_id)}.
+            <p className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+              This event is a corrective update linked to an earlier audit entry.
             </p>
           )}
         </div>
 
         <footer className="flex items-center justify-between gap-3 border-t border-border px-5 py-4 sm:px-6">
-          <p className="text-[10px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {canRevert && revertibleDiff.length > 0
-              ? "Reverts are recorded as a new audit event."
-              : "This event remains read-only."}
+              ? "Revert creates a new corrective event."
+              : "Read-only evidence"}
           </p>
           {canRevert && revertibleDiff.length > 0 && onRevert && (
             <button
@@ -270,10 +324,10 @@ function AuditInspector({
                 onRevert(log);
               }}
               disabled={reverting}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-[10px] font-black uppercase tracking-wider text-warning transition-colors hover:bg-warning/20 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-warning/30 bg-warning/10 px-3 py-2 text-xs font-semibold text-warning transition-colors hover:bg-warning/20 disabled:opacity-50"
             >
-              <RotateCcw className="h-3 w-3" />
-              {reverting ? "Reverting…" : "Revert change"}
+              <RotateCcw className="h-3.5 w-3.5" />
+              {reverting ? "Reverting…" : "Revert this change"}
             </button>
           )}
         </footer>
@@ -291,70 +345,60 @@ export const AuditEventCard: React.FC<AuditEventCardProps> = ({
   extraActions,
 }) => {
   const [inspectorOpen, setInspectorOpen] = useState(false);
-  const details = getAuditDetails(log.details);
-  const diff = log.action === "UPDATE" ? computeDiff(details?.old, details?.new) : [];
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const presentation = getActionPresentation(log.action);
   const LogIcon = presentation.icon;
-  const actor = log.user_email ? getActorName(log.user_email) : "System / Automated";
-  const actorTitle = log.user_email || "System / Automated";
-  const targetLabel = targetName
-    ? `${getTargetTypeLabel(log.target_type)} · ${targetName}`
-    : getTargetTypeLabel(log.target_type);
-  const eventLabel = getEventLabel(log.action);
-  const fullSummary = getAuditChangeSummary(log, targetName);
-  const rowSummary = fullSummary.startsWith(`${eventLabel} · `)
-    ? fullSummary.slice(eventLabel.length + 3)
-    : fullSummary;
+  const actor = log.user_email ? getActorName(log.user_email) : "System";
+  const actorIdentifier = getAuditActorIdentifier(log.user_email);
+  const targetLabel = getAuditRecordLabel(log, targetName);
+  const isDerivedRequest = isDerivedAuditRecord(log);
+  const closeInspector = () => {
+    setInspectorOpen(false);
+    window.setTimeout(() => triggerRef.current?.focus(), 0);
+  };
 
   return (
-    <>
-      <div
-        className="group flex min-h-[68px] cursor-pointer items-center gap-3 px-1 py-3 transition-colors hover:bg-secondary/40"
-        role="button"
-        tabIndex={0}
-        onClick={() => setInspectorOpen(true)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            setInspectorOpen(true);
-          }
-        }}
-      >
-        <div
-          className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${presentation.iconBg}`}
+    <article className="border-b border-border last:border-b-0">
+      <div className="flex items-stretch gap-2 py-1">
+        <button
+          ref={triggerRef}
+          type="button"
+          className="group grid min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-3 text-left transition-colors hover:bg-secondary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary lg:grid-cols-[120px_118px_minmax(180px,1.3fr)_minmax(150px,1fr)_150px_24px]"
+          onClick={() => setInspectorOpen(true)}
+          aria-label={`View audit details: ${isDerivedRequest ? "Compliance request status" : getAuditEventSentence(log, targetName)}`}
         >
-          <LogIcon className={`h-3.5 w-3.5 ${presentation.iconClass}`} aria-hidden="true" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <span className="text-xs text-muted-foreground">{formatEventTime(log.created_at)}</span>
+          <span className="flex items-center gap-2">
             <span
-              className={`rounded border px-1.5 py-0.5 text-[8.5px] font-black uppercase tracking-widest ${presentation.badge}`}
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${presentation.iconBg}`}
             >
-              {eventLabel}
+              <LogIcon className={`h-3.5 w-3.5 ${presentation.iconClass}`} aria-hidden="true" />
             </span>
-            <span className="truncate text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+            <span className="text-sm font-semibold text-foreground">
+              {isDerivedRequest ? "Request status" : getEventLabel(log.action)}
+            </span>
+          </span>
+          <span className="min-w-0">
+            <span className="block truncate text-sm font-semibold text-foreground">
               {targetLabel}
             </span>
-          </div>
-          <p className="mt-1 truncate text-[13px] font-semibold text-foreground">{rowSummary}</p>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1" title={actorTitle}>
-              <User className="h-3 w-3" aria-hidden="true" />
-              By {actor}
+            <span className="block truncate text-xs text-muted-foreground">
+              {getAuditTargetLabel(log.target_type)}
             </span>
-            <span className="inline-flex items-center gap-1">
-              <Clock3 className="h-3 w-3" aria-hidden="true" />
-              {formatEventTime(log.created_at)}
-            </span>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {extraActions}
-          <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-colors group-hover:text-foreground">
-            Details
-            <ChevronRight className="h-3.5 w-3.5" />
           </span>
-        </div>
+          <span className="truncate text-sm text-muted-foreground">
+            {getAuditOutcomeSummary(log)}
+          </span>
+          <span className="truncate text-sm text-muted-foreground" title={actorIdentifier}>
+            <User className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
+            {actor}
+          </span>
+          <ChevronRight
+            className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground"
+            aria-hidden="true"
+          />
+        </button>
+        {extraActions && <div className="flex shrink-0 items-center">{extraActions}</div>}
       </div>
       {inspectorOpen && (
         <AuditInspector
@@ -362,10 +406,10 @@ export const AuditEventCard: React.FC<AuditEventCardProps> = ({
           targetName={targetName}
           canRevert={canRevert}
           reverting={reverting}
-          onClose={() => setInspectorOpen(false)}
+          onClose={closeInspector}
           onRevert={onRevert}
         />
       )}
-    </>
+    </article>
   );
 };

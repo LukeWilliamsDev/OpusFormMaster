@@ -17,6 +17,54 @@ export interface AuditRecordLike {
   details?: unknown;
 }
 
+export type AuditCategory = "changes" | "compliance" | "access" | "system";
+
+export const AUDIT_CATEGORY_LABELS: Record<AuditCategory, string> = {
+  changes: "Changes & decisions",
+  compliance: "Compliance",
+  access: "Access activity",
+  system: "System activity",
+};
+
+const ACCESS_ACTIONS = new Set([
+  "INSPECT",
+  "VIEW_DOCUMENT",
+  "VIEW_ATTACHMENT",
+  "VIEW_DOCUMENTS",
+  "THIRD_PARTY_ATTACHMENT_VIEWED",
+]);
+
+const COMPLIANCE_ACTIONS = new Set([
+  "COMPLIANCE_REMINDER_SENT",
+  "TICKET_EXPIRED",
+  "CREATE_DOCUMENT_REQUEST",
+  "RESEND_DOCUMENT_REQUEST",
+  "REMOVE_DOCUMENT",
+  "APPROVE_DOCUMENT",
+  "REJECT_DOCUMENT",
+  "SUBMIT_DOCUMENTS",
+  "UPLOAD_ATTACHMENT",
+  "DELETE_ATTACHMENT",
+  "STAFF_CERTIFICATE_CHECK_RECORDED",
+  "THIRD_PARTY_STAFF_DOCUMENT_SUBMITTED",
+  "THIRD_PARTY_STAFF_DOCUMENT_UPLOADED",
+  "THIRD_PARTY_STAFF_DOCUMENT_REVIEWED",
+]);
+
+const SYSTEM_ACTIONS = new Set([
+  "LOGIN_SUCCESS",
+  "LOGIN_FAIL",
+  "LOGOUT",
+  "PASSWORD_RESET_REQUEST",
+  "PASSWORD_RESET_SUCCESS",
+  "PROFILE_UPDATE",
+  "TELEGRAM_LINK_CREATED",
+  "TELEGRAM_LINK_REVOKED",
+  "USER_CREATED",
+  "USER_UPDATED",
+  "USER_DELETED",
+]);
+
 // Exact, plain-English label for each audit action code — shared across the
 // staff dossier, job history tab, and Site Log so badges read the same
 // everywhere. Falls back to a title-cased version of the raw action.
@@ -75,12 +123,22 @@ const ACTION_LABELS: Record<string, string> = {
 // column shared by the staff dossier, job history tab, and Site Log.
 export function getActorName(email: string | null | undefined): string {
   if (!email) return "System";
+  if (!AUDIT_EMAIL_PATTERN.test(email) || containsSensitiveAuditText(email)) {
+    return "Unverified identifier";
+  }
   const [name] = email.split("@");
   return name
     .split(/[._-]/)
     .filter(Boolean)
     .map((part) => part[0]?.toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+export function getAuditActorIdentifier(email: string | null | undefined): string {
+  if (!email) return "System / Automated";
+  return AUDIT_EMAIL_PATTERN.test(email) && !containsSensitiveAuditText(email)
+    ? email
+    : "Unverified identifier";
 }
 
 export function getEventLabel(action: string | null | undefined): string {
@@ -118,15 +176,82 @@ export const AUDIT_FIELD_LABELS: Record<string, string> = {
   ticket_number: "Certificate number",
 };
 
+const VISIBLE_AUDIT_FIELD_KEYS = new Set([
+  ...Object.keys(AUDIT_FIELD_LABELS),
+  "reference",
+  "completed_at",
+  "expires_at",
+  "requested_certs",
+  "reason",
+  "outcome",
+  "source",
+]);
+
 export function getAuditFieldLabel(field: string): string {
-  return AUDIT_FIELD_LABELS[field] ?? field.replace(/_/g, " ");
+  if (AUDIT_FIELD_LABELS[field]) return AUDIT_FIELD_LABELS[field];
+  return VISIBLE_AUDIT_FIELD_KEYS.has(field) ? field.replace(/_/g, " ") : "Other restricted field";
 }
 
 export function formatAuditValue(value: unknown): string {
   if (value === null || value === undefined || value === "") return "Empty";
   if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (typeof value === "object") return JSON.stringify(value);
+  if (typeof value === "object") return "Restricted";
+  if (typeof value === "string" && containsSensitiveAuditText(value)) return "Restricted";
   return String(value);
+}
+
+const SAFE_DIFF_FIELDS = new Set([
+  "name",
+  "role",
+  "phone",
+  "email",
+  "postcode",
+  "is_archived",
+  "site_name",
+  "main_contractor",
+  "contract_max_pours",
+  "status",
+  "job_ref",
+  "current_pours",
+  "schedule_value",
+  "date",
+  "notes",
+  "file_name",
+  "ticket_type",
+  "ticket_number",
+  "reference",
+  "completed_at",
+  "expires_at",
+  "reason",
+  "outcome",
+  "source",
+  "requested_certs",
+]);
+
+const SENSITIVE_AUDIT_FIELD =
+  /(url|token|secret|password|passwd|hash|request[_-]?id|service[_-]?role|api[_-]?key|access[_-]?key)/i;
+
+const AUDIT_EMAIL_PATTERN =
+  /^[A-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[A-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?(?:\.[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?)+$/i;
+
+function containsSensitiveAuditText(value: string): boolean {
+  return (
+    /(?:https?|ftp):\/\/|\/\/[a-z0-9.-]+(?:[/?#]|$)/i.test(value) ||
+    /%3a%2f%2f|%2f%2f/i.test(value) ||
+    /bearer\s+|(?:token|secret|password|key|signature)\s*[:=]/i.test(value) ||
+    /(?:^|[\s"'(])request[-_][a-z0-9-]+(?:$|[\s"')])/i.test(value) ||
+    /^[0-9a-f]{8}-[0-9a-f-]{27,}$/i.test(value)
+  );
+}
+
+export function formatSafeAuditFieldValue(field: string, value: unknown): string {
+  if (!SAFE_DIFF_FIELDS.has(field) || SENSITIVE_AUDIT_FIELD.test(field)) return "Restricted";
+  if (Array.isArray(value)) {
+    return value.every((entry) => typeof entry === "string" && !containsSensitiveAuditText(entry))
+      ? value.join(", ")
+      : "Restricted";
+  }
+  return formatAuditValue(value);
 }
 
 export interface DiffEntry {
@@ -185,14 +310,20 @@ function inferAuditTargetName(
     const values = snapshot as Record<string, unknown>;
     const label = fields
       .map((field) => values[field])
-      .find((value) => typeof value === "string" && value.trim().length > 0);
+      .find(
+        (value) =>
+          typeof value === "string" &&
+          value.trim().length > 0 &&
+          !containsSensitiveAuditText(value),
+      );
     if (typeof label === "string") return label;
   }
   return undefined;
 }
 
-function quoteSentenceValue(value: unknown): string {
-  const formatted = formatAuditValue(value);
+function quoteSentenceValue(field: string, value: unknown): string {
+  const formatted = formatSafeAuditFieldValue(field, value);
+  if (formatted === "Restricted") return "a restricted value";
   return formatted === "Empty" ? "empty" : `“${formatted}”`;
 }
 
@@ -202,9 +333,14 @@ function auditSubject(
 ): string {
   const details = getAuditDetails(record.details);
   const inferredName = inferAuditTargetName(record.target_type, details);
-  const label = targetName || inferredName;
+  const label = safeAuditLabel(targetName) || safeAuditLabel(inferredName);
   const targetType = getAuditTargetLabel(record.target_type).toLowerCase();
-  return label ? `${targetType} “${label}”` : `${targetType} (ID ${record.target_id})`;
+  return label ? `${targetType} “${label}”` : `${targetType} “Unnamed record”`;
+}
+
+function safeAuditLabel(value: string | undefined): string | undefined {
+  if (!value || containsSensitiveAuditText(value)) return undefined;
+  return value;
 }
 
 export function getAuditTargetLabel(targetType: string): string {
@@ -218,6 +354,132 @@ export function getAuditTargetLabel(targetType: string): string {
   );
 }
 
+export function getAuditCategory(action: string): AuditCategory {
+  if (ACCESS_ACTIONS.has(action)) return "access";
+  if (COMPLIANCE_ACTIONS.has(action)) return "compliance";
+  if (SYSTEM_ACTIONS.has(action)) return "system";
+  return "changes";
+}
+
+export function getAuditCategoryLabel(category: AuditCategory): string {
+  return AUDIT_CATEGORY_LABELS[category];
+}
+
+export function getAuditRecordLabel(
+  record: Pick<AuditRecordLike, "target_type" | "target_id" | "details">,
+  targetName?: string,
+): string {
+  const details = getAuditDetails(record.details);
+  return (
+    safeAuditLabel(targetName) ||
+    safeAuditLabel(inferAuditTargetName(record.target_type, details)) ||
+    "Unnamed record"
+  );
+}
+
+export function getAuditOutcomeSummary(
+  record: Pick<AuditRecordLike, "action" | "target_type" | "target_id" | "details">,
+): string {
+  const details = getAuditDetails(record.details);
+  if (details?.is_derived_request === true) {
+    const rawStatus = typeof details.status === "string" ? details.status : "recorded";
+    const safeStatus = formatSafeAuditDetail("status", rawStatus);
+    const status = safeStatus === "Restricted" ? "recorded" : safeStatus;
+    return `Compliance request ${status}`;
+  }
+  if (record.action === "UPDATE") {
+    const diff = computeDiff(details?.old, details?.new);
+    if (diff.length === 0) return "Update recorded";
+    return diff.length === 1 ? "1 field changed" : `${diff.length} fields changed`;
+  }
+
+  const outcomes: Record<string, string> = {
+    CREATE: "Record created",
+    DELETE: "Record deleted",
+    INSPECT: "Record viewed",
+    ADD_NOTE: "Note added",
+    DELETE_NOTE: "Note deleted",
+    ASSIGN_STAFF: "Staff assigned",
+    REALLOCATE_STAFF: "Staff reallocated",
+    REMOVE_STAFF: "Staff removed",
+    CREATE_DOCUMENT_REQUEST: "Document request created",
+    RESEND_DOCUMENT_REQUEST: "Document request resent",
+    APPROVE_DOCUMENT: "Certificate approved",
+    REJECT_DOCUMENT: "Certificate rejected",
+    SUBMIT_DOCUMENTS: "Documents submitted",
+    STAFF_CERTIFICATE_CHECK_RECORDED: "Certificate check recorded",
+    SCHEDULE_POUR: "Pour scheduled",
+    COMPLETE_POUR: "Pour completed",
+    REVERT_POUR: "Pour corrected",
+    UPLOAD_ATTACHMENT: "Attachment uploaded",
+    DELETE_ATTACHMENT: "Attachment deleted",
+    REVERT_AUDIT_LOG: "Corrective change recorded",
+  };
+  return outcomes[record.action] || getEventLabel(record.action);
+}
+
+export function isDerivedAuditRecord(record: Pick<AuditRecordLike, "details">): boolean {
+  return getAuditDetails(record.details)?.is_derived_request === true;
+}
+
+export function getAuditSourceLabel(
+  record: Pick<AuditRecordLike, "action" | "user_email" | "details">,
+): string {
+  const details = getAuditDetails(record.details);
+  if (details?.is_derived_request === true) return "Derived from compliance request";
+  if (typeof details?.audit_source === "string") {
+    const source = formatSafeAuditDetail("source", details.audit_source);
+    if (source !== "Restricted") return source;
+  }
+  return record.user_email ? "Portal user action" : "System-generated";
+}
+
+const SAFE_DETAIL_KEYS = new Set([
+  "status",
+  "requested_certs",
+  "completed_at",
+  "expires_at",
+  "ticket_type",
+  "ticket_number",
+  "file_name",
+  "reference",
+  "reason",
+  "outcome",
+  "source",
+]);
+
+export function isSafeAuditDetailKey(key: string): boolean {
+  return SAFE_DETAIL_KEYS.has(key);
+}
+
+export function formatSafeAuditDetail(key: string, value: unknown): string {
+  if (!isSafeAuditDetailKey(key)) return "Restricted";
+  if (typeof value === "string" && containsSensitiveAuditText(value)) return "Restricted";
+  if (Array.isArray(value)) {
+    return value.every((entry) => typeof entry === "string" && !containsSensitiveAuditText(entry))
+      ? value.join(", ")
+      : "Restricted";
+  }
+  if (value && typeof value === "object") return "Restricted";
+  return formatAuditValue(value);
+}
+
+export function getAuditSearchText(
+  record: Pick<AuditRecordLike, "action" | "target_type" | "target_id" | "details" | "user_email">,
+  targetName?: string,
+): string {
+  return [
+    getAuditOutcomeSummary(record),
+    getEventLabel(record.action),
+    getAuditTargetLabel(record.target_type),
+    getAuditRecordLabel(record, targetName),
+    record.user_email,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+}
+
 export function getAuditEventSentence(
   record: Pick<AuditRecordLike, "action" | "target_type" | "target_id" | "details"> &
     Pick<AuditRecordLike, "user_email">,
@@ -225,8 +487,7 @@ export function getAuditEventSentence(
 ): string {
   const details = getAuditDetails(record.details);
   const subject = auditSubject(record, targetName);
-  const targetNameOrSubject =
-    targetName || inferAuditTargetName(record.target_type, details) || subject;
+  const targetNameOrSubject = safeAuditLabel(targetName) || subject;
   const diff = record.action === "UPDATE" ? computeDiff(details?.old, details?.new) : [];
   const targetNoun = getAuditTargetLabel(record.target_type).toLowerCase();
 
@@ -235,16 +496,21 @@ export function getAuditEventSentence(
       .slice(0, 3)
       .map(
         (entry) =>
-          `${getAuditFieldLabel(entry.field)} changed from ${quoteSentenceValue(entry.before)} to ${quoteSentenceValue(entry.after)}`,
+          `${getAuditFieldLabel(entry.field)} changed from ${quoteSentenceValue(entry.field, entry.before)} to ${quoteSentenceValue(entry.field, entry.after)}`,
       );
     const remaining = diff.length - changes.length;
     return `Updated ${subject}: ${changes.join("; ")}${remaining > 0 ? `; and ${remaining} more change${remaining === 1 ? "" : "s"}` : ""}.`;
   }
 
-  const pourNumber = details?.pour_number != null ? `Pour #${details.pour_number}` : "the pour";
+  const rawPourNumber = details?.pour_number;
+  const pourNumber =
+    (typeof rawPourNumber === "number" && Number.isFinite(rawPourNumber)) ||
+    (typeof rawPourNumber === "string" && /^\d+$/.test(rawPourNumber))
+      ? `Pour #${rawPourNumber}`
+      : "the pour";
   const actionSentences: Record<string, string> = {
     LOGIN_SUCCESS: "Signed in successfully.",
-    LOGIN_FAIL: `A sign-in attempt failed for ${record.user_email || "this account"}.`,
+    LOGIN_FAIL: "A sign-in attempt failed.",
     LOGOUT: "Signed out.",
     PASSWORD_RESET_REQUEST: "Requested a password reset.",
     PASSWORD_RESET_SUCCESS: "Changed the account password.",

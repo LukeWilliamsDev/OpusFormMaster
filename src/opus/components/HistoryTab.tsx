@@ -7,12 +7,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePortal } from "../context/PortalContext";
 import { AuditEventCard } from "./AuditEventCard";
 import { AuditDiffTable } from "./AuditDiffTable";
-import { computeDiff, getAuditDetails, getRevertibleDiff } from "../utils/auditDiff";
+import {
+  AUDIT_CATEGORY_LABELS,
+  computeDiff,
+  getAuditCategory,
+  getAuditDetails,
+  getAuditSearchText,
+  getRevertibleDiff,
+  type AuditCategory,
+} from "../utils/auditDiff";
 import { toast } from "sonner";
 import { handleError } from "../utils/errorHandler";
 
 const ITEMS_PER_PAGE = 8;
 type AuditLogRow = Database["public"]["Tables"]["audit_logs"]["Row"];
+type RevertedJobRow = Pick<
+  Database["public"]["Tables"]["jobs"]["Row"],
+  | "id"
+  | "job_ref"
+  | "site_name"
+  | "main_contractor"
+  | "postcode"
+  | "email"
+  | "current_pours"
+  | "contract_max_pours"
+  | "status"
+  | "schedule_value"
+  | "updated_at"
+>;
 
 interface HistoryTabProps {
   jobAuditLogs: AuditLogRow[];
@@ -21,7 +43,7 @@ interface HistoryTabProps {
   setAuditSearch: (value: string) => void;
   jobName?: string;
   onAuditRefresh?: () => Promise<void> | void;
-  onJobReverted?: (oldDetails: Record<string, unknown>) => void;
+  onJobReverted?: (job: RevertedJobRow) => void;
 }
 
 export function HistoryTab({
@@ -37,25 +59,18 @@ export function HistoryTab({
   const [page, setPage] = useState(1);
   const [revertTarget, setRevertTarget] = useState<AuditLogRow | null>(null);
   const [revertingId, setRevertingId] = useState<string | null>(null);
+  const [categoryFilter, setCategoryFilter] = useState<AuditCategory | "all">("changes");
   const canRevert = role === "admin" || role === "director";
 
   const events = useMemo(() => {
     const searchLower = auditSearch.trim().toLowerCase();
     return jobAuditLogs.filter((event) => {
+      if (categoryFilter !== "all" && getAuditCategory(event.action) !== categoryFilter)
+        return false;
       if (!searchLower) return true;
-      return [
-        event.user_email,
-        event.action,
-        event.target_type,
-        event.target_id,
-        JSON.stringify(event.details),
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase()
-        .includes(searchLower);
+      return getAuditSearchText(event, jobName).includes(searchLower);
     });
-  }, [auditSearch, jobAuditLogs]);
+  }, [auditSearch, categoryFilter, jobAuditLogs, jobName]);
 
   const totalPages = Math.max(1, Math.ceil(events.length / ITEMS_PER_PAGE));
   const currentPage = Math.min(page, totalPages);
@@ -76,12 +91,22 @@ export function HistoryTab({
       toast.error("Revert failed", { description: message });
       return;
     }
-    toast.success("Change reverted", {
-      description: "The corrective update was recorded in this job's history.",
-    });
-    const oldDetails = getAuditDetails(revertTarget.details)?.old;
-    if (oldDetails && typeof oldDetails === "object" && !Array.isArray(oldDetails)) {
-      onJobReverted?.(oldDetails as Record<string, unknown>);
+    const { data: revertedJob, error: refreshError } = await supabase
+      .from("jobs")
+      .select(
+        "id, job_ref, site_name, main_contractor, postcode, email, current_pours, contract_max_pours, status, schedule_value, updated_at",
+      )
+      .eq("id", revertTarget.target_id)
+      .maybeSingle();
+    if (refreshError || !revertedJob) {
+      toast.error("Change reverted, but the job could not be refreshed", {
+        description: "Reload the job before making another change.",
+      });
+    } else {
+      toast.success("Change reverted", {
+        description: "The corrective update was recorded in this job's history.",
+      });
+      onJobReverted?.(revertedJob);
     }
     setRevertTarget(null);
     await onAuditRefresh?.();
@@ -100,25 +125,48 @@ export function HistoryTab({
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-border bg-card p-4">
-        <div className="relative">
-          <Search
-            className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
-            aria-hidden="true"
-          />
-          <Input
-            value={auditSearch}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <div className="relative min-w-0 flex-1">
+            <Search
+              className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <Input
+              value={auditSearch}
+              onChange={(event) => {
+                setAuditSearch(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Search changes and decisions…"
+              aria-label="Search job history"
+              className="pl-9"
+            />
+          </div>
+          <select
+            value={categoryFilter}
             onChange={(event) => {
-              setAuditSearch(event.target.value);
+              setCategoryFilter(event.target.value as AuditCategory | "all");
               setPage(1);
             }}
-            placeholder="Search this history by person, action, or detail…"
-            aria-label="Search job history"
-            className="pl-9"
-          />
+            aria-label="Filter job history by category"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground"
+          >
+            <option value="changes">{AUDIT_CATEGORY_LABELS.changes}</option>
+            <option value="compliance">{AUDIT_CATEGORY_LABELS.compliance}</option>
+            <option value="access">{AUDIT_CATEGORY_LABELS.access}</option>
+            <option value="system">{AUDIT_CATEGORY_LABELS.system}</option>
+            <option value="all">All activity</option>
+          </select>
         </div>
 
-        <div className="mt-3 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+        <div
+          className="mt-3 flex items-center justify-between text-xs text-muted-foreground"
+          aria-live="polite"
+        >
           {events.length} {events.length === 1 ? "event" : "events"}
+          <span>
+            {categoryFilter === "changes" ? "Changes and decisions" : "Filtered evidence"}
+          </span>
         </div>
 
         {loadingJobAuditLogs ? (
@@ -131,17 +179,27 @@ export function HistoryTab({
             No audit history for this job
           </div>
         ) : (
-          <div className="mt-3 divide-y divide-border">
-            {paginatedEvents.map((event) => (
-              <AuditEventCard
-                key={event.id}
-                log={event}
-                targetName={jobName}
-                canRevert={canRevert}
-                reverting={revertingId === event.id}
-                onRevert={setRevertTarget}
-              />
-            ))}
+          <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+            <div>
+              <div className="hidden items-center gap-3 bg-background/60 px-3 py-2 text-xs font-semibold text-muted-foreground lg:grid lg:grid-cols-[120px_118px_minmax(180px,1.3fr)_minmax(150px,1fr)_150px_24px]">
+                <span>When</span>
+                <span>Action</span>
+                <span>Record</span>
+                <span>Summary</span>
+                <span>Actor</span>
+                <span />
+              </div>
+              {paginatedEvents.map((event) => (
+                <AuditEventCard
+                  key={event.id}
+                  log={event}
+                  targetName={jobName}
+                  canRevert={canRevert}
+                  reverting={revertingId === event.id}
+                  onRevert={setRevertTarget}
+                />
+              ))}
+            </div>
           </div>
         )}
 

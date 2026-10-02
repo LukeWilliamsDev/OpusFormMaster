@@ -1,13 +1,21 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Activity, Search } from "lucide-react";
-import { CardGrid } from "../components/CardGrid";
 import { AuditEventCard } from "../components/AuditEventCard";
 import { AuditDiffTable } from "../components/AuditDiffTable";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { usePortal } from "../context/PortalContext";
-import { computeDiff, getAuditDetails, getEventLabel, getRevertibleDiff } from "../utils/auditDiff";
+import {
+  AUDIT_CATEGORY_LABELS,
+  computeDiff,
+  getAuditCategory,
+  getAuditDetails,
+  getAuditSearchText,
+  getAuditTargetLabel,
+  getRevertibleDiff,
+  type AuditCategory,
+} from "../utils/auditDiff";
 import { toast } from "sonner";
 import { handleError } from "../utils/errorHandler";
 
@@ -19,7 +27,7 @@ export const AuditLogPage: React.FC = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [actionFilter, setActionFilter] = useState("all");
+  const [categoryFilter, setCategoryFilter] = useState<AuditCategory | "all">("changes");
   const [targetFilter, setTargetFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [targetNames, setTargetNames] = useState<Record<string, string>>({});
@@ -53,7 +61,7 @@ export const AuditLogPage: React.FC = () => {
       names[`jobs:${row.id}`] = `${row.site_name} · ${row.job_ref}`;
     });
     (quotesRes.data || []).forEach((row) => {
-      names[`quotes:${row.id}`] = row.reference || row.id;
+      names[`quotes:${row.id}`] = row.reference || "Unnamed quote";
     });
     setTargetNames(names);
 
@@ -69,10 +77,6 @@ export const AuditLogPage: React.FC = () => {
     fetchLogs();
   }, []);
 
-  const actionOptions = useMemo(
-    () => Array.from(new Set(logs.map((log) => log.action))).sort(),
-    [logs],
-  );
   const targetOptions = useMemo(
     () => Array.from(new Set(logs.map((log) => log.target_type))).sort(),
     [logs],
@@ -80,22 +84,11 @@ export const AuditLogPage: React.FC = () => {
 
   const searchLower = search.trim().toLowerCase();
   const filteredLogs = logs.filter((log) => {
-    if (actionFilter !== "all" && log.action !== actionFilter) return false;
+    if (categoryFilter !== "all" && getAuditCategory(log.action) !== categoryFilter) return false;
     if (targetFilter !== "all" && log.target_type !== targetFilter) return false;
     if (!searchLower) return true;
     const targetName = targetNames[`${log.target_type}:${log.target_id}`] || "";
-    const searchable = [
-      log.user_email,
-      log.action,
-      log.target_type,
-      log.target_id,
-      targetName,
-      JSON.stringify(log.details),
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-    return searchable.includes(searchLower);
+    return getAuditSearchText(log, targetName).includes(searchLower);
   });
 
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / ITEMS_PER_PAGE));
@@ -145,8 +138,8 @@ export const AuditLogPage: React.FC = () => {
           Audit trail
         </h1>
         <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-          A complete record of what changed, who changed it, and when. Supported profile and site
-          changes can be reverted by an admin or director.
+          Recorded changes and decisions across your organisation. Access and system activity can be
+          included when you need the wider investigation trail.
         </p>
       </header>
 
@@ -164,26 +157,25 @@ export const AuditLogPage: React.FC = () => {
                 setSearch(event.target.value);
                 setCurrentPage(1);
               }}
-              placeholder="Search people, sites, actions, or details…"
+              placeholder="Search changes and decisions…"
               aria-label="Search audit trail"
               className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary/30"
             />
           </div>
           <select
-            value={actionFilter}
+            value={categoryFilter}
             onChange={(event) => {
-              setActionFilter(event.target.value);
+              setCategoryFilter(event.target.value as AuditCategory | "all");
               setCurrentPage(1);
             }}
-            aria-label="Filter by action"
+            aria-label="Filter by audit category"
             className="rounded-lg border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none"
           >
-            <option value="all">All actions</option>
-            {actionOptions.map((action) => (
-              <option key={action} value={action}>
-                {getEventLabel(action)}
-              </option>
-            ))}
+            <option value="changes">{AUDIT_CATEGORY_LABELS.changes}</option>
+            <option value="compliance">{AUDIT_CATEGORY_LABELS.compliance}</option>
+            <option value="access">{AUDIT_CATEGORY_LABELS.access}</option>
+            <option value="system">{AUDIT_CATEGORY_LABELS.system}</option>
+            <option value="all">All activity</option>
           </select>
           <select
             value={targetFilter}
@@ -197,14 +189,22 @@ export const AuditLogPage: React.FC = () => {
             <option value="all">All record types</option>
             {targetOptions.map((target) => (
               <option key={target} value={target}>
-                {target.replace(/_/g, " ")}
+                {getAuditTargetLabel(target)}
               </option>
             ))}
           </select>
         </div>
 
-        <div className="mt-4 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+        <div
+          className="mt-4 flex items-center justify-between text-xs text-muted-foreground"
+          aria-live="polite"
+        >
           {filteredLogs.length} {filteredLogs.length === 1 ? "entry" : "entries"}
+          <span>
+            {categoryFilter === "changes"
+              ? "Meaningful changes and decisions"
+              : "Filtered evidence"}
+          </span>
         </div>
 
         {loading ? (
@@ -216,20 +216,28 @@ export const AuditLogPage: React.FC = () => {
             No audit entries match these filters.
           </div>
         ) : (
-          <CardGrid
-            items={paginatedLogs}
-            className="mt-3 divide-y divide-border"
-            renderCard={(log) => (
-              <AuditEventCard
-                log={log}
-                targetName={targetNames[`${log.target_type}:${log.target_id}`]}
-                canRevert={canRevert}
-                reverting={revertingId === log.id}
-                onRevert={setRevertTarget}
-              />
-            )}
-            emptyMessage="No audit entries match these filters."
-          />
+          <div className="mt-3 overflow-x-auto rounded-lg border border-border">
+            <div>
+              <div className="hidden items-center gap-3 bg-background/60 px-3 py-2 text-xs font-semibold text-muted-foreground lg:grid lg:grid-cols-[120px_118px_minmax(180px,1.3fr)_minmax(150px,1fr)_150px_24px]">
+                <span>When</span>
+                <span>Action</span>
+                <span>Record</span>
+                <span>Summary</span>
+                <span>Actor</span>
+                <span />
+              </div>
+              {paginatedLogs.map((log) => (
+                <AuditEventCard
+                  key={log.id}
+                  log={log}
+                  targetName={targetNames[`${log.target_type}:${log.target_id}`]}
+                  canRevert={canRevert}
+                  reverting={revertingId === log.id}
+                  onRevert={setRevertTarget}
+                />
+              ))}
+            </div>
+          </div>
         )}
 
         {totalPages > 1 && (

@@ -1329,37 +1329,28 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             setAuditSearch={setAuditSearch}
             jobName={job.siteName}
             onAuditRefresh={fetchJobAuditLogs}
-            onJobReverted={(oldDetails) => {
+            onJobReverted={(revertedJob) => {
+              const validStatuses: Job["status"][] = [
+                "active",
+                "completed",
+                "on-hold",
+                "pending",
+                "in-progress",
+              ];
               onUpdateJob({
                 ...job,
-                siteName:
-                  typeof oldDetails.site_name === "string" ? oldDetails.site_name : job.siteName,
-                mainContractor:
-                  typeof oldDetails.main_contractor === "string"
-                    ? oldDetails.main_contractor
-                    : oldDetails.main_contractor === null
-                      ? ""
-                      : job.mainContractor,
-                postcode:
-                  typeof oldDetails.postcode === "string"
-                    ? oldDetails.postcode
-                    : oldDetails.postcode === null
-                      ? ""
-                      : job.postcode,
-                email:
-                  typeof oldDetails.email === "string"
-                    ? oldDetails.email
-                    : oldDetails.email === null
-                      ? undefined
-                      : job.email,
-                contractMaxPours:
-                  typeof oldDetails.contract_max_pours === "number"
-                    ? oldDetails.contract_max_pours
-                    : job.contractMaxPours,
-                status:
-                  typeof oldDetails.status === "string"
-                    ? (oldDetails.status as Job["status"])
-                    : job.status,
+                jobRef: revertedJob.job_ref,
+                siteName: revertedJob.site_name,
+                mainContractor: revertedJob.main_contractor ?? "",
+                postcode: revertedJob.postcode ?? "",
+                email: revertedJob.email ?? undefined,
+                currentPours: revertedJob.current_pours ?? 0,
+                contractMaxPours: revertedJob.contract_max_pours ?? 0,
+                status: validStatuses.includes(revertedJob.status as Job["status"])
+                  ? (revertedJob.status as Job["status"])
+                  : job.status,
+                scheduleValue: revertedJob.schedule_value ?? 0,
+                updatedAt: revertedJob.updated_at ?? job.updatedAt,
               });
             }}
           />

@@ -6,8 +6,8 @@
 **Accountable owner:** Luke Williams / Opus Form director
 **Source of truth:** User-requested live audit release and the 2026-10-02 audit/history product rules; base release `8a92504`
 **Evidence base:** `8a92504`
-**Evidence head:** `0339ab3` (`origin/main`)
-**Evidence fingerprint:** `a99e8dd031d64a5e56986efeb0e23aa161bc5af694573477804482bd0066fb61`
+**Evidence head:** `7453d68` (`origin/main`)
+**Evidence fingerprint:** `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 
 ## Intent
 
@@ -47,17 +47,10 @@ inspector, while preserving the existing role and tenant boundaries.
 ### Changed files
 
 - `docs/quality/changes/2026-10-02-audit-history-live-release.md`
-- `src/opus/components/AuditDiffTable.tsx`
-- `src/opus/components/AuditEventCard.tsx`
-- `src/opus/components/HistoryTab.tsx`
-- `src/opus/components/JobDetails.tsx`
-- `src/opus/components/RosterView.tsx`
-- `src/opus/pages/AuditLog.tsx`
-- `src/opus/pages/PortalContact.tsx`
-- `src/opus/utils/__tests__/auditDiff.test.ts`
-- `src/opus/utils/auditDiff.ts`
-- `supabase/migrations/20261002120000_require_revert_audit_event.sql`
-- `supabase/migrations/20261002123754_20261002120000_require_revert_audit_event.sql`
+
+The source release and database migration manifest is retained in commit
+`0339ab3` with fingerprint
+`a99e8dd031d64a5e56986efeb0e23aa161bc5af694573477804482bd0066fb61`.
 
 ## Acceptance criteria
 
@@ -104,8 +97,8 @@ inspector, while preserving the existing role and tenant boundaries.
 | Fresh critic              | Independent read-only critic task 28 against the exact diff, contract, migrations, role guards, and tests                                                                      | PASS — no blocking or major findings                                                 |
 | Remote migration ledger   | Composio Supabase read-only catalog query plus `SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" npx --no-install supabase db push --project-ref fgpthpxmiroyebrzjdzo --dry-run` | PASS — canonical and remote marker versions recorded; remote up to date              |
 | Live schema lint          | `SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" npx --no-install supabase db lint --linked`                                                                                    | Audit migration passes; unrelated pre-existing `submit_job_attachment` error remains |
-| Production client config  | `curl` production shell/assets and Supabase Auth settings with the public publishable key                                                                                          | PASS — no placeholder config; bundle points to `fgpthpxmiroyebrzjdzo.supabase.co` |
-| Live deployment           | Direct Wrangler deployment with production config, version `e67906b4-e0df-4885-8620-4dae84b61586`, plus `curl` checks against `https://opusform.co.uk/` and the Worker URL | PASS — HTTP 200; deployed audit asset contains redaction markers |
+| Production client config  | `curl` production shell/assets and Supabase Auth settings with the public publishable key                                                                                      | PASS — no placeholder config; bundle points to `fgpthpxmiroyebrzjdzo.supabase.co`    |
+| Live deployment           | Direct Wrangler deployment with production config, version `e67906b4-e0df-4885-8620-4dae84b61586`, plus `curl` checks against `https://opusform.co.uk/` and the Worker URL     | PASS — HTTP 200; deployed audit asset contains redaction markers                     |
 | Authenticated audit route | Approved QA/admin read-only browser or API check                                                                                                                               | PENDING                                                                              |
 
 ## Critic review

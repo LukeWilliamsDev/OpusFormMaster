@@ -6,7 +6,7 @@
 **Accountable owner:** Luke Williams / Opus Form director
 **Source of truth:** User-requested live audit release and the 2026-10-02 audit/history product rules; base release `8a92504`
 **Evidence base:** `8a92504`
-**Evidence head:** `working tree`
+**Evidence head:** `0339ab3` (`origin/main`)
 **Evidence fingerprint:** `a99e8dd031d64a5e56986efeb0e23aa161bc5af694573477804482bd0066fb61`
 
 ## Intent
@@ -26,6 +26,8 @@ inspector, while preserving the existing role and tenant boundaries.
   summaries without exposing raw technical metadata by default.
 - Apply one central redaction policy to diff values, field labels, actor
   identifiers, accessible names, and the staff revert confirmation.
+- Ensure the live Worker is rebuilt with the production Supabase URL and
+  publishable key rather than the placeholder values used by local CI builds.
 - Add a forward-only corrective migration so a revert cannot commit without its
   corrective audit event.
 - Repair the repository-wide formatting blocker that prevents the release gate
@@ -102,7 +104,8 @@ inspector, while preserving the existing role and tenant boundaries.
 | Fresh critic              | Independent read-only critic task 28 against the exact diff, contract, migrations, role guards, and tests                                                                      | PASS — no blocking or major findings                                                 |
 | Remote migration ledger   | Composio Supabase read-only catalog query plus `SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" npx --no-install supabase db push --project-ref fgpthpxmiroyebrzjdzo --dry-run` | PASS — canonical and remote marker versions recorded; remote up to date              |
 | Live schema lint          | `SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" npx --no-install supabase db lint --linked`                                                                                    | Audit migration passes; unrelated pre-existing `submit_job_attachment` error remains |
-| Live deployment           | Cloudflare/Worker deployment and public bundle inspection                                                                                                                      | PENDING                                                                              |
+| Production client config  | `curl` production shell/assets and Supabase Auth settings with the public publishable key                                                                                          | PASS — no placeholder config; bundle points to `fgpthpxmiroyebrzjdzo.supabase.co` |
+| Live deployment           | Direct Wrangler deployment with production config, version `e67906b4-e0df-4885-8620-4dae84b61586`, plus `curl` checks against `https://opusform.co.uk/` and the Worker URL | PASS — HTTP 200; deployed audit asset contains redaction markers |
 | Authenticated audit route | Approved QA/admin read-only browser or API check                                                                                                                               | PENDING                                                                              |
 
 ## Critic review

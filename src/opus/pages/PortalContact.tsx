@@ -199,10 +199,7 @@ export const PortalContactPage: React.FC = () => {
                 replies during working hours.
               </p>
               <div className="mt-4 flex items-start gap-2 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
-                <CheckCircle2
-                  className="mt-0.5 h-4 w-4 shrink-0 text-primary"
-                  aria-hidden="true"
-                />
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                 <span>
                   Keep the site or staff name in your message so we can locate the record.
                 </span>

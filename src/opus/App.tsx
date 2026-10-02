@@ -19,6 +19,7 @@ import {
   PORTAL_ACCESS_ROLES,
 } from "./context/PortalContext";
 import { PortalLayout } from "./layouts/PortalLayout";
+import { DashboardPreviewPage } from "./pages/DashboardPreview";
 const lazyRoute = <T extends React.ComponentType<any>>(
   load: () => Promise<{ default: T }>,
 ): React.LazyExoticComponent<T> =>
@@ -323,6 +324,13 @@ const LandingPageWrapper: React.FC = () => {
 };
 
 export default function App() {
+  if (
+    import.meta.env.DEV &&
+    (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+  ) {
+    return <DashboardPreviewPage />;
+  }
+
   return (
     <PortalProvider>
       <HashRouter>

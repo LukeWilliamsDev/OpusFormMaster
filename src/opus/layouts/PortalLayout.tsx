@@ -22,6 +22,7 @@ import {
   BadgeCheck,
   HelpCircle,
   Mail,
+  type LucideIcon,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -36,6 +37,38 @@ import { getAvatarPresetClass } from "../utils/avatar";
 import { getAvatarInitials } from "../utils/workerValidation";
 import { NavList } from "@/components/application/app-navigation/base-components/nav-list";
 import { SidebarNavigationSlim } from "@/components/application/app-navigation/sidebar-navigation/sidebar-slim";
+
+type MobileNavRole = "management" | "site_foreman" | "third_party";
+type MobileNavItem = { label: string; path: string; icon: LucideIcon };
+
+const MOBILE_NAV_CONFIG: Record<MobileNavRole, { label: string; primary: MobileNavItem[] }> = {
+  management: {
+    label: "Management portal navigation",
+    primary: [
+      { label: "Overview", path: "/portal/dashboard", icon: LayoutDashboard },
+      { label: "Jobs", path: "/portal/ledger", icon: ClipboardList },
+      { label: "Schedule", path: "/portal/roster?view=calendar", icon: Calendar },
+      { label: "Staff", path: "/portal/roster?view=staff", icon: Users },
+    ],
+  },
+  site_foreman: {
+    label: "Foreman portal navigation",
+    primary: [
+      { label: "Today", path: "/portal/foreman", icon: LayoutDashboard },
+      { label: "Sites", path: "/portal/foreman/sites", icon: Building2 },
+      { label: "Shifts", path: "/portal/my-shifts", icon: Calendar },
+    ],
+  },
+  third_party: {
+    label: "Third-party portal navigation",
+    primary: [
+      { label: "Home", path: "/portal/third-party", icon: LayoutDashboard },
+      { label: "Staff", path: "/portal/third-party/staff", icon: Users },
+      { label: "Sites", path: "/portal/third-party/sites", icon: Building2 },
+      { label: "Help", path: "/portal/help", icon: HelpCircle },
+    ],
+  },
+};
 
 export const PortalLayout: React.FC = () => {
   const { signOut, role, user, profile, theme, setTheme } = usePortal();
@@ -70,7 +103,9 @@ export const PortalLayout: React.FC = () => {
   const isNoAccessRole = role === "labourer";
   const showThirdPartyBottomNav = role === "third_party";
   const showForemanBottomNav = role === "site_foreman";
-  const showMobileBottomNav = showThirdPartyBottomNav || showForemanBottomNav;
+  const showManagementBottomNav = role ? MANAGEMENT_ROLES.includes(role) : false;
+  const showMobileBottomNav =
+    showThirdPartyBottomNav || showForemanBottomNav || showManagementBottomNav;
 
   useEffect(() => {
     if (isMobileMenuOpen) {
@@ -265,14 +300,17 @@ export const PortalLayout: React.FC = () => {
         ? { divider: true as const, label: item.section }
         : { label: item.name, href: item.path, icon: item.icon },
     );
-  const mobileDrawerItems =
+  const mobileNavRole: MobileNavRole =
     role === "site_foreman"
-      ? navItems.filter(
-          (item) =>
-            "section" in item ||
-            !["/portal/foreman", "/portal/foreman/sites", "/portal/my-shifts"].includes(item.path),
-        )
-      : navItems;
+      ? "site_foreman"
+      : role === "third_party"
+        ? "third_party"
+        : "management";
+  const mobileBottomItems = MOBILE_NAV_CONFIG[mobileNavRole].primary;
+  const mobilePrimaryPaths = new Set(mobileBottomItems.map((item) => item.path));
+  const mobileDrawerItems = navItems.filter(
+    (item) => "section" in item || !mobilePrimaryPaths.has(item.path),
+  );
   const compactMobileDrawerItems = mobileDrawerItems.filter((item, index, items) => {
     if (!("section" in item)) return true;
     const next = items[index + 1];
@@ -284,6 +322,7 @@ export const PortalLayout: React.FC = () => {
         ? { divider: true as const, label: item.section }
         : { label: item.name, href: item.path, icon: item.icon },
     );
+  const mobileNavLabel = MOBILE_NAV_CONFIG[mobileNavRole].label;
 
   return (
     <div className="min-h-screen lg:h-screen lg:overflow-hidden bg-background text-foreground font-sans selection:bg-primary/30 selection:text-white flex flex-col lg:flex-row">
@@ -361,7 +400,7 @@ export const PortalLayout: React.FC = () => {
                   mobileMenuReturnRef.current = event.currentTarget;
                   setIsMobileMenuOpen(!isMobileMenuOpen);
                 }}
-                className={`p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] items-center justify-center ${role === "third_party" ? "hidden" : "flex"}`}
+                className={`p-2 text-foreground hover:bg-muted rounded-lg transition-colors cursor-pointer min-h-[44px] min-w-[44px] items-center justify-center ${showMobileBottomNav ? "hidden" : "flex"}`}
                 aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
                 aria-expanded={isMobileMenuOpen}
                 aria-controls="mobile-portal-menu"
@@ -371,54 +410,15 @@ export const PortalLayout: React.FC = () => {
             </div>
           </header>
 
-          {showThirdPartyBottomNav && (
+          {showMobileBottomNav && (
             <nav
-              aria-label="Third-party portal navigation"
-              className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-5 border-t-2 border-border bg-background/95 px-2 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
+              aria-label={mobileNavLabel}
+              className="fixed bottom-0 left-0 right-0 z-40 grid border-t-2 border-border bg-background/95 px-2 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
+              style={{
+                gridTemplateColumns: `repeat(${mobileBottomItems.length + 1}, minmax(0, 1fr))`,
+              }}
             >
-              {[
-                { label: "Home", path: "/portal/third-party", icon: LayoutDashboard },
-                { label: "Staff", path: "/portal/third-party/staff", icon: Users },
-                { label: "Sites", path: "/portal/third-party/sites", icon: Building2 },
-                { label: "Help", path: "/portal/help", icon: HelpCircle },
-              ].map(({ label, path, icon: Icon }) => (
-                <Link
-                  key={path}
-                  to={path}
-                  className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${checkIsActive(path) ? "text-primary" : "text-muted-foreground"}`}
-                  aria-current={checkIsActive(path) ? "page" : undefined}
-                >
-                  <Icon className="h-4 w-4" aria-hidden="true" />
-                  {label}
-                </Link>
-              ))}
-              <button
-                type="button"
-                onClick={(event) => {
-                  mobileMenuReturnRef.current = event.currentTarget;
-                  setIsMobileMenuOpen(true);
-                }}
-                className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-muted-foreground"
-                aria-label="Open portal menu"
-                aria-expanded={isMobileMenuOpen}
-                aria-controls="mobile-portal-menu"
-              >
-                <Menu className="h-4 w-4" aria-hidden="true" />
-                More
-              </button>
-            </nav>
-          )}
-
-          {showForemanBottomNav && (
-            <nav
-              aria-label="Foreman portal navigation"
-              className="fixed bottom-0 left-0 right-0 z-40 grid grid-cols-4 border-t-2 border-border bg-background/95 px-2 py-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] backdrop-blur lg:hidden"
-            >
-              {[
-                { label: "Today", path: "/portal/foreman", icon: LayoutDashboard },
-                { label: "Sites", path: "/portal/foreman/sites", icon: Building2 },
-                { label: "Shifts", path: "/portal/my-shifts", icon: Calendar },
-              ].map(({ label, path, icon: Icon }) => {
+              {mobileBottomItems.map(({ label, path, icon: Icon }) => {
                 const isActive = checkIsActive(path);
                 return (
                   <Link
@@ -439,7 +439,7 @@ export const PortalLayout: React.FC = () => {
                   setIsMobileMenuOpen(true);
                 }}
                 className="flex min-h-12 flex-col items-center justify-center gap-1 rounded-lg text-[9px] font-black uppercase tracking-wider text-muted-foreground"
-                aria-label="Open foreman menu"
+                aria-label="Open portal menu"
                 aria-haspopup="dialog"
                 aria-expanded={isMobileMenuOpen}
                 aria-controls="mobile-portal-menu"
@@ -534,14 +534,16 @@ export const PortalLayout: React.FC = () => {
                   </nav>
 
                   <div className="mt-auto pt-4 border-t-2 border-border space-y-1">
-                    <Link
-                      to="/portal/help"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer min-h-[44px]"
-                    >
-                      <HelpCircle className="w-4 h-4 shrink-0" />
-                      <span>{role === "site_foreman" ? "Help" : "Help & Guidance"}</span>
-                    </Link>
+                    {role !== "third_party" && (
+                      <Link
+                        to="/portal/help"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-all cursor-pointer min-h-[44px]"
+                      >
+                        <HelpCircle className="w-4 h-4 shrink-0" />
+                        <span>{role === "site_foreman" ? "Help" : "Help & Guidance"}</span>
+                      </Link>
+                    )}
                     <Link
                       to="/portal/contact"
                       onClick={() => setIsMobileMenuOpen(false)}

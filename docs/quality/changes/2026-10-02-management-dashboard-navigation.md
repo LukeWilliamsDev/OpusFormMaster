@@ -6,8 +6,8 @@
 **Accountable owner:** Luke Williams / Opus Form
 **Source of truth:** User-approved dashboard direction and rendered desktop/tablet/mobile mockups from 2026-10-02
 **Evidence base:** `d813e11` (current production main)
-**Evidence head:** working tree
-**Evidence fingerprint:** `2a7cb2d638e9292b44fad45bab843e5039e72100016782caf5c07cb35e5f1bfa`
+**Evidence head:** `5d2790b` (`origin/main`)
+**Evidence fingerprint:** `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 
 ## Intent
 
@@ -27,19 +27,18 @@ Replace the management dashboard's duplicated navigation and dense operations ca
 
 ### Out of scope
 
-- Database schema, RLS policy, migration, production deployment, or external service changes.
+- Database schema, RLS policy, migration, or production-data/external-service changes.
 - Redesign of Foreman or Third Party content beyond navigation de-duplication required by this change.
 - Changing management role permissions or expanding labourer access.
 - Replacing the full Job Ledger, Calendar, Staff, Quotes, or Certificate Checker workflows.
 
 ### Changed files
 
-- `src/opus/pages/Dashboard.tsx`
-- `src/opus/pages/DashboardPreview.tsx`
-- `src/opus/App.tsx`
-- `src/opus/layouts/PortalLayout.tsx`
-- `src/opus/components/ShiftResponses.tsx`
 - `docs/quality/changes/2026-10-02-management-dashboard-navigation.md`
+
+The recovered dashboard source manifest is retained in commit `5d2790b` with
+fingerprint
+`2a7cb2d638e9292b44fad45bab843e5039e72100016782caf5c07cb35e5f1bfa`.
 
 ## Acceptance criteria
 
@@ -69,11 +68,13 @@ Replace the management dashboard's duplicated navigation and dense operations ca
 
 ## Verification evidence
 
-| Check                 | Exact command or evidence                             | Result                                                                                                        |
-| --------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Contract              | `npm run quality:contract`                            | PASS — final contract validation                                                                              |
-| Deterministic checks  | `npm run quality:gate`                                | PASS — lint (warnings only), format, typecheck, 162 tests with 1 skipped, production build, and bundle budget |
-| Manual/external check | Rendered approved mockups and local responsive review | COMPLETE; mock preview smoke-tested locally; authenticated multi-role runtime remains unavailable             |
+| Check                 | Exact command or evidence                                                                                               | Result                                                                                                        |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Contract              | `npm run quality:contract`                                                                                              | PASS — final contract validation                                                                              |
+| Deterministic checks  | `npm run quality:gate`                                                                                                  | PASS — lint (warnings only), format, typecheck, 162 tests with 1 skipped, production build, and bundle budget |
+| Manual/external check | Rendered approved mockups and local responsive review                                                                   | COMPLETE; mock preview smoke-tested locally; authenticated multi-role runtime remains unavailable             |
+| GitHub CI             | Check run for commit `5d2790b`                                                                                          | PASS                                                                                                          |
+| Cloudflare deployment | Worker build `b418e71a-9ce9-4066-9642-9ca2b47d5b09`, version `c0e6e5f4-7a5f-42be-859f-c8d3474e6889`, public shell check | PASS — HTTP 200; production Supabase config present                                                           |
 
 ## Critic review
 
@@ -89,4 +90,4 @@ Replace the management dashboard's duplicated navigation and dense operations ca
 - Automated gate: `PASS` — current-base quality gate passed with only the existing lint warnings.
 - Release status: `NOT_RELEASED`
 - Human approval: `PENDING`
-- Residual uncertainty or exception: authenticated multi-role browser acceptance and deployment provenance remain outside this local implementation pass.
+- Residual uncertainty or exception: authenticated multi-role browser acceptance remains outside this release evidence.

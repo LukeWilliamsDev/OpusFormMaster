@@ -79,8 +79,11 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
           <div className="flex flex-nowrap items-center bg-card border border-border rounded-lg p-1 gap-1 overflow-x-auto">
             {(["all", "in-progress", "pending", "completed", "archived"] as const).map((status) => (
               <button
+                type="button"
                 key={status}
                 onClick={() => setFilterStatus(status)}
+                aria-pressed={filterStatus === status}
+                aria-label={`Show ${status.replace("-", " ")} jobs`}
                 className={`rounded px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-200 min-h-[36px] flex items-center justify-center cursor-pointer ${
                   filterStatus === status
                     ? "bg-primary text-white shadow-md"
@@ -93,6 +96,11 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
           </div>
         </div>
       </div>
+
+      <p className="sr-only" role="status" aria-live="polite">
+        Showing {filteredJobs.length}{" "}
+        {filterStatus === "all" ? "" : `${filterStatus.replace("-", " ")} `}jobs.
+      </p>
 
       {/* Ledger list container */}
       <div className="md:bg-card md:border md:border-border rounded-xl md:overflow-hidden md:shadow-2xl">
@@ -136,7 +144,16 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     layout
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Open job ${job.jobRef}, ${job.siteName}`}
                     onClick={() => onSelectJob(job.id)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onSelectJob(job.id);
+                      }
+                    }}
                     className="group flex flex-col md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_100px] gap-4 px-5 py-5 md:py-0 md:min-h-[64px] items-center hover:bg-muted/30 active:bg-muted/30 transition-all duration-150 cursor-pointer border border-border md:border-0 md:border-b rounded-xl md:rounded-none shadow-lg md:shadow-none border-l-[3px] border-l-primary/25 hover:border-l-primary active:border-l-primary bg-card relative overflow-hidden"
                   >
                     {/* Job Ref Column */}
@@ -176,10 +193,25 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                           <JobWarnings job={job} followup={followup} dense />
                         </div>
                         <div className="flex items-center justify-between text-[12px] text-foreground">
-                          <span className="font-semibold">Progress</span>
+                          <span className="font-semibold" id={`job-progress-label-${job.id}`}>
+                            Progress
+                          </span>
                           <span className="font-mono text-foreground">
                             {progressPercent.toFixed(0)}%
                           </span>
+                        </div>
+                        <div
+                          role="progressbar"
+                          aria-labelledby={`job-progress-label-${job.id}`}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-valuenow={progressPercent}
+                          className="h-1.5 w-full overflow-hidden rounded-full bg-primary/20"
+                        >
+                          <div
+                            className="h-full bg-primary"
+                            style={{ width: `${progressPercent}%` }}
+                          />
                         </div>
                       </div>
                     </div>
@@ -191,7 +223,14 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
 
                     {/* Progress Column */}
                     <div className="hidden md:flex items-center justify-center w-full py-1 text-center">
-                      <span className="text-[13px] font-mono font-bold text-foreground">
+                      <span
+                        className="text-[13px] font-mono font-bold text-foreground"
+                        role="progressbar"
+                        aria-label={`Progress for ${job.jobRef}`}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={progressPercent}
+                      >
                         {progressPercent.toFixed(0)}%
                       </span>
                     </div>

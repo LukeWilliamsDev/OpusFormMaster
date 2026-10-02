@@ -63,6 +63,21 @@ function redirectDirectHashRoute(request: Request): Response | null {
   return Response.redirect(target.toString(), 308);
 }
 
+function isStaticAssetRequest(request: Request): boolean {
+  if (request.method !== "GET" && request.method !== "HEAD") return false;
+  return new URL(request.url).pathname.startsWith("/assets/");
+}
+
+function missingAssetResponse(request: Request): Response {
+  return withSecurityHeaders(
+    new Response("Asset not found", {
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8", "cache-control": "no-store" },
+    }),
+    request,
+  );
+}
+
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 async function getServerEntry(): Promise<ServerEntry> {
@@ -111,6 +126,11 @@ export default {
 
       const hashRouteRedirect = redirectDirectHashRoute(request);
       if (hashRouteRedirect) return withSecurityHeaders(hashRouteRedirect, request);
+
+      // Never let a missing JS/CSS chunk fall through to SSR. Returning HTML with
+      // status 200 makes stale deployments look healthy and causes opaque browser
+      // module errors. A real 404 makes the deployment mismatch observable.
+      if (isStaticAssetRequest(request)) return missingAssetResponse(request);
 
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);

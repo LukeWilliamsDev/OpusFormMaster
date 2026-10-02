@@ -74,6 +74,7 @@ export const NavList = ({
             );
           }
           const collapsed = collapsedSections.has(item.label);
+          const sectionId = `nav-section-${item.label.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
           if (iconOnly) {
             return (
               <li key={index} className="w-full px-2 py-1.5" title={item.label}>
@@ -89,6 +90,8 @@ export const NavList = ({
                   e.stopPropagation();
                   toggleSection(item.label!);
                 }}
+                aria-expanded={!collapsed}
+                aria-controls={sectionId}
                 className="flex w-full items-center justify-between px-2.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground"
               >
                 <span>{item.label}</span>
@@ -108,13 +111,25 @@ export const NavList = ({
         }
 
         if (item.items?.length) {
+          const sectionId = `nav-section-${String(item.label)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, "-")}`;
+          const sectionOpen = activeItem?.href === item.href;
           return (
             <details
               key={item.label}
-              open={activeItem?.href === item.href}
+              id={sectionId}
+              open={sectionOpen}
               className="appearance-none py-0.25"
             >
-              <NavItemBase href={item.href} icon={item.icon} type="collapsible" iconOnly={iconOnly}>
+              <NavItemBase
+                href={item.href}
+                icon={item.icon}
+                type="collapsible"
+                iconOnly={iconOnly}
+                ariaControls={sectionId}
+                ariaExpanded={sectionOpen}
+              >
                 {item.label}
               </NavItemBase>
 

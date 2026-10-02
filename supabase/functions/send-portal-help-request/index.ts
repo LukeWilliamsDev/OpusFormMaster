@@ -51,31 +51,47 @@ serve(async (req) => {
       .select("role, status")
       .eq("id", user.id)
       .single();
-    if (profileError || !profile || profile.status !== "active" || profile.role !== "third_party") {
-      return new Response(JSON.stringify({ error: "This account cannot submit portal help requests." }), {
-        status: 403,
-        headers,
-      });
+    if (
+      profileError ||
+      !profile ||
+      profile.status !== "active" ||
+      !["third_party", "site_foreman"].includes(profile.role)
+    ) {
+      return new Response(
+        JSON.stringify({ error: "This account cannot submit portal help requests." }),
+        {
+          status: 403,
+          headers,
+        },
+      );
     }
 
     const payload = await req.json();
     const subject = typeof payload.subject === "string" ? payload.subject.trim() : "";
     const message = typeof payload.message === "string" ? payload.message.trim() : "";
     if (!subject || subject.length > 120 || !message || message.length > 5000) {
-      return new Response(JSON.stringify({ error: "Please provide a subject and message within the allowed lengths." }), {
-        status: 400,
-        headers,
-      });
+      return new Response(
+        JSON.stringify({
+          error: "Please provide a subject and message within the allowed lengths.",
+        }),
+        {
+          status: 400,
+          headers,
+        },
+      );
     }
 
     const { data: configRows, error: configError } = await adminClient
       .from("decrypted_smtp_config")
       .select("key, value");
     if (configError || !configRows?.length) {
-      return new Response(JSON.stringify({ error: "Email service configuration is unavailable." }), {
-        status: 500,
-        headers,
-      });
+      return new Response(
+        JSON.stringify({ error: "Email service configuration is unavailable." }),
+        {
+          status: 500,
+          headers,
+        },
+      );
     }
 
     const config: Record<string, string> = {};
@@ -84,10 +100,13 @@ serve(async (req) => {
     // can contain an older revoked key and must not override the live secret.
     const resendApiKey = Deno.env.get("RESEND_API_KEY") || config.RESEND_API_KEY;
     if (!resendApiKey) {
-      return new Response(JSON.stringify({ error: "Email service configuration is unavailable." }), {
-        status: 500,
-        headers,
-      });
+      return new Response(
+        JSON.stringify({ error: "Email service configuration is unavailable." }),
+        {
+          status: 500,
+          headers,
+        },
+      );
     }
 
     const timestamp = new Date().toLocaleString("en-GB", {
@@ -103,7 +122,10 @@ serve(async (req) => {
       <div class="bg-page border-theme" style="border: 1px solid #D9D3C7; border-left: 3px solid ${EMAIL_COLORS.accent}; border-radius: 6px; padding: 16px; white-space: pre-wrap; word-break: break-word; font-size: 12px;">${escapeHtml(message)}</div>
     `;
     const emailHtml = emailShell({
-      eyebrow: "Third-party portal help request",
+      eyebrow:
+        profile.role === "site_foreman"
+          ? "Foreman portal help request"
+          : "Third-party portal help request",
       bodyHtml,
       footerName: "Opus Form Portal",
       footerEmail: RECIPIENT_EMAIL,
@@ -117,7 +139,7 @@ serve(async (req) => {
         from: `Opus Form Portal <${sender}>`,
         to: [RECIPIENT_EMAIL],
         reply_to: user.email ?? undefined,
-        subject: `[Portal help] ${subject}`,
+        subject: `[Portal help · ${profile.role === "site_foreman" ? "Foreman" : "Third party"}] ${subject}`,
         html: emailHtml,
       }),
     });
@@ -127,6 +149,9 @@ serve(async (req) => {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers });
   } catch (error) {
     console.error("Error sending portal help request:", error);
-    return new Response(JSON.stringify({ error: "Email delivery failed." }), { status: 500, headers });
+    return new Response(JSON.stringify({ error: "Email delivery failed." }), {
+      status: 500,
+      headers,
+    });
   }
 });

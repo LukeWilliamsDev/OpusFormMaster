@@ -18,7 +18,7 @@ import {
   Wallet,
   Folder,
 } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,11 @@ interface MediaTabProps {
   renameValue: string;
   setRenameValue: (v: string) => void;
   executeRenameAttachment: () => Promise<void>;
+  updateDocumentVisibility: (
+    attachmentId: string,
+    audience: "foreman_visible" | "third_party_visible",
+    visible: boolean,
+  ) => Promise<void>;
 }
 
 export interface Attachment {
@@ -64,6 +69,8 @@ export interface Attachment {
   uploaded_by?: string;
   thumb_url?: string;
   raw_file_url?: string;
+  foreman_visible?: boolean;
+  third_party_visible?: boolean;
 }
 
 const DOC_GROUPS: { label: string; match: RegExp }[] = [
@@ -99,6 +106,7 @@ export function MediaTab({
   renameValue,
   setRenameValue,
   executeRenameAttachment,
+  updateDocumentVisibility,
 }: MediaTabProps) {
   // Before/after now share one grid (see below) — newest first, each
   // thumbnail carries its own Before/After badge instead of a toggle
@@ -342,7 +350,7 @@ export function MediaTab({
                         {docs.map((d) => (
                           <div
                             key={d.id}
-                            className="group relative flex items-center justify-between gap-2 p-2.5 bg-background border border-border rounded-lg hover:border-muted-foreground/40 transition-all"
+                            className="group relative flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background p-2.5 transition-all hover:border-muted-foreground/40"
                           >
                             <button
                               type="button"
@@ -353,9 +361,41 @@ export function MediaTab({
                                 {d.file_name}
                               </span>
                             </button>
-                            <span className="text-[10.5px] text-muted-foreground font-medium shrink-0">
-                              {new Date(d.uploaded_at || 0).toLocaleDateString("en-GB")}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-2 text-[10.5px] font-medium text-muted-foreground">
+                              <label className="inline-flex cursor-pointer items-center gap-1.5">
+                                <input
+                                  type="checkbox"
+                                  checked={d.foreman_visible === true}
+                                  onChange={(event) =>
+                                    void updateDocumentVisibility(
+                                      d.id,
+                                      "foreman_visible",
+                                      event.target.checked,
+                                    )
+                                  }
+                                  className="h-3.5 w-3.5 accent-primary"
+                                />
+                                Foreman
+                              </label>
+                              <label className="inline-flex cursor-pointer items-center gap-1.5">
+                                <input
+                                  type="checkbox"
+                                  checked={d.third_party_visible === true}
+                                  onChange={(event) =>
+                                    void updateDocumentVisibility(
+                                      d.id,
+                                      "third_party_visible",
+                                      event.target.checked,
+                                    )
+                                  }
+                                  className="h-3.5 w-3.5 accent-primary"
+                                />
+                                Third party
+                              </label>
+                              <span>
+                                {new Date(d.uploaded_at || 0).toLocaleDateString("en-GB")}
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>
@@ -380,9 +420,12 @@ export function MediaTab({
             <span>Sort document</span>
           </div>
           <div>
-            <h2 className="mb-2 text-[13.5px] font-semibold uppercase tracking-[0.02em]">
+            <DialogTitle className="mb-2 text-[13.5px] font-semibold uppercase tracking-[0.02em]">
               What type of document is this?
-            </h2>
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              Choose a category for the uploaded document.
+            </DialogDescription>
             <div className="mb-3 flex min-w-0 items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-1.5">
               <FileText className="w-3.5 h-3.5 shrink-0 text-muted-foreground" />
               <span className="min-w-0 flex-1 truncate text-[11.5px] font-mono text-foreground">
@@ -419,9 +462,9 @@ export function MediaTab({
             <span>External file</span>
           </div>
           <div>
-            <h2 className="mb-2 text-[15px] font-semibold uppercase tracking-[0.02em]">
+            <DialogTitle className="mb-2 text-[15px] font-semibold uppercase tracking-[0.02em]">
               Manage Document
-            </h2>
+            </DialogTitle>
             <p className="mb-3 text-[13.5px] text-muted-foreground truncate font-mono">
               {viewDocTarget?.file_name}
             </p>
@@ -469,6 +512,8 @@ export function MediaTab({
         <DialogContent className="max-w-2xl p-0 overflow-hidden bg-black !inset-x-auto !left-1/2 !top-1/2 !bottom-auto !-translate-x-1/2 !-translate-y-1/2 !rounded-lg !w-[calc(100%-2rem)] !max-h-[calc(100dvh-2rem)]">
           {gallery && (
             <div className="relative flex flex-col items-center">
+              <DialogTitle className="sr-only">Photo gallery</DialogTitle>
+              <DialogDescription className="sr-only">Browse uploaded job photos.</DialogDescription>
               <img
                 src={gallery.photos[gallery.index].file_url}
                 alt=""
@@ -558,9 +603,9 @@ export function MediaTab({
             <span>Rename file</span>
           </div>
           <div>
-            <h2 className="mb-2 text-[15px] font-semibold uppercase tracking-[0.02em]">
+            <DialogTitle className="mb-2 text-[15px] font-semibold uppercase tracking-[0.02em]">
               Rename This Photo?
-            </h2>
+            </DialogTitle>
             <p className="mb-3 text-[13.5px] text-muted-foreground">
               This changes the file name shown across the job. This action is recorded in the job's
               audit log.

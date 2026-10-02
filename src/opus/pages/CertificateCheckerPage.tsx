@@ -33,7 +33,7 @@ export const CertificateCheckerPage: React.FC = () => {
   const [staffId, setStaffId] = useState(searchParams.get("staffId") ?? "");
   const [certificateNumber, setCertificateNumber] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
-  const [result, setResult] = useState<CheckResult>("verified");
+  const [result, setResult] = useState<CheckResult | "">("");
   const [expiryDate, setExpiryDate] = useState("");
   const [notes, setNotes] = useState("");
   const [evidence, setEvidence] = useState<File | null>(null);
@@ -99,7 +99,7 @@ export const CertificateCheckerPage: React.FC = () => {
 
   const recordCheck = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!staffId || !certificateNumber.trim() || !user || !profile?.tenant_id) return;
+    if (!staffId || !certificateNumber.trim() || !result || !user || !profile?.tenant_id) return;
     setSaving(true);
     let evidencePath: string | null = null;
     if (evidence) {
@@ -160,7 +160,8 @@ export const CertificateCheckerPage: React.FC = () => {
             <div>
               <h2 className="text-sm font-black uppercase tracking-widest">New CSCS check</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                The date of birth is used only while checking and is never stored.
+                Enter the date of birth in the official CSCS checker. Opus Form does not submit or
+                store it.
               </p>
             </div>
           </div>
@@ -214,10 +215,12 @@ export const CertificateCheckerPage: React.FC = () => {
             <label className="text-xs font-bold text-muted-foreground">
               Checker result
               <select
+                required
                 value={result}
                 onChange={(event) => setResult(event.target.value as CheckResult)}
                 className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-3 text-sm text-foreground"
               >
+                <option value="">Select the outcome recorded by the official checker</option>
                 {Object.entries(RESULT_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}

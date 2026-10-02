@@ -9,7 +9,6 @@ import {
   PencilLine,
   Trash2,
   LayoutGrid,
-  MapPin,
   FileText,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Job, Worker, ScheduledShift } from "../types/erp";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { supabase } from "../../integrations/supabase/client";
-import { useJobForecast, getWeatherOnDate, geocodePostcode } from "../utils/weather";
+import { useJobForecast, getWeatherOnDate } from "../utils/weather";
 import { toLocalISODate } from "../utils/week";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
@@ -27,8 +26,6 @@ import { getSignedJobAttachmentUrl, getSignedJobAttachmentUrlsBatch } from "../l
 import { HistoryTab } from "./HistoryTab";
 import { FeedTab } from "./FeedTab";
 import { MediaTab, Attachment } from "./MediaTab";
-import { JobOverviewTab } from "./JobOverviewTab";
-import { Supplier } from "./OSMMap";
 import { PersistentJobHeader } from "./PersistentJobHeader";
 import { handleError } from "../utils/errorHandler";
 import { InvoiceList } from "./billing/InvoiceList";
@@ -108,13 +105,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [renameTarget, setRenameTarget] = useState<Attachment | null>(null);
   const [renameValue, setRenameValue] = useState("");
 
-  // Weather & Suppliers state
+  // Weather state
   const { forecast, loading: loadingWeather } = useJobForecast(job.postcode);
   const weatherData = getWeatherOnDate(forecast, toLocalISODate(new Date()));
-  const [siteCoords, setSiteCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [selectedSupplierId, setSelectedSupplierId] = useState<string | null>(null);
-  const [loadingSuppliers, setLoadingSuppliers] = useState(false);
 
   // Staff on site — derived directly from shared shifts state so assign/
   // remove reflect instantly with no separate fetch or refetch race.
@@ -245,7 +238,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
     // Fetch initial details
     fetchAttachments();
-    geocodeAndFetchWeatherAndSuppliers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job]);
 
@@ -310,86 +302,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job.id]);
-
-  // Haversine Distance helper
-  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 3958.8; // miles
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  const geocodeAndFetchWeatherAndSuppliers = async () => {
-    if (!job.postcode) return;
-    try {
-      // Live weather comes from the shared useJobForecast hook above; this
-      // just resolves coords (shares the same geocode cache) for the
-      // nearby-suppliers lookup and site map pin.
-      const coords = await geocodePostcode(job.postcode);
-      if (!coords) return;
-      const lat = coords.lat;
-      const lng = coords.lon;
-      setSiteCoords({ lat, lng });
-
-      setLoadingSuppliers(true);
-      // Nearby-suppliers lookup goes through the nearby-suppliers edge
-      // function (Geoapify Places) instead of calling Overpass directly from
-      // the browser — the public Overpass instance rate-limits/cools down
-      // per IP and was timing out under real usage.
-      const { data: supData, error: supError } = await supabase.functions.invoke(
-        "nearby-suppliers",
-        { body: { lat, lng, radiusMiles: 5 } },
-      );
-      if (supError) throw supError;
-
-      if (supData?.suppliers && Array.isArray(supData.suppliers)) {
-        const mapped = (
-          supData.suppliers as {
-            id: string;
-            name: string;
-            address: string;
-            phone: string;
-            website?: string;
-            businessType?: string;
-            distanceMeters?: number;
-            coords: { lat: number; lng: number };
-          }[]
-        )
-          .map((s) => {
-            const dist =
-              s.distanceMeters != null
-                ? s.distanceMeters / 1609.34
-                : calculateDistance(lat, lng, s.coords.lat, s.coords.lng);
-            return {
-              id: s.id,
-              name: s.name,
-              address: s.address,
-              phone: s.phone,
-              website: s.website,
-              businessType: s.businessType,
-              distance: `${dist.toFixed(1)} mi`,
-              coords: s.coords,
-            };
-          })
-          .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
-
-        setSuppliers(mapped);
-      }
-    } catch (err) {
-      const { message } = handleError(err, { message: "Failed to fetch suppliers" });
-      console.error("Error geocoding or fetching suppliers:", err);
-      toast.error(message);
-    } finally {
-      setLoadingSuppliers(false);
-    }
-  };
 
   // job_attachments/job_document_requests have no DB audit trigger (only
   // quotes/jobs/staff/shifts do), so uploads and link generation are logged
@@ -473,17 +385,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("job-attachments").getPublicUrl(filePath);
-
       // Insert attachment record
       const { error: insertError } = await supabase.from("job_attachments").insert({
         job_id: job.id,
         type,
         file_name: file.name,
-        file_url: publicUrl,
+        // The bucket is private; store the object path and sign it at read time.
+        file_url: filePath,
         file_size_bytes: uploadFile.size,
         uploaded_by: "Supervisor",
       });
@@ -570,6 +478,45 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     } finally {
       setRenameTarget(null);
     }
+  };
+
+  const updateDocumentVisibility = async (
+    attachmentId: string,
+    audience: "foreman_visible" | "third_party_visible",
+    visible: boolean,
+  ) => {
+    const previous = attachments.find((attachment) => attachment.id === attachmentId);
+    if (!previous) return;
+    setAttachments((current) =>
+      current.map((attachment) =>
+        attachment.id === attachmentId ? { ...attachment, [audience]: visible } : attachment,
+      ),
+    );
+    const payload =
+      audience === "foreman_visible"
+        ? { foreman_visible: visible }
+        : { third_party_visible: visible };
+    const { error } = await supabase
+      .from("job_attachments")
+      .update(payload)
+      .eq("id", attachmentId)
+      .eq("job_id", job.id);
+    if (error) {
+      setAttachments((current) =>
+        current.map((attachment) =>
+          attachment.id === attachmentId
+            ? { ...attachment, [audience]: previous[audience] }
+            : attachment,
+        ),
+      );
+      toast.error("Document visibility could not be updated");
+      return;
+    }
+    logAttachmentAudit("UPDATE_DOCUMENT_VISIBILITY", {
+      attachment_id: attachmentId,
+      audience,
+      visible,
+    });
   };
 
   const generateUploadLink = async () => {
@@ -1138,9 +1085,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         }
       />
 
-      {/* Secondary sections: Suppliers/Map, Diary+Staff, Attachments */}
+      {/* Secondary sections: Diary+Staff, Attachments */}
       <Tabs defaultValue="overview" className="w-full -mt-3">
-        <TabsList className="w-full h-auto grid grid-cols-5">
+        <TabsList className="w-full h-auto grid grid-cols-4">
           <TabsTrigger
             value="overview"
             aria-label="Overview"
@@ -1156,14 +1103,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           >
             <Paperclip className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden sm:inline text-[11px] whitespace-nowrap">Attachments</span>
-          </TabsTrigger>
-          <TabsTrigger
-            value="suppliers"
-            aria-label="Local Suppliers"
-            className="flex w-full h-full items-center justify-center gap-1.5 px-1.5 py-2"
-          >
-            <MapPin className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline text-[11px] whitespace-nowrap">Suppliers</span>
           </TabsTrigger>
           <TabsTrigger
             value="billing"
@@ -1350,17 +1289,6 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <ThirdPartyNotesPanel jobId={job.id} />
         </TabsContent>
 
-        <TabsContent value="suppliers">
-          <JobOverviewTab
-            job={job}
-            siteCoords={siteCoords}
-            suppliers={suppliers}
-            selectedSupplierId={selectedSupplierId}
-            setSelectedSupplierId={setSelectedSupplierId}
-            loadingSuppliers={loadingSuppliers}
-          />
-        </TabsContent>
-
         <TabsContent value="media">
           <MediaTab
             beforePhotos={beforePhotos}
@@ -1388,6 +1316,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             renameValue={renameValue}
             setRenameValue={setRenameValue}
             executeRenameAttachment={executeRenameAttachment}
+            updateDocumentVisibility={updateDocumentVisibility}
           />
           <ThirdPartyAttachmentsPanel jobId={job.id} />
         </TabsContent>

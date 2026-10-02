@@ -53,7 +53,7 @@ import {
 } from "../../components/ui/accordion";
 import { supabase } from "../../integrations/supabase/client";
 import type { Json, Database } from "../../integrations/supabase/types";
-import { workerToRow, usePortal } from "../context/PortalContext";
+import { MANAGEMENT_WRITE_ROLES, workerToRow, usePortal } from "../context/PortalContext";
 import { computeDiff, getAuditDetails, getRevertibleDiff } from "../utils/auditDiff";
 import { AuditEventCard } from "./AuditEventCard";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -116,6 +116,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 }) => {
   const { profile, role } = usePortal();
   const navigate = useNavigate();
+  const canWrite = !!role && MANAGEMENT_WRITE_ROLES.includes(role);
   // Logistics coordinators/assistants handle scheduling only — the compliance/audit trail is out of scope for them.
   const canViewAuditLog = role !== "logistics_coordinator" && role !== "logistics_assistant";
   const [searchQuery, setSearchQuery] = useState("");
@@ -128,8 +129,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
   }, [searchQuery]);
 
   useEffect(() => {
-    if (autoOpenAddWorker) setShowAddWorkerForm(true);
-  }, [autoOpenAddWorker]);
+    if (autoOpenAddWorker && canWrite) setShowAddWorkerForm(true);
+  }, [autoOpenAddWorker, canWrite]);
 
   const [newWorkerName, setNewWorkerName] = useState("");
   const [newWorkerRole, setNewWorkerRole] = useState<StaffRole>("Concrete Operative");
@@ -328,7 +329,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     id: string;
     requested_certs?: string[] | null;
   }) => {
-    if (resendingRequestMap[request.id]) return;
+    if (!canWrite || resendingRequestMap[request.id]) return;
     setResendingRequestMap((prev) => ({ ...prev, [request.id]: true }));
     const sendingToastId = toast.loading("Sending request…", {
       description: "Sending compliance document request...",
@@ -497,7 +498,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     oldDetails: Record<string, unknown>;
     workerId: string;
   }) => {
-    if (!target.oldDetails || !target.workerId || !target.auditLogId) return;
+    if (!canRevertAudit || !target.oldDetails || !target.workerId || !target.auditLogId) return;
     try {
       const { error } = await supabase.rpc("revert_audit_log", {
         p_audit_log_id: target.auditLogId,
@@ -541,6 +542,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   };
 
   const verifyTicket = async (workerId: string, ticketId: string, approve: boolean) => {
+    if (!canWrite) return;
     const worker = workers.find((w) => w.id === workerId);
     if (!worker) return;
 
@@ -590,6 +592,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   };
 
   const removeTicket = async (workerId: string, ticket: Ticket) => {
+    if (!canWrite) return;
     const worker = workers.find((w) => w.id === workerId);
     if (!worker) return;
 
@@ -640,6 +643,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
   const handleAddWorkerSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!canWrite) return;
     setFormError(null);
 
     if (!newWorkerName.trim()) {
@@ -1426,13 +1430,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
                     <div className="flex shrink-0">
                       {isExpired ? (
                         <div className="flex gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setShowReminderConfirm(true)}
-                            className="px-2 py-0.5 border border-border hover:bg-secondary text-foreground rounded-md text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
-                          >
-                            Request Update
-                          </button>
+                          {canWrite && (
+                            <button
+                              type="button"
+                              onClick={() => setShowReminderConfirm(true)}
+                              className="px-2 py-0.5 border border-border hover:bg-secondary text-foreground rounded-md text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                            >
+                              Request Update
+                            </button>
+                          )}
                           {role === "admin" && (
                             <button
                               type="button"
@@ -1456,7 +1462,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           >
                             View File
                           </button>
-                          {isPending && (
+                          {isPending && canWrite && (
                             <>
                               <button
                                 type="button"
@@ -1789,7 +1795,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
         )}
 
         {/* Request Compliance Update Modal */}
-        {selectedWorkerDetails && (
+        {selectedWorkerDetails && canWrite && (
           <RequestCredentialsModal
             isOpen={showReminderConfirm}
             onClose={() => setShowReminderConfirm(false)}
@@ -2056,51 +2062,58 @@ export const RosterView: React.FC<RosterViewProps> = ({
             <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3 sm:justify-end">
               {!workerToEdit ? (
                 <>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWorkerToEdit(selectedWorkerDetails);
-                      setEditName(selectedWorkerDetails.name);
-                      setEditRole(selectedWorkerDetails.role);
-                      setEditPhone(selectedWorkerDetails.phone || "");
-                      setEditEmail(selectedWorkerDetails.email || "");
-                      setEditTickets([...selectedWorkerDetails.tickets]);
-                      setEditError(null);
-                    }}
-                    className="flex items-center justify-center gap-1 w-full sm:w-auto px-3 py-1.5 border border-border hover:bg-secondary rounded-lg text-[11px] font-bold text-foreground uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap"
-                  >
-                    <Edit className="w-3 h-3 text-muted-foreground" />
-                    <span>Edit</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowReminderConfirm(true)}
-                    className="flex items-center justify-center gap-1 w-full sm:w-auto px-3 py-1.5 bg-primary hover:bg-primary text-primary-foreground rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-primary whitespace-nowrap"
-                  >
-                    <Send className="w-3 h-3" />
-                    <span>Request documents</span>
-                  </button>
-                  <TelegramLinkControl
-                    staffId={selectedWorkerDetails.id}
-                    staffName={selectedWorkerDetails.name}
-                  />
-                  {selectedWorkerDetails.isArchived ? (
+                  {canWrite && (
                     <button
                       type="button"
-                      onClick={() => setSelectedWorkerToRestore(selectedWorkerDetails)}
-                      className="w-full sm:w-auto px-3 py-1.5 bg-success/10 hover:bg-success/20 border border-success/30 text-success text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                      onClick={() => {
+                        setWorkerToEdit(selectedWorkerDetails);
+                        setEditName(selectedWorkerDetails.name);
+                        setEditRole(selectedWorkerDetails.role);
+                        setEditPhone(selectedWorkerDetails.phone || "");
+                        setEditEmail(selectedWorkerDetails.email || "");
+                        setEditTickets([...selectedWorkerDetails.tickets]);
+                        setEditError(null);
+                      }}
+                      className="flex items-center justify-center gap-1 w-full sm:w-auto px-3 py-1.5 border border-border hover:bg-secondary rounded-lg text-[11px] font-bold text-foreground uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap"
                     >
-                      Restore
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedWorkerToDelete(selectedWorkerDetails)}
-                      className="w-full sm:w-auto px-2.5 py-1.5 bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 text-destructive text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap"
-                    >
-                      Archive
+                      <Edit className="w-3 h-3 text-muted-foreground" />
+                      <span>Edit</span>
                     </button>
                   )}
+                  {canWrite && (
+                    <button
+                      type="button"
+                      onClick={() => setShowReminderConfirm(true)}
+                      className="flex items-center justify-center gap-1 w-full sm:w-auto px-3 py-1.5 bg-primary hover:bg-primary text-primary-foreground rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all cursor-pointer border border-primary whitespace-nowrap"
+                    >
+                      <Send className="w-3 h-3" />
+                      <span>Request documents</span>
+                    </button>
+                  )}
+                  {canWrite && (
+                    <TelegramLinkControl
+                      staffId={selectedWorkerDetails.id}
+                      staffName={selectedWorkerDetails.name}
+                    />
+                  )}
+                  {canWrite &&
+                    (selectedWorkerDetails.isArchived ? (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedWorkerToRestore(selectedWorkerDetails)}
+                        className="w-full sm:w-auto px-3 py-1.5 bg-success/10 hover:bg-success/20 border border-success/30 text-success text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        Restore
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedWorkerToDelete(selectedWorkerDetails)}
+                        className="w-full sm:w-auto px-2.5 py-1.5 bg-destructive/10 hover:bg-destructive/20 border border-destructive/30 text-destructive text-[11px] font-bold uppercase tracking-wider rounded-lg transition-all cursor-pointer whitespace-nowrap"
+                      >
+                        Archive
+                      </button>
+                    ))}
                 </>
               ) : (
                 <button
@@ -2249,20 +2262,22 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 </button>
               </div>
 
-              <button
-                onClick={() => setShowAddWorkerForm(!showAddWorkerForm)}
-                className="p-2 md:px-4 md:py-2 bg-primary hover:bg-primary text-primary-foreground rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-[11.5px] font-semibold tracking-wider whitespace-nowrap cursor-pointer shrink-0 ml-auto lg:ml-0"
-              >
-                {showAddWorkerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                <span className="hidden md:inline">
-                  {showAddWorkerForm ? "Cancel" : "Add staff member"}
-                </span>
-              </button>
+              {canWrite && (
+                <button
+                  onClick={() => setShowAddWorkerForm(!showAddWorkerForm)}
+                  className="p-2 md:px-4 md:py-2 bg-primary hover:bg-primary text-primary-foreground rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-[11.5px] font-semibold tracking-wider whitespace-nowrap cursor-pointer shrink-0 ml-auto lg:ml-0"
+                >
+                  {showAddWorkerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                  <span className="hidden md:inline">
+                    {showAddWorkerForm ? "Cancel" : "Add staff member"}
+                  </span>
+                </button>
+              )}
             </div>
           </div>
 
           {/* Add Worker Modal */}
-          {showAddWorkerForm && (
+          {showAddWorkerForm && canWrite && (
             <div className="fixed inset-0 z-50 md:flex md:items-center md:justify-center md:p-4">
               <div
                 className="absolute inset-0 bg-black/70 backdrop-blur-sm"

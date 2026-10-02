@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "../../integrations/supabase/client";
 
 export const PortalContactPage: React.FC = () => {
+  const contactTeam = "IT";
   const [form, setForm] = useState({ category: "", subject: "", message: "" });
   const [status, setStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [sending, setSending] = useState(false);
@@ -63,10 +64,12 @@ export const PortalContactPage: React.FC = () => {
               <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-primary">
                 Opus Form IT
               </div>
-              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Contact IT</h1>
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+                Contact {contactTeam}
+              </h1>
               <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-                Send a question or report a problem to IT. Your signed-in email address will be
-                included so the team can reply. We normally respond during working hours.
+                Send a question or report a problem to {contactTeam}. Your signed-in email address
+                will be included so the team can reply. We normally respond during working hours.
               </p>
             </div>
           </div>
@@ -192,8 +195,8 @@ export const PortalContactPage: React.FC = () => {
                 </h2>
               </div>
               <p className="mt-4 text-sm leading-6 text-[#d8d1c6]">
-                Your signed-in email address is included automatically. IT normally replies during
-                working hours.
+                Your signed-in email address is included automatically. {contactTeam} normally
+                replies during working hours.
               </p>
               <div className="mt-4 flex items-start gap-2 border-t border-[#405257] pt-4 text-xs leading-5 text-[#c5c0b8]">
                 <CheckCircle2

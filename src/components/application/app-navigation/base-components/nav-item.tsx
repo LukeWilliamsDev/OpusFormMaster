@@ -27,6 +27,10 @@ interface NavItemBaseProps {
   onClick?: MouseEventHandler;
   /** Content to display. */
   children?: ReactNode;
+  /** ARIA relationship for collapsible navigation. */
+  ariaControls?: string;
+  /** Whether a collapsible navigation item is expanded. */
+  ariaExpanded?: boolean;
 }
 
 export const NavItemBase = ({
@@ -38,6 +42,8 @@ export const NavItemBase = ({
   truncate = true,
   iconOnly = false,
   onClick,
+  ariaControls,
+  ariaExpanded,
 }: NavItemBaseProps) => {
   const iconElement = Icon && (
     <Icon
@@ -68,6 +74,8 @@ export const NavItemBase = ({
           current && styles.rootSelected,
         )}
         onClick={onClick}
+        aria-controls={ariaControls}
+        aria-expanded={ariaExpanded}
       >
         {iconElement}
         {labelElement}

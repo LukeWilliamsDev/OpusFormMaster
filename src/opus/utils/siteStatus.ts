@@ -3,10 +3,10 @@ export type SiteState = "open" | "attention" | "completed";
 export type SiteStatusRecord = { status?: string | null };
 
 export const isCompletedSite = (site: SiteStatusRecord) =>
-  ["completed", "complete", "closed"].includes(String(site.status).toLowerCase());
+  ["completed", "complete", "closed"].includes(String(site.status).toLowerCase().trim());
 
 export const siteNeedsAttention = (site: SiteStatusRecord) =>
-  ["pending", "on-hold", "on hold"].includes(String(site.status).toLowerCase());
+  ["pending", "on-hold", "on hold"].includes(String(site.status).toLowerCase().trim());
 
 export const getSiteState = (site: SiteStatusRecord): SiteState =>
   isCompletedSite(site) ? "completed" : siteNeedsAttention(site) ? "attention" : "open";

@@ -186,14 +186,14 @@ export const SidebarNavigationSlim = ({
             <button
               onClick={onToggleTheme}
               role="switch"
-              aria-checked={theme === "light"}
+              aria-checked={theme === "dark"}
               aria-label="Toggle light/dark theme"
               className="relative w-9 h-5 shrink-0 rounded-full bg-secondary border border-border transition-colors cursor-pointer"
             >
               <span
                 className={cx(
                   "absolute top-0.5 left-0.5 w-3.5 h-3.5 rounded-full bg-primary shadow transition-transform duration-200",
-                  theme === "light" && "translate-x-4",
+                  theme === "dark" && "translate-x-4",
                 )}
               />
             </button>
@@ -201,6 +201,7 @@ export const SidebarNavigationSlim = ({
         )}
         {onLogout && (
           <button
+            type="button"
             onClick={onLogout}
             title={collapsed ? "Log Out" : undefined}
             aria-label="Log out"

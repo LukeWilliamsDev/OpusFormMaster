@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Activity, Search } from "lucide-react";
-import { AuditEventCard } from "../components/AuditEventCard";
+import { AuditWorkspace } from "../components/AuditWorkspace";
 import { AuditDiffTable } from "../components/AuditDiffTable";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -216,27 +216,15 @@ export const AuditLogPage: React.FC = () => {
             No audit entries match these filters.
           </div>
         ) : (
-          <div className="mt-3 overflow-x-auto rounded-lg border border-border">
-            <div>
-              <div className="hidden items-center gap-3 bg-background/60 px-3 py-2 text-xs font-semibold text-muted-foreground lg:grid lg:grid-cols-[120px_118px_minmax(180px,1.3fr)_minmax(150px,1fr)_150px_24px]">
-                <span>When</span>
-                <span>Action</span>
-                <span>Record</span>
-                <span>Summary</span>
-                <span>Actor</span>
-                <span />
-              </div>
-              {paginatedLogs.map((log) => (
-                <AuditEventCard
-                  key={log.id}
-                  log={log}
-                  targetName={targetNames[`${log.target_type}:${log.target_id}`]}
-                  canRevert={canRevert}
-                  reverting={revertingId === log.id}
-                  onRevert={setRevertTarget}
-                />
-              ))}
-            </div>
+          <div className="mt-3">
+            <AuditWorkspace
+              logs={paginatedLogs}
+              targetName={(log) => targetNames[`${log.target_type}:${log.target_id}`]}
+              canRevert={canRevert}
+              revertingId={revertingId}
+              onRevert={setRevertTarget}
+              countLabel={`${filteredLogs.length} ${filteredLogs.length === 1 ? "entry" : "entries"}`}
+            />
           </div>
         )}
 

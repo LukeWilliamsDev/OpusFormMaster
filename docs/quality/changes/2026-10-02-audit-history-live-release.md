@@ -6,8 +6,8 @@
 **Accountable owner:** Luke Williams / Opus Form director
 **Source of truth:** User-requested live audit release and the 2026-10-02 audit/history product rules; base release `8a92504`
 **Evidence base:** `8a92504`
-**Evidence head:** `7453d68` (`origin/main`)
-**Evidence fingerprint:** `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+**Evidence head:** `working tree`
+**Evidence fingerprint:** `1095e2285379b61628140559e5d81dc7b157adbd19b8becfa1e24d6cec64902b`
 
 ## Intent
 
@@ -24,6 +24,9 @@ inspector, while preserving the existing role and tenant boundaries.
   handling, and corrective-event context.
 - Refine global, job, and staff audit filtering/search and plain-English
   summaries without exposing raw technical metadata by default.
+- Use the available tablet, laptop, and desktop width more effectively with a
+  shared responsive audit workspace: split list/detail at laptop widths and a
+  compact detail drawer below that breakpoint.
 - Apply one central redaction policy to diff values, field labels, actor
   identifiers, accessible names, and the staff revert confirmation.
 - Ensure the live Worker is rebuilt with the production Supabase URL and
@@ -47,6 +50,11 @@ inspector, while preserving the existing role and tenant boundaries.
 ### Changed files
 
 - `docs/quality/changes/2026-10-02-audit-history-live-release.md`
+- `src/opus/components/AuditEventCard.tsx`
+- `src/opus/components/AuditWorkspace.tsx`
+- `src/opus/components/HistoryTab.tsx`
+- `src/opus/components/RosterView.tsx`
+- `src/opus/pages/AuditLog.tsx`
 
 The source release and database migration manifest is retained in commit
 `0339ab3` with fingerprint
@@ -60,6 +68,7 @@ The source release and database migration manifest is retained in commit
 - [x] `AC-4`: Revert controls remain limited to the existing safe staff/job fields, preserve admin/director and tenant boundaries, and fail the revert transaction if its corrective audit event cannot be written — evidence: source review, corrective migration, and role guards.
 - [x] `AC-5`: The formatting repair leaves no repository-wide lint or formatting blocker, and the production build remains within budget — evidence: lint, Prettier, typecheck, tests, and build-budget commands.
 - [x] `AC-6`: The release contract explicitly keeps live completion blocked until both audit migrations, the deployed audit bundle, and an authenticated audit-route check are independently verified; the current release status remains pending until that evidence exists — evidence: this contract's release decision and verification table.
+- [x] `AC-7`: Global, job, and staff audit sections share the responsive list/detail workspace, use the laptop breakpoint for the non-modal detail pane, and retain a keyboard-safe drawer on smaller screens — evidence: source review, task 31 critic, typecheck, tests, and production build.
 
 ## Risk and approval gates
 
@@ -94,7 +103,7 @@ The source release and database migration manifest is retained in commit
 | Typecheck                 | `npm run typecheck`                                                                                                                                                            | PASS                                                                                 |
 | Tests                     | `npm run test`                                                                                                                                                                 | PASS — 162 passed, 1 skipped                                                         |
 | Build and budget          | `VITE_SUPABASE_URL=https://placeholder.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=placeholder-anon-key npm run build:budget`                                                    | PASS                                                                                 |
-| Fresh critic              | Independent read-only critic task 28 against the exact diff, contract, migrations, role guards, and tests                                                                      | PASS — no blocking or major findings                                                 |
+| Fresh critic              | Independent read-only critic task 31 against the responsive workspace, exact diff, role guards, and revert flows                                                               | PASS — no blocking or major findings                                                 |
 | Remote migration ledger   | Composio Supabase read-only catalog query plus `SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" npx --no-install supabase db push --project-ref fgpthpxmiroyebrzjdzo --dry-run` | PASS — canonical and remote marker versions recorded; remote up to date              |
 | Live schema lint          | `SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" npx --no-install supabase db lint --linked`                                                                                    | Audit migration passes; unrelated pre-existing `submit_job_attachment` error remains |
 | Production client config  | `curl` production shell/assets and Supabase Auth settings with the public publishable key                                                                                      | PASS — no placeholder config; bundle points to `fgpthpxmiroyebrzjdzo.supabase.co`    |
@@ -103,16 +112,16 @@ The source release and database migration manifest is retained in commit
 
 ## Critic review
 
-- Critic context/identity: Independent fresh read-only review, task 28, separate from the implementation pass.
+- Critic context/identity: Independent fresh read-only review, task 31, separate from the implementation pass.
 - Review input: exact working-tree diff, this contract, base commit `8a92504`, audit migrations, role guards, and the relevant QMS rules.
 - Verdict: `PASS`
 - Findings: none after repairs; the known unrelated `public.submit_job_attachment` schema-lint error remains outside this release scope.
 - Unresolved blocking findings: `none`
-- Repair iterations: `5`
+- Repair iterations: `6`
 
 ## Release decision
 
-- Automated gate: `PASS` — `npm run quality:gate` passed with only the existing lint warnings.
+- Automated gate: `PENDING` — final `npm run quality:gate` is the remaining local deterministic check for this responsive diff.
 - Release status: `READY_FOR_HUMAN_APPROVAL`
 - Human approval: `PENDING`
 - Residual uncertainty or exception: Live migration application, Worker provenance, and authenticated audit behavior must be verified before describing the release as complete.

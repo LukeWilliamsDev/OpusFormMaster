@@ -5,7 +5,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { Database } from "@/integrations/supabase/types";
 import { supabase } from "@/integrations/supabase/client";
 import { usePortal } from "../context/PortalContext";
-import { AuditEventCard } from "./AuditEventCard";
+import { AuditWorkspace } from "./AuditWorkspace";
 import { AuditDiffTable } from "./AuditDiffTable";
 import {
   AUDIT_CATEGORY_LABELS,
@@ -179,27 +179,15 @@ export function HistoryTab({
             No audit history for this job
           </div>
         ) : (
-          <div className="mt-3 overflow-x-auto rounded-lg border border-border">
-            <div>
-              <div className="hidden items-center gap-3 bg-background/60 px-3 py-2 text-xs font-semibold text-muted-foreground lg:grid lg:grid-cols-[120px_118px_minmax(180px,1.3fr)_minmax(150px,1fr)_150px_24px]">
-                <span>When</span>
-                <span>Action</span>
-                <span>Record</span>
-                <span>Summary</span>
-                <span>Actor</span>
-                <span />
-              </div>
-              {paginatedEvents.map((event) => (
-                <AuditEventCard
-                  key={event.id}
-                  log={event}
-                  targetName={jobName}
-                  canRevert={canRevert}
-                  reverting={revertingId === event.id}
-                  onRevert={setRevertTarget}
-                />
-              ))}
-            </div>
+          <div className="mt-3">
+            <AuditWorkspace
+              logs={paginatedEvents}
+              targetName={jobName}
+              canRevert={canRevert}
+              revertingId={revertingId}
+              onRevert={setRevertTarget}
+              countLabel={`${events.length} ${events.length === 1 ? "event" : "events"}`}
+            />
           </div>
         )}
 

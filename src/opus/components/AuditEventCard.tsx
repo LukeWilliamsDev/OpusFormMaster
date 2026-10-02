@@ -43,6 +43,8 @@ interface AuditEventCardProps {
   reverting?: boolean;
   onRevert?: (log: AuditLogRow) => void;
   extraActions?: React.ReactNode;
+  selected?: boolean;
+  onSelect?: () => void;
 }
 
 function getActionPresentation(action: string) {
@@ -116,18 +118,25 @@ interface AuditInspectorProps {
   reverting: boolean;
   onClose: () => void;
   onRevert?: (log: AuditLogRow) => void;
+  inline?: boolean;
+  responsive?: boolean;
 }
 
-function AuditInspector({
+export function AuditInspector({
   log,
   targetName,
   canRevert,
   reverting,
   onClose,
   onRevert,
+  inline = false,
+  responsive = false,
 }: AuditInspectorProps) {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
+  const [desktopLayout, setDesktopLayout] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches,
+  );
   const details = getAuditDetails(log.details);
   const isDerivedRequest = isDerivedAuditRecord(log);
   const diff = log.action === "UPDATE" ? computeDiff(details?.old, details?.new) : [];
@@ -148,6 +157,17 @@ function AuditInspector({
   );
 
   useEffect(() => {
+    if (!responsive) return;
+    const media = window.matchMedia("(min-width: 1024px)");
+    const syncLayout = () => setDesktopLayout(media.matches);
+    syncLayout();
+    media.addEventListener("change", syncLayout);
+    return () => media.removeEventListener("change", syncLayout);
+  }, [responsive]);
+
+  useEffect(() => {
+    const shouldTrapFocus = !inline && (!responsive || !desktopLayout);
+    if (!shouldTrapFocus) return;
     closeButtonRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -174,25 +194,37 @@ function AuditInspector({
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-  }, [onClose]);
+  }, [desktopLayout, inline, onClose, responsive]);
 
   return (
     <div
-      className="fixed inset-0 z-[180] flex justify-end bg-black/40 backdrop-blur-[2px]"
+      className={
+        inline
+          ? "relative flex h-full min-h-[520px] w-full justify-end"
+          : responsive
+            ? "fixed inset-0 z-[180] flex justify-end bg-black/40 backdrop-blur-[2px] lg:relative lg:inset-auto lg:z-auto lg:min-h-[520px] lg:bg-transparent lg:backdrop-blur-0"
+            : "fixed inset-0 z-[180] flex justify-end bg-black/40 backdrop-blur-[2px]"
+      }
       role="presentation"
     >
-      <button
-        type="button"
-        aria-label="Close audit details"
-        tabIndex={-1}
-        className="absolute inset-0 cursor-default"
-        onClick={onClose}
-      />
+      {!inline && (
+        <button
+          type="button"
+          aria-label="Close audit details"
+          tabIndex={-1}
+          className={
+            responsive
+              ? "absolute inset-0 cursor-default lg:hidden"
+              : "absolute inset-0 cursor-default"
+          }
+          onClick={onClose}
+        />
+      )}
       <aside
         ref={dialogRef}
-        className="relative z-10 flex h-full w-full max-w-xl flex-col border-l border-border bg-card shadow-2xl animate-in slide-in-from-right duration-200"
+        className={`relative z-10 flex h-full w-full flex-col bg-card ${inline || responsive ? "max-w-none border-0 shadow-none lg:max-w-none" : "max-w-xl border-l border-border shadow-2xl animate-in slide-in-from-right duration-200"} ${responsive ? "lg:relative lg:h-full" : ""}`}
         role="dialog"
-        aria-modal="true"
+        {...(!inline && !responsive ? { "aria-modal": "true" } : {})}
         aria-label="Audit event details"
       >
         <header className="flex items-start justify-between gap-4 border-b border-border px-5 py-5 sm:px-6">
@@ -343,6 +375,8 @@ export const AuditEventCard: React.FC<AuditEventCardProps> = ({
   reverting = false,
   onRevert,
   extraActions,
+  selected = false,
+  onSelect,
 }) => {
   const [inspectorOpen, setInspectorOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -356,19 +390,27 @@ export const AuditEventCard: React.FC<AuditEventCardProps> = ({
     setInspectorOpen(false);
     window.setTimeout(() => triggerRef.current?.focus(), 0);
   };
+  const handleSelect = () => {
+    if (onSelect) {
+      onSelect();
+      return;
+    }
+    setInspectorOpen(true);
+  };
 
   return (
     <article className="border-b border-border last:border-b-0">
       <div className="flex items-stretch gap-2 py-1">
         <button
           ref={triggerRef}
+          id={`audit-event-${log.id}`}
           type="button"
-          className="group grid min-w-0 flex-1 items-center gap-3 rounded-lg px-2 py-3 text-left transition-colors hover:bg-secondary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary lg:grid-cols-[120px_118px_minmax(180px,1.3fr)_minmax(150px,1fr)_150px_24px]"
-          onClick={() => setInspectorOpen(true)}
+          className={`group grid min-w-0 flex-1 grid-cols-[84px_minmax(0,1fr)_24px] items-center gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-secondary/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-primary lg:grid-cols-[112px_118px_minmax(160px,1.2fr)_minmax(130px,1fr)_120px_24px] lg:py-3 ${selected ? "bg-secondary/50" : ""}`}
+          onClick={handleSelect}
           aria-label={`View audit details: ${isDerivedRequest ? "Compliance request status" : getAuditEventSentence(log, targetName)}`}
         >
           <span className="text-xs text-muted-foreground">{formatEventTime(log.created_at)}</span>
-          <span className="flex items-center gap-2">
+          <span className="hidden items-center gap-2 lg:flex">
             <span
               className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${presentation.iconBg}`}
             >
@@ -378,29 +420,40 @@ export const AuditEventCard: React.FC<AuditEventCardProps> = ({
               {isDerivedRequest ? "Request status" : getEventLabel(log.action)}
             </span>
           </span>
-          <span className="min-w-0">
+          <span className="col-start-2 min-w-0 lg:col-start-3">
             <span className="block truncate text-sm font-semibold text-foreground">
               {targetLabel}
             </span>
-            <span className="block truncate text-xs text-muted-foreground">
+            <span className="block truncate text-xs text-muted-foreground lg:hidden">
+              {isDerivedRequest ? "Request status" : getEventLabel(log.action)} ·{" "}
+              {getAuditOutcomeSummary(log)}
+            </span>
+            <span className="hidden truncate text-xs text-muted-foreground lg:block">
               {getAuditTargetLabel(log.target_type)}
             </span>
           </span>
-          <span className="truncate text-sm text-muted-foreground">
+          <span className="hidden truncate text-sm text-muted-foreground lg:block">
             {getAuditOutcomeSummary(log)}
           </span>
-          <span className="truncate text-sm text-muted-foreground" title={actorIdentifier}>
+          <span
+            className="hidden truncate text-sm text-muted-foreground lg:block"
+            title={actorIdentifier}
+          >
             <User className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />
             {actor}
           </span>
           <ChevronRight
-            className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground"
+            className="col-start-3 h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground lg:col-start-6"
             aria-hidden="true"
           />
         </button>
-        {extraActions && <div className="flex shrink-0 items-center">{extraActions}</div>}
+        {extraActions && (
+          <div className="flex shrink-0 items-center" onClick={(event) => event.stopPropagation()}>
+            {extraActions}
+          </div>
+        )}
       </div>
-      {inspectorOpen && (
+      {inspectorOpen && !onSelect && (
         <AuditInspector
           log={log}
           targetName={targetName}

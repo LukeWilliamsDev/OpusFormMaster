@@ -64,7 +64,7 @@ import {
   getRevertibleDiff,
   type AuditCategory,
 } from "../utils/auditDiff";
-import { AuditEventCard } from "./AuditEventCard";
+import { AuditWorkspace } from "./AuditWorkspace";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TelegramLinkControl } from "./TelegramLinkControl";
 import { toast } from "sonner";
@@ -126,8 +126,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const { profile, role } = usePortal();
   const navigate = useNavigate();
   const canWrite = !!role && MANAGEMENT_WRITE_ROLES.includes(role);
-  // Logistics coordinators/assistants handle scheduling only — the compliance/audit trail is out of scope for them.
-  const canViewAuditLog = role !== "logistics_coordinator" && role !== "logistics_assistant";
+  // The staff audit trail is restricted to the same roles as the global audit
+  // route; the database policy remains the authoritative tenant boundary.
+  const canViewAuditLog = role === "admin" || role === "director";
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [showAddWorkerForm, setShowAddWorkerForm] = useState(false);
@@ -1717,95 +1718,72 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 )}
 
                 {filteredEvents.length > 0 ? (
-                  <div
-                    className="overflow-x-auto rounded-lg border border-border px-1"
-                    aria-live="polite"
-                  >
-                    <div>
-                      <div className="hidden items-center gap-3 bg-background/60 px-2 py-2 text-xs font-semibold text-muted-foreground lg:grid lg:grid-cols-[120px_118px_minmax(180px,1.3fr)_minmax(150px,1fr)_150px_24px]">
-                        <span>When</span>
-                        <span>Action</span>
-                        <span>Record</span>
-                        <span>Summary</span>
-                        <span>Actor</span>
-                        <span />
-                      </div>
-                      {paginatedEvents.map((event) => {
+                  <div aria-live="polite">
+                    <AuditWorkspace
+                      logs={paginatedEvents}
+                      targetName={selectedWorkerDetails.name}
+                      canRevert={(event) => {
+                        const details = getAuditDetails(event.details);
+                        const diff =
+                          event.action === "UPDATE" ? computeDiff(details?.old, details?.new) : [];
+                        return canRevertAudit && getRevertibleDiff("staff", diff).length > 0;
+                      }}
+                      revertingId={revertConfirmTarget?.auditLogId}
+                      onRevert={(event) => {
+                        const details = getAuditDetails(event.details);
+                        if (!details?.old || !details?.new) return;
+                        setRevertConfirmTarget({
+                          auditLogId: event.id,
+                          oldDetails: details.old as Record<string, unknown>,
+                          currentDetails: details.new as Record<string, unknown>,
+                          workerId: event.target_id || selectedWorkerDetails.id,
+                        });
+                      }}
+                      extraActions={(event) => {
                         const details = getAuditDetails(event.details);
                         const requestId = details?.request_id as string | undefined;
                         const request = requestId
                           ? dossierDocRequests.find((record) => record.id === requestId)
                           : undefined;
-                        const diff =
-                          event.action === "UPDATE" ? computeDiff(details?.old, details?.new) : [];
-                        const canRevertEvent =
-                          canRevertAudit && getRevertibleDiff("staff", diff).length > 0;
-
-                        return (
-                          <AuditEventCard
-                            key={event.id}
-                            log={event}
-                            targetName={selectedWorkerDetails.name}
-                            canRevert={canRevertEvent}
-                            reverting={revertConfirmTarget?.auditLogId === event.id}
-                            onRevert={() => {
-                              if (!details?.old || !details?.new) return;
-                              setRevertConfirmTarget({
-                                auditLogId: event.id,
-                                oldDetails: details.old as Record<string, unknown>,
-                                currentDetails: details.new as Record<string, unknown>,
-                                workerId: event.target_id || selectedWorkerDetails.id,
-                              });
-                            }}
-                            extraActions={
-                              request && details?.status === "pending" ? (
-                                <button
-                                  type="button"
-                                  onClick={(clickEvent) => {
-                                    clickEvent.stopPropagation();
-                                    handleResendRequest(request);
-                                  }}
-                                  disabled={resendingRequestMap[request.id]}
-                                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wider text-foreground transition-colors hover:bg-secondary/80 disabled:opacity-50"
-                                >
-                                  <RefreshCw
-                                    className={`h-3 w-3 ${resendingRequestMap[request.id] ? "animate-spin" : "text-muted-foreground"}`}
-                                  />
-                                  Resend
-                                </button>
-                              ) : null
-                            }
-                          />
-                        );
-                      })}
-
-                      {/* Pagination Controls */}
-                      {totalPages > 1 && (
-                        <div className="flex items-center justify-between pt-3 border-t border-border">
+                        return request && details?.status === "pending" ? (
                           <button
                             type="button"
-                            onClick={() => setAuditLogPage((prev) => Math.max(1, prev - 1))}
-                            disabled={auditLogPage === 1}
-                            className="px-3.5 py-1.5 bg-card/60 border border-border text-[10px] font-bold uppercase tracking-wider rounded-lg text-muted-foreground hover:text-foreground transition-all disabled:opacity-40 cursor-pointer"
+                            onClick={() => handleResendRequest(request)}
+                            disabled={resendingRequestMap[request.id]}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-secondary px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-wider text-foreground transition-colors hover:bg-secondary/80 disabled:opacity-50"
                           >
-                            Previous
+                            <RefreshCw
+                              className={`h-3 w-3 ${resendingRequestMap[request.id] ? "animate-spin" : "text-muted-foreground"}`}
+                            />
+                            Resend
                           </button>
-                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
-                            Page {auditLogPage} of {totalPages}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setAuditLogPage((prev) => Math.min(totalPages, prev + 1))
-                            }
-                            disabled={auditLogPage === totalPages}
-                            className="px-3.5 py-1.5 bg-card/60 border border-border text-[10px] font-bold uppercase tracking-wider rounded-lg text-muted-foreground hover:text-foreground transition-all disabled:opacity-40 cursor-pointer"
-                          >
-                            Next
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                        ) : null;
+                      }}
+                      countLabel={`${filteredEvents.length} ${filteredEvents.length === 1 ? "event" : "events"}`}
+                    />
+                    {totalPages > 1 && (
+                      <div className="flex items-center justify-between border-t border-border pt-3">
+                        <button
+                          type="button"
+                          onClick={() => setAuditLogPage((prev) => Math.max(1, prev - 1))}
+                          disabled={auditLogPage === 1}
+                          className="cursor-pointer rounded-lg border border-border bg-card/60 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-all hover:text-foreground disabled:opacity-40"
+                        >
+                          Previous
+                        </button>
+                        <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                          Page {auditLogPage} of {totalPages}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setAuditLogPage((prev) => Math.min(totalPages, prev + 1))}
+                          disabled={auditLogPage === totalPages}
+                          className="cursor-pointer rounded-lg border border-border bg-card/60 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-all hover:text-foreground disabled:opacity-40"
+                        >
+                          Next
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-12 border border-dashed border-border rounded-xl bg-muted/40">

@@ -181,7 +181,7 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
             <div className="mt-4 flex gap-2">
               <button
                 onClick={() => review(submission.id, true)}
-                className="flex items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2 text-xs font-bold text-white"
+                className="flex items-center gap-2 rounded-lg bg-status-success px-3 py-2 text-xs font-bold text-status-success-foreground"
               >
                 <Check className="h-3 w-3" />
                 Approve
@@ -238,7 +238,7 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
-                    <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-emerald-700">
+                    <span className="rounded-full bg-status-success/10 px-2.5 py-1 text-[10px] font-black uppercase tracking-widest text-status-success">
                       Current
                     </span>
                     <button

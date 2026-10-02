@@ -19,18 +19,33 @@ const AVATAR_PRESETS = [
   },
   {
     id: "safety",
-    name: "Safety Yellow",
-    colors: "from-[#eab308] to-[#ca8a04]",
-    text: "text-[#1e1b4b]",
+    name: "Muted Ochre",
+    colors: "from-[#aa783e] to-[#835424]",
+    text: "text-[#fffaf3]",
   },
-  { id: "steel", name: "Steel Grate", colors: "from-[#64748b] to-[#475569]", text: "text-white" },
-  { id: "amber", name: "Amber Warning", colors: "from-[#f97316] to-[#ea580c]", text: "text-white" },
-  { id: "rust", name: "Iron Rust", colors: "from-[#ef4444] to-[#dc2626]", text: "text-white" },
+  {
+    id: "steel",
+    name: "Steel Grate",
+    colors: "from-[#637281] to-[#465463]",
+    text: "text-[#f5f1ea]",
+  },
+  {
+    id: "amber",
+    name: "Burnt Ochre",
+    colors: "from-[#a96a2e] to-[#7d481e]",
+    text: "text-[#fffaf3]",
+  },
+  {
+    id: "rust",
+    name: "Iron Rust",
+    colors: "from-[#984f47] to-[#6d342f]",
+    text: "text-[#fffaf3]",
+  },
   {
     id: "midnight",
-    name: "Midnight Cyan",
-    colors: "from-[#06b6d4] to-[#0891b2]",
-    text: "text-[#0f172a]",
+    name: "Deep Teal",
+    colors: "from-[#4b7069] to-[#2f544f]",
+    text: "text-[#f5f1ea]",
   },
 ];
 

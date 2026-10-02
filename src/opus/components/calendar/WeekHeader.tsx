@@ -9,7 +9,8 @@ interface WeekHeaderProps {
 
 export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) => {
   // Site office design constants
-  const SITE_AMBER = "bg-amber-600 text-white shadow-amber-600/20 hover:bg-amber-700";
+  const SITE_AMBER =
+    "bg-schedule-action text-schedule-action-foreground shadow-schedule-action/20 hover:bg-schedule-action-hover";
   const SITE_STONE = "bg-card text-muted-foreground hover:text-foreground hover:bg-background";
   const SITE_BORDER = "border-border";
 
@@ -27,7 +28,7 @@ export const WeekHeader: React.FC<WeekHeaderProps> = ({ weekDays, onNavigate }) 
       </button>
 
       <div className="flex items-center gap-2">
-        <CalendarIcon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+        <CalendarIcon className="w-4 h-4 text-schedule-action" />
         <span className="text-[11px] font-black text-foreground uppercase tracking-widest whitespace-nowrap">
           {formatWeekRange(weekDays)}
         </span>

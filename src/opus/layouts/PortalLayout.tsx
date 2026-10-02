@@ -337,7 +337,7 @@ export const PortalLayout: React.FC = () => {
             <div className="flex items-center space-x-2">
               <button
                 onClick={toggleTheme}
-                className="p-2 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center group transition-colors"
+                className="p-2 text-muted-foreground hover:text-primary cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center group transition-colors"
                 aria-label="Toggle light/dark theme"
                 title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
               >
@@ -349,7 +349,7 @@ export const PortalLayout: React.FC = () => {
               </button>
               <button
                 onClick={handleLogoutClick}
-                className="p-2 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
+                className="p-2 text-muted-foreground hover:text-destructive cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center"
                 aria-label="Log out"
                 title="Log out"
               >
@@ -518,10 +518,10 @@ export const PortalLayout: React.FC = () => {
                       )}
                     </div>
                     <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-[13px] font-semibold text-foreground truncate group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                      <span className="text-[13px] font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                         {profile?.full_name || user?.email || "User"}
                       </span>
-                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400 capitalize font-medium">
+                      <span className="text-[11px] text-status-success capitalize font-medium">
                         {formatAppRoleLabel(role || "labourer")}
                       </span>
                     </div>

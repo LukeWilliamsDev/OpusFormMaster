@@ -5,7 +5,8 @@ import { cx, sortCx } from "@/lib/utils/cx";
 
 const styles = sortCx({
   root: "group relative flex max-h-9 w-full cursor-pointer items-center rounded-lg text-muted-foreground outline-none transition-colors duration-200 select-none hover:text-foreground hover:bg-muted focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-2",
-  rootSelected: "bg-primary text-white shadow-md hover:bg-primary hover:text-white",
+  rootSelected:
+    "bg-primary text-primary-foreground shadow-md hover:bg-primary hover:text-primary-foreground",
 });
 
 interface NavItemBaseProps {

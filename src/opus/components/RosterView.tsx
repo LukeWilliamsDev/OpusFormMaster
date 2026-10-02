@@ -989,7 +989,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
         className="space-y-6"
       >
         {editError && (
-          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-xl text-xs font-bold text-red-400 uppercase tracking-wider">
+          <div className="p-4 bg-status-error/10 border border-status-error/25 rounded-xl text-xs font-bold text-status-error uppercase tracking-wider">
             {editError}
           </div>
         )}
@@ -1105,7 +1105,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       <button
                         type="button"
                         onClick={() => setEditTickets(editTickets.filter((_, i) => i !== index))}
-                        className="sm:col-span-2 text-red-500 hover:text-red-400 flex items-center justify-center shrink-0"
+                        className="sm:col-span-2 text-destructive hover:text-destructive/80 flex items-center justify-center shrink-0"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1469,7 +1469,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                                 onClick={() =>
                                   verifyTicket(selectedWorkerDetails.id, ticket.id, true)
                                 }
-                                className="w-full sm:w-auto px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-foreground rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
+                                className="w-full sm:w-auto px-3 py-1 bg-status-success hover:bg-status-success/90 text-status-success-foreground rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer"
                               >
                                 Approve
                               </button>
@@ -1554,7 +1554,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           <span
                             className={`px-2 py-0.5 rounded-xl text-[9px] font-semibold tracking-wider uppercase border ${
                               job.status === "active" || job.status === "in-progress"
-                                ? "bg-emerald-500/15 border-emerald-600/40 text-emerald-700 dark:text-emerald-400"
+                                ? "bg-status-success/12 border-status-success/35 text-status-success"
                                 : "bg-secondary border-border text-muted-foreground"
                             }`}
                           >
@@ -1915,16 +1915,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             key={f.key}
                             className={`flex items-center justify-between px-4 py-2.5 ${
                               changed
-                                ? "bg-amber-500/10 dark:bg-amber-500/5 border-l-2 border-amber-600/50 dark:border-amber-500/40"
+                                ? "bg-status-warning/10 border-l-2 border-status-warning/45"
                                 : ""
                             }`}
                           >
                             <span
-                              className={`font-semibold uppercase tracking-wider text-[10px] ${
-                                changed
-                                  ? "text-amber-800/80 dark:text-amber-400/70"
-                                  : "text-muted-foreground"
-                              }`}
+                              className={`font-semibold uppercase tracking-wider text-[10px] ${changed ? "text-status-warning" : "text-muted-foreground"}`}
                             >
                               {f.label}
                             </span>
@@ -1939,7 +1935,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                               )}
                               <span
                                 className={`font-bold ${
-                                  changed ? "text-amber-800 dark:text-amber-300" : "text-foreground"
+                                  changed ? "text-status-warning" : "text-foreground"
                                 }`}
                               >
                                 {oldVal}
@@ -2227,8 +2223,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   onClick={() => setRosterMode("archived")}
                   className={`px-3.5 py-1.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
                     rosterMode === "archived"
-                      ? "bg-amber-600 border-amber-600 text-foreground"
-                      : "bg-card/60 border-border text-muted-foreground hover:text-amber-500"
+                      ? "bg-status-attention/15 border-status-attention text-status-attention"
+                      : "bg-card/60 border-border text-muted-foreground hover:text-status-attention"
                   }`}
                 >
                   Archived
@@ -2304,7 +2300,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
                 <div className="p-5 space-y-3.5">
                   {formError && (
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-red-400 bg-red-500/10 p-2.5 rounded-lg border border-red-500/20">
+                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-status-error bg-status-error/10 p-2.5 rounded-lg border border-status-error/25">
                       <AlertTriangle className="w-4 h-4 shrink-0" />
                       {formError}
                     </div>

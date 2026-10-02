@@ -6,8 +6,8 @@
 **Accountable owner:** Luke Williams / Opus Form director
 **Source of truth:** User-requested live audit release and the 2026-10-02 audit/history product rules; base release `8a92504`
 **Evidence base:** `8a92504`
-**Evidence head:** `working tree`
-**Evidence fingerprint:** `1095e2285379b61628140559e5d81dc7b157adbd19b8becfa1e24d6cec64902b`
+**Evidence head:** `cf38d3c` (`origin/main`)
+**Evidence fingerprint:** `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 
 ## Intent
 
@@ -50,14 +50,12 @@ inspector, while preserving the existing role and tenant boundaries.
 ### Changed files
 
 - `docs/quality/changes/2026-10-02-audit-history-live-release.md`
-- `src/opus/components/AuditEventCard.tsx`
-- `src/opus/components/AuditWorkspace.tsx`
-- `src/opus/components/HistoryTab.tsx`
-- `src/opus/components/RosterView.tsx`
-- `src/opus/pages/AuditLog.tsx`
 
-The source release and database migration manifest is retained in commit
-`0339ab3` with fingerprint
+The responsive workspace source manifest is retained in commit `cf38d3c` with
+fingerprint
+`1095e2285379b61628140559e5d81dc7b157adbd19b8becfa1e24d6cec64902b`.
+The original source release and database migration manifest is retained in
+commit `0339ab3` with fingerprint
 `a99e8dd031d64a5e56986efeb0e23aa161bc5af694573477804482bd0066fb61`.
 
 ## Acceptance criteria
@@ -95,20 +93,20 @@ The source release and database migration manifest is retained in commit
 
 ## Verification evidence
 
-| Check                     | Exact command or evidence                                                                                                                                                      | Result                                                                               |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------ |
-| Contract                  | `npm run quality:contract`                                                                                                                                                     | PASS after final fingerprint                                                         |
-| Lint                      | `npm run lint`                                                                                                                                                                 | PASS after formatting repair                                                         |
-| Formatting                | `npx --no-install prettier --check .`                                                                                                                                          | PASS after formatting repair                                                         |
-| Typecheck                 | `npm run typecheck`                                                                                                                                                            | PASS                                                                                 |
-| Tests                     | `npm run test`                                                                                                                                                                 | PASS — 162 passed, 1 skipped                                                         |
-| Build and budget          | `VITE_SUPABASE_URL=https://placeholder.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=placeholder-anon-key npm run build:budget`                                                    | PASS                                                                                 |
-| Fresh critic              | Independent read-only critic task 31 against the responsive workspace, exact diff, role guards, and revert flows                                                               | PASS — no blocking or major findings                                                 |
-| Remote migration ledger   | Composio Supabase read-only catalog query plus `SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" npx --no-install supabase db push --project-ref fgpthpxmiroyebrzjdzo --dry-run` | PASS — canonical and remote marker versions recorded; remote up to date              |
-| Live schema lint          | `SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" npx --no-install supabase db lint --linked`                                                                                    | Audit migration passes; unrelated pre-existing `submit_job_attachment` error remains |
-| Production client config  | `curl` production shell/assets and Supabase Auth settings with the public publishable key                                                                                      | PASS — no placeholder config; bundle points to `fgpthpxmiroyebrzjdzo.supabase.co`    |
-| Live deployment           | Direct Wrangler deployment with production config, version `e67906b4-e0df-4885-8620-4dae84b61586`, plus `curl` checks against `https://opusform.co.uk/` and the Worker URL     | PASS — HTTP 200; deployed audit asset contains redaction markers                     |
-| Authenticated audit route | Approved QA/admin read-only browser or API check                                                                                                                               | PENDING                                                                              |
+| Check                     | Exact command or evidence                                                                                                                                                                                                           | Result                                                                               |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Contract                  | `npm run quality:contract`                                                                                                                                                                                                          | PASS after final fingerprint                                                         |
+| Lint                      | `npm run lint`                                                                                                                                                                                                                      | PASS after formatting repair                                                         |
+| Formatting                | `npx --no-install prettier --check .`                                                                                                                                                                                               | PASS after formatting repair                                                         |
+| Typecheck                 | `npm run typecheck`                                                                                                                                                                                                                 | PASS                                                                                 |
+| Tests                     | `npm run test`                                                                                                                                                                                                                      | PASS — 162 passed, 1 skipped                                                         |
+| Build and budget          | `VITE_SUPABASE_URL=https://placeholder.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=placeholder-anon-key npm run build:budget`                                                                                                         | PASS                                                                                 |
+| Fresh critic              | Independent read-only critic task 31 against the responsive workspace, exact diff, role guards, and revert flows                                                                                                                    | PASS — no blocking or major findings                                                 |
+| Remote migration ledger   | Composio Supabase read-only catalog query plus `SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" npx --no-install supabase db push --project-ref fgpthpxmiroyebrzjdzo --dry-run`                                                      | PASS — canonical and remote marker versions recorded; remote up to date              |
+| Live schema lint          | `SUPABASE_ACCESS_TOKEN="$SUPABASE_ACCESS_TOKEN" npx --no-install supabase db lint --linked`                                                                                                                                         | Audit migration passes; unrelated pre-existing `submit_job_attachment` error remains |
+| Production client config  | `curl` production shell/assets and Supabase Auth settings with the public publishable key                                                                                                                                           | PASS — no placeholder config; bundle points to `fgpthpxmiroyebrzjdzo.supabase.co`    |
+| Live deployment           | Cloudflare Workers check `111058119099` for commit `cf38d3c`, build `4830bc31-46ff-489f-b8af-e8513a7bfaa2`, version `f3369e91-8bcc-4791-b1ea-d0713e8b27c5`, plus `curl` checks against `https://opusform.co.uk/` and the Worker URL | PASS — HTTP 200; responsive audit bundle is live                                     |
+| Authenticated audit route | Approved QA/admin read-only browser or API check                                                                                                                                                                                    | PENDING                                                                              |
 
 ## Critic review
 
@@ -121,7 +119,7 @@ The source release and database migration manifest is retained in commit
 
 ## Release decision
 
-- Automated gate: `PENDING` — final `npm run quality:gate` is the remaining local deterministic check for this responsive diff.
+- Automated gate: `PASS` — GitHub CI passed for commit `cf38d3c`; local lint, formatting, typecheck, tests, and build-budget checks also passed.
 - Release status: `READY_FOR_HUMAN_APPROVAL`
 - Human approval: `PENDING`
 - Residual uncertainty or exception: Live migration application, Worker provenance, and authenticated audit behavior must be verified before describing the release as complete.

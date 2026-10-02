@@ -24,7 +24,7 @@ jobs:
           # this run. Using event.before on a branch that contains several
           # previously merged release commits makes every older contract look
           # stale again.
-          QUALITY_BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || format('{0}^', github.sha) }}
+          QUALITY_BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || format('{0}^', github.sha) }} # current push commit
           # placeholder values only — this checks the build compiles, it isn't a deploy;
           # the real deploy pipeline supplies actual Supabase project secrets.
           VITE_SUPABASE_URL: https://placeholder.supabase.co

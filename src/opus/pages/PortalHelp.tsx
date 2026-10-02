@@ -167,11 +167,14 @@ const HelpLayout: React.FC<{
         </section>
 
         <section
-          className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-5"
+          className="rounded-xl border border-status-warning/30 bg-status-warning/5 p-5"
           aria-labelledby="support-heading"
         >
           <div className="flex items-start gap-3">
-            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" aria-hidden="true" />
+            <AlertCircle
+              className="mt-0.5 h-5 w-5 shrink-0 text-status-warning"
+              aria-hidden="true"
+            />
             <div>
               <h2 id="support-heading" className="text-base font-bold">
                 {support === "it" ? "Contact IT" : "Contact operations"}

@@ -433,7 +433,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
       {confirmation && (
         <p
           role="status"
-          className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300"
+          className="flex items-center gap-2 rounded-xl border border-status-success/30 bg-status-success/10 px-4 py-3 text-sm text-status-success"
         >
           <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
           {confirmation}
@@ -608,7 +608,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                 <span className="text-xs text-muted-foreground">{visibleWorkers.length} shown</span>
               </div>
               {attentionWorkers.length > 0 && (
-                <div className="mt-4 rounded-xl bg-amber-500/10 p-3 text-xs text-amber-800 dark:bg-amber-400/15 dark:text-amber-100">
+                <div className="mt-4 rounded-xl bg-status-warning/10 p-3 text-xs text-status-warning">
                   <div className="flex items-center gap-2 font-black uppercase tracking-widest">
                     <AlertCircle className="h-3.5 w-3.5" /> Needs attention
                   </div>
@@ -685,7 +685,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                       </span>
                       <span className="text-right">
                         <span
-                          className={`block rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${attention ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
+                          className={`block rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${attention ? "bg-status-warning/10 text-status-warning" : "bg-status-success/10 text-status-success"}`}
                         >
                           {attention ? "Expiring" : "Valid"}
                         </span>
@@ -916,7 +916,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                   <div className="min-w-0">
                                     <span className="font-bold">{ticket.type}</span>
                                     <span
-                                      className={`ml-2 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${status === "EXPIRED" || status === "INVALID" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
+                                      className={`ml-2 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${status === "EXPIRED" || status === "INVALID" ? "bg-status-error/10 text-status-error" : status === "EXPIRING_SOON" ? "bg-status-warning/10 text-status-warning" : "bg-status-success/10 text-status-success"}`}
                                     >
                                       {status === "INVALID"
                                         ? "Needs review"
@@ -1278,7 +1278,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div className="flex items-center gap-3">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500">
+                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-status-success/12 text-status-success">
                           <Check className="h-4 w-4" />
                         </span>
                         <div>
@@ -1336,7 +1336,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                 <div className="min-w-0 truncate">
                                   <span className="font-bold">{ticket.type}</span>
                                   <span
-                                    className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${status === "EXPIRED" || status === "INVALID" ? "bg-destructive/10 text-destructive" : status === "EXPIRING_SOON" ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-primary/10 text-primary"}`}
+                                    className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${status === "EXPIRED" || status === "INVALID" ? "bg-status-error/10 text-status-error" : status === "EXPIRING_SOON" ? "bg-status-warning/10 text-status-warning" : "bg-status-success/10 text-status-success"}`}
                                   >
                                     {status === "INVALID"
                                       ? "Needs review"

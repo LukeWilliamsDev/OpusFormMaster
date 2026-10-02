@@ -12,6 +12,120 @@
   --color-brand-light-text: #f7f5f2; /* Logo dark-mode text (warm white) */
   --color-brand-orange: #b5651d; /* Accent dot — consistent across all assets */
 
+  /* Muted semantic colours for statuses, schedules, roles, and staff metadata. */
+  --color-status-open: var(--status-open);
+  --color-status-attention: var(--status-attention);
+  --color-status-complete: var(--status-complete);
+  --color-status-info: var(--status-info);
+  --color-status-success: var(--status-success);
+  --color-status-warning: var(--status-warning);
+  --color-status-error: var(--status-error);
+  --color-status-success-foreground: var(--status-success-foreground);
+  --color-schedule-action: var(--schedule-action);
+  --color-schedule-action-hover: var(--schedule-action-hover);
+  --color-schedule-action-foreground: var(--schedule-action-foreground);
+  --color-role-teal: var(--role-teal);
+  --color-role-ochre: var(--role-ochre);
+  --color-role-plum: var(--role-plum);
+  --color-role-slate: var(--role-slate);
+  --color-role-blue: var(--role-blue);
+  --color-role-rose: var(--role-rose);
+  --color-job-teal: var(--job-teal);
+  --color-job-slate: var(--job-slate);
+  --color-job-plum: var(--job-plum);
+  --color-job-ochre: var(--job-ochre);
+  --color-job-stone: var(--job-stone);
+
+  /* Keep existing utility names available, but remove the neon/pastel feel. */
+  --color-sky-50: #f1f5f4;
+  --color-sky-100: #e4eeec;
+  --color-sky-200: #c9dcd8;
+  --color-sky-300: #a5c0ba;
+  --color-sky-400: #789e96;
+  --color-sky-500: #5f877f;
+  --color-sky-600: #4b7069;
+  --color-sky-700: #3b5b56;
+  --color-sky-800: #304943;
+  --color-sky-900: #263b37;
+  --color-sky-950: #182925;
+  --color-amber-50: #fbf5eb;
+  --color-amber-100: #f2e5d1;
+  --color-amber-200: #e5ca9e;
+  --color-amber-300: #d3a671;
+  --color-amber-400: #bd8249;
+  --color-amber-500: #a96a2e;
+  --color-amber-600: #925822;
+  --color-amber-700: #774519;
+  --color-amber-800: #603814;
+  --color-amber-900: #4b2b11;
+  --color-amber-950: #321d0b;
+  --color-emerald-50: #eef5f0;
+  --color-emerald-100: #dcebe0;
+  --color-emerald-200: #bdd5c4;
+  --color-emerald-300: #9cbea4;
+  --color-emerald-400: #76a083;
+  --color-emerald-500: #5a8968;
+  --color-emerald-600: #477254;
+  --color-emerald-700: #385b44;
+  --color-emerald-800: #2e4937;
+  --color-emerald-900: #243a2c;
+  --color-emerald-950: #192920;
+  --color-purple-50: #f4f1f5;
+  --color-purple-100: #e8e0ea;
+  --color-purple-200: #d4c4d8;
+  --color-purple-300: #b6a0bc;
+  --color-purple-400: #967aa0;
+  --color-purple-500: #765d81;
+  --color-purple-600: #634c6d;
+  --color-purple-700: #503d59;
+  --color-purple-800: #403147;
+  --color-purple-900: #342839;
+  --color-purple-950: #241b29;
+  --color-teal-50: #eff6f5;
+  --color-teal-100: #e0eeeb;
+  --color-teal-200: #c1dcd6;
+  --color-teal-300: #9fc3bb;
+  --color-teal-400: #74a399;
+  --color-teal-500: #57877d;
+  --color-teal-600: #427166;
+  --color-teal-700: #355a52;
+  --color-teal-800: #2c4842;
+  --color-teal-900: #233a35;
+  --color-teal-950: #172824;
+  --color-indigo-50: #f1f3f6;
+  --color-indigo-100: #e2e7ed;
+  --color-indigo-200: #c5d0dc;
+  --color-indigo-300: #a2b2c4;
+  --color-indigo-400: #7b91a9;
+  --color-indigo-500: #607993;
+  --color-indigo-600: #4b637d;
+  --color-indigo-700: #3c5066;
+  --color-indigo-800: #314153;
+  --color-indigo-900: #273440;
+  --color-indigo-950: #19232c;
+  --color-fuchsia-50: #f7f1f3;
+  --color-fuchsia-100: #eee0e5;
+  --color-fuchsia-200: #dec5ce;
+  --color-fuchsia-300: #c3a1af;
+  --color-fuchsia-400: #a97b8d;
+  --color-fuchsia-500: #8e6174;
+  --color-fuchsia-600: #754e60;
+  --color-fuchsia-700: #60404f;
+  --color-fuchsia-800: #4d3340;
+  --color-fuchsia-900: #3e2933;
+  --color-fuchsia-950: #2b1b23;
+  --color-red-50: #faf1ef;
+  --color-red-100: #f1dfdb;
+  --color-red-200: #e1bcb5;
+  --color-red-300: #cf948a;
+  --color-red-400: #b76e63;
+  --color-red-500: #9f5148;
+  --color-red-600: #843f38;
+  --color-red-700: #6d342f;
+  --color-red-800: #572a26;
+  --color-red-900: #45211e;
+  --color-red-950: #2e1614;
+
   --font-sans: "Public Sans", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
   --font-archivo: "Archivo", sans-serif;
@@ -63,13 +177,36 @@
   --muted-foreground: #5a5450; /* Warm helper text, boosted contrast for readability */
   --accent: #8d4f17;
   --accent-foreground: #fdfaf5;
-  --destructive: #c0392b;
+  --destructive: #a84f44;
   --destructive-foreground: #fdfaf5;
-  --success: #2e7d52;
-  --warning: #a16421; /* Darkened from #C47A28 — fails WCAG AA as text on this theme's cream surfaces */
+  --success: #3f7457;
+  --warning: #966126;
   --border: #d9d3c7; /* Warm grey border */
   --input: #eae5dc;
   --ring: #8d4f17;
+
+  --status-open: #47706a;
+  --status-attention: #966126;
+  --status-complete: #4b7758;
+  --status-info: #4a647d;
+  --status-success: #3f7457;
+  --status-warning: #966126;
+  --status-error: #9f5148;
+  --status-success-foreground: #fffaf3;
+  --role-teal: #396e68;
+  --role-ochre: #87551f;
+  --role-plum: #694b68;
+  --role-slate: #4c6074;
+  --role-blue: #3d5d7a;
+  --role-rose: #875660;
+  --job-teal: #3f756d;
+  --job-slate: #52687d;
+  --job-plum: #705273;
+  --job-ochre: #956025;
+  --job-stone: #6d675e;
+  --schedule-action: #925822;
+  --schedule-action-hover: #774519;
+  --schedule-action-foreground: #fffaf3;
 }
 
 /* ─── DARK THEME ───────────────────────────────────────────────────────────── */
@@ -90,13 +227,35 @@
   --muted-foreground: #aca89f; /* Warm mid-tone grey, boosted to ~7:1 (AAA) for readability */
   --accent: #b5651d;
   --accent-foreground: #1b1c20;
-  --destructive: #e5484d; /* Brighter red for dark surfaces — #C0392B read too dark/muddy at low opacity on dark backgrounds */
+  --destructive: #d17c71;
   --destructive-foreground: #fdfaf5;
-  --success: #2e7d52;
-  --warning: #c47a28; /* Slightly brighter warm orange for warnings */
+  --success: #8fbea0;
+  --warning: #d09b61;
   --border: #2e3036;
   --input: #2e3036;
   --ring: #b5651d;
+  --status-open: #86b5ab;
+  --status-attention: #d5a46b;
+  --status-complete: #8eb99a;
+  --status-info: #9ab3ca;
+  --status-success: #8fbea0;
+  --status-warning: #d5a46b;
+  --status-error: #d4877d;
+  --status-success-foreground: #1b1c20;
+  --role-teal: #83b8ae;
+  --role-ochre: #d5a36b;
+  --role-plum: #c1a5bd;
+  --role-slate: #a1b5c8;
+  --role-blue: #9bb3cb;
+  --role-rose: #d0a6af;
+  --job-teal: #86b9af;
+  --job-slate: #a5b8c9;
+  --job-plum: #c1a6bd;
+  --job-ochre: #d5a36b;
+  --job-stone: #b7b0a5;
+  --schedule-action: #b8783c;
+  --schedule-action-hover: #ca8b4d;
+  --schedule-action-foreground: #201a16;
 }
 
 @layer base {

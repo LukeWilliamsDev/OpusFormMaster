@@ -160,7 +160,7 @@ export const PortalContactPage: React.FC = () => {
                 <p
                   role={status.type === "error" ? "alert" : "status"}
                   aria-live="polite"
-                  className={`rounded-lg border px-3 py-2.5 text-sm ${status.type === "success" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "border-destructive/30 bg-destructive/10 text-destructive"}`}
+                  className={`rounded-lg border px-3 py-2.5 text-sm ${status.type === "success" ? "border-status-success/30 bg-status-success/10 text-status-success" : "border-status-error/30 bg-status-error/10 text-status-error"}`}
                 >
                   {status.text}
                   {status.type === "error" && (
@@ -187,20 +187,20 @@ export const PortalContactPage: React.FC = () => {
           </section>
 
           <aside className="space-y-4">
-            <section className="rounded-2xl border border-[#35464a] bg-[#18252a] p-5 text-[#f7f4ee] shadow-sm">
-              <div className="flex items-center gap-2 text-[#d79a5b]">
+            <section className="rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-sm">
+              <div className="flex items-center gap-2 text-primary">
                 <Clock3 className="h-4 w-4" aria-hidden="true" />
                 <h2 className="text-xs font-black uppercase tracking-[0.18em]">
                   What happens next
                 </h2>
               </div>
-              <p className="mt-4 text-sm leading-6 text-[#d8d1c6]">
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
                 Your signed-in email address is included automatically. {contactTeam} normally
                 replies during working hours.
               </p>
-              <div className="mt-4 flex items-start gap-2 border-t border-[#405257] pt-4 text-xs leading-5 text-[#c5c0b8]">
+              <div className="mt-4 flex items-start gap-2 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
                 <CheckCircle2
-                  className="mt-0.5 h-4 w-4 shrink-0 text-[#d79a5b]"
+                  className="mt-0.5 h-4 w-4 shrink-0 text-primary"
                   aria-hidden="true"
                 />
                 <span>

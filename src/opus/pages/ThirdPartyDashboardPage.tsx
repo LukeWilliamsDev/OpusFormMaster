@@ -182,10 +182,10 @@ export const ThirdPartyDashboardPage: React.FC = () => {
       </div>
 
       {actionCount > 0 && (
-        <section className="rounded-2xl border border-amber-500/60 bg-card p-4 sm:p-5 dark:border-amber-400/60">
+        <section className="rounded-2xl border border-status-attention/40 bg-card p-4 sm:p-5">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-700 dark:text-amber-200" />
+              <AlertCircle className="h-4 w-4 text-status-attention" />
               <h2 className="text-sm font-black">Needs attention</h2>
             </div>
             <span className="text-[10px] font-black uppercase tracking-widest text-primary">
@@ -299,7 +299,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
                   </span>
                 </span>
                 <span
-                  className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${hasAttention(worker) ? "bg-amber-500/10 text-amber-700 dark:bg-amber-400/15 dark:text-amber-200" : "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200"}`}
+                  className={`shrink-0 rounded-full px-2 py-1 text-[9px] font-black uppercase tracking-widest ${hasAttention(worker) ? "bg-status-warning/10 text-status-warning" : "bg-status-success/10 text-status-success"}`}
                 >
                   {hasAttention(worker) ? "Needs attention" : "Valid"}
                 </span>

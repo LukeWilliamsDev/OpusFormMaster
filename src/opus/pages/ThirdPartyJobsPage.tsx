@@ -14,12 +14,9 @@ import { formatUKDate, toLondonISODate } from "../utils/week";
 
 const filterSelectedStyles: Record<SiteFilter, string> = {
   all: "border-primary bg-primary/10 text-primary",
-  active:
-    "border-sky-300 bg-sky-100 text-sky-800 dark:border-sky-400/40 dark:bg-sky-400/20 dark:text-sky-100",
-  attention:
-    "border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/20 dark:text-amber-100",
-  completed:
-    "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-400/40 dark:bg-emerald-400/20 dark:text-emerald-100",
+  active: "border-status-open/35 bg-status-open/10 text-status-open",
+  attention: "border-status-attention/35 bg-status-attention/10 text-status-attention",
+  completed: "border-status-complete/35 bg-status-complete/10 text-status-complete",
 };
 
 const getJobDate = (jobId: string, shifts: any[], completed: boolean) => {

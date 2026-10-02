@@ -7,7 +7,7 @@
 **Source of truth:** User-approved dashboard direction and rendered desktop/tablet/mobile mockups from 2026-10-02
 **Evidence base:** `origin/main` at `2969442`
 **Evidence head:** working tree after adding the development-only mock-data preview
-**Evidence fingerprint:** `bdba355dbc6b8f203b386f140b2c85a6401cf4f3fc0cd76d7033eceb335ba2e3`
+**Evidence fingerprint:** `9f04e1e7f545acfa175b7e60c0b6162dd6b443151b2784ab601478a0deea2ef5`
 
 ## Intent
 
@@ -23,6 +23,7 @@ Replace the management dashboard's duplicated navigation and dense operations ca
 - Semantic keyboard-accessible dashboard links and controls where touched.
 - A development-only mock-data preview when Supabase client configuration is absent, without weakening production authentication.
 - Formatting-only correction required by the repository quality gate in `PortalContact.tsx`.
+- CI push evidence is scoped to the commit being tested so previously merged contracts do not block this release.
 - Focused tests and repository quality evidence for the changed behavior.
 
 ### Out of scope
@@ -40,6 +41,7 @@ Replace the management dashboard's duplicated navigation and dense operations ca
 - `src/opus/layouts/PortalLayout.tsx`
 - `src/opus/components/ShiftResponses.tsx`
 - `src/opus/pages/PortalContact.tsx`
+- `.github/workflows/ci.yml`
 - `docs/quality/changes/2026-10-02-management-dashboard-navigation.md`
 
 ## Acceptance criteria
@@ -58,6 +60,7 @@ Replace the management dashboard's duplicated navigation and dense operations ca
 - [x] `AC-12`: Lint, formatting, typecheck, tests, production build, bundle budget, and the repository quality gate pass, or each exception is recorded with its exact reason.
 - [x] `AC-13`: A fresh read-only critic reviews the actual diff and records no unresolved blocking or major findings.
 - [x] `AC-14`: The development-only mock-data preview loads at the local preview URL without Supabase configuration and is excluded from production behavior.
+- [x] `AC-15`: Push CI uses the pushed commit's first parent as its quality base, while pull requests continue using the PR base SHA.
 
 ## Risk and approval gates
 

@@ -20,7 +20,11 @@ jobs:
       - run: npm audit --omit=dev --audit-level=high
       - run: npm run quality:gate
         env:
-          QUALITY_BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          # Contract evidence is scoped to the PR base or the commit pushed by
+          # this run. Using event.before on a branch that contains several
+          # previously merged release commits makes every older contract look
+          # stale again.
+          QUALITY_BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || format('{0}^', github.sha) }}
           # placeholder values only — this checks the build compiles, it isn't a deploy;
           # the real deploy pipeline supplies actual Supabase project secrets.
           VITE_SUPABASE_URL: https://placeholder.supabase.co

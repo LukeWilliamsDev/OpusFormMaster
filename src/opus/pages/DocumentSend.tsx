@@ -19,7 +19,7 @@ export const DocumentSendPage: React.FC = () => {
   };
 
   return (
-    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in">
+    <div className="portal-page-container space-y-6 py-6 animate-fade-in lg:py-10">
       <section className="rounded-xl border border-border bg-card p-4 sm:p-6 space-y-4">
         <div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">

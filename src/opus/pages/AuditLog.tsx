@@ -128,7 +128,7 @@ export const AuditLogPage: React.FC = () => {
     : [];
 
   return (
-    <div className="mx-auto flex w-full max-w-[2200px] animate-fade-in flex-col space-y-6 bg-background px-4 py-6 text-foreground sm:px-6 lg:px-8 lg:py-8 2xl:px-10 2xl:py-10">
+    <div className="portal-page-container flex animate-fade-in flex-col space-y-6 bg-background py-6 text-foreground lg:py-8">
       <header className="border-b border-border pb-6">
         <div className="flex items-center gap-2 text-primary">
           <Activity className="h-4 w-4" aria-hidden="true" />

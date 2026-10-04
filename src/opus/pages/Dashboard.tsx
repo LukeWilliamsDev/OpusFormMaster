@@ -1,20 +1,15 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowRight, CheckCircle2, Search, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { usePortal } from "../context/PortalContext";
+import { MANAGEMENT_WRITE_ROLES, usePortal } from "../context/PortalContext";
 import { ShiftResponses } from "../components/ShiftResponses";
 import { handleError } from "../utils/errorHandler";
 import { getWeatherOnDate, useJobForecast } from "../utils/weather";
 import { formatUKDate, toLondonISODate } from "../utils/week";
 import type { Job } from "../types/erp";
-
-type SearchResult =
-  | { type: "site"; id: string; title: string; detail: string; href: string }
-  | { type: "staff"; id: string; title: string; detail: string; href: string }
-  | { type: "quote"; id: string; title: string; detail: string; href: string };
 
 type ExpiringTicketAlert = {
   alertId: string;
@@ -23,12 +18,6 @@ type ExpiringTicketAlert = {
   ticketType: string;
   diffDays: number;
   isExpired: boolean;
-};
-
-type QuoteSearchRow = {
-  id: string;
-  reference: string;
-  clientName: string;
 };
 
 const ACTIVE_STATUSES = new Set<Job["status"]>(["active", "in-progress"]);
@@ -110,8 +99,8 @@ const WeatherAttentionRow: React.FC<{
           {risk.condition} forecast for {formatUKDate(risk.date)}
         </span>
       </span>
-      <span className="shrink-0 text-[10px] font-black uppercase tracking-widest text-primary">
-        View site →
+      <span className="min-h-11 shrink-0 rounded-lg px-2 py-3 text-sm font-medium text-primary">
+        Open job
       </span>
     </Link>
   );
@@ -129,44 +118,15 @@ export const DashboardPage: React.FC = () => {
     dataRefreshError,
     dataError,
     reloadPortalData,
+    role,
   } = usePortal();
-  const [query, setQuery] = useState("");
-  const [searchFocused, setSearchFocused] = useState(false);
-  const [quotes, setQuotes] = useState<QuoteSearchRow[]>([]);
-  const [quoteSearchError, setQuoteSearchError] = useState<string | null>(null);
+  const canWrite = role ? MANAGEMENT_WRITE_ROLES.includes(role) : false;
   const [snoozedIds, setSnoozedIds] = useState<Set<string>>(() => new Set());
   const [confirmAlert, setConfirmAlert] = useState<ExpiringTicketAlert | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
   const [weatherRisks, setWeatherRisks] = useState<
     Record<string, { condition: string; date: string } | null>
   >({});
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadQuotes = async () => {
-      const { data, error } = await supabase
-        .from("quotes")
-        .select("id, reference, client_info, date")
-        .order("date", { ascending: false })
-        .limit(100);
-      if (cancelled) return;
-      if (error) {
-        setQuoteSearchError("Quote search is temporarily unavailable.");
-        return;
-      }
-      setQuotes(
-        (data ?? []).map((quote) => ({
-          id: quote.id,
-          reference: quote.reference || "EST-DRAFT",
-          clientName: (quote.client_info as { entity?: string } | null)?.entity || "Unknown client",
-        })),
-      );
-    };
-    void loadQuotes();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const expiringTickets = useMemo(() => {
     const today = new Date();
@@ -228,49 +188,8 @@ export const DashboardPage: React.FC = () => {
   );
   const weatherChecksComplete = weatherJobs.every((job) => weatherRisks[job.id] !== undefined);
 
-  const searchResults = useMemo<SearchResult[]>(() => {
-    const normalized = query.trim().toLowerCase();
-    if (!normalized) return [];
-    const results: SearchResult[] = [];
-    jobs.forEach((job) => {
-      if (
-        `${job.siteName} ${job.jobRef} ${job.mainContractor}`.toLowerCase().includes(normalized)
-      ) {
-        results.push({
-          type: "site",
-          id: job.id,
-          title: job.siteName,
-          detail: job.jobRef,
-          href: `/portal/ledger?jobId=${job.id}`,
-        });
-      }
-    });
-    workers.forEach((worker) => {
-      if (`${worker.name} ${worker.role}`.toLowerCase().includes(normalized)) {
-        results.push({
-          type: "staff",
-          id: worker.id,
-          title: worker.name,
-          detail: worker.role,
-          href: `/portal/roster?view=staff&workerId=${worker.id}`,
-        });
-      }
-    });
-    quotes.forEach((quote) => {
-      if (`${quote.reference} ${quote.clientName}`.toLowerCase().includes(normalized)) {
-        results.push({
-          type: "quote",
-          id: quote.id,
-          title: quote.clientName,
-          detail: quote.reference,
-          href: `/portal/pipeline?view=quote-builder&quoteId=${quote.id}`,
-        });
-      }
-    });
-    return results.slice(0, 8);
-  }, [jobs, query, quotes, workers]);
-
   const handleReminder = async (alert: ExpiringTicketAlert) => {
+    if (!canWrite) return;
     const worker = workers.find((candidate) => candidate.id === alert.workerId);
     if (!worker?.email) {
       toast.warning("No email address on file for this staff member");
@@ -340,10 +259,7 @@ export const DashboardPage: React.FC = () => {
   };
 
   const loadingView = (
-    <div
-      className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]"
-      aria-busy="true"
-    >
+    <div className="portal-page-container space-y-6 py-8 lg:py-12" aria-busy="true">
       <div className="h-28 animate-pulse rounded-2xl bg-muted" />
       <div className="h-48 animate-pulse rounded-2xl bg-muted" />
       <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,.75fr)]">
@@ -364,7 +280,7 @@ export const DashboardPage: React.FC = () => {
           <button
             type="button"
             onClick={reloadPortalData}
-            className="mt-6 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground"
+            className="mt-6 min-h-11 rounded-lg bg-primary px-5 py-3 text-sm font-medium text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
           >
             Try again
           </button>
@@ -376,13 +292,11 @@ export const DashboardPage: React.FC = () => {
   const attentionCount =
     expiringTickets.length + weatherJobs.filter((job) => weatherRisks[job.id]).length;
   return (
-    <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 pb-28 sm:px-6 lg:py-12 lg:pb-12 2xl:max-w-[1500px]">
+    <div className="portal-page-container space-y-7 py-8 lg:py-12">
       <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-            Operations overview
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground lg:text-4xl">
+          <p className="text-sm font-medium text-primary">Overview</p>
+          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground lg:text-4xl">
             {getGreeting()}
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
@@ -399,86 +313,12 @@ export const DashboardPage: React.FC = () => {
             {dataRefreshError ?? (dataRefreshing ? "Updating data…" : "Updated just now")}
           </p>
         </div>
-        <div className="relative w-full sm:max-w-xs">
-          <label htmlFor="dashboard-search" className="sr-only">
-            Search sites, staff, or quotes
-          </label>
-          <div className="relative">
-            <Search
-              className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-              aria-hidden="true"
-            />
-            <input
-              id="dashboard-search"
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              onFocus={() => setSearchFocused(true)}
-              onBlur={() => window.setTimeout(() => setSearchFocused(false), 150)}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") {
-                  setQuery("");
-                  setSearchFocused(false);
-                  event.currentTarget.blur();
-                }
-              }}
-              placeholder="Search sites, staff, or quotes…"
-              aria-controls="dashboard-search-results"
-              aria-expanded={searchFocused && query.trim().length > 0}
-              className="min-h-12 w-full rounded-xl border border-border bg-card pl-11 pr-11 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/40"
-            />
-            {query && (
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                aria-label="Clear search"
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-          {searchFocused && query.trim() && (
-            <div
-              id="dashboard-search-results"
-              role="listbox"
-              className="absolute left-0 right-0 z-30 mt-2 max-h-80 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
-            >
-              {searchResults.length > 0 ? (
-                searchResults.map((result) => (
-                  <Link
-                    key={`${result.type}-${result.id}`}
-                    to={result.href}
-                    role="option"
-                    onClick={() => setQuery("")}
-                    className="flex items-center justify-between gap-3 rounded-lg px-3 py-3 hover:bg-muted focus:bg-muted focus:outline-none"
-                  >
-                    <span className="min-w-0">
-                      <span className="block truncate text-sm font-bold">{result.title}</span>
-                      <span className="mt-1 block truncate text-xs text-muted-foreground">
-                        {result.detail}
-                      </span>
-                    </span>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
-                  </Link>
-                ))
-              ) : (
-                <p className="p-3 text-xs text-muted-foreground">
-                  No matching sites, staff, or quotes.
-                </p>
-              )}
-              {quoteSearchError && (
-                <p className="px-3 pb-2 text-[11px] text-warning">{quoteSearchError}</p>
-              )}
-            </div>
-          )}
-        </div>
       </header>
 
       <section aria-labelledby="attention-heading">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 id="attention-heading" className="text-lg font-black tracking-tight">
-            Needs attention
+          <h2 id="attention-heading" className="text-xl font-semibold tracking-tight">
+            Action needed today
           </h2>
         </div>
         <div className="overflow-hidden rounded-2xl border border-warning/40 bg-card">
@@ -501,26 +341,28 @@ export const DashboardPage: React.FC = () => {
                 </span>
               </Link>
               <div className="flex items-center gap-3 sm:shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setConfirmAlert(alert)}
-                  className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest text-foreground hover:border-primary"
-                >
-                  Remind
-                </button>
+                {canWrite && (
+                  <button
+                    type="button"
+                    onClick={() => setConfirmAlert(alert)}
+                    className="min-h-11 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  >
+                    Request update
+                  </button>
+                )}
                 <Link
                   to={`/portal/roster?view=staff&workerId=${alert.workerId}`}
-                  className="text-[10px] font-black uppercase tracking-widest text-primary"
+                  className="min-h-11 rounded-lg px-2 py-2 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  Open staff →
+                  Open person
                 </Link>
                 <button
                   type="button"
                   onClick={() => setSnoozedIds((current) => new Set(current).add(alert.alertId))}
                   aria-label={`Snooze ${alert.workerName}'s ${alert.ticketType} alert`}
-                  className="text-xs text-muted-foreground hover:text-foreground"
+                  className="min-h-11 rounded-lg px-2 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  Snooze
+                  Remind me later
                 </button>
               </div>
             </div>
@@ -546,20 +388,20 @@ export const DashboardPage: React.FC = () => {
 
       <section aria-labelledby="operations-heading">
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h2 id="operations-heading" className="text-lg font-black tracking-tight">
-            Current operations
+          <h2 id="operations-heading" className="text-xl font-semibold tracking-tight">
+            Today&apos;s work
           </h2>
           <Link
             to="/portal/ledger"
-            className="text-[10px] font-black uppercase tracking-widest text-primary"
+            className="min-h-11 rounded-lg px-2 py-3 text-sm font-medium text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            Open job ledger →
+            Open jobs
           </Link>
         </div>
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,.75fr)]">
           <div className="overflow-hidden rounded-2xl border border-border bg-card">
             <div className="border-b border-border px-5 py-4">
-              <h3 className="text-base font-black">Active sites</h3>
+              <h3 className="text-base font-semibold">Active jobs</h3>
               <p className="mt-1 text-xs text-muted-foreground">Current and next scheduled work</p>
             </div>
             {currentJobs.length > 0 ? (
@@ -598,7 +440,7 @@ export const DashboardPage: React.FC = () => {
             )}
           </div>
           <div className="rounded-2xl border border-border bg-card p-5">
-            <h3 className="text-base font-black">Next on the schedule</h3>
+            <h3 className="text-base font-semibold">Next on the schedule</h3>
             <p className="mt-2 text-xs leading-5 text-muted-foreground">
               One concise view of the next decision, without repeating the full calendar.
             </p>
@@ -630,11 +472,11 @@ export const DashboardPage: React.FC = () => {
                   >
                     <span>{row.label}</span>
                     {row.href ? (
-                      <Link to={row.href} className="font-black text-primary hover:underline">
+                      <Link to={row.href} className="font-semibold text-primary hover:underline">
                         {row.value}
                       </Link>
                     ) : (
-                      <span className="font-black text-primary">{row.value}</span>
+                      <span className="font-semibold text-primary">{row.value}</span>
                     )}
                   </div>
                 ))}
@@ -649,7 +491,7 @@ export const DashboardPage: React.FC = () => {
       </section>
 
       <ConfirmDialog
-        open={Boolean(confirmAlert)}
+        open={canWrite && Boolean(confirmAlert)}
         onOpenChange={(open) => {
           if (!open && !confirmLoading) setConfirmAlert(null);
         }}

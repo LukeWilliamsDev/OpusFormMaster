@@ -24,6 +24,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 
 interface MediaTabProps {
+  readOnly?: boolean;
   beforePhotos: Attachment[];
   afterPhotos: Attachment[];
   projectDocs: Attachment[];
@@ -81,6 +82,7 @@ const DOC_GROUPS: { label: string; match: RegExp }[] = [
 ];
 
 export function MediaTab({
+  readOnly = false,
   beforePhotos,
   afterPhotos,
   projectDocs,
@@ -122,6 +124,7 @@ export function MediaTab({
   const [docDragActive, setDocDragActive] = useState(false);
   const docFileInputRef = React.useRef<HTMLInputElement>(null);
   const chooseDocCategory = (prefix: string | null) => {
+    if (readOnly) return;
     if (!pendingDocFile) return;
     const file = prefix
       ? new File([pendingDocFile], `${prefix}-${pendingDocFile.name}`, {
@@ -144,44 +147,46 @@ export function MediaTab({
                 <Camera className="w-4 h-4 text-muted-foreground" />
                 <h2 className="text-sm font-bold text-foreground">Site Before &amp; After</h2>
               </div>
-              <div className="flex items-center gap-2">
-                {[
-                  {
-                    view: "before" as const,
-                    label: "Before",
-                    type: "image_before" as const,
-                    count: beforePhotos.length,
-                    uploading: uploadingPhotoBefore,
-                  },
-                  {
-                    view: "after" as const,
-                    label: "After",
-                    type: "image_after" as const,
-                    count: afterPhotos.length,
-                    uploading: uploadingPhotoAfter,
-                  },
-                ].map(({ view, label, type, count, uploading }) => (
-                  <Button key={view} size="sm" variant="outline" className="gap-1.5" asChild>
-                    <label className="cursor-pointer">
-                      {uploading ? (
-                        <Loader className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Plus className="w-3.5 h-3.5" />
-                      )}
-                      {label} <span className="opacity-70">{count}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) =>
-                          e.target.files?.[0] && uploadAttachment(e.target.files[0], type)
-                        }
-                        className="hidden"
-                        disabled={uploading}
-                      />
-                    </label>
-                  </Button>
-                ))}
-              </div>
+              {!readOnly && (
+                <div className="flex items-center gap-2">
+                  {[
+                    {
+                      view: "before" as const,
+                      label: "Before",
+                      type: "image_before" as const,
+                      count: beforePhotos.length,
+                      uploading: uploadingPhotoBefore,
+                    },
+                    {
+                      view: "after" as const,
+                      label: "After",
+                      type: "image_after" as const,
+                      count: afterPhotos.length,
+                      uploading: uploadingPhotoAfter,
+                    },
+                  ].map(({ view, label, type, count, uploading }) => (
+                    <Button key={view} size="sm" variant="outline" className="gap-1.5" asChild>
+                      <label className="cursor-pointer">
+                        {uploading ? (
+                          <Loader className="w-3.5 h-3.5 animate-spin" />
+                        ) : (
+                          <Plus className="w-3.5 h-3.5" />
+                        )}
+                        {label} <span className="opacity-70">{count}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) =>
+                            e.target.files?.[0] && uploadAttachment(e.target.files[0], type)
+                          }
+                          className="hidden"
+                          disabled={uploading}
+                        />
+                      </label>
+                    </Button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground/70 -mt-2">
@@ -237,11 +242,13 @@ export function MediaTab({
           <div
             className={`p-4 space-y-4 relative transition-colors ${docDragActive ? "bg-primary/5" : ""}`}
             onDragOver={(e) => {
+              if (readOnly) return;
               e.preventDefault();
               setDocDragActive(true);
             }}
-            onDragLeave={() => setDocDragActive(false)}
+            onDragLeave={() => !readOnly && setDocDragActive(false)}
             onDrop={(e) => {
+              if (readOnly) return;
               e.preventDefault();
               setDocDragActive(false);
               const file = e.dataTransfer.files?.[0];
@@ -263,46 +270,48 @@ export function MediaTab({
                 e.target.value = "";
               }}
               className="hidden"
-              disabled={uploadingDoc}
+              disabled={readOnly || uploadingDoc}
             />
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border-b border-border pb-3">
               <div className="flex items-center gap-2">
                 <FileText className="w-4 h-4 text-muted-foreground shrink-0" />
                 <h2 className="text-sm font-bold text-foreground">Attachments</h2>
               </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <button
-                  onClick={() => docFileInputRef.current?.click()}
-                  disabled={uploadingDoc}
-                  className="text-[12px] text-muted-foreground hover:text-foreground font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
-                >
-                  {uploadingDoc ? (
-                    <Loader className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <>
-                      <Plus className="w-3 h-3" /> Upload
-                    </>
-                  )}
-                </button>
-                <span className="w-px h-3 bg-border" />
-                <button
-                  onClick={generateUploadLink}
-                  disabled={generatingLink}
-                  className="text-[12px] text-primary hover:text-primary font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
-                >
-                  {generatingLink ? (
-                    <Loader className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <>
-                      <LinkIcon className="w-3 h-3" /> Request Link
-                    </>
-                  )}
-                </button>
-              </div>
+              {!readOnly && (
+                <div className="flex items-center gap-3 shrink-0">
+                  <button
+                    onClick={() => docFileInputRef.current?.click()}
+                    disabled={uploadingDoc}
+                    className="text-[12px] text-muted-foreground hover:text-foreground font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                  >
+                    {uploadingDoc ? (
+                      <Loader className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <>
+                        <Plus className="w-3 h-3" /> Upload
+                      </>
+                    )}
+                  </button>
+                  <span className="w-px h-3 bg-border" />
+                  <button
+                    onClick={generateUploadLink}
+                    disabled={generatingLink}
+                    className="text-[12px] text-primary hover:text-primary font-bold uppercase tracking-wider flex items-center gap-1 cursor-pointer"
+                  >
+                    {generatingLink ? (
+                      <Loader className="w-3 h-3 animate-spin" />
+                    ) : (
+                      <>
+                        <LinkIcon className="w-3 h-3" /> Request Link
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground/70 -mt-2">
               <Folder className="w-3 h-3" />
-              Drag files anywhere in this panel to upload
+              {readOnly ? "Uploaded documents" : "Drag files anywhere in this panel to upload"}
             </p>
 
             {/* Generated request link alert — auto-copied on generate, so this
@@ -362,36 +371,40 @@ export function MediaTab({
                               </span>
                             </button>
                             <div className="flex flex-wrap items-center gap-2 text-[10.5px] font-medium text-muted-foreground">
-                              <label className="inline-flex cursor-pointer items-center gap-1.5">
-                                <input
-                                  type="checkbox"
-                                  checked={d.foreman_visible === true}
-                                  onChange={(event) =>
-                                    void updateDocumentVisibility(
-                                      d.id,
-                                      "foreman_visible",
-                                      event.target.checked,
-                                    )
-                                  }
-                                  className="h-3.5 w-3.5 accent-primary"
-                                />
-                                Foreman
-                              </label>
-                              <label className="inline-flex cursor-pointer items-center gap-1.5">
-                                <input
-                                  type="checkbox"
-                                  checked={d.third_party_visible === true}
-                                  onChange={(event) =>
-                                    void updateDocumentVisibility(
-                                      d.id,
-                                      "third_party_visible",
-                                      event.target.checked,
-                                    )
-                                  }
-                                  className="h-3.5 w-3.5 accent-primary"
-                                />
-                                Third party
-                              </label>
+                              {!readOnly && (
+                                <label className="inline-flex cursor-pointer items-center gap-1.5">
+                                  <input
+                                    type="checkbox"
+                                    checked={d.foreman_visible === true}
+                                    onChange={(event) =>
+                                      void updateDocumentVisibility(
+                                        d.id,
+                                        "foreman_visible",
+                                        event.target.checked,
+                                      )
+                                    }
+                                    className="h-3.5 w-3.5 accent-primary"
+                                  />
+                                  Foreman
+                                </label>
+                              )}
+                              {!readOnly && (
+                                <label className="inline-flex cursor-pointer items-center gap-1.5">
+                                  <input
+                                    type="checkbox"
+                                    checked={d.third_party_visible === true}
+                                    onChange={(event) =>
+                                      void updateDocumentVisibility(
+                                        d.id,
+                                        "third_party_visible",
+                                        event.target.checked,
+                                      )
+                                    }
+                                    className="h-3.5 w-3.5 accent-primary"
+                                  />
+                                  Third party
+                                </label>
+                              )}
                               <span>
                                 {new Date(d.uploaded_at || 0).toLocaleDateString("en-GB")}
                               </span>
@@ -404,7 +417,7 @@ export function MediaTab({
                 })
               ) : (
                 <div className="text-center py-6 text-[12px] text-muted-foreground uppercase tracking-wider font-semibold">
-                  No documents · drag files here or click Upload
+                  {readOnly ? "No documents" : "No documents · drag files here or click Upload"}
                 </div>
               )}
             </div>

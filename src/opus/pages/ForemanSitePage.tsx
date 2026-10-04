@@ -20,6 +20,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { usePortal } from "../context/PortalContext";
 import { ForemanJobNotesPanel } from "../components/ForemanJobNotesPanel";
 import { ForemanTodaySiteUpdate } from "../components/ForemanTodaySiteUpdate";
+import { PortalPageHeader, PortalTabRail } from "../components/PortalNavigationPrimitives";
 import type { ScheduledShift, Worker } from "../types/erp";
 import { compressImageFile } from "../lib/compressImage";
 import { getSignedJobAttachmentUrl } from "../lib/attachmentUrl";
@@ -419,11 +420,7 @@ export const ForemanSitePage: React.FC = () => {
 
   if (dataLoading || loading) {
     return (
-      <div
-        role="status"
-        aria-busy="true"
-        className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:py-12"
-      >
+      <div role="status" aria-busy="true" className="portal-page-container space-y-6 py-8 lg:py-12">
         <span className="sr-only">Loading site record</span>
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="h-96 animate-pulse rounded-2xl bg-muted" />
@@ -432,7 +429,7 @@ export const ForemanSitePage: React.FC = () => {
   }
   if (dataError)
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
+      <div className="portal-page-container py-8 lg:py-12">
         <div
           role="alert"
           className="rounded-2xl border border-destructive/30 bg-card p-8 text-center"
@@ -488,46 +485,45 @@ export const ForemanSitePage: React.FC = () => {
     setDocumentViewer({ name: document.file_name, url });
   };
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 pb-12 sm:px-6 lg:py-10">
-      <Link
-        to={listPath}
-        className="inline-flex min-h-11 items-center gap-2 text-xs font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-      >
-        <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to assigned sites
-      </Link>
-      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-            Assigned site
-          </p>
-          <h1 className="mt-2 break-words text-3xl font-black tracking-tight text-foreground">
-            {job.siteName}
-          </h1>
-          <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" aria-hidden="true" />{" "}
-            {job.postcode || "Postcode not provided"} · {job.jobRef}
-          </p>
-          <p
-            className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"
-            aria-live="polite"
+    <div className="portal-page-container space-y-6 py-6 pb-12 lg:py-10">
+      <PortalPageHeader
+        back={
+          <Link
+            to={listPath}
+            className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <span
-              className={`h-2 w-2 rounded-full ${dataRefreshError ? "bg-amber-500" : dataRefreshing || refreshingSite ? "animate-pulse bg-primary" : "bg-emerald-600"}`}
-              aria-hidden="true"
-            />
-            {dataRefreshError
-              ? dataRefreshError
-              : dataRefreshing || refreshingSite
-                ? "Updating site record…"
-                : "Live updates enabled"}
-          </p>
-        </div>
-        <span
-          className={`w-fit rounded-full px-3 py-1.5 text-xs font-black uppercase tracking-wider ${statusClasses(job.status)}`}
-        >
-          {statusLabel(job.status)}
-        </span>
-      </header>
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to assigned sites
+          </Link>
+        }
+        eyebrow="Assigned site"
+        title={job.siteName}
+        meta={
+          <>
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <MapPin className="h-4 w-4" aria-hidden="true" />
+              {job.postcode || "Postcode not provided"} · {job.jobRef}
+            </span>
+            <span className="mt-3 flex items-center gap-2 text-sm" aria-live="polite">
+              <span
+                className={`h-2 w-2 rounded-full ${dataRefreshError ? "bg-amber-500" : dataRefreshing || refreshingSite ? "animate-pulse bg-primary" : "bg-emerald-600"}`}
+                aria-hidden="true"
+              />
+              {dataRefreshError
+                ? dataRefreshError
+                : dataRefreshing || refreshingSite
+                  ? "Updating site record…"
+                  : "Live updates enabled"}
+            </span>
+          </>
+        }
+        action={
+          <span
+            className={`w-fit rounded-lg border px-3 py-2 text-sm font-medium ${statusClasses(job.status)}`}
+          >
+            {statusLabel(job.status)}
+          </span>
+        }
+      />
       {readOnly && (
         <div
           role="status"
@@ -558,31 +554,25 @@ export const ForemanSitePage: React.FC = () => {
         </div>
       )}
 
-      <nav
-        aria-label="Site record sections"
-        className="sticky top-0 z-10 -mx-4 flex gap-1 overflow-x-auto border-y border-border bg-background/95 px-4 py-2 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-0 lg:rounded-xl lg:border"
-      >
-        {[
-          { key: "work" as const, label: "Work" },
-          {
-            key: "files" as const,
-            label: "Files",
-            count: imageAttachments.length + documentAttachments.length,
-          },
-          { key: "shifts" as const, label: "Shifts", count: shiftDates.length },
-        ].map(({ key, label, count }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => selectSiteSection(key)}
-            aria-current={activeSection === key ? "page" : undefined}
-            className={`min-h-10 shrink-0 rounded-lg px-3 text-xs font-black transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${activeSection === key ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted hover:text-foreground"}`}
-          >
-            {label}
-            {count !== undefined && <span className="ml-1 opacity-70">{count}</span>}
-          </button>
-        ))}
-      </nav>
+      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur">
+        <PortalTabRail
+          ariaLabel="Site record sections"
+          items={[
+            { key: "work" as const, label: "Today" },
+            {
+              key: "files" as const,
+              label: "Photos & files",
+              count: imageAttachments.length + documentAttachments.length,
+            },
+            { key: "shifts" as const, label: "Shifts", count: shiftDates.length },
+          ].map(({ key, label, count }) => ({
+            label,
+            count,
+            active: activeSection === key,
+            onSelect: () => selectSiteSection(key),
+          }))}
+        />
+      </div>
 
       {activeSection === "work" && (
         <div id="site-work" className="scroll-mt-24 space-y-5">

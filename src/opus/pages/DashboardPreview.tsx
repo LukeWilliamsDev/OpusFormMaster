@@ -101,7 +101,7 @@ export const DashboardPreviewPage: React.FC = () => {
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1 px-4 py-7 pb-28 sm:px-8 lg:px-12 lg:py-12 lg:pb-12">
+        <main className="min-w-0 flex-1 px-4 py-7 pb-[var(--portal-mobile-nav-space)] sm:px-6 lg:px-8 lg:py-12 lg:pb-12">
           <header className="mx-auto flex max-w-6xl flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">

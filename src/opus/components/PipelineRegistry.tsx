@@ -331,7 +331,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
       {/* Header Row */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">Quotes</h1>
+          <h1 className="sr-only">Quotes &amp; invoices</h1>
 
           {/* Search Bar */}
           <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 w-full sm:max-w-xs">
@@ -350,7 +350,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         {!readOnly && (
           <button
             onClick={onNewQuote}
-            className="flex items-center justify-center gap-1.5 px-4 py-2.5 bg-secondary hover:bg-secondary/80 border border-border text-foreground rounded-lg text-xs font-bold transition-all shadow-lg select-none"
+            className="flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
             <Plus className="w-4 h-4" />
             <span>New quote</span>
@@ -360,17 +360,29 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
       <main className="mt-0 pb-8 space-y-6">
         {!isLoading && sortedQuotes.length === 0 && (
-          <div className="bg-card border border-border rounded-xl px-4 py-12 text-center text-xs font-bold uppercase tracking-wider text-muted-foreground">
-            No quotes
+          <div className="rounded-xl border border-dashed border-border bg-card px-4 py-12 text-center">
+            <p className="text-base font-semibold text-foreground">No quotes yet</p>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">
+              Start a quote to keep estimates, invoices, and saved drafts together.
+            </p>
+            {!readOnly && (
+              <button
+                type="button"
+                onClick={onNewQuote}
+                className="mt-4 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                New quote
+              </button>
+            )}
           </div>
         )}
 
         {/* Desktop Table (lg and up) */}
         {sortedQuotes.length > 0 && (
-          <div className="hidden lg:block space-y-4">
+          <div className="hidden xl:block space-y-4">
             <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl">
               {/* Table Header */}
-              <div className="grid grid-cols-[110px_1.6fr_1fr_120px_110px] gap-4 px-5 py-3 border-b border-border bg-background">
+              <div className="grid grid-cols-[110px_minmax(0,1.6fr)_minmax(0,1fr)_120px_110px] gap-4 px-5 py-3 border-b border-border bg-background">
                 <button
                   onClick={() => handleSort("ref")}
                   className="flex items-center gap-1 text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground transition-colors focus:outline-none select-none text-left"
@@ -442,8 +454,17 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       layout
-                      className="grid grid-cols-[110px_1.6fr_1fr_120px_110px] gap-4 px-5 py-4 items-center hover:bg-secondary/50 transition-colors duration-150 cursor-pointer"
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Open quote ${quote.reference || quote.id.substring(0, 4).toUpperCase()}`}
+                      className="grid grid-cols-[110px_minmax(0,1.6fr)_minmax(0,1fr)_120px_110px] gap-4 px-5 py-4 items-center hover:bg-secondary/50 transition-colors duration-150 cursor-pointer"
                       onClick={() => setSelectedQuoteForControl(quote)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          setSelectedQuoteForControl(quote);
+                        }
+                      }}
                     >
                       {/* Quote Ref */}
                       <div className="font-mono text-[13px] font-semibold text-primary">
@@ -479,12 +500,13 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                       {/* Status */}
                       <div className="text-right">
                         <span
-                          className={`px-2 py-1 rounded text-[11px] font-bold ${
+                          className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium ${
                             quote.isSent
                               ? "bg-primary/10 border border-primary/20 text-primary"
                               : "bg-warning/10 border border-warning/20 text-warning"
                           }`}
                         >
+                          <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
                           {quote.isSent ? "Sent" : "Draft"}
                         </span>
                       </div>
@@ -498,12 +520,21 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
         {/* Mobile / Tablet Card List (below lg) */}
         {sortedQuotes.length > 0 && (
-          <div className="lg:hidden space-y-3">
+          <div className="xl:hidden space-y-3">
             {sortedQuotes.map((quote) => (
               <div
                 key={quote.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open quote ${quote.reference || quote.id.substring(0, 4).toUpperCase()}`}
                 className="bg-card border border-border rounded-xl p-4 space-y-3 cursor-pointer active:bg-secondary/50 transition-colors"
                 onClick={() => setSelectedQuoteForControl(quote)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedQuoteForControl(quote);
+                  }
+                }}
               >
                 {/* Ref + Status */}
                 <div className="flex items-center justify-between">
@@ -511,12 +542,13 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     {quote.reference || `QTE-${quote.id.substring(0, 4).toUpperCase()}`}
                   </span>
                   <span
-                    className={`px-2 py-1 rounded text-[11px] font-bold ${
+                    className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium ${
                       quote.isSent
                         ? "bg-primary/10 border border-primary/20 text-primary"
                         : "bg-warning/10 border border-warning/20 text-warning"
                     }`}
                   >
+                    <span className="size-1.5 rounded-full bg-current" aria-hidden="true" />
                     {quote.isSent ? "Sent" : "Draft"}
                   </span>
                 </div>
@@ -638,12 +670,12 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-xl bg-card border-l border-border shadow-2xl h-full flex flex-col z-10"
+              className="relative w-full max-w-xl bg-card border-l border-border shadow-2xl h-full flex flex-col z-10 min-w-0"
             >
               {/* Sticky Header */}
-              <div className="p-6 border-b border-border bg-secondary/30 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-foreground/85">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-secondary/30 p-4 sm:p-6">
+                <div className="flex min-w-0 flex-wrap items-center gap-3">
+                  <h3 className="break-words text-xs font-bold uppercase tracking-[0.2em] text-foreground/85">
                     Quote details
                   </h3>
                   <span
@@ -665,9 +697,9 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
               </div>
 
               {/* Scrollable Body */}
-              <div className="p-6 flex-1 overflow-y-auto space-y-6">
+              <div className="flex-1 space-y-6 overflow-y-auto p-4 sm:p-6">
                 {/* Meta details */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <div className="bg-card border border-border p-4 rounded-xl">
                     <span className="text-[11px] font-black text-muted-foreground uppercase tracking-widest block mb-1">
                       Contractor

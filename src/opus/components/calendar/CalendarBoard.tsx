@@ -1,12 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import {
-  Layers,
-  LayoutGrid,
-  Search,
-  ChevronLeft,
-  ChevronRight,
-  Calendar as CalendarIcon,
-} from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Job, Worker, ScheduledShift } from "../../types/erp";
 import {
@@ -26,6 +19,7 @@ import { StaffDayList } from "./StaffDayList";
 import { WeekGridProject } from "./WeekGridProject";
 import { WeekGridStaff } from "./WeekGridStaff";
 import { WeekHeader } from "./WeekHeader";
+import { PortalTabRail } from "../PortalNavigationPrimitives";
 
 export type CalendarGroup = "staff" | "project";
 
@@ -82,8 +76,6 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   };
 
   // --- Site Office Design Constants ---
-  const SITE_AMBER = "bg-schedule-action text-schedule-action-foreground shadow-schedule-action/20";
-  const SITE_STONE = "bg-card text-muted-foreground hover:text-foreground hover:bg-background";
   const SITE_BORDER = "border-border";
   const SITE_CARD = "bg-background border-2 " + SITE_BORDER;
 
@@ -91,32 +83,18 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
     <div className="space-y-4 font-sans">
       {/* Toggle + Search + Filters */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
-        <div className="grid grid-cols-2 md:flex md:items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onChangeGroup("project")}
-            className={`flex items-center justify-center md:justify-start gap-2 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border-2 transition-all cursor-pointer ${
-              group === "project"
-                ? SITE_AMBER + " border-schedule-action"
-                : SITE_STONE + " " + SITE_BORDER
-            }`}
-          >
-            <Layers className="w-4 h-4" />
-            <span>Sites</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => onChangeGroup("staff")}
-            className={`flex items-center justify-center md:justify-start gap-2 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border-2 transition-all cursor-pointer ${
-              group === "staff"
-                ? SITE_AMBER + " border-schedule-action"
-                : SITE_STONE + " " + SITE_BORDER
-            }`}
-          >
-            <LayoutGrid className="w-4 h-4" />
-            <span>Staff</span>
-          </button>
-        </div>
+        <PortalTabRail
+          ariaLabel="Schedule grouping"
+          items={[
+            {
+              label: "Sites",
+              active: group === "project",
+              onSelect: () => onChangeGroup("project"),
+            },
+            { label: "Staff", active: group === "staff", onSelect: () => onChangeGroup("staff") },
+          ]}
+          className="min-w-0 md:min-w-[10rem]"
+        />
 
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2">
           <div className="relative md:w-56">
@@ -134,7 +112,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
 
       <WeekHeader weekDays={weekDays} onNavigate={handleNavigateWeek} />
 
-      <div className="2xl:hidden space-y-4">
+      <div className="xl:hidden space-y-4">
         <DayTabs weekDays={weekDays} selectedDate={date} onSelect={onChangeDate} />
 
         <AnimatePresence mode="wait">
@@ -174,9 +152,9 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
         </AnimatePresence>
       </div>
 
-      <div className="hidden 2xl:block pb-2">
+      <div className="hidden overflow-x-auto pb-2 xl:block">
         <div
-          className={`grid grid-cols-[repeat(5,minmax(240px,1fr))] border-2 ${SITE_BORDER} rounded-xl ${SITE_CARD.replace("bg-white", "")} overflow-hidden`}
+          className={`grid min-w-[1100px] grid-cols-[repeat(5,minmax(220px,1fr))] border-2 ${SITE_BORDER} rounded-xl ${SITE_CARD.replace("bg-white", "")} overflow-hidden`}
         >
           {group === "staff" ? (
             <WeekGridStaff

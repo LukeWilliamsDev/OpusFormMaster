@@ -19,6 +19,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { compressImageFile } from "../lib/compressImage";
 import { usePortal } from "../context/PortalContext";
 import type { Job, ScheduledShift, Worker } from "../types/erp";
+import { PortalPageHeader } from "../components/PortalNavigationPrimitives";
 
 type DiaryRow = Pick<
   Database["public"]["Tables"]["job_diary"]["Row"],
@@ -411,23 +412,13 @@ export const ForemanWorkspacePage: React.FC = () => {
   }, [assignedJobs, myShifts, today]);
 
   return (
-    <div className="mx-auto max-w-7xl space-y-5 px-4 py-6 sm:px-6 lg:space-y-6 lg:py-10 2xl:max-w-[1700px] animate-fade-in">
-      <header className="flex flex-col items-start justify-between gap-5 lg:flex-row lg:items-end">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-            Site foreman workspace
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground lg:text-4xl">
-            {greeting}, {displayName}.
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {formatUKDate(today)} · Open today&apos;s site to see the work, photos, site log, and
-            operations conversation.
-          </p>
-          <p
-            className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"
-            aria-live="polite"
-          >
+    <div className="portal-page-container space-y-5 py-6 lg:space-y-6 lg:py-10 animate-fade-in">
+      <PortalPageHeader
+        eyebrow="Field"
+        title={`${greeting}, ${displayName}.`}
+        description={`${formatUKDate(today)} · Open today's site to see the work, photos, site log, and operations conversation.`}
+        meta={
+          <span className="flex items-center gap-2" aria-live="polite">
             <span
               className={`h-2 w-2 rounded-full ${dataRefreshError ? "bg-amber-500" : dataRefreshing ? "animate-pulse bg-primary" : "bg-emerald-600"}`}
               aria-hidden="true"
@@ -437,9 +428,9 @@ export const ForemanWorkspacePage: React.FC = () => {
               : dataRefreshing
                 ? "Updating assignments…"
                 : "Live updates enabled"}
-          </p>
-        </div>
-      </header>
+          </span>
+        }
+      />
 
       {dataLoading ? (
         <div
@@ -559,7 +550,7 @@ export const ForemanWorkspacePage: React.FC = () => {
                         </p>
                       </div>
                       <Link
-                        to={`/portal/foreman/sites/${currentJob.id}#today-site-update`}
+                        to={`/portal/foreman/sites/${currentJob.id}#site-updates`}
                         className="inline-flex min-h-11 items-center text-xs font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                       >
                         {currentSiteIsReadOnly

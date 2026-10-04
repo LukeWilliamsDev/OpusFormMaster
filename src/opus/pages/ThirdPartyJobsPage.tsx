@@ -1,8 +1,9 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ArrowRight, ChevronRight, MapPin, Search } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
+import { PortalFilterGroup, PortalPageHeader } from "../components/PortalNavigationPrimitives";
 import {
   getSiteState,
   isCompletedSite,
@@ -11,13 +12,6 @@ import {
   siteStateStyles,
 } from "../utils/siteStatus";
 import { formatUKDate, toLondonISODate } from "../utils/week";
-
-const filterSelectedStyles: Record<SiteFilter, string> = {
-  all: "border-primary bg-primary/10 text-primary",
-  active: "border-status-open/35 bg-status-open/10 text-status-open",
-  attention: "border-status-attention/35 bg-status-attention/10 text-status-attention",
-  completed: "border-status-complete/35 bg-status-complete/10 text-status-complete",
-};
 
 const getJobDate = (jobId: string, shifts: any[], completed: boolean) => {
   const dates = shifts
@@ -37,6 +31,9 @@ const getJobDate = (jobId: string, shifts: any[], completed: boolean) => {
 };
 
 type SiteFilter = "all" | "active" | "attention" | "completed";
+const SITE_FILTERS: readonly SiteFilter[] = ["all", "active", "attention", "completed"];
+const isSiteFilter = (value: string | null): value is SiteFilter =>
+  value !== null && SITE_FILTERS.includes(value as SiteFilter);
 
 const buildListQuery = (search: string, filter: SiteFilter) => {
   const params = new URLSearchParams();
@@ -53,8 +50,24 @@ export const ThirdPartyJobsPage: React.FC = () => {
   const initialParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const [search, setSearch] = useState(initialParams.get("search") ?? "");
   const [filter, setFilter] = useState<SiteFilter>(
-    (initialParams.get("filter") as SiteFilter) || "all",
+    isSiteFilter(initialParams.get("filter")) ? (initialParams.get("filter") as SiteFilter) : "all",
   );
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearch(params.get("search") ?? "");
+    const nextFilter = params.get("filter");
+    setFilter(isSiteFilter(nextFilter) ? nextFilter : "all");
+    if (nextFilter && !isSiteFilter(nextFilter)) {
+      params.delete("filter");
+      navigate(
+        {
+          pathname: location.pathname,
+          search: params.toString() ? `?${params.toString()}` : "",
+        },
+        { replace: true },
+      );
+    }
+  }, [location.pathname, location.search, navigate]);
   const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
   const assignedJobs = useMemo(
     () =>
@@ -91,7 +104,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
     setSearch(nextSearch);
     setFilter(nextFilter);
     navigate(`/portal/third-party/sites${buildListQuery(nextSearch, nextFilter)}`, {
-      replace: true,
+      replace: nextFilter === filter,
     });
   };
   const openSite = (jobId: string) => {
@@ -100,7 +113,7 @@ export const ThirdPartyJobsPage: React.FC = () => {
 
   if (dataLoading) {
     return (
-      <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+      <div className="portal-page-container space-y-7 py-8 lg:py-12">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="h-80 animate-pulse rounded-2xl bg-muted" />
       </div>
@@ -109,39 +122,35 @@ export const ThirdPartyJobsPage: React.FC = () => {
 
   if (dataError) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+      <div className="portal-page-container py-8 lg:py-12">
         <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 pb-28 sm:px-6 lg:py-12 lg:pb-12 2xl:max-w-[1500px]">
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-            Work and sites
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground">
-            Assigned sites
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Find a site quickly, then open its full record.
-          </p>
-          <p className="mt-4 text-xs font-black uppercase tracking-widest text-muted-foreground">
-            {activeJobs.length} assigned · {completedJobs.length} completed · {assignedStaffCount}{" "}
-            staff assigned
-          </p>
-        </div>
-        {nextActiveJob && (
-          <Link
-            to={`/portal/third-party/sites/${nextActiveJob.id}`}
-            className="rounded-xl bg-primary px-5 py-3 text-center text-xs font-black uppercase tracking-widest text-primary-foreground"
-          >
-            Open next site <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
-          </Link>
-        )}
-      </header>
+    <div className="portal-page-container space-y-7 py-8 lg:py-12">
+      <PortalPageHeader
+        eyebrow="Your sites"
+        title="Assigned sites"
+        description="Find a site quickly, then open its full record."
+        meta={
+          <>
+            {activeJobs.length} open · {completedJobs.length} completed · {assignedStaffCount} staff
+            assigned
+          </>
+        }
+        action={
+          nextActiveJob ? (
+            <Link
+              to={`/portal/third-party/sites/${nextActiveJob.id}${location.search}`}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              Open next site <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          ) : undefined
+        }
+      />
 
       {assignedJobs.length === 0 ? (
         <div className="rounded-2xl border-2 border-dashed border-border bg-card p-12 text-center">
@@ -181,39 +190,18 @@ export const ThirdPartyJobsPage: React.FC = () => {
                 </button>
               )}
             </div>
-            <label className="mt-3 block sm:hidden">
-              <span className="sr-only">Filter assigned sites</span>
-              <select
+            <div className="mt-3">
+              <PortalFilterGroup
                 value={filter}
-                onChange={(event) => updateListState(search, event.target.value as SiteFilter)}
-                aria-label="Filter assigned sites"
-                className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-semibold outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
-              >
-                <option value="all">All sites · {assignedJobs.length}</option>
-                <option value="active">Open · {activeJobs.length}</option>
-                <option value="attention">Needs attention · {attentionJobs.length}</option>
-                <option value="completed">Completed · {completedJobs.length}</option>
-              </select>
-            </label>
-            <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
-              {(
-                [
-                  ["all", `All sites · ${assignedJobs.length}`],
-                  ["active", `Open · ${activeJobs.length}`],
-                  ["attention", `Needs attention · ${attentionJobs.length}`],
-                  ["completed", `Completed · ${completedJobs.length}`],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => updateListState(search, value)}
-                  aria-pressed={filter === value}
-                  className={`min-h-11 whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${filter === value ? filterSelectedStyles[value] : "border-border text-muted-foreground"}`}
-                >
-                  {label}
-                </button>
-              ))}
+                onChange={(nextFilter) => updateListState(search, nextFilter)}
+                ariaLabel="Filter assigned sites"
+                options={[
+                  { value: "all", label: `All sites · ${assignedJobs.length}` },
+                  { value: "active", label: `Open · ${activeJobs.length}` },
+                  { value: "attention", label: `Needs attention · ${attentionJobs.length}` },
+                  { value: "completed", label: `Completed · ${completedJobs.length}` },
+                ]}
+              />
             </div>
           </div>
 

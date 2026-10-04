@@ -11,6 +11,7 @@ import { getSignedJobAttachmentUrl, getSignedJobAttachmentUrlsBatch } from "../l
 import { formatUKDate, toLondonISODate } from "../utils/week";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
 import { getSiteState, siteStateLabel, siteStateStyles } from "../utils/siteStatus";
+import { PortalPageHeader } from "../components/PortalNavigationPrimitives";
 
 const db = supabase as any;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -102,7 +103,7 @@ export const ThirdPartySitePage: React.FC = () => {
 
   if (dataLoading) {
     return (
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+      <div className="portal-page-container space-y-6 py-8 lg:py-12">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="h-40 animate-pulse rounded-2xl bg-muted" />
         <div className="h-64 animate-pulse rounded-2xl bg-muted" />
@@ -111,7 +112,7 @@ export const ThirdPartySitePage: React.FC = () => {
   }
   if (dataError) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+      <div className="portal-page-container py-8 lg:py-12">
         <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
       </div>
     );
@@ -211,40 +212,37 @@ export const ThirdPartySitePage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
-      <Link
-        to={sitesListPath}
-        className="inline-flex items-center gap-2 text-xs font-bold text-primary"
-      >
-        <ArrowLeft className="h-3 w-3" />
-        Assigned sites
-      </Link>
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-            Assigned site
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground">
-            {job.siteName}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">{job.postcode}</p>
-          <div className="mt-4 flex flex-wrap gap-2">
+    <div className="portal-page-container space-y-6 py-8 lg:py-12">
+      <PortalPageHeader
+        back={
+          <Link
+            to={sitesListPath}
+            className="inline-flex min-h-11 w-fit items-center gap-2 text-sm font-medium text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Assigned sites
+          </Link>
+        }
+        eyebrow="Assigned site"
+        title={job.siteName}
+        description={job.postcode}
+        meta={
+          <div className="flex flex-wrap gap-2">
             <span
-              className={`rounded-lg border px-3 py-2 text-xs font-semibold ${siteStateStyles[state].detail}`}
+              className={`rounded-lg border px-3 py-2 text-sm font-medium ${siteStateStyles[state].detail}`}
             >
               {stateLabel}
             </span>
             {siteDate && (
-              <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
+              <span className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground">
                 {siteDateLabel} · {formatUKDate(siteDate)}
               </span>
             )}
-            <span className="rounded-lg border border-border px-3 py-2 text-xs text-muted-foreground">
+            <span className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground">
               {job.currentPours} pours
             </span>
           </div>
-        </div>
-      </header>
+        }
+      />
       {confirmation && (
         <p
           role="status"

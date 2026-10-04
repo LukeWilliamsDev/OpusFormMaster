@@ -45,6 +45,7 @@ import { getRoleColorClasses } from "./calendar/roleColors";
 import { getTicketStatus } from "../utils/workerValidation";
 import { TicketStatusBadge } from "./TicketStatusBadge";
 import { RequestCredentialsModal } from "./RequestCredentialsModal";
+import { PortalFilterGroup } from "./PortalNavigationPrimitives";
 import {
   Accordion,
   AccordionItem,
@@ -2203,8 +2204,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
       ) : (
         <>
           {/* Search & Actions Header */}
-          <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-5 w-full">
-            <div className="flex-1 min-w-0 lg:max-w-md relative">
+          <div className="mb-5 flex w-full flex-col gap-3 xl:flex-row xl:items-center">
+            <div className="relative min-w-0 flex-1 xl:max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted-foreground" />
               <input
                 type="text"
@@ -2215,31 +2216,16 @@ export const RosterView: React.FC<RosterViewProps> = ({
               />
             </div>
 
-            <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap lg:ml-auto">
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setRosterMode("active")}
-                  className={`px-3.5 py-1.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
-                    rosterMode === "active"
-                      ? "bg-primary border-primary text-primary-foreground"
-                      : "bg-card/60 border-border text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  Active
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setRosterMode("archived")}
-                  className={`px-3.5 py-1.5 rounded-xl text-[11px] font-semibold tracking-wide transition-all duration-150 border cursor-pointer ${
-                    rosterMode === "archived"
-                      ? "bg-status-attention/15 border-status-attention text-status-attention"
-                      : "bg-card/60 border-border text-muted-foreground hover:text-status-attention"
-                  }`}
-                >
-                  Archived
-                </button>
-              </div>
+            <div className="flex flex-wrap items-center gap-2 xl:flex-nowrap xl:ml-auto">
+              <PortalFilterGroup
+                value={rosterMode}
+                onChange={setRosterMode}
+                ariaLabel="Filter staff records"
+                options={[
+                  { value: "active", label: "Active" },
+                  { value: "archived", label: "Archived" },
+                ]}
+              />
 
               <div className="flex items-center gap-1 bg-card/60 border border-border rounded-xl p-0.5 shrink-0">
                 <button
@@ -2271,7 +2257,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
               {canWrite && (
                 <button
                   onClick={() => setShowAddWorkerForm(!showAddWorkerForm)}
-                  className="p-2 md:px-4 md:py-2 bg-primary hover:bg-primary text-primary-foreground rounded-xl transition-all shadow-lg shadow-primary/20 flex items-center justify-center gap-2 text-[11.5px] font-semibold tracking-wider whitespace-nowrap cursor-pointer shrink-0 ml-auto lg:ml-0"
+                  className="flex shrink-0 items-center justify-center gap-2 rounded-xl bg-primary p-2 text-[11.5px] font-semibold tracking-wider text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary md:px-4 md:py-2 xl:ml-0"
                 >
                   {showAddWorkerForm ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
                   <span className="hidden md:inline">

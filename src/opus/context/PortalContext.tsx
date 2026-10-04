@@ -1015,8 +1015,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       !hydratedRef.current ||
       !user ||
       !profile?.tenant_id ||
-      role === "third_party" ||
-      role === "site_foreman"
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
     )
       return;
     const rows = workers.map((w) => workerToRow(w, profile?.tenant_id));
@@ -1044,8 +1044,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       !hydratedRef.current ||
       !user ||
       !profile?.tenant_id ||
-      role === "third_party" ||
-      role === "site_foreman"
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
     )
       return;
     const rows = jobs.map((j) => jobToRow(j, profile?.tenant_id));
@@ -1073,8 +1073,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       !hydratedRef.current ||
       !user ||
       !profile?.tenant_id ||
-      role === "third_party" ||
-      role === "site_foreman"
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
     )
       return;
     const rows = shifts.map((s) => shiftToRow(s, profile?.tenant_id));
@@ -1102,8 +1102,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       !hydratedRef.current ||
       !user ||
       !profile?.tenant_id ||
-      role === "third_party" ||
-      role === "site_foreman"
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
     )
       return;
     const rows = calendarEvents.map((e) => calendarEventToRow(e, profile?.tenant_id));

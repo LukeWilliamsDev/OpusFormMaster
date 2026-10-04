@@ -1,11 +1,15 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { usePortal } from "../context/PortalContext";
+import { MANAGEMENT_WRITE_ROLES, usePortal } from "../context/PortalContext";
 import { ActiveJobLedger } from "../components/ActiveJobLedger";
 import { JobDetails } from "../components/JobDetails";
 import { Job } from "../types/erp";
 
 const ARCHIVE_AFTER_DAYS = 30;
+const JOB_FILTERS = ["all", "in-progress", "pending", "completed", "archived"] as const;
+type JobFilter = (typeof JOB_FILTERS)[number];
+const isJobFilter = (value: string | null): value is JobFilter =>
+  value !== null && JOB_FILTERS.includes(value as JobFilter);
 
 const isArchived = (job: Job) => {
   if (job.status !== "completed" || !job.updatedAt) return false;
@@ -15,12 +19,34 @@ const isArchived = (job: Job) => {
 };
 
 export const JobLedgerPage: React.FC = () => {
-  const { jobs, setJobs, workers, shifts, setShifts } = usePortal();
+  const { jobs, setJobs, workers, shifts, setShifts, role } = usePortal();
+  const canWrite = role ? MANAGEMENT_WRITE_ROLES.includes(role) : false;
   const [searchParams, setSearchParams] = useSearchParams();
-  const [filterStatus, setFilterStatus] = useState<Job["status"] | "all" | "archived">("all");
   const navigate = useNavigate();
 
   const selectedJobId = searchParams.get("jobId");
+  const requestedFilter = searchParams.get("filter");
+  const filterStatus: JobFilter = isJobFilter(requestedFilter) ? requestedFilter : "all";
+
+  useEffect(() => {
+    if (!requestedFilter || isJobFilter(requestedFilter)) return;
+    setSearchParams(
+      (current) => {
+        current.delete("filter");
+        return current;
+      },
+      { replace: true },
+    );
+  }, [requestedFilter, setSearchParams]);
+
+  const setFilterStatus = (nextFilter: Job["status"] | "all" | "archived") => {
+    const normalizedFilter = isJobFilter(nextFilter) ? nextFilter : "all";
+    setSearchParams((current) => {
+      if (normalizedFilter === "all") current.delete("filter");
+      else current.set("filter", normalizedFilter);
+      return current;
+    });
+  };
   const fromStaff = searchParams.get("from") === "staff";
   const originWorkerId = searchParams.get("workerId");
 
@@ -41,15 +67,16 @@ export const JobLedgerPage: React.FC = () => {
   });
 
   const handleUpdateJob = (updatedJob: Job) => {
+    if (!canWrite) return;
     setJobs((prevJobs) => prevJobs.map((job) => (job.id === updatedJob.id ? updatedJob : job)));
   };
 
   const handleSelectJob = (id: string | null) => {
-    if (id) {
-      setSearchParams({ jobId: id });
-    } else {
-      setSearchParams({});
-    }
+    setSearchParams((current) => {
+      if (id) current.set("jobId", id);
+      else current.delete("jobId");
+      return current;
+    });
   };
 
   // If a jobId is selected, render the Job Details in full-page mode instead of the ledger grid list.
@@ -71,12 +98,13 @@ export const JobLedgerPage: React.FC = () => {
         }
         backLabel={fromStaff && originWorkerId ? "Return to Staff Record" : "Job Ledger"}
         onUpdateJob={handleUpdateJob}
+        readOnly={!canWrite}
       />
     );
   }
 
   return (
-    <div className="mx-auto w-full max-w-[2200px] space-y-8 px-4 py-6 animate-fade-in sm:px-6 lg:px-8 lg:py-8 2xl:px-10 2xl:py-10">
+    <div className="portal-page-container space-y-8 py-6 animate-fade-in lg:py-8">
       <ActiveJobLedger
         filteredJobs={filteredJobs}
         filterStatus={filterStatus}

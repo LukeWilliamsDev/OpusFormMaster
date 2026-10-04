@@ -62,6 +62,7 @@ interface JobDetailsProps {
   onBack: () => void;
   onUpdateJob: (updatedJob: Job) => void;
   backLabel?: string;
+  readOnly?: boolean;
 }
 
 export const JobDetails: React.FC<JobDetailsProps> = ({
@@ -73,7 +74,9 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   onBack,
   onUpdateJob,
   backLabel = "Job Ledger",
+  readOnly = false,
 }) => {
+  const canWrite = !readOnly;
   const [status, setStatus] = useState<Job["status"]>(job.status);
   const [currentPours, setCurrentPours] = useState<number>(job.currentPours || 0);
   const [contractMaxPours, setContractMaxPours] = useState<number>(job.contractMaxPours || 0);
@@ -211,6 +214,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   ].filter((f) => String(f.before) !== String(f.after));
 
   const handleSaveJobEdit = () => {
+    if (!canWrite) return;
     onUpdateJob({
       ...job,
       siteName: editSiteName,
@@ -358,6 +362,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     file: File,
     type: "image_before" | "image_after" | "document",
   ) => {
+    if (!canWrite) return;
     if (file.size > MAX_ATTACHMENT_BYTES) {
       toast.error(`"${file.name}" is over the 10MB per-file limit`);
       return;
@@ -422,6 +427,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   };
 
   const executeDeleteAttachment = async () => {
+    if (!canWrite) return;
     if (!deleteAttachmentTarget) return;
     try {
       const { error } = await supabase
@@ -457,6 +463,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   };
 
   const executeRenameAttachment = async () => {
+    if (!canWrite) return;
     if (!renameTarget || !renameValue.trim()) return;
     try {
       const { error } = await supabase
@@ -485,6 +492,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     audience: "foreman_visible" | "third_party_visible",
     visible: boolean,
   ) => {
+    if (!canWrite) return;
     const previous = attachments.find((attachment) => attachment.id === attachmentId);
     if (!previous) return;
     setAttachments((current) =>
@@ -520,6 +528,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   };
 
   const generateUploadLink = async () => {
+    if (!canWrite) return;
     setGeneratingLink(true);
     try {
       const token =
@@ -569,6 +578,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [statusMenuOpen, setStatusMenuOpen] = useState(false);
 
   const executeStatusChange = () => {
+    if (!canWrite) return;
     if (!pendingStatus) return;
     setStatus(pendingStatus);
     onUpdateJob({ ...job, status: pendingStatus });
@@ -576,6 +586,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   };
 
   const handleAddPourSubmit = async (e: React.FormEvent) => {
+    if (!canWrite) return;
     e.preventDefault();
     const nextPourNumber = pourLogs.reduce((max, l) => Math.max(max, l.pourNumber), 0) + 1;
     const notes = newPourNotes || `Scheduled pour #${nextPourNumber}`;
@@ -613,6 +624,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [pourToggleTarget, setPourToggleTarget] = useState<PourLog | null>(null);
 
   const executeTogglePourComplete = async () => {
+    if (!canWrite) return;
     if (!pourToggleTarget) return;
     const log = pourToggleTarget;
     const wasCompleted = log.status === "completed";
@@ -651,6 +663,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [pourToRemove, setPourToRemove] = useState<PourLog | null>(null);
 
   const executeRemovePour = async () => {
+    if (!canWrite) return;
     if (!pourToRemove) return;
 
     const { error } = await supabase.from("pours").delete().eq("id", pourToRemove.id);
@@ -679,6 +692,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [editNoteText, setEditNoteText] = useState("");
 
   const executeSaveNote = async () => {
+    if (!canWrite) return;
     if (!pourNoteTarget) return;
     const updatedLog = { ...pourNoteTarget, notes: editNoteText };
 
@@ -758,7 +772,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     },
   ] as const;
   const currentStatusOption = STATUS_OPTIONS.find((o) => o.key === status) ?? STATUS_OPTIONS[0];
-  const statusDropdown = (
+  const statusDropdown = canWrite ? (
     <div className="relative w-full">
       <button
         type="button"
@@ -801,10 +815,16 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         </>
       )}
     </div>
+  ) : (
+    <div
+      className={`w-full rounded-md border px-2.5 py-1.5 text-center text-[11px] font-bold uppercase tracking-wider ${currentStatusOption.activeClasses}`}
+    >
+      {currentStatusOption.label}
+    </div>
   );
 
   return (
-    <div className="space-y-6 font-sans text-foreground p-4 md:p-6 max-w-7xl mx-auto bg-background min-h-screen">
+    <div className="portal-page-container min-h-screen space-y-6 bg-background py-4 font-sans text-foreground md:py-6 lg:py-8">
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
@@ -813,21 +833,23 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
           <ChevronLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
           <span>{backLabel}</span>
         </button>
-        <button
-          aria-label="Edit job details"
-          onClick={() => {
-            setEditSiteName(job.siteName);
-            setEditMainContractor(job.mainContractor);
-            setEditPostcode(job.postcode);
-            setEditEmail(job.email || "");
-            setEditContractMaxPours(String(job.contractMaxPours || 0));
-            setIsEditingJob(true);
-          }}
-          className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer mr-1"
-        >
-          <PencilLine className="w-3.5 h-3.5" />
-          <span>Edit</span>
-        </button>
+        {canWrite && (
+          <button
+            aria-label="Edit job details"
+            onClick={() => {
+              setEditSiteName(job.siteName);
+              setEditMainContractor(job.mainContractor);
+              setEditPostcode(job.postcode);
+              setEditEmail(job.email || "");
+              setEditContractMaxPours(String(job.contractMaxPours || 0));
+              setIsEditingJob(true);
+            }}
+            className="flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer mr-1"
+          >
+            <PencilLine className="w-3.5 h-3.5" />
+            <span>Edit</span>
+          </button>
+        )}
       </div>
 
       {/* Header: title and status */}
@@ -898,7 +920,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Edit Job Details Dialog */}
       <ConfirmDialog
-        open={isEditingJob}
+        open={canWrite && isEditingJob}
         onOpenChange={setIsEditingJob}
         tone="neutral"
         title="Edit Job Details"
@@ -956,7 +978,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Confirm Save — Job Details Changes */}
       <ConfirmDialog
-        open={isConfirmingJobSave}
+        open={canWrite && isConfirmingJobSave}
         onOpenChange={(open) => {
           if (!open) setIsConfirmingJobSave(false);
         }}
@@ -989,7 +1011,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Change job status confirmation */}
       <ConfirmDialog
-        open={!!pendingStatus}
+        open={canWrite && !!pendingStatus}
         onOpenChange={(open) => {
           if (!open) setPendingStatus(null);
         }}
@@ -1010,7 +1032,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Remove Pour Confirmation */}
       <ConfirmDialog
-        open={!!pourToRemove}
+        open={canWrite && !!pourToRemove}
         onOpenChange={(open) => {
           if (!open) setPourToRemove(null);
         }}
@@ -1034,7 +1056,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Mark Pour Complete / Scheduled Confirmation */}
       <ConfirmDialog
-        open={!!pourToggleTarget}
+        open={canWrite && !!pourToggleTarget}
         onOpenChange={(open) => {
           if (!open) setPourToggleTarget(null);
         }}
@@ -1066,7 +1088,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Edit Pour Notes */}
       <ConfirmDialog
-        open={!!pourNoteTarget}
+        open={canWrite && !!pourNoteTarget}
         onOpenChange={(open) => {
           if (!open) setPourNoteTarget(null);
         }}
@@ -1087,38 +1109,38 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
 
       {/* Secondary sections: Diary+Staff, Attachments */}
       <Tabs defaultValue="overview" className="w-full -mt-3">
-        <TabsList className="w-full h-auto grid grid-cols-4">
+        <TabsList className="flex h-auto w-full justify-start overflow-x-auto rounded-none border-b border-border bg-transparent p-0">
           <TabsTrigger
             value="overview"
             aria-label="Overview"
-            className="flex w-full h-full items-center justify-center gap-1.5 px-1.5 py-2"
+            className="min-h-12 shrink-0 rounded-none border-b-2 border-transparent px-3 py-2 text-sm data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-primary"
           >
             <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline text-[11px] whitespace-nowrap">Overview</span>
+            <span className="whitespace-nowrap">Overview</span>
           </TabsTrigger>
           <TabsTrigger
             value="media"
             aria-label="Attachments"
-            className="flex w-full h-full items-center justify-center gap-1.5 px-1.5 py-2"
+            className="min-h-12 shrink-0 rounded-none border-b-2 border-transparent px-3 py-2 text-sm data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-primary"
           >
             <Paperclip className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline text-[11px] whitespace-nowrap">Attachments</span>
+            <span className="whitespace-nowrap">Attachments</span>
           </TabsTrigger>
           <TabsTrigger
             value="billing"
             aria-label="Billing"
-            className="flex w-full h-full items-center justify-center gap-1.5 px-1.5 py-2"
+            className="min-h-12 shrink-0 rounded-none border-b-2 border-transparent px-3 py-2 text-sm data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-primary"
           >
             <FileText className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline text-[11px] whitespace-nowrap">Billing</span>
+            <span className="whitespace-nowrap">Billing</span>
           </TabsTrigger>
           <TabsTrigger
             value="history"
             aria-label="History"
-            className="flex w-full h-full items-center justify-center gap-1.5 px-1.5 py-2"
+            className="min-h-12 shrink-0 rounded-none border-b-2 border-transparent px-3 py-2 text-sm data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none data-[state=active]:border-primary"
           >
             <History className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline text-[11px] whitespace-nowrap">History</span>
+            <span className="whitespace-nowrap">History</span>
           </TabsTrigger>
         </TabsList>
 
@@ -1129,16 +1151,18 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 <h2 className="text-sm font-bold text-foreground">Scheduled Pours</h2>
 
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => setIsAddingPour(!isAddingPour)}
-                    className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border bg-card border-border hover:bg-secondary text-foreground"
-                  >
-                    {isAddingPour ? "Cancel" : "+ Schedule Pour"}
-                  </button>
+                  {canWrite && (
+                    <button
+                      onClick={() => setIsAddingPour(!isAddingPour)}
+                      className="px-3.5 py-1.5 rounded-lg text-[12px] font-bold transition-colors cursor-pointer border bg-card border-border hover:bg-secondary text-foreground"
+                    >
+                      {isAddingPour ? "Cancel" : "+ Schedule Pour"}
+                    </button>
+                  )}
                 </div>
               </div>
 
-              {isAddingPour && (
+              {canWrite && isAddingPour && (
                 <form
                   onSubmit={handleAddPourSubmit}
                   className="mb-4 p-4 bg-background border border-border rounded-lg space-y-4"
@@ -1218,22 +1242,24 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                       className="min-h-14 flex items-center justify-between gap-2 p-2.5 border bg-background border-border hover:border-primary/30 rounded-lg transition-all"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <button
-                          type="button"
-                          aria-label={
-                            isCompleted
-                              ? `Mark pour ${log.pourNumber} as scheduled`
-                              : `Mark pour ${log.pourNumber} complete`
-                          }
-                          onClick={() => setPourToggleTarget(log)}
-                          className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
-                            isCompleted
-                              ? "bg-success/15 border-success/30 text-success hover:bg-success/25"
-                              : "border-border text-transparent hover:border-primary hover:bg-primary/10"
-                          }`}
-                        >
-                          <Check className="w-3.5 h-3.5" />
-                        </button>
+                        {canWrite && (
+                          <button
+                            type="button"
+                            aria-label={
+                              isCompleted
+                                ? `Mark pour ${log.pourNumber} as scheduled`
+                                : `Mark pour ${log.pourNumber} complete`
+                            }
+                            onClick={() => setPourToggleTarget(log)}
+                            className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 transition-colors cursor-pointer ${
+                              isCompleted
+                                ? "bg-success/15 border-success/30 text-success hover:bg-success/25"
+                                : "border-border text-transparent hover:border-primary hover:bg-primary/10"
+                            }`}
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                         <div className="min-w-0">
                           <div className="text-xs font-bold text-foreground">
                             Pour #{log.pourNumber}
@@ -1250,25 +1276,29 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                             {formatPourDate(log.date)}
                           </div>
                         )}
-                        <button
-                          type="button"
-                          aria-label={`Edit notes for pour ${log.pourNumber}`}
-                          onClick={() => {
-                            setEditNoteText(log.notes || "");
-                            setPourNoteTarget(log);
-                          }}
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
-                        >
-                          <PencilLine className="w-4 h-4" />
-                        </button>
-                        <button
-                          type="button"
-                          aria-label={`Remove pour ${log.pourNumber}`}
-                          onClick={() => setPourToRemove(log)}
-                          className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {canWrite && (
+                          <>
+                            <button
+                              type="button"
+                              aria-label={`Edit notes for pour ${log.pourNumber}`}
+                              onClick={() => {
+                                setEditNoteText(log.notes || "");
+                                setPourNoteTarget(log);
+                              }}
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                            >
+                              <PencilLine className="w-4 h-4" />
+                            </button>
+                            <button
+                              type="button"
+                              aria-label={`Remove pour ${log.pourNumber}`}
+                              onClick={() => setPourToRemove(log)}
+                              className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -1317,6 +1347,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             setRenameValue={setRenameValue}
             executeRenameAttachment={executeRenameAttachment}
             updateDocumentVisibility={updateDocumentVisibility}
+            readOnly={readOnly}
           />
           <ThirdPartyAttachmentsPanel jobId={job.id} />
         </TabsContent>
@@ -1327,6 +1358,32 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             loadingJobAuditLogs={loadingJobAuditLogs}
             auditSearch={auditSearch}
             setAuditSearch={setAuditSearch}
+            jobName={job.siteName}
+            onAuditRefresh={fetchJobAuditLogs}
+            onJobReverted={(revertedJob) => {
+              const validStatuses: Job["status"][] = [
+                "active",
+                "completed",
+                "on-hold",
+                "pending",
+                "in-progress",
+              ];
+              onUpdateJob({
+                ...job,
+                jobRef: revertedJob.job_ref,
+                siteName: revertedJob.site_name,
+                mainContractor: revertedJob.main_contractor ?? "",
+                postcode: revertedJob.postcode ?? "",
+                email: revertedJob.email ?? undefined,
+                currentPours: revertedJob.current_pours ?? 0,
+                contractMaxPours: revertedJob.contract_max_pours ?? 0,
+                status: validStatuses.includes(revertedJob.status as Job["status"])
+                  ? (revertedJob.status as Job["status"])
+                  : job.status,
+                scheduleValue: revertedJob.schedule_value ?? 0,
+                updatedAt: revertedJob.updated_at ?? job.updatedAt,
+              });
+            }}
           />
         </TabsContent>
 
@@ -1372,10 +1429,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                     )
                   }
                   onCreateNew={() => {
+                    if (!canWrite) return;
                     setNewQuoteNonce((n) => n + 1);
                     setEditingInvoiceId("new");
                   }}
-                  onCreateInvoice={() => setEditingFinalBillId("new")}
+                  onCreateInvoice={() => {
+                    if (canWrite) setEditingFinalBillId("new");
+                  }}
+                  readOnly={readOnly}
                   embedded
                 />
               </div>
@@ -1384,6 +1445,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                   jobId={job.id}
                   jobRef={job.jobRef}
                   refreshKey={billingRefreshKey}
+                  readOnly={readOnly}
                   embedded
                 />
               </div>

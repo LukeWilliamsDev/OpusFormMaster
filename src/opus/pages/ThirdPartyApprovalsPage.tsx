@@ -22,6 +22,7 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [documents, setDocuments] = useState<Record<string, any[]>>({});
   const [documentHistory, setDocumentHistory] = useState<any[]>([]);
+  const [documentActors, setDocumentActors] = useState<Record<string, string>>({});
   const [showPrevious, setShowPrevious] = useState(false);
   const load = async () => {
     const { data, error } = await db
@@ -55,12 +56,34 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
     const { data, error } = await db
       .from("third_party_staff_documents")
       .select(
-        "id, staff_id, ticket_type, ticket_number, expiry_date, file_name, file_path, created_at",
+        "id, staff_id, ticket_type, ticket_number, expiry_date, file_name, file_path, uploaded_by, created_at",
       )
       .not("staff_id", "is", null)
       .order("created_at", { ascending: false });
     if (error) return toast.error(error.message || "Unable to load certificate history");
     setDocumentHistory(data ?? []);
+    const actorIds = Array.from(
+      new Set(
+        (data ?? [])
+          .map((document: any) => document.uploaded_by)
+          .filter(
+            (value: unknown): value is string => typeof value === "string" && value.length > 0,
+          ),
+      ),
+    );
+    if (actorIds.length === 0) {
+      setDocumentActors({});
+      return;
+    }
+    const { data: actors } = await db
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", actorIds);
+    setDocumentActors(
+      Object.fromEntries(
+        (actors ?? []).map((actor: any) => [actor.id, actor.full_name || actor.email || actor.id]),
+      ),
+    );
   };
   useEffect(() => {
     load();
@@ -205,7 +228,10 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
                     </p>
                     <p className="mt-1 truncate text-xs text-muted-foreground">
                       {document.file_name} · uploaded{" "}
-                      {formatUKDate(document.created_at?.slice(0, 10))}
+                      {document.created_at
+                        ? new Date(document.created_at).toLocaleString("en-GB")
+                        : "time not recorded"}{" "}
+                      · by {documentActors[document.uploaded_by] || "System / Automated"}
                       {document.expiry_date
                         ? ` · expires ${formatUKDate(document.expiry_date)}`
                         : ""}
@@ -258,7 +284,11 @@ export const ThirdPartyApprovalsPage: React.FC = () => {
                     <span className="min-w-0 truncate">
                       {workers.find((worker) => worker.id === document.staff_id)?.name ??
                         "Unknown staff"}{" "}
-                      · {document.ticket_type} · {document.file_name}
+                      · {document.ticket_type} · {document.file_name} · uploaded{" "}
+                      {document.created_at
+                        ? new Date(document.created_at).toLocaleString("en-GB")
+                        : "time not recorded"}{" "}
+                      · by {documentActors[document.uploaded_by] || "System / Automated"}
                     </span>
                     <div className="flex shrink-0 gap-2">
                       <button

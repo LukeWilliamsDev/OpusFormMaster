@@ -155,8 +155,8 @@ const HelpLayout: React.FC<{
           <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
             <li>
               Use the exact navigation labels shown in this guide. On a phone, open{" "}
-              <strong className="text-foreground">More</strong> for navigation that is not in the
-              bottom bar.
+              <strong className="text-foreground">Navigation</strong> for destinations that are not
+              in the bottom bar.
             </li>
             <li>
               Cards and actions stack vertically on small screens; scroll to see the complete
@@ -213,12 +213,12 @@ const InternalHelp: React.FC<{
           ? "Coordinate site operations"
           : "Review operational information";
   const restriction = assistant
-    ? "Most operational pages are read-only for this role. Staff Approvals and general job, staff, schedule, note, attachment, quote, and document edits are not available. Certificate Checker is a separate exception for recording a CSCS outcome. Company policies are available under Legal & Privacy."
+    ? "Most operational pages are read-only for this role. Staff Approvals and general job, staff, schedule, note, attachment, quote, and document edits are not available. Certificate Checker is a separate exception for recording a CSCS outcome. Company policies are available under Policies & legal."
     : director
-      ? "Users is available. Tenant-wide Audit Log is not available to this role. Company policies are available under Legal & Privacy."
+      ? "Users and the tenant-wide Audit Log are available to this role. Company policies are available under Policies & legal."
       : coordinator
-        ? "Users, tenant-wide Audit Log, and policy management are not available to this role. Company policies are available under Legal & Privacy."
-        : "You can manage portal users and review the tenant-wide Audit Log. Read company policies under Legal & Privacy.";
+        ? "Users, tenant-wide Audit Log, and policy management are not available to this role. Company policies are available under Policies & legal."
+        : "You can manage portal users and review the tenant-wide Audit Log. Read company policies under Policies & legal.";
   const items: HelpItem[] = [
     {
       title: "Review operations",
@@ -302,7 +302,7 @@ const InternalHelp: React.FC<{
       content: (
         <p>
           Use the bottom navigation where available. Open{" "}
-          <strong className="text-foreground">More</strong> for{" "}
+          <strong className="text-foreground">Navigation</strong> for{" "}
           <strong className="text-foreground">Help</strong>,{" "}
           <strong className="text-foreground">Contact IT</strong>, settings, legal, theme, and sign
           out. Scroll through stacked cards to reach all actions.
@@ -324,13 +324,13 @@ const InternalHelp: React.FC<{
 const ThirdPartyHelp: React.FC = () => {
   const items: HelpItem[] = [
     {
-      title: "Start from Portal Home",
+      title: "Start from Overview",
       summary: "See staff, certificate, and site items needing attention.",
       icon: LayoutDashboard,
       content: (
         <>
           <p>
-            Open <InlineActionLink to="/portal/third-party">Home</InlineActionLink>, review{" "}
+            Open <InlineActionLink to="/portal/third-party">Overview</InlineActionLink>, review{" "}
             <strong className="text-foreground">Needs attention</strong>, open the linked record,
             and confirm the new status or item.
           </p>
@@ -407,16 +407,15 @@ const ThirdPartyHelp: React.FC = () => {
     },
     {
       title: "Use the portal on mobile",
-      summary: "Find Home, Staff, Sites, Help, and More.",
+      summary: "Find Overview, Staff, Sites, and Navigation.",
       icon: Smartphone,
       content: (
         <p>
-          Use the bottom navigation for <strong className="text-foreground">Home</strong>,{" "}
+          Use the bottom navigation for <strong className="text-foreground">Overview</strong>,{" "}
           <strong className="text-foreground">Staff</strong>,{" "}
           <strong className="text-foreground">Sites</strong>, and{" "}
-          <strong className="text-foreground">Help</strong>. Use{" "}
-          <strong className="text-foreground">More</strong> for{" "}
-          <strong className="text-foreground">Contact IT</strong>, settings, legal, theme, and
+          <strong className="text-foreground">Navigation</strong>. Use Navigation for{" "}
+          <strong className="text-foreground">Help</strong>, contact, settings, legal, theme, and
           logout.
         </p>
       ),
@@ -426,7 +425,7 @@ const ThirdPartyHelp: React.FC = () => {
     <HelpLayout
       label="Third-party portal help"
       title="Complete a task"
-      intro="Use the links below to manage your staff, certificates, and assigned sites. Start with Home when you are unsure what needs attention."
+      intro="Use the links below to manage your staff, certificates, and assigned sites. Start with Overview when you are unsure what needs attention."
       items={items}
       support="it"
       pdf
@@ -438,7 +437,7 @@ const ForemanHelp: React.FC = () => (
   <HelpLayout
     label="Foreman help"
     title="Run assigned site work"
-    intro="Use Today, Sites, Shifts, and More to manage assigned site work. Use Contact operations inside a site for work questions; use Contact IT for portal or technical problems."
+    intro="Use Today, Sites, and My shifts to manage assigned site work. Use Contact operations inside a site for work questions; use Contact IT for portal or technical problems."
     support="it"
     openAll
     items={[
@@ -493,7 +492,7 @@ const ForemanHelp: React.FC = () => (
             Use <strong className="text-foreground">Assigned sites</strong> (shown as{" "}
             <strong className="text-foreground">Sites</strong> on mobile) to search and{" "}
             <strong className="text-foreground">Shifts</strong> for assignments. On mobile, open{" "}
-            <strong className="text-foreground">More</strong> for{" "}
+            <strong className="text-foreground">Navigation</strong> for{" "}
             <strong className="text-foreground">Help</strong>,{" "}
             <strong className="text-foreground">Contact IT</strong>, settings, legal, theme, and
             sign out.
@@ -508,8 +507,8 @@ const ForemanHelp: React.FC = () => (
           <p>
             Use <strong className="text-foreground">Contact operations</strong> in the site&apos;s{" "}
             <strong className="text-foreground">Work</strong> section for work questions and
-            blockers. Use <strong className="text-foreground">Contact IT</strong> in More for portal
-            access, sign-in, or technical problems.
+            blockers. Use <strong className="text-foreground">Contact IT</strong> in Navigation for
+            portal access, sign-in, or technical problems.
           </p>
         ),
       },

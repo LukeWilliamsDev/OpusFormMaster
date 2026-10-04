@@ -78,14 +78,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "Opus Form — Portal Login" },
+      { title: "Opus Form" },
       {
         name: "description",
         content:
           "Opus Form portal — secure access to the concrete specialists ERP: pipeline, jobs, pours and VAT-compliant quotes & invoices.",
       },
       { name: "author", content: "Opus Form" },
-      { property: "og:title", content: "Opus Form — Portal Login" },
+      { property: "og:title", content: "Opus Form" },
       {
         property: "og:description",
         content:
@@ -93,7 +93,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:title", content: "Opus Form — Portal Login" },
+      { name: "twitter:title", content: "Opus Form" },
       { name: "twitter:description", content: "Secure Opus Form operations portal." },
     ],
     links: [

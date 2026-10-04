@@ -18,10 +18,13 @@ import { formatUKDate } from "../utils/week";
 import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
 import { getSiteState, siteStateLabel } from "../utils/siteStatus";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
+import { PortalFilterGroup } from "../components/PortalNavigationPrimitives";
 import { supabase } from "../../integrations/supabase/client";
 
 const db = supabase as any;
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const isStaffFilter = (value: string | null): value is "all" | "attention" =>
+  value === "all" || value === "attention";
 
 const CERTIFICATE_TYPES = [
   "CSCS",
@@ -125,17 +128,29 @@ export const ThirdPartyPortalPage: React.FC = () => {
   const [staffSearch, setStaffSearch] = useState(
     () => new URLSearchParams(location.search).get("search") ?? "",
   );
-  const [staffFilter, setStaffFilter] = useState<"all" | "attention">(
-    () => (new URLSearchParams(location.search).get("filter") as "all" | "attention") || "all",
-  );
+  const [staffFilter, setStaffFilter] = useState<"all" | "attention">(() => {
+    const filter = new URLSearchParams(location.search).get("filter");
+    return isStaffFilter(filter) ? filter : "all";
+  });
   const [selectedWorkerId, setSelectedWorkerId] = useState<string | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
 
   React.useEffect(() => {
     const params = new URLSearchParams(location.search);
     setStaffSearch(params.get("search") ?? "");
-    setStaffFilter((params.get("filter") as "all" | "attention") || "all");
-  }, [location.search]);
+    const filter = params.get("filter");
+    setStaffFilter(isStaffFilter(filter) ? filter : "all");
+    if (filter && !isStaffFilter(filter)) {
+      params.delete("filter");
+      navigate(
+        {
+          pathname: location.pathname,
+          search: params.toString() ? `?${params.toString()}` : "",
+        },
+        { replace: true },
+      );
+    }
+  }, [location.pathname, location.search, navigate]);
 
   const loadSubmissions = async () => {
     const { data } = await db
@@ -190,7 +205,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
     setStaffSearch(nextSearch);
     setStaffFilter(nextFilter);
     navigate(`/portal/third-party/staff${params.toString() ? `?${params}` : ""}`, {
-      replace: true,
+      replace: nextFilter === staffFilter,
     });
   };
   const assignedJobsForWorker = (workerId: string) =>
@@ -200,7 +215,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
 
   if (dataLoading) {
     return (
-      <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+      <div className="portal-page-container space-y-7 py-8 lg:py-12">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="grid gap-4 md:grid-cols-3">
           {[1, 2, 3].map((item) => (
@@ -213,7 +228,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
 
   if (dataError) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+      <div className="portal-page-container py-8 lg:py-12">
         <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
       </div>
     );
@@ -221,7 +236,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
 
   if (isStaffDetailRoute && !selectedWorker) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+      <div className="portal-page-container py-8 lg:py-12">
         <Link
           to="/portal/third-party/staff"
           className="text-xs font-black uppercase tracking-widest text-primary"
@@ -301,7 +316,11 @@ export const ThirdPartyPortalPage: React.FC = () => {
   };
 
   const uploadTicket = async (submissionId: string | null, staffId: string | null = null) => {
-    if (!submissionId || !ticketFile || !user || !profile?.tenant_id) return;
+    if (!submissionId) {
+      toast.error("This staff record has no approved submission to attach the certificate to.");
+      return;
+    }
+    if (!ticketFile || !user || !profile?.tenant_id) return;
     if (!ticketType.trim()) {
       return toast.error("Enter the certificate name");
     }
@@ -386,7 +405,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+    <div className="portal-page-container space-y-7 py-8 lg:py-12">
       <datalist id="certificate-types">
         {CERTIFICATE_TYPES.map((type) => (
           <option key={type} value={type} />
@@ -627,37 +646,16 @@ export const ThirdPartyPortalPage: React.FC = () => {
                   className="w-full rounded-lg border border-border bg-background py-2 pl-9 pr-3 text-sm"
                 />
               </label>
-              <label className="mt-3 block sm:hidden">
-                <span className="sr-only">Filter staff</span>
-                <select
+              <div className="mt-3">
+                <PortalFilterGroup
                   value={staffFilter}
-                  onChange={(event) =>
-                    updateStaffListState(staffSearch, event.target.value as "all" | "attention")
-                  }
-                  aria-label="Filter staff"
-                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm font-semibold"
-                >
-                  <option value="all">All staff · {workers.length}</option>
-                  <option value="attention">Needs attention · {attentionWorkers.length}</option>
-                </select>
-              </label>
-              <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
-                {(
-                  [
-                    ["all", `All staff · ${workers.length}`],
-                    ["attention", `Needs attention · ${attentionWorkers.length}`],
-                  ] as const
-                ).map(([value, label]) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => updateStaffListState(staffSearch, value)}
-                    aria-pressed={staffFilter === value}
-                    className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${staffFilter === value ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
-                  >
-                    {label}
-                  </button>
-                ))}
+                  onChange={(nextFilter) => updateStaffListState(staffSearch, nextFilter)}
+                  ariaLabel="Filter staff"
+                  options={[
+                    { value: "all", label: `All staff · ${workers.length}` },
+                    { value: "attention", label: `Needs attention · ${attentionWorkers.length}` },
+                  ]}
+                />
               </div>
               <div className="mt-3 space-y-2">
                 {visibleWorkers.map((worker) => {
@@ -908,6 +906,9 @@ export const ThirdPartyPortalPage: React.FC = () => {
                               const document = (selectedWorker.uploadedCertificates ?? []).find(
                                 (candidate) => candidate.id === ticket.id,
                               );
+                              const approvedSubmission = submissions.find(
+                                (submission) => submission.approved_staff_id === selectedWorker.id,
+                              );
                               return (
                                 <div
                                   key={ticket.id}
@@ -945,18 +946,24 @@ export const ThirdPartyPortalPage: React.FC = () => {
                                         View
                                       </button>
                                     )}
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        openCertificatePanel(selectedWorker.id, "replace", {
-                                          ...ticket,
-                                          fileName: document?.name,
-                                        })
-                                      }
-                                      className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-black text-primary hover:border-primary"
-                                    >
-                                      Replace
-                                    </button>
+                                    {approvedSubmission ? (
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          openCertificatePanel(selectedWorker.id, "replace", {
+                                            ...ticket,
+                                            fileName: document?.name,
+                                          })
+                                        }
+                                        className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-black text-primary hover:border-primary"
+                                      >
+                                        Replace
+                                      </button>
+                                    ) : (
+                                      <span className="text-xs text-muted-foreground">
+                                        Renewal unavailable
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -1089,7 +1096,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                         <div className="flex items-center justify-between gap-3">
                           <h4 className="text-sm font-black">Assigned sites</h4>
                           <Link
-                            to="/portal/third-party/sites"
+                            to={`/portal/third-party/sites${location.search}`}
                             className="text-[10px] font-black uppercase tracking-widest text-primary"
                           >
                             View all →
@@ -1102,7 +1109,7 @@ export const ThirdPartyPortalPage: React.FC = () => {
                             assignedJobsForWorker(selectedWorker.id).map((job) => (
                               <Link
                                 key={job.id}
-                                to={`/portal/third-party/sites/${job.id}`}
+                                to={`/portal/third-party/sites/${job.id}${location.search}`}
                                 className="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-3 hover:border-primary"
                               >
                                 <span className="min-w-0">
@@ -1219,279 +1226,6 @@ export const ThirdPartyPortalPage: React.FC = () => {
             >
               {uploadingTicket ? "Uploading..." : "Upload certificate"}
             </button>
-          </section>
-        )}
-
-        <section className="hidden space-y-3">
-          <h2 className="text-sm font-black uppercase tracking-widest text-muted-foreground">
-            Your approved staff
-          </h2>
-          {workers.length === 0 ? (
-            <p className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-              No approved staff yet.
-            </p>
-          ) : (
-            workers.map((worker) => (
-              <div key={worker.id} className="rounded-2xl border-2 border-border bg-card p-4">
-                {editingDraft?.id === worker.id ? (
-                  <div className="grid gap-2 sm:grid-cols-2">
-                    <input
-                      aria-label="Staff name"
-                      value={editingDraft.name}
-                      onChange={(e) => setEditingDraft({ ...editingDraft, name: e.target.value })}
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                    />
-                    <input
-                      aria-label="Staff email"
-                      value={editingDraft.email}
-                      onChange={(e) => setEditingDraft({ ...editingDraft, email: e.target.value })}
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                    />
-                    <input
-                      aria-label="Staff phone"
-                      value={editingDraft.phone}
-                      onChange={(e) => setEditingDraft({ ...editingDraft, phone: e.target.value })}
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                    />
-                    <input
-                      aria-label="Staff postcode"
-                      value={editingDraft.postcode}
-                      onChange={(e) =>
-                        setEditingDraft({ ...editingDraft, postcode: e.target.value })
-                      }
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                    />
-                    <button
-                      onClick={saveWorker}
-                      className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground"
-                    >
-                      Save changes
-                    </button>
-                    <button
-                      onClick={() => setEditingDraft(null)}
-                      className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <span className="flex h-9 w-9 items-center justify-center rounded-full bg-status-success/12 text-status-success">
-                          <Check className="h-4 w-4" />
-                        </span>
-                        <div>
-                          <p className="font-bold text-foreground">{worker.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {worker.role} · {worker.email || "No email"}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <button
-                          onClick={() =>
-                            setEditingDraft({
-                              id: worker.id,
-                              name: worker.name,
-                              role: worker.role,
-                              email: worker.email ?? "",
-                              phone: worker.phone ?? "",
-                              postcode: worker.postcode ?? "",
-                            })
-                          }
-                          className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest"
-                        >
-                          Edit
-                        </button>
-                        {submissions.some(
-                          (submission) => submission.approved_staff_id === worker.id,
-                        ) && (
-                          <button
-                            onClick={() => openCertificatePanel(worker.id, "add")}
-                            className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest"
-                          >
-                            Add another certificate
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    {getCurrentTickets(worker.tickets ?? []).length > 0 && (
-                      <div className="space-y-2 border-t border-border pt-3">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                          Valid certificates
-                        </span>
-                        {getCurrentTickets(worker.tickets ?? [])
-                          .slice(0, 4)
-                          .map((ticket) => {
-                            const status = getTicketStatus(ticket);
-                            const document = (worker.uploadedCertificates ?? []).find(
-                              (candidate) => candidate.id === ticket.id,
-                            );
-                            return (
-                              <div
-                                key={ticket.id}
-                                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs"
-                              >
-                                <div className="min-w-0 truncate">
-                                  <span className="font-bold">{ticket.type}</span>
-                                  <span
-                                    className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold ${status === "EXPIRED" || status === "INVALID" ? "bg-status-error/10 text-status-error" : status === "EXPIRING_SOON" ? "bg-status-warning/10 text-status-warning" : "bg-status-success/10 text-status-success"}`}
-                                  >
-                                    {status === "INVALID"
-                                      ? "Needs review"
-                                      : status === "EXPIRED"
-                                        ? "Expired"
-                                        : status === "EXPIRING_SOON"
-                                          ? "Expiring"
-                                          : "Valid"}
-                                  </span>
-                                  <p className="mt-1 truncate text-xs text-muted-foreground">
-                                    {document?.name || "No file attached"}
-                                    {ticket.expiryDate
-                                      ? ` · expires ${formatUKDate(ticket.expiryDate)}`
-                                      : ""}
-                                  </p>
-                                </div>
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    openCertificatePanel(worker.id, "replace", {
-                                      ...ticket,
-                                      fileName: document?.name,
-                                    })
-                                  }
-                                  className="shrink-0 font-black text-primary underline decoration-current/40 underline-offset-2 hover:decoration-current"
-                                >
-                                  Replace
-                                </button>
-                              </div>
-                            );
-                          })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </section>
-
-        {ticketStaffId && (
-          <section className="hidden rounded-2xl border-2 border-primary/60 bg-card p-5 shadow-sm ring-4 ring-primary/5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary">
-                  Certificate update
-                </p>
-                <h2 className="mt-1 text-xl font-black">
-                  {certificatePanelMode === "replace"
-                    ? `Replace ${ticketType} certificate`
-                    : `Add a certificate for ${workers.find((worker) => worker.id === ticketStaffId)?.name}`}
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {certificatePanelMode === "replace"
-                    ? `The new file will become the current ${ticketType} record.`
-                    : "Add a new certificate type to this staff record."}
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label="Close certificate panel"
-                onClick={closeCertificatePanel}
-                className="text-2xl leading-none text-muted-foreground hover:text-foreground"
-              >
-                ×
-              </button>
-            </div>
-            {certificatePanelMode === "replace" && selectedTicket && (
-              <div className="mt-4 rounded-xl border border-border bg-background p-3 text-xs text-muted-foreground">
-                <p className="font-black uppercase tracking-widest text-foreground">
-                  Current record
-                </p>
-                <p className="mt-1">
-                  {selectedTicket.fileName || "Current certificate file"}
-                  {selectedTicket.expiryDate
-                    ? ` · expires ${formatUKDate(selectedTicket.expiryDate)}`
-                    : ""}
-                </p>
-              </div>
-            )}
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <label className="text-xs font-bold text-muted-foreground">
-                Certificate number
-                <input
-                  value={ticketNumber}
-                  onChange={(e) => setTicketNumber(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
-              </label>
-              <label className="text-xs font-bold text-muted-foreground">
-                New expiry date
-                <input
-                  type="date"
-                  value={ticketExpiry}
-                  onChange={(e) => setTicketExpiry(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
-              </label>
-            </div>
-            {certificatePanelMode === "add" && (
-              <label className="mt-3 block text-xs font-bold text-muted-foreground">
-                Certificate type
-                <input
-                  list="certificate-types"
-                  value={ticketType}
-                  onChange={(e) => setTicketType(e.target.value)}
-                  placeholder="Type or select certificate"
-                  required
-                  className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                />
-              </label>
-            )}
-            <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-primary/60 bg-primary/5 px-4 py-4 text-sm text-primary hover:bg-primary/10">
-              <FileUp className="h-5 w-5" />
-              <span>
-                <strong className="block">{ticketFile?.name || "Choose a PDF or image"}</strong>
-                <small className="text-xs text-muted-foreground">Maximum 10 MB</small>
-              </span>
-              <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                className="hidden"
-                onChange={(e) => setTicketFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
-            <p className="mt-3 text-xs text-muted-foreground">
-              The previous file stays in Opus Form’s audit history and will not be shown as the
-              current certificate.
-            </p>
-            <div className="mt-5 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeCertificatePanel}
-                className="rounded-lg border border-border px-4 py-2 text-sm font-bold"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() =>
-                  uploadTicket(
-                    submissions.find((submission) => submission.approved_staff_id === ticketStaffId)
-                      ?.id ?? null,
-                    ticketStaffId,
-                  )
-                }
-                disabled={uploadingTicket || !ticketFile || !ticketType.trim()}
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground disabled:opacity-50"
-              >
-                {uploadingTicket
-                  ? "Uploading..."
-                  : certificatePanelMode === "replace"
-                    ? "Upload renewal"
-                    : "Add certificate"}
-              </button>
-            </div>
           </section>
         )}
       </div>

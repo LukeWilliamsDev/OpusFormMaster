@@ -6,6 +6,7 @@ import { supabase } from "../../integrations/supabase/client";
 import { formatUKDate, toLondonISODate } from "../utils/week";
 import { getCurrentTickets, getTicketStatus } from "../utils/workerValidation";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
+import { PortalPageHeader } from "../components/PortalNavigationPrimitives";
 import {
   getSiteState,
   isCompletedSite,
@@ -109,7 +110,7 @@ export const ThirdPartyDashboardPage: React.FC = () => {
   const actionCount = pendingCount + unansweredCount + expiringCertificateCount;
   if (dataLoading)
     return (
-      <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+      <div className="portal-page-container space-y-7 py-8 lg:py-12">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="h-72 animate-pulse rounded-2xl bg-muted" />
       </div>
@@ -117,42 +118,35 @@ export const ThirdPartyDashboardPage: React.FC = () => {
 
   if (dataError) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
+      <div className="portal-page-container py-8 lg:py-12">
         <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 pb-28 sm:px-6 lg:py-12 lg:pb-12 2xl:max-w-[1500px]">
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-            Portal home
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground">
-            {getGreeting()}
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Manage your people and assigned work from one place.
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <Link
-            to="/portal/third-party/staff/new"
-            className="rounded-xl bg-primary px-5 py-3 text-center text-xs font-black uppercase tracking-widest text-primary-foreground"
-          >
-            <Plus className="mr-1 inline h-3.5 w-3.5" />
-            Add staff member
-          </Link>
-          <Link
-            to="/portal/third-party/sites"
-            className="rounded-xl border border-border px-5 py-3 text-center text-xs font-black uppercase tracking-widest hover:border-primary"
-          >
-            View assigned sites <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
-          </Link>
-        </div>
-      </header>
+    <div className="portal-page-container space-y-7 py-8 lg:py-12">
+      <PortalPageHeader
+        eyebrow="Your company"
+        title={getGreeting()}
+        description="Manage your people and assigned work from one place."
+        action={
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Link
+              to="/portal/third-party/staff/new"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" /> Add staff member
+            </Link>
+            <Link
+              to="/portal/third-party/sites"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg border border-border px-4 text-sm font-medium text-foreground transition-colors hover:border-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              View assigned sites <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </div>
+        }
+      />
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         <div className={`rounded-2xl border p-4 ${siteStateStyles.attention.card}`}>
           <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">

@@ -42,7 +42,7 @@ export const LaborRosterPage: React.FC = () => {
   };
 
   return (
-    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto animate-fade-in space-y-6">
+    <div className="portal-page-container animate-fade-in space-y-6 py-6 lg:py-8">
       {currentView === "staff" ? (
         <RosterView
           workers={workers}

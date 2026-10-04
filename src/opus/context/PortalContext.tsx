@@ -1015,8 +1015,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       !hydratedRef.current ||
       !user ||
       !profile?.tenant_id ||
-      role === "third_party" ||
-      role === "site_foreman"
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
     )
       return;
     const rows = workers.map((w) => workerToRow(w, profile?.tenant_id));
@@ -1044,8 +1044,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       !hydratedRef.current ||
       !user ||
       !profile?.tenant_id ||
-      role === "third_party" ||
-      role === "site_foreman"
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
     )
       return;
     const rows = jobs.map((j) => jobToRow(j, profile?.tenant_id));
@@ -1073,8 +1073,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       !hydratedRef.current ||
       !user ||
       !profile?.tenant_id ||
-      role === "third_party" ||
-      role === "site_foreman"
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
     )
       return;
     const rows = shifts.map((s) => shiftToRow(s, profile?.tenant_id));
@@ -1102,8 +1102,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       !hydratedRef.current ||
       !user ||
       !profile?.tenant_id ||
-      role === "third_party" ||
-      role === "site_foreman"
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
     )
       return;
     const rows = calendarEvents.map((e) => calendarEventToRow(e, profile?.tenant_id));
@@ -1204,19 +1204,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("tenant_id")
-          .eq("id", user.id)
-          .maybeSingle();
-        await supabase.from("audit_logs").insert({
-          user_id: user.id,
-          user_email: email,
-          tenant_id: prof?.tenant_id as string,
-          action: "LOGIN_SUCCESS",
-          target_type: "auth",
-          target_id: user.id,
-          details: { message: "Successful user authentication" },
+        await supabase.rpc("log_anonymous_audit", {
+          p_user_email: email,
+          p_action: "LOGIN_SUCCESS",
+          p_target_type: "auth",
+          p_target_id: user.id,
+          p_details: { message: "Successful user authentication" },
         });
       }
     }
@@ -1228,14 +1221,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from("audit_logs").insert({
-        user_id: user.id,
-        user_email: user.email,
-        tenant_id: profile?.tenant_id as string,
-        action: "LOGOUT",
-        target_type: "auth",
-        target_id: user.id,
-        details: { message: "User terminated active session" },
+      await supabase.rpc("log_anonymous_audit", {
+        p_user_email: user.email || "",
+        p_action: "LOGOUT",
+        p_target_type: "auth",
+        p_target_id: user.id,
+        p_details: { message: "User terminated active session" },
       });
     }
     await supabase.auth.signOut();
@@ -1271,14 +1262,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (user) {
         await supabase.from("profiles").update({ must_change_password: false }).eq("id", user.id);
         setProfileState((prev) => (prev ? { ...prev, must_change_password: false } : prev));
-        await supabase.from("audit_logs").insert({
-          user_id: user.id,
-          user_email: user.email,
-          tenant_id: profile?.tenant_id as string,
-          action: "PASSWORD_RESET_SUCCESS",
-          target_type: "auth",
-          target_id: user.id,
-          details: { message: "Successfully updated password credentials" },
+        await supabase.rpc("log_anonymous_audit", {
+          p_user_email: user.email || "",
+          p_action: "PASSWORD_RESET_SUCCESS",
+          p_target_type: "auth",
+          p_target_id: user.id,
+          p_details: { message: "Successfully updated password credentials" },
         });
       }
     }
@@ -1305,14 +1294,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               ...updates,
             },
       );
-      await supabase.from("audit_logs").insert({
-        user_id: user.id,
-        user_email: user.email,
-        tenant_id: profile?.tenant_id as string,
-        action: "PROFILE_UPDATE",
-        target_type: "auth",
-        target_id: user.id,
-        details: { updates },
+      await supabase.rpc("log_anonymous_audit", {
+        p_user_email: user.email || "",
+        p_action: "PROFILE_UPDATE",
+        p_target_type: "auth",
+        p_target_id: user.id,
+        p_details: { updates },
       });
     }
     return { error: error?.message ?? null };

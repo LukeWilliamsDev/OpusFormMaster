@@ -229,11 +229,12 @@ export const RequestCredentialsModal: React.FC<RequestCredentialsModalProps> = (
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="flex h-[22px] w-[22px] cursor-pointer items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground shrink-0"
+            aria-label="Close dialog"
+            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            <X className="h-3.5 w-3.5" />
-            <span className="sr-only">Close</span>
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
 

@@ -3,6 +3,7 @@ import { ArrowRight, ChevronRight, MapPin, Search } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
+import { PortalFilterGroup, PortalPageHeader } from "../components/PortalNavigationPrimitives";
 import {
   getSiteState,
   isCompletedSite,
@@ -13,18 +14,8 @@ import { formatUKDate, toLondonISODate } from "../utils/week";
 
 type SiteFilter = "all" | "today" | "upcoming" | "completed" | "attention";
 const SITE_FILTERS: SiteFilter[] = ["all", "today", "upcoming", "completed", "attention"];
-
-const filterStyles: Record<SiteFilter, string> = {
-  all: "border-primary bg-primary/10 text-primary",
-  today:
-    "border-sky-300 bg-sky-100 text-sky-800 dark:border-sky-400/40 dark:bg-sky-400/20 dark:text-sky-100",
-  upcoming:
-    "border-violet-300 bg-violet-100 text-violet-800 dark:border-violet-400/40 dark:bg-violet-400/20 dark:text-violet-100",
-  completed:
-    "border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-400/40 dark:bg-emerald-400/20 dark:text-emerald-100",
-  attention:
-    "border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/20 dark:text-amber-100",
-};
+const isSiteFilter = (value: string | null): value is SiteFilter =>
+  value !== null && SITE_FILTERS.includes(value as SiteFilter);
 
 function siteDate(jobId: string, shifts: { jobId: string; date: string }[], completed: boolean) {
   const dates = shifts
@@ -79,12 +70,19 @@ export const ForemanSitesPage: React.FC = () => {
     const nextParams = new URLSearchParams(location.search);
     const nextFilter = nextParams.get("filter");
     setSearch(nextParams.get("search") ?? "");
-    setFilter(
-      nextFilter && SITE_FILTERS.includes(nextFilter as SiteFilter)
-        ? (nextFilter as SiteFilter)
-        : "all",
-    );
-  }, [location.search]);
+    const normalizedFilter = isSiteFilter(nextFilter) ? nextFilter : "all";
+    setFilter(normalizedFilter);
+    if (nextFilter && !isSiteFilter(nextFilter)) {
+      nextParams.delete("filter");
+      navigate(
+        {
+          pathname: location.pathname,
+          search: nextParams.toString() ? `?${nextParams.toString()}` : "",
+        },
+        { replace: true },
+      );
+    }
+  }, [location.pathname, location.search, navigate]);
 
   const ownWorkerIds = useMemo(
     () => (currentStaffId ? new Set([currentStaffId]) : new Set<string>()),
@@ -131,16 +129,14 @@ export const ForemanSitesPage: React.FC = () => {
   const updateListState = (nextSearch: string, nextFilter: SiteFilter) => {
     setSearch(nextSearch);
     setFilter(nextFilter);
-    navigate(`/portal/foreman/sites${buildQuery(nextSearch, nextFilter)}`, { replace: true });
+    navigate(`/portal/foreman/sites${buildQuery(nextSearch, nextFilter)}`, {
+      replace: nextFilter === filter,
+    });
   };
 
   if (dataLoading) {
     return (
-      <div
-        role="status"
-        aria-busy="true"
-        className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:py-12"
-      >
+      <div role="status" aria-busy="true" className="portal-page-container space-y-6 py-8 lg:py-12">
         <div className="h-24 animate-pulse rounded-2xl bg-muted" />
         <div className="h-96 animate-pulse rounded-2xl bg-muted" />
       </div>
@@ -149,42 +145,40 @@ export const ForemanSitesPage: React.FC = () => {
 
   if (dataError) {
     return (
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:py-12">
+      <div className="portal-page-container py-8 lg:py-12">
         <ThirdPartyDataError message={dataError} onRetry={reloadPortalData} />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-7 px-4 py-6 pb-12 sm:px-6 lg:py-10">
-      <header className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-            Work and sites
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground">
-            Assigned sites
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">Search and open a site record.</p>
-          <p className="mt-4 text-xs font-black uppercase tracking-widest text-muted-foreground">
+    <div className="portal-page-container space-y-7 py-6 pb-12 lg:py-10">
+      <PortalPageHeader
+        eyebrow="Field"
+        title="Assigned sites"
+        description="Search and open a site record."
+        meta={
+          <>
             {todayJobs.length} today · {upcomingJobs.length} upcoming · {completedJobs.length}{" "}
             completed
-          </p>
-          {dataRefreshError && (
-            <p className="mt-3 text-xs text-amber-700 dark:text-amber-300" role="status">
-              {dataRefreshError}
-            </p>
-          )}
-        </div>
-        {todayJobs[0] && (
-          <Link
-            to={`/portal/foreman/sites/${todayJobs[0].id}`}
-            className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-5 text-xs font-black uppercase tracking-widest text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
-          >
-            Open today&apos;s site <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
-          </Link>
-        )}
-      </header>
+            {dataRefreshError && (
+              <span className="ml-2 text-amber-700 dark:text-amber-300" role="status">
+                · {dataRefreshError}
+              </span>
+            )}
+          </>
+        }
+        action={
+          todayJobs[0] ? (
+            <Link
+              to={`/portal/foreman/sites/${todayJobs[0].id}${location.search}`}
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              Open today&apos;s site <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          ) : undefined
+        }
+      />
 
       {assignedJobs.length === 0 ? (
         <section className="rounded-2xl border-2 border-dashed border-border bg-card p-12 text-center">
@@ -217,41 +211,19 @@ export const ForemanSitesPage: React.FC = () => {
                 className="min-h-11 w-full rounded-lg border border-border bg-background py-2.5 pl-9 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
               />
             </label>
-            <label className="mt-3 block sm:hidden">
-              <span className="sr-only">Filter assigned sites</span>
-              <select
+            <div className="mt-3">
+              <PortalFilterGroup
                 value={filter}
-                onChange={(event) => updateListState(search, event.target.value as SiteFilter)}
-                className="min-h-11 w-full rounded-lg border border-border bg-background px-3 text-sm font-semibold outline-none focus:border-primary focus:ring-2 focus:ring-primary/10"
-                aria-label="Filter assigned sites"
-              >
-                <option value="all">All sites · {assignedJobs.length}</option>
-                <option value="today">Today · {todayJobs.length}</option>
-                <option value="upcoming">Upcoming · {upcomingJobs.length}</option>
-                <option value="attention">Needs attention · {attentionJobs.length}</option>
-                <option value="completed">Completed · {completedJobs.length}</option>
-              </select>
-            </label>
-            <div className="mt-3 hidden flex-wrap gap-2 sm:flex">
-              {(
-                [
-                  ["all", `All sites · ${assignedJobs.length}`],
-                  ["today", `Today · ${todayJobs.length}`],
-                  ["upcoming", `Upcoming · ${upcomingJobs.length}`],
-                  ["attention", `Needs attention · ${attentionJobs.length}`],
-                  ["completed", `Completed · ${completedJobs.length}`],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => updateListState(search, value)}
-                  aria-pressed={filter === value}
-                  className={`min-h-11 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest ${filter === value ? filterStyles[value] : "border-border text-muted-foreground"}`}
-                >
-                  {label}
-                </button>
-              ))}
+                onChange={(nextFilter) => updateListState(search, nextFilter)}
+                ariaLabel="Filter assigned sites"
+                options={[
+                  { value: "all", label: `All sites · ${assignedJobs.length}` },
+                  { value: "today", label: `Today · ${todayJobs.length}` },
+                  { value: "upcoming", label: `Upcoming · ${upcomingJobs.length}` },
+                  { value: "attention", label: `Needs attention · ${attentionJobs.length}` },
+                  { value: "completed", label: `Completed · ${completedJobs.length}` },
+                ]}
+              />
             </div>
           </div>
 

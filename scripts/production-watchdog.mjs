@@ -68,28 +68,39 @@ async function fetchJson(path) {
   return json;
 }
 
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+async function fetchReleaseHealth() {
+  let lastError = new Error("healthz did not become available");
+  for (let attempt = 1; attempt <= 6; attempt += 1) {
+    try {
+      const health = await fetchJson("/healthz");
+      if (
+        health.status !== "ok" ||
+        !health.buildSha ||
+        health.buildSha === "unknown" ||
+        health.buildSha === "local" ||
+        health.supabaseProjectId !== expectedSupabaseProjectId
+      ) {
+        throw new Error("healthz is missing a valid build identity");
+      }
+      observedBuildSha = health.buildSha;
+      if (process.env.EXPECTED_BUILD_SHA && observedBuildSha !== process.env.EXPECTED_BUILD_SHA) {
+        throw new Error(
+          `healthz build ${observedBuildSha} does not match expected ${process.env.EXPECTED_BUILD_SHA}`,
+        );
+      }
+      return health;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < 6) await wait(2_000);
+    }
+  }
+  throw new WatchdogFailure("frontend", lastError.message);
+}
+
 async function checkPublicSurface() {
-  let health;
-  try {
-    health = await fetchJson("/healthz");
-  } catch (error) {
-    throw new WatchdogFailure("frontend", error instanceof Error ? error.message : String(error));
-  }
-  if (
-    health.status !== "ok" ||
-    !health.buildSha ||
-    health.buildSha === "unknown" ||
-    health.buildSha === "local" ||
-    health.supabaseProjectId !== expectedSupabaseProjectId
-  )
-    throw new WatchdogFailure("frontend", "healthz is missing a build identity");
-  observedBuildSha = health.buildSha;
-  if (process.env.EXPECTED_BUILD_SHA && observedBuildSha !== process.env.EXPECTED_BUILD_SHA) {
-    throw new WatchdogFailure(
-      "frontend",
-      `healthz build ${observedBuildSha} does not match expected ${process.env.EXPECTED_BUILD_SHA}`,
-    );
-  }
+  const health = await fetchReleaseHealth();
 
   let readiness;
   try {

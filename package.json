@@ -8,7 +8,7 @@
     "build": "node scripts/check-client-env.mjs && vite build && node scripts/write-release-manifest.mjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "lint": "eslint .",
+    "lint": "eslint --ignore-pattern .output --ignore-pattern .wrangler --ignore-pattern .letta .",
     "format": "prettier --write .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run --exclude=**/.letta/** --exclude=**/.output/**",

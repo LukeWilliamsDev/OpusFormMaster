@@ -7,7 +7,7 @@ const approvedSupabaseProjectIds = (
   import.meta.env.VITE_ALLOWED_SUPABASE_PROJECT_IDS || "fgpthpxmiroyebrzjdzo"
 )
   .split(",")
-  .map((value) => value.trim())
+  .map((value: string) => value.trim())
   .filter(Boolean);
 
 export const releaseMeta = {

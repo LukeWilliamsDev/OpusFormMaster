@@ -47,8 +47,8 @@ Make production health observable and recoverable without pretending that a gree
 - `wrangler.jsonc`
 
 **Evidence base:** `origin/dev`
-**Evidence head:** `00fe9a2`
-**Evidence fingerprint:** `PENDING`
+**Evidence head:** `5ad608d`
+**Evidence fingerprint:** `affbc275ba5ffd148c61414f787852af725235e9b937cddf04cffe04e68b0389`
 
 ## Acceptance criteria
 
@@ -71,12 +71,12 @@ Make production health observable and recoverable without pretending that a gree
 
 ## Verification evidence
 
-| Check                | Evidence                                                                                                                                                                    | Result         |
-| -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| Source/config review | Health/readiness, build guard, asset checker, browser smoke, workflow, and rollback diff                                                                                    | PASS           |
+| Check                | Evidence                                                                                                                                                                                                     | Result       |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------ |
+| Source/config review | Health/readiness, build guard, asset checker, browser smoke, workflow, and rollback diff                                                                                                                     | PASS         |
 | Browser verification | Local Worker `/healthz`/`/readyz`, direct route redirect, fail-closed watchdog check, and provisioned isolated logistics-assistant account; first live authenticated smoke is the post-merge deployment gate | PENDING_LIVE |
-| Automated checks     | 120 tests passed/1 skipped, typecheck, source lint (existing warnings only), Prettier, live-config build/budget, manifest/assets, Wrangler dry-run, and workflow YAML parse | PASS           |
-| Adversarial review   | Fresh read-only critic task `task_19` against the final diff and failure boundaries                                                                                         | PASS           |
+| Automated checks     | npm audit, package-lock review, 120 tests passed/1 skipped, typecheck, source lint (existing warnings only), Prettier, live-config build/budget, manifest/assets, Wrangler dry-run, and workflow YAML parse  | PASS         |
+| Adversarial review   | Fresh read-only critic task `task_19` against the final diff and failure boundaries                                                                                                                          | PASS         |
 
 ## Critic review
 

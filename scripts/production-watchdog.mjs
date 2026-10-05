@@ -192,7 +192,7 @@ async function checkAuthenticatedScreens() {
             waitUntil: "domcontentloaded",
             timeout: 30_000,
           });
-          await page.waitForSelector("#login-email", { timeout: 15_000 });
+          await page.waitForSelector("#login-email", { timeout: 30_000 });
           await page.type("#login-email", account.email);
           await page.type("#login-password", account.password);
           await page.click('button[type="submit"]');

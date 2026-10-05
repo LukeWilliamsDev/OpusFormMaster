@@ -47,7 +47,7 @@ Make production health observable and recoverable without pretending that a gree
 - `wrangler.jsonc`
 
 **Evidence base:** `origin/dev`
-**Evidence head:** `5ad608d`
+**Evidence head:** `99dec22`
 **Evidence fingerprint:** `affbc275ba5ffd148c61414f787852af725235e9b937cddf04cffe04e68b0389`
 
 ## Acceptance criteria

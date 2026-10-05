@@ -14,6 +14,7 @@ The only automatic repair is a frontend rollback:
 - a failed post-deploy smoke rolls back once to the Worker version captured immediately before that deploy;
 - the scheduled watchdog can roll back only when `ENABLE_AUTO_ROLLBACK=true` and `KNOWN_GOOD_WORKER_VERSION` names an explicitly verified Worker version;
 - rollback is attempted only for a classified frontend/release failure; Supabase readiness, authentication, missing smoke credentials, and data/dependency failures are alert-only;
+- post-deploy health allows a bounded Cloudflare edge-propagation grace period before classifying the release as failed;
 - the rollback is followed by the same watchdog checks.
 
 The system never automatically changes Supabase schema, migrations, RLS/storage policies, data, secrets, user accounts, email/Telegram actions, or other non-idempotent operations. Those failures alert and remain human-owned. Deploy and watchdog recovery share one non-canceling production mutation lock so they cannot race.

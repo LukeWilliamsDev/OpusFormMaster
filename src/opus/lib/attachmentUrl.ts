@@ -1,5 +1,16 @@
 import { supabase } from "../../integrations/supabase/client";
 
+export function getJobAttachmentPath(fileUrl: string | null | undefined): string | null {
+  if (!fileUrl) return null;
+  const marker = "/job-attachments/";
+  const index = fileUrl.indexOf(marker);
+  const path = index === -1 ? fileUrl : fileUrl.slice(index + marker.length);
+  if (!path || (index === -1 && !/^(jobs|requests|third-party-media)\//.test(path))) {
+    return null;
+  }
+  return path;
+}
+
 // job-attachments is a private bucket; stored file_url values are legacy
 // getPublicUrl()-shaped strings that 404 directly. Extract the storage path
 // and sign it on demand, same pattern already used for compliance-documents.
@@ -18,9 +29,7 @@ export async function getSignedJobAttachmentUrl(
     resize?: "cover" | "contain" | "fill";
   },
 ): Promise<string | null> {
-  const marker = "/job-attachments/";
-  const idx = fileUrl.indexOf(marker);
-  const filePath = idx === -1 ? fileUrl : fileUrl.slice(idx + marker.length);
+  const filePath = getJobAttachmentPath(fileUrl);
   if (!filePath) return null;
 
   const { data, error } = await supabase.storage
@@ -45,17 +54,12 @@ export async function getSignedJobAttachmentUrlsBatch(
   expiresInSeconds = 3600,
 ): Promise<Map<string, BatchSignedUrlsResult>> {
   const resultMap = new Map<string, BatchSignedUrlsResult>();
-  const marker = "/job-attachments/";
-
   // Map input fileUrls to relative storage paths
   const validItems: { originalUrl: string; filePath: string }[] = [];
   for (const url of fileUrls) {
     if (!url) continue;
-    const idx = url.indexOf(marker);
-    if (idx !== -1) {
-      const filePath = url.slice(idx + marker.length);
-      validItems.push({ originalUrl: url, filePath });
-    }
+    const filePath = getJobAttachmentPath(url);
+    if (filePath) validItems.push({ originalUrl: url, filePath });
   }
 
   if (validItems.length === 0) return resultMap;

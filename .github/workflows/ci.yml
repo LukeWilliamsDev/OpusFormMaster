@@ -8,23 +8,28 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - run: npm audit --omit=dev --audit-level=high
-      - run: npm run lint
-      - run: npx prettier --check .
-      - run: npm run typecheck
-      - run: npm run test
-      - run: npm run build:budget
+      - run: npm run quality:gate
         env:
+          # Contract evidence is scoped to the PR base or the commit pushed by
+          # this run. Using event.before on a branch that contains several
+          # previously merged release commits makes every older contract look
+          # stale again.
+          QUALITY_BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || format('{0}^', github.sha) }} # current push commit
           VITE_SUPABASE_URL: https://fgpthpxmiroyebrzjdzo.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           VITE_BUILD_SHA: ${{ github.sha }}
           VITE_ALLOWED_SUPABASE_PROJECT_IDS: fgpthpxmiroyebrzjdzo
           ALLOWED_SUPABASE_PROJECT_IDS: fgpthpxmiroyebrzjdzo
       - run: npm run check:assets
+      - run: npx wrangler deploy --dry-run --config wrangler.jsonc

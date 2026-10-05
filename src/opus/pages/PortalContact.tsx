@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { supabase } from "../../integrations/supabase/client";
 
 export const PortalContactPage: React.FC = () => {
+  const contactTeam = "IT";
   const [form, setForm] = useState({ category: "", subject: "", message: "" });
   const [status, setStatus] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [sending, setSending] = useState(false);
@@ -63,10 +64,12 @@ export const PortalContactPage: React.FC = () => {
               <div className="mb-2 text-xs font-black uppercase tracking-[0.18em] text-primary">
                 Opus Form IT
               </div>
-              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">Contact IT</h1>
+              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">
+                Contact {contactTeam}
+              </h1>
               <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
-                Send a question or report a problem to IT. Your signed-in email address will be
-                included so the team can reply. We normally respond during working hours.
+                Send a question or report a problem to {contactTeam}. Your signed-in email address
+                will be included so the team can reply. We normally respond during working hours.
               </p>
             </div>
           </div>
@@ -157,7 +160,7 @@ export const PortalContactPage: React.FC = () => {
                 <p
                   role={status.type === "error" ? "alert" : "status"}
                   aria-live="polite"
-                  className={`rounded-lg border px-3 py-2.5 text-sm ${status.type === "success" ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300" : "border-destructive/30 bg-destructive/10 text-destructive"}`}
+                  className={`rounded-lg border px-3 py-2.5 text-sm ${status.type === "success" ? "border-status-success/30 bg-status-success/10 text-status-success" : "border-status-error/30 bg-status-error/10 text-status-error"}`}
                 >
                   {status.text}
                   {status.type === "error" && (
@@ -184,22 +187,19 @@ export const PortalContactPage: React.FC = () => {
           </section>
 
           <aside className="space-y-4">
-            <section className="rounded-2xl border border-[#35464a] bg-[#18252a] p-5 text-[#f7f4ee] shadow-sm">
-              <div className="flex items-center gap-2 text-[#d79a5b]">
+            <section className="rounded-2xl border border-border bg-card p-5 text-card-foreground shadow-sm">
+              <div className="flex items-center gap-2 text-primary">
                 <Clock3 className="h-4 w-4" aria-hidden="true" />
                 <h2 className="text-xs font-black uppercase tracking-[0.18em]">
                   What happens next
                 </h2>
               </div>
-              <p className="mt-4 text-sm leading-6 text-[#d8d1c6]">
-                Your signed-in email address is included automatically. IT normally replies during
-                working hours.
+              <p className="mt-4 text-sm leading-6 text-muted-foreground">
+                Your signed-in email address is included automatically. {contactTeam} normally
+                replies during working hours.
               </p>
-              <div className="mt-4 flex items-start gap-2 border-t border-[#405257] pt-4 text-xs leading-5 text-[#c5c0b8]">
-                <CheckCircle2
-                  className="mt-0.5 h-4 w-4 shrink-0 text-[#d79a5b]"
-                  aria-hidden="true"
-                />
+              <div className="mt-4 flex items-start gap-2 border-t border-border pt-4 text-xs leading-5 text-muted-foreground">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
                 <span>
                   Keep the site or staff name in your message so we can locate the record.
                 </span>

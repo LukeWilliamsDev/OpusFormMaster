@@ -4,45 +4,39 @@ export interface RoleColorClasses {
   text: string;
 }
 
-// Base (unprefixed) classes are the light-theme pastel; dark: overrides for
-// dark mode. Previously these used an arbitrary `[.light-theme_&]:` variant,
-// but the app only ever toggles a `.dark` class (see @custom-variant dark in
-// styles.css) — that selector never matched anything, so the "dark" colors
-// applied unconditionally in both themes and were unreadable on light
-// backgrounds. WCAG AA needs ~4.5:1 against the --card cream (#FDFAF5); text
-// -700/800 + border -300/70 hits that. See feedback_accessibility_contrast
-// memory: staff have ADHD, autism, dyslexia, and astigmatism, so badges need
-// to read at a glance, not on close inspection.
+// Role colours are muted semantic tokens rather than pastel fills. The token
+// values change with the light/dark theme in styles.css, so role identity stays
+// stable without duplicating theme-specific utility classes.
 const PALETTES: RoleColorClasses[] = [
   {
-    lightBg: "bg-sky-100 dark:bg-sky-500/20",
-    border: "border-sky-300 dark:border-sky-500/55",
-    text: "text-sky-800 dark:text-sky-200",
+    lightBg: "bg-role-teal/12",
+    border: "border-role-teal/35",
+    text: "text-role-teal",
   },
   {
-    lightBg: "bg-amber-100 dark:bg-amber-500/20",
-    border: "border-amber-300 dark:border-amber-500/55",
-    text: "text-amber-800 dark:text-amber-200",
+    lightBg: "bg-role-ochre/12",
+    border: "border-role-ochre/35",
+    text: "text-role-ochre",
   },
   {
-    lightBg: "bg-purple-100 dark:bg-purple-500/20",
-    border: "border-purple-300 dark:border-purple-500/55",
-    text: "text-purple-800 dark:text-purple-200",
+    lightBg: "bg-role-plum/12",
+    border: "border-role-plum/35",
+    text: "text-role-plum",
   },
   {
-    lightBg: "bg-teal-100 dark:bg-teal-500/20",
-    border: "border-teal-300 dark:border-teal-500/55",
-    text: "text-teal-800 dark:text-teal-200",
+    lightBg: "bg-role-slate/12",
+    border: "border-role-slate/35",
+    text: "text-role-slate",
   },
   {
-    lightBg: "bg-indigo-100 dark:bg-indigo-500/20",
-    border: "border-indigo-300 dark:border-indigo-500/55",
-    text: "text-indigo-800 dark:text-indigo-200",
+    lightBg: "bg-role-blue/12",
+    border: "border-role-blue/35",
+    text: "text-role-blue",
   },
   {
-    lightBg: "bg-fuchsia-100 dark:bg-fuchsia-500/20",
-    border: "border-fuchsia-300 dark:border-fuchsia-500/55",
-    text: "text-fuchsia-800 dark:text-fuchsia-200",
+    lightBg: "bg-role-rose/12",
+    border: "border-role-rose/35",
+    text: "text-role-rose",
   },
 ];
 

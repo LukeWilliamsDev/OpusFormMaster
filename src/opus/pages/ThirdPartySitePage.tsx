@@ -7,7 +7,7 @@ import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
 import { ThirdPartyAttachmentsPanel } from "../components/ThirdPartyAttachmentsPanel";
 import { ThirdPartyNotesPanel } from "../components/ThirdPartyNotesPanel";
-import { getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
+import { getSignedJobAttachmentUrl, getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
 import { formatUKDate, toLondonISODate } from "../utils/week";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
 import { getSiteState, siteStateLabel, siteStateStyles } from "../utils/siteStatus";
@@ -25,8 +25,10 @@ export const ThirdPartySitePage: React.FC = () => {
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [attachmentRefresh, setAttachmentRefresh] = useState(0);
   const [photos, setPhotos] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
   const [photosLoading, setPhotosLoading] = useState(true);
   const [gallery, setGallery] = useState<{ photos: any[]; index: number } | null>(null);
+  const [documentViewer, setDocumentViewer] = useState<{ name: string; url: string } | null>(null);
   const [confirmation, setConfirmation] = useState<string | null>(null);
   const ownedWorkerIds = useMemo(() => new Set(workers.map((worker) => worker.id)), [workers]);
   const job = jobs.find(
@@ -43,19 +45,23 @@ export const ThirdPartySitePage: React.FC = () => {
       setPhotosLoading(true);
       const { data, error } = await db
         .from("job_attachments")
-        .select("id, file_name, file_url, type, uploaded_at, uploaded_by")
+        .select("id, file_name, file_url, type, uploaded_at, uploaded_by, third_party_visible")
         .eq("job_id", jobId)
-        .in("type", ["image_before", "image_after"])
         .order("uploaded_at", { ascending: false });
       if (error) {
         setPhotosLoading(false);
         toast.error("We couldn’t load the site photos. Try again.");
         return;
       }
-      const signedMap = await getSignedJobAttachmentUrlsBatch(
-        (data ?? []).map((photo: any) => photo.file_url).filter(Boolean),
+      const photoRows = (data ?? []).filter(
+        (attachment: any) =>
+          attachment.type === "image_before" || attachment.type === "image_after",
       );
-      const withPreviews = (data ?? []).map((photo: any) => {
+      const documentRows = (data ?? []).filter((attachment: any) => attachment.type === "document");
+      const signedMap = await getSignedJobAttachmentUrlsBatch(
+        photoRows.map((photo: any) => photo.file_url).filter(Boolean),
+      );
+      const withPreviews = photoRows.map((photo: any) => {
         const signed = signedMap.get(photo.file_url);
         return {
           ...photo,
@@ -65,6 +71,7 @@ export const ThirdPartySitePage: React.FC = () => {
       });
       if (!cancelled) {
         setPhotos(withPreviews);
+        setDocuments(documentRows);
         setPhotosLoading(false);
       }
     };
@@ -83,7 +90,7 @@ export const ThirdPartySitePage: React.FC = () => {
       (gallery.index + 1) % gallery.photos.length,
     ];
     const preloaded = adjacentIndexes.map((index) => {
-      const src = gallery.photos[index].full_url || gallery.photos[index].file_url;
+      const src = gallery.photos[index].preview_url || gallery.photos[index].file_url;
       if (!src) return null;
       const image = new Image();
       image.decoding = "async";
@@ -197,6 +204,12 @@ export const ThirdPartySitePage: React.FC = () => {
     toast.success("Attachment uploaded");
   };
 
+  const openDocument = async (document: any) => {
+    const url = await getSignedJobAttachmentUrl(document.file_url, 300);
+    if (!url) return toast.error("This document could not be opened");
+    setDocumentViewer({ name: document.file_name, url });
+  };
+
   return (
     <div className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]">
       <Link
@@ -235,7 +248,7 @@ export const ThirdPartySitePage: React.FC = () => {
       {confirmation && (
         <p
           role="status"
-          className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300"
+          className="flex items-center gap-2 rounded-xl border border-status-success/30 bg-status-success/10 px-4 py-3 text-sm text-status-success"
         >
           <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
           {confirmation}
@@ -372,6 +385,50 @@ export const ThirdPartySitePage: React.FC = () => {
           </section>
         )}
       </div>
+      <section className="rounded-2xl border-2 border-border bg-card p-5">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[10px] font-black uppercase tracking-widest text-primary">
+              Site documents
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              View-only documents shared by operations for this site.
+            </p>
+          </div>
+          <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+            {documents.length} shared
+          </span>
+        </div>
+        {documents.length ? (
+          <div className="mt-4 divide-y divide-border">
+            {documents.map((document) => (
+              <button
+                key={document.id}
+                type="button"
+                onClick={() => void openDocument(document)}
+                className="flex min-h-16 w-full items-center gap-3 py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+              >
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-secondary">
+                  ▤
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-bold">{document.file_name}</span>
+                  <span className="block text-xs text-muted-foreground">
+                    View only · Shared by operations
+                  </span>
+                </span>
+                <span className="text-xs font-black uppercase tracking-wider text-primary">
+                  View
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 rounded-xl border border-dashed border-border p-5 text-center text-sm text-muted-foreground">
+            No site documents have been shared.
+          </p>
+        )}
+      </section>
       <section>
         <div className="mb-3 flex items-end justify-between gap-3">
           <div>
@@ -403,6 +460,25 @@ export const ThirdPartySitePage: React.FC = () => {
           ) : null
         }
       />
+      <Dialog open={!!documentViewer} onOpenChange={(open) => !open && setDocumentViewer(null)}>
+        <DialogContent className="max-w-4xl overflow-hidden p-0">
+          {documentViewer && (
+            <div className="flex h-[80vh] flex-col">
+              <DialogTitle className="border-b border-border px-5 py-4 text-sm font-bold">
+                {documentViewer.name}
+              </DialogTitle>
+              <DialogDescription className="sr-only">
+                View-only site document shared by operations.
+              </DialogDescription>
+              <iframe
+                title={documentViewer.name}
+                src={documentViewer.url}
+                className="min-h-0 flex-1 bg-muted"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!gallery} onOpenChange={(open) => !open && setGallery(null)}>
         <DialogContent className="max-w-2xl overflow-hidden bg-black p-0 !inset-x-auto !left-1/2 !top-1/2 !bottom-auto !-translate-x-1/2 !-translate-y-1/2 !rounded-lg !w-[calc(100%-2rem)] !max-h-[calc(100dvh-2rem)]">
           {gallery && (
@@ -413,7 +489,8 @@ export const ThirdPartySitePage: React.FC = () => {
               </DialogDescription>
               <img
                 src={
-                  gallery.photos[gallery.index].full_url || gallery.photos[gallery.index].file_url
+                  gallery.photos[gallery.index].preview_url ||
+                  gallery.photos[gallery.index].file_url
                 }
                 alt={
                   gallery.photos[gallery.index].type === "image_before"
@@ -463,16 +540,9 @@ export const ThirdPartySitePage: React.FC = () => {
                   )}
                   {gallery.photos.length > 1 && ` · ${gallery.index + 1}/${gallery.photos.length}`}
                 </div>
-                <a
-                  href={
-                    gallery.photos[gallery.index].full_url || gallery.photos[gallery.index].file_url
-                  }
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="shrink-0 rounded-lg bg-primary px-3 py-1.5 text-center font-bold text-primary-foreground"
-                >
-                  Open full size
-                </a>
+                <span className="shrink-0 rounded-lg border border-border px-3 py-1.5 font-bold text-foreground">
+                  View only
+                </span>
               </div>
             </div>
           )}

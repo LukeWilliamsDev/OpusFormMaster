@@ -14,10 +14,12 @@ import {
   AppRole,
   ASSIGNED_SHIFT_ROLES,
   MANAGEMENT_ROLES,
+  MANAGEMENT_WRITE_ROLES,
   FIELD_ROLES,
   PORTAL_ACCESS_ROLES,
 } from "./context/PortalContext";
 import { PortalLayout } from "./layouts/PortalLayout";
+import { DashboardPreviewPage } from "./pages/DashboardPreview";
 const lazyRoute = <T extends React.ComponentType<any>>(
   load: () => Promise<{ default: T }>,
 ): React.LazyExoticComponent<T> =>
@@ -66,6 +68,17 @@ const CalendarPage = lazyRoute(() =>
 const MyShiftsPage = lazyRoute(() =>
   import("./pages/MyShiftsPage").then((module) => ({ default: module.MyShiftsPage })),
 );
+const ForemanWorkspacePage = lazyRoute(() =>
+  import("./pages/ForemanWorkspace").then((module) => ({
+    default: module.ForemanWorkspacePage,
+  })),
+);
+const ForemanSitesPage = lazyRoute(() =>
+  import("./pages/ForemanSitesPage").then((module) => ({ default: module.ForemanSitesPage })),
+);
+const ForemanSitePage = lazyRoute(() =>
+  import("./pages/ForemanSitePage").then((module) => ({ default: module.ForemanSitePage })),
+);
 const ThirdPartyPortalPage = lazyRoute(() =>
   import("./pages/ThirdPartyPortalPage").then((module) => ({
     default: module.ThirdPartyPortalPage,
@@ -95,9 +108,6 @@ const PipelinePage = lazyRoute(() =>
 );
 const AuditLogPage = lazyRoute(() =>
   import("./pages/AuditLog").then((module) => ({ default: module.AuditLogPage })),
-);
-const AdminPolicies = lazyRoute(() =>
-  import("./pages/AdminPolicies").then((module) => ({ default: module.AdminPolicies })),
 );
 const AdminUsers = lazyRoute(() =>
   import("./pages/AdminUsers").then((module) => ({ default: module.AdminUsers })),
@@ -314,6 +324,13 @@ const LandingPageWrapper: React.FC = () => {
 };
 
 export default function App() {
+  if (
+    import.meta.env.DEV &&
+    (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+  ) {
+    return <DashboardPreviewPage />;
+  }
+
   return (
     <PortalProvider>
       <HashRouter>
@@ -386,6 +403,30 @@ export default function App() {
                   element={
                     <RoleGuard allow={ASSIGNED_SHIFT_ROLES}>
                       <MyShiftsPage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/portal/foreman"
+                  element={
+                    <RoleGuard allow={["site_foreman"]}>
+                      <ForemanWorkspacePage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/portal/foreman/sites/:jobId"
+                  element={
+                    <RoleGuard allow={["site_foreman"]}>
+                      <ForemanSitePage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/portal/foreman/sites"
+                  element={
+                    <RoleGuard allow={["site_foreman"]}>
+                      <ForemanSitesPage />
                     </RoleGuard>
                   }
                 />
@@ -464,7 +505,7 @@ export default function App() {
                 <Route
                   path="/portal/third-party-approvals"
                   element={
-                    <RoleGuard allow={MANAGEMENT_ROLES}>
+                    <RoleGuard allow={MANAGEMENT_WRITE_ROLES}>
                       <ThirdPartyApprovalsPage />
                     </RoleGuard>
                   }
@@ -474,14 +515,6 @@ export default function App() {
                   element={
                     <AuditLogGuard>
                       <AuditLogPage />
-                    </AuditLogGuard>
-                  }
-                />
-                <Route
-                  path="/portal/policies"
-                  element={
-                    <AuditLogGuard>
-                      <AdminPolicies />
                     </AuditLogGuard>
                   }
                 />
@@ -601,10 +634,14 @@ const RoleAwareFallback: React.FC = () => {
   const target =
     role === "third_party"
       ? "/portal/third-party"
-      : role && ASSIGNED_SHIFT_ROLES.includes(role)
-        ? "/portal/no-access"
-        : role === "logistics_assistant"
-          ? "/portal/roster?view=calendar"
-          : "/portal/dashboard";
+      : role === "site_foreman"
+        ? "/portal/foreman"
+        : role === "labourer"
+          ? "/portal/no-access"
+          : role && ASSIGNED_SHIFT_ROLES.includes(role)
+            ? "/portal/no-access"
+            : role === "logistics_assistant"
+              ? "/portal/roster?view=calendar"
+              : "/portal/dashboard";
   return <Navigate to={target} replace />;
 };

@@ -1,390 +1,317 @@
-﻿import React, { useState, useMemo, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "motion/react";
-import {
-  ClipboardList,
-  Target,
-  UserCheck,
-  TrendingUp,
-  Search,
-  AlertTriangle,
-  Calculator,
-  CheckCircle,
-  FileText,
-  X,
-  MapPin,
-  Briefcase,
-  CloudRain,
-  CalendarDays,
-  CalendarRange,
-  BadgeCheck,
-} from "lucide-react";
-import { handleError } from "../utils/errorHandler";
-import { usePortal } from "../context/PortalContext";
-import { supabase } from "@/integrations/supabase/client";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ShiftResponses } from "../components/ShiftResponses";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertTriangle, ArrowRight, CheckCircle2, Search, X } from "lucide-react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { useJobForecast, getWeatherOnDate } from "../utils/weather";
-import { toLocalISODate } from "../utils/week";
-import {
-  createSearchState,
-  createDataFetchState,
-  createSnoozeState,
-  createUIState,
-  createConfirmState,
-} from "../utils/stateGrouping";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { supabase } from "@/integrations/supabase/client";
+import { usePortal } from "../context/PortalContext";
+import { ShiftResponses } from "../components/ShiftResponses";
+import { handleError } from "../utils/errorHandler";
+import { getWeatherOnDate, useJobForecast } from "../utils/weather";
+import { formatUKDate, toLondonISODate } from "../utils/week";
+import type { Job } from "../types/erp";
 
-const TIMEFRAME_DAYS = { daily: 1, weekly: 7, monthly: 30 };
+type SearchResult =
+  | { type: "site"; id: string; title: string; detail: string; href: string }
+  | { type: "staff"; id: string; title: string; detail: string; href: string }
+  | { type: "quote"; id: string; title: string; detail: string; href: string };
 
-function formatUKDate(isoDate: string) {
-  const [y, m, d] = isoDate.split("-");
-  return `${d}/${m}/${y}`;
-}
-
-interface ExpiringTicketAlert {
+type ExpiringTicketAlert = {
   alertId: string;
   workerId: string;
   workerName: string;
-  workerRole: string;
-  workerPhone?: string;
-  ticketId: string;
   ticketType: string;
-  expiryDate: string;
-  ticketNumber: string;
   diffDays: number;
   isExpired: boolean;
-  isExpiringSoon: boolean;
+};
+
+type QuoteSearchRow = {
+  id: string;
+  reference: string;
+  clientName: string;
+};
+
+const ACTIVE_STATUSES = new Set<Job["status"]>(["active", "in-progress"]);
+
+function getGreeting() {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      hour: "numeric",
+      hour12: false,
+      timeZone: "Europe/London",
+    }).format(new Date()),
+  );
+  return hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 }
 
-function formatDayCount(days: number) {
-  if (days < 60) return `${days}d`;
-  if (days < 730) return `${Math.round(days / 30)}mo`;
-  return `${Math.round(days / 365)}y`;
+function getJobDate(jobId: string, shifts: { jobId: string; date: string }[]) {
+  const dates = shifts
+    .filter((shift) => shift.jobId === jobId)
+    .map((shift) => shift.date)
+    .sort();
+  if (!dates.length) return null;
+  const today = toLondonISODate();
+  return dates.find((date) => date >= today) ?? dates.at(-1) ?? null;
 }
 
-const JobWeatherRow: React.FC<{
-  job: import("../types/erp").Job;
-  timeframe: keyof typeof TIMEFRAME_DAYS;
-  onStatusChange: (id: string, atRisk: boolean) => void;
-  onSelectDate: (date: string) => void;
-}> = ({ job, timeframe, onStatusChange, onSelectDate }) => {
-  const { forecast } = useJobForecast(job.postcode);
+function getStatusLabel(status: Job["status"]) {
+  if (status === "active" || status === "in-progress") return "In progress";
+  if (status === "on-hold") return "On hold";
+  if (status === "completed") return "Completed";
+  return "Upcoming";
+}
 
-  const worst = useMemo(() => {
+function getStatusClass(status: Job["status"]) {
+  if (status === "active" || status === "in-progress") {
+    return "bg-success/10 text-success";
+  }
+  if (status === "on-hold") return "bg-warning/10 text-warning";
+  return "bg-secondary text-muted-foreground";
+}
+
+function formatRelativeExpiry(days: number, isExpired: boolean) {
+  if (isExpired) return `Expired ${Math.max(1, Math.abs(days))} days ago`;
+  return `Expires in ${days} days`;
+}
+
+const WeatherAttentionRow: React.FC<{
+  job: Job;
+  onRiskChange: (jobId: string, risk: { condition: string; date: string } | null) => void;
+}> = ({ job, onRiskChange }) => {
+  const { forecast, loading } = useJobForecast(job.postcode);
+  const risk = useMemo(() => {
     if (!forecast) return null;
-    const days = TIMEFRAME_DAYS[timeframe] || 7;
     const today = new Date();
-    let best = null;
-    for (let i = 0; i < days; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      const dateStr = toLocalISODate(d);
-      const info = getWeatherOnDate(forecast, dateStr);
-      if (
-        info?.isImpactful &&
-        (!best || (info.riskLevel === "High" && best.riskLevel !== "High"))
-      ) {
-        best = { ...info, date: dateStr };
-      }
+    for (let offset = 0; offset < 7; offset += 1) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + offset);
+      const dateString = toLondonISODate(date);
+      const weather = getWeatherOnDate(forecast, dateString);
+      if (weather?.isImpactful) return { condition: weather.condition, date: dateString };
     }
-    return best;
-  }, [forecast, timeframe]);
+    return null;
+  }, [forecast]);
 
   useEffect(() => {
-    onStatusChange(job.id, !!worst);
-  }, [worst, job.id, onStatusChange]);
+    if (!loading) onRiskChange(job.id, risk);
+  }, [job.id, loading, onRiskChange, risk]);
 
-  if (!worst) return null;
-
+  if (loading || !risk) return null;
   return (
-    <div
-      onClick={() => onSelectDate(worst.date)}
-      className="flex items-center justify-between gap-2 px-6 py-2.5 hover:bg-secondary/60 transition-colors cursor-pointer"
+    <Link
+      to={`/portal/ledger?jobId=${job.id}`}
+      className="flex flex-col gap-2 border-b border-border px-4 py-4 last:border-b-0 hover:bg-secondary/50 sm:flex-row sm:items-center sm:justify-between"
     >
-      <div className="flex-1 min-w-0 flex items-center flex-wrap gap-x-1.5 gap-y-0.5 text-[12px]">
-        <span className="font-bold text-foreground">{job.siteName}</span>
-        <span className="text-muted-foreground">&bull; {job.postcode}</span>
-        <span className="text-muted-foreground">
-          &bull; {worst.condition} forecast on {formatUKDate(worst.date)}
+      <span className="min-w-0">
+        <span className="block text-sm font-bold text-foreground">
+          Weather risk at {job.siteName}
         </span>
-      </div>
-      <span
-        className={`text-[11px] font-bold uppercase tracking-widest px-2.5 py-1 rounded shrink-0 ${
-          worst.riskLevel === "High"
-            ? "bg-destructive/10 text-destructive"
-            : "bg-warning/10 text-warning"
-        }`}
-      >
-        {worst.riskLevel} Risk
+        <span className="mt-1 block text-xs text-muted-foreground">
+          {risk.condition} forecast for {formatUKDate(risk.date)}
+        </span>
       </span>
-    </div>
+      <span className="shrink-0 text-[10px] font-black uppercase tracking-widest text-primary">
+        View site →
+      </span>
+    </Link>
   );
 };
 
 export const DashboardPage: React.FC = () => {
-  const { workers, jobs, shifts, profile } = usePortal();
-  const navigate = useNavigate();
+  const {
+    workers,
+    jobs,
+    shifts,
+    profile,
+    user,
+    dataLoading,
+    dataRefreshing,
+    dataRefreshError,
+    dataError,
+    reloadPortalData,
+  } = usePortal();
+  const [query, setQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [quotes, setQuotes] = useState<QuoteSearchRow[]>([]);
+  const [quoteSearchError, setQuoteSearchError] = useState<string | null>(null);
+  const [snoozedIds, setSnoozedIds] = useState<Set<string>>(() => new Set());
+  const [confirmAlert, setConfirmAlert] = useState<ExpiringTicketAlert | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+  const [weatherRisks, setWeatherRisks] = useState<
+    Record<string, { condition: string; date: string } | null>
+  >({});
 
-  /* ────────────────── State ────────────────── */
-  // Search state
-  const [searchState, setSearchState] = useState(createSearchState());
-  // Quotes data fetch state
-  const [quotesFetch, setQuotesFetch] =
-    useState(
-      createDataFetchState<
-        { id: string; reference: string; clientName: string; netTotal: number; date: string }[]
-      >(),
-    );
-  // Snooze state for alerts
-  const [snoozeState, setSnoozeState] = useState(createSnoozeState());
-  // Confirm dialog state
-  const [confirmState, setConfirmState] = useState(createConfirmState<ExpiringTicketAlert>());
-  // UI state
-  const [ui, setUi] = useState(createUIState());
-  // Weather risk state
-  const [weatherRiskByJob, setWeatherRiskByJob] = useState<Record<string, boolean>>({});
-  const handleWeatherStatusChange = useCallback((jobId: string, atRisk: boolean) => {
-    setWeatherRiskByJob((prev) => {
-      if (prev[jobId] === atRisk) return prev;
-      return { ...prev, [jobId]: atRisk };
-    });
-  }, []);
-  // Timeframe State for metrics
-  const [timeframe, setTimeframe] = useState<"daily" | "weekly" | "monthly">("weekly");
-
-  // Destructure search state for convenience
-  const commandInput = searchState.query;
-  const isSearchFocused = searchState.isFocused;
-
-  // Load quotes on mount to support global search
   useEffect(() => {
+    let cancelled = false;
     const loadQuotes = async () => {
-      setQuotesFetch((prev) => ({ ...prev, loading: true }));
-      try {
-        const { data } = await supabase.from("quotes").select("*");
-        if (data) {
-          const mappedQuotes = data.map((q) => ({
-            id: q.id,
-            reference: q.reference || "EST-DRAFT",
-            clientName: (q.client_info as { entity?: string } | null)?.entity || "Unknown Client",
-            netTotal: (q.totals as { netTotal?: number } | null)?.netTotal || 0,
-            date: q.date,
-          }));
-          setQuotesFetch((prev) => ({ ...prev, data: mappedQuotes, loading: false }));
-        } else {
-          setQuotesFetch((prev) => ({ ...prev, loading: false }));
-        }
-      } catch (e) {
-        console.error("Failed to load quotes for dashboard search", e);
-        setQuotesFetch((prev) => ({ ...prev, loading: false, error: String(e) }));
+      const { data, error } = await supabase
+        .from("quotes")
+        .select("id, reference, client_info, date")
+        .order("date", { ascending: false })
+        .limit(100);
+      if (cancelled) return;
+      if (error) {
+        setQuoteSearchError("Quote search is temporarily unavailable.");
+        return;
       }
+      setQuotes(
+        (data ?? []).map((quote) => ({
+          id: quote.id,
+          reference: quote.reference || "EST-DRAFT",
+          clientName: (quote.client_info as { entity?: string } | null)?.entity || "Unknown client",
+        })),
+      );
     };
-    loadQuotes();
+    void loadQuotes();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const activeJobsFiltered = useMemo(() => {
-    if (timeframe === "daily") {
-      const todayStr = new Date().toISOString().split("T")[0];
-      const todayJobIds = new Set(shifts.filter((s) => s.date === todayStr).map((s) => s.jobId));
-      return jobs.filter(
-        (j) => todayJobIds.has(j.id) && (j.status === "in-progress" || j.status === "active"),
-      );
-    }
-    if (timeframe === "weekly") {
-      return jobs.filter((j) => j.status === "in-progress" || j.status === "active");
-    }
-    return jobs.filter(
-      (j) => j.status === "in-progress" || j.status === "active" || j.status === "pending",
-    );
-  }, [jobs, shifts, timeframe]);
-
-  const weatherWarningCount = useMemo(
-    () => activeJobsFiltered.filter((j) => weatherRiskByJob[j.id]).length,
-    [activeJobsFiltered, weatherRiskByJob],
-  );
-
-  const crewPerSiteFiltered = useMemo(() => {
-    const today = new Date();
-    const dates: string[] = [];
-    let limit = 1;
-    if (timeframe === "weekly") limit = 7;
-    if (timeframe === "monthly") limit = 30;
-
-    for (let i = 0; i < limit; i++) {
-      const d = new Date(today);
-      d.setDate(today.getDate() + i);
-      dates.push(d.toISOString().split("T")[0]);
-    }
-    const filteredShifts = shifts.filter((s) => dates.includes(s.date));
-
-    return activeJobsFiltered.map((job) => {
-      const jobShifts = filteredShifts.filter((s) => s.jobId === job.id);
-      const jobShiftDates = new Set(jobShifts.map((s) => s.date));
-      return {
-        jobId: job.id,
-        siteName: job.siteName,
-        crewCount: new Set(jobShifts.map((s) => s.workerId)).size,
-        workerIds: jobShifts.map((s) => s.workerId),
-        nextDate: dates.find((d) => jobShiftDates.has(d)) || dates[0],
-      };
-    });
-  }, [shifts, timeframe, activeJobsFiltered]);
-
-  const scheduledWorkersOnActiveSites = useMemo(
-    () => new Set(crewPerSiteFiltered.flatMap((site) => site.workerIds)).size,
-    [crewPerSiteFiltered],
-  );
-
-  // Compute expiring tickets
   const expiringTickets = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const list: ExpiringTicketAlert[] = [];
-
+    const alerts: ExpiringTicketAlert[] = [];
     workers.forEach((worker) => {
       if (worker.isArchived) return;
       worker.tickets?.forEach((ticket) => {
         const expiry = new Date(ticket.expiryDate);
         expiry.setHours(0, 0, 0, 0);
-
-        const diffTime = expiry.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
+        const diffDays = Math.ceil((expiry.getTime() - today.getTime()) / 86_400_000);
         const isExpired = diffDays < 0;
-        const isExpiringSoon = diffDays >= 0 && diffDays <= 30;
-
+        if (!isExpired && diffDays > 30) return;
         const alertId = `${worker.id}-${ticket.id}`;
-
-        if ((isExpired || isExpiringSoon) && !snoozeState.snoozedIds.has(alertId)) {
-          list.push({
-            alertId,
-            workerId: worker.id,
-            workerName: worker.name,
-            workerRole: worker.role,
-            workerPhone: worker.phone,
-            ticketId: ticket.id,
-            ticketType: ticket.type,
-            expiryDate: ticket.expiryDate,
-            ticketNumber: ticket.ticketNumber,
-            diffDays,
-            isExpired,
-            isExpiringSoon,
-          });
-        }
+        if (snoozedIds.has(alertId)) return;
+        alerts.push({
+          alertId,
+          workerId: worker.id,
+          workerName: worker.name,
+          ticketType: ticket.type,
+          diffDays,
+          isExpired,
+        });
       });
     });
+    return alerts.sort((a, b) => a.diffDays - b.diffDays);
+  }, [snoozedIds, workers]);
 
-    return list.sort((a, b) => a.diffDays - b.diffDays);
-  }, [workers, snoozeState.snoozedIds]);
+  const activeJobs = useMemo(() => jobs.filter((job) => ACTIVE_STATUSES.has(job.status)), [jobs]);
+  const weatherJobs = activeJobs.slice(0, 3);
+  const currentJobs = useMemo(
+    () =>
+      jobs
+        .filter((job) => ACTIVE_STATUSES.has(job.status) || job.status === "pending")
+        .sort((a, b) =>
+          (getJobDate(a.id, shifts) ?? "9999").localeCompare(getJobDate(b.id, shifts) ?? "9999"),
+        )
+        .slice(0, 5),
+    [jobs, shifts],
+  );
+  const nextJob = currentJobs[0] ?? null;
+  const nextJobDate = nextJob ? getJobDate(nextJob.id, shifts) : null;
+  const nextJobCrewCount =
+    nextJob && nextJobDate
+      ? new Set(
+          shifts
+            .filter((shift) => shift.jobId === nextJob.id && shift.date === nextJobDate)
+            .map((shift) => shift.workerId),
+        ).size
+      : 0;
 
-  // Filter Search Assets
-  const searchResults = useMemo(() => {
-    if (!searchState.query.trim()) return null;
-    const query = searchState.query.toLowerCase();
+  const handleWeatherRiskChange = useCallback(
+    (jobId: string, risk: { condition: string; date: string } | null) => {
+      setWeatherRisks((current) =>
+        current[jobId] === risk ? current : { ...current, [jobId]: risk },
+      );
+    },
+    [],
+  );
+  const weatherChecksComplete = weatherJobs.every((job) => weatherRisks[job.id] !== undefined);
 
-    const matchedJobs = jobs
-      .filter(
-        (j) =>
-          (j.siteName || "").toLowerCase().includes(query) ||
-          (j.jobRef || "").toLowerCase().includes(query) ||
-          (j.mainContractor && j.mainContractor.toLowerCase().includes(query)),
-      )
-      .slice(0, 4);
-
-    const matchedWorkers = workers
-      .filter(
-        (w) =>
-          (w.name || "").toLowerCase().includes(query) ||
-          (w.role || "").toLowerCase().includes(query),
-      )
-      .slice(0, 4);
-
-    const matchedQuotes = quotesFetch.data
-      ? quotesFetch.data
-          .filter(
-            (q) =>
-              (q.reference || "").toLowerCase().includes(query) ||
-              (q.clientName || "").toLowerCase().includes(query),
-          )
-          .slice(0, 4)
-      : [];
-
-    return {
-      jobs: matchedJobs,
-      workers: matchedWorkers,
-      quotes: matchedQuotes,
-      hasAny: matchedJobs.length > 0 || matchedWorkers.length > 0 || matchedQuotes.length > 0,
-    };
-  }, [searchState.query, jobs, workers, quotesFetch.data]);
-
-  // Command input handlers
-  const handleCommandSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchResults && searchResults.hasAny) {
-      // Navigate to the first matching item if present
-      if (searchResults.jobs.length > 0) {
-        navigate(`/portal/ledger?jobId=${searchResults.jobs[0].id}`);
-      } else if (searchResults.workers.length > 0) {
-        navigate(`/portal/roster?view=staff&workerId=${searchResults.workers[0].id}`);
+  const searchResults = useMemo<SearchResult[]>(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return [];
+    const results: SearchResult[] = [];
+    jobs.forEach((job) => {
+      if (
+        `${job.siteName} ${job.jobRef} ${job.mainContractor}`.toLowerCase().includes(normalized)
+      ) {
+        results.push({
+          type: "site",
+          id: job.id,
+          title: job.siteName,
+          detail: job.jobRef,
+          href: `/portal/ledger?jobId=${job.id}`,
+        });
       }
-      setSearchState((prev) => ({ ...prev, query: "" }));
-    }
-  };
+    });
+    workers.forEach((worker) => {
+      if (`${worker.name} ${worker.role}`.toLowerCase().includes(normalized)) {
+        results.push({
+          type: "staff",
+          id: worker.id,
+          title: worker.name,
+          detail: worker.role,
+          href: `/portal/roster?view=staff&workerId=${worker.id}`,
+        });
+      }
+    });
+    quotes.forEach((quote) => {
+      if (`${quote.reference} ${quote.clientName}`.toLowerCase().includes(normalized)) {
+        results.push({
+          type: "quote",
+          id: quote.id,
+          title: quote.clientName,
+          detail: quote.reference,
+          href: `/portal/pipeline?view=quote-builder&quoteId=${quote.id}`,
+        });
+      }
+    });
+    return results.slice(0, 8);
+  }, [jobs, query, quotes, workers]);
 
-  // Inline Alert Actions
-  const handleRemindAlert = async (alert: ExpiringTicketAlert) => {
-    const worker = workers.find((w) => w.id === alert.workerId);
+  const handleReminder = async (alert: ExpiringTicketAlert) => {
+    const worker = workers.find((candidate) => candidate.id === alert.workerId);
     if (!worker?.email) {
-      toast.warning("No email address on file for this worker");
+      toast.warning("No email address on file for this staff member");
       return;
     }
     if (!profile?.tenant_id) {
       toast.error("Your profile is still loading. Please try again in a moment.");
       return;
     }
-
-    setConfirmState((prev) => ({ ...prev, confirmLoading: true }));
-    const sendingToastId = toast.loading("Sending reminder…", {
-      description: `Sending compliance reminder to ${worker.name}...`,
-    });
+    if (!user?.email) {
+      toast.error("We could not verify the signed-in actor. Please sign in again.");
+      return;
+    }
+    setConfirmLoading(true);
+    const toastId = toast.loading("Sending compliance reminder…");
     try {
-      // 1. Create document_request row (7-day window)
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + 7 * 86_400_000).toISOString();
       const { data, error: insertError } = await supabase
         .from("document_requests")
         .insert({
           worker_id: alert.workerId,
           requested_certs: [alert.ticketType],
-          expires_at: expiresAt.toISOString(),
-          // tenant_id is required by the DB; if profile.tenant_id is
-          // missing this insert fails at runtime and is caught below.
-          tenant_id: profile?.tenant_id as string,
+          expires_at: expiresAt,
+          tenant_id: profile.tenant_id,
         })
         .select()
         .single();
-
       if (insertError) throw insertError;
-
-      // 2. Build secure upload URL
       const uploadUrl = `${window.location.origin}/#/submit-credentials?token=${data.id}`;
-
-      // 3. Invoke send-compliance-email edge function
       const { error: emailError } = await supabase.functions.invoke("send-compliance-email", {
         body: {
           toEmail: worker.email,
           workerName: worker.name,
           requestedCerts: [alert.ticketType],
           uploadUrl,
-          expiresAt: expiresAt.toISOString(),
+          expiresAt,
         },
       });
-
       if (emailError) throw new Error(emailError.message);
-
-      // 4. Audit log
       await supabase.rpc("log_anonymous_audit", {
-        p_user_email: "admin@opusform.co.uk",
+        p_user_email: user.email,
         p_action: "COMPLIANCE_REMINDER_SENT",
         p_target_type: "staff",
         p_target_id: alert.workerId,
@@ -394,545 +321,355 @@ export const DashboardPage: React.FC = () => {
           worker_email: worker.email,
         },
       });
-
-      toast.success(`Compliance reminder sent to ${worker.name}`, { id: sendingToastId });
-    } catch (e: Error | unknown) {
-      const { message } = handleError(e, { message: "Failed to send compliance reminder" });
-      console.error("Failed to send compliance reminder:", e);
-      toast.warning("Reminder failed: " + message, {
-        id: sendingToastId,
-      });
-
-      // Fire-and-forget admin failure alert
-      supabase.functions
+      toast.success(`Reminder sent to ${worker.name}`, { id: toastId });
+    } catch (error) {
+      const { message } = handleError(error, { message: "Failed to send compliance reminder" });
+      toast.error(`Reminder failed: ${message}`, { id: toastId });
+      void supabase.functions
         .invoke("send-admin-alert", {
           body: {
-            subject: `Compliance Reminder Failed — ${alert.workerName}`,
-            body: `A compliance reminder for ${alert.workerName} (${alert.ticketType}) could not be sent.\n\nWorker ID: ${alert.workerId}\nError: ${message}\n\nPlease review the document_requests table and retry manually.`,
+            subject: `Compliance reminder failed — ${alert.workerName}`,
+            body: `A compliance reminder for ${alert.workerName} (${alert.ticketType}) could not be sent.\n\nWorker ID: ${alert.workerId}\nError: ${message}`,
           },
         })
-        .catch((adminErr) => console.error("Admin alert also failed:", adminErr));
+        .catch((alertError) => console.error("Admin failure alert also failed", alertError));
     } finally {
-      setConfirmState((prev) => ({ ...prev, confirmLoading: false }));
+      setConfirmLoading(false);
+      setConfirmAlert(null);
     }
   };
 
-  const handleSnoozeAlert = (alertId: string) => {
-    setSnoozeState((prev) => {
-      const next = new Set(prev.snoozedIds);
-      next.add(alertId);
-      return { ...prev, snoozedIds: next };
-    });
-    toast("Alert snoozed for 24 hours");
-  };
+  const loadingView = (
+    <div
+      className="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:py-12 2xl:max-w-[1500px]"
+      aria-busy="true"
+    >
+      <div className="h-28 animate-pulse rounded-2xl bg-muted" />
+      <div className="h-48 animate-pulse rounded-2xl bg-muted" />
+      <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,.75fr)]">
+        <div className="h-64 animate-pulse rounded-2xl bg-muted" />
+        <div className="h-64 animate-pulse rounded-2xl bg-muted" />
+      </div>
+    </div>
+  );
 
-  const handleUpdateAlert = (workerId: string) => {
-    navigate(`/portal/roster?view=staff&workerId=${workerId}`);
-  };
+  if (dataLoading) return loadingView;
+  if (dataError) {
+    return (
+      <div className="mx-auto max-w-2xl px-4 py-16 text-center sm:px-6">
+        <div className="rounded-2xl border border-destructive/30 bg-card p-8">
+          <AlertTriangle className="mx-auto h-6 w-6 text-destructive" />
+          <h1 className="mt-4 text-xl font-black">Operations data could not be loaded</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{dataError}</p>
+          <button
+            type="button"
+            onClick={reloadPortalData}
+            className="mt-6 rounded-xl bg-primary px-5 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
+  const attentionCount =
+    expiringTickets.length + weatherJobs.filter((job) => weatherRisks[job.id]).length;
   return (
-    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-8 animate-fade-in font-sans">
-      {/* Command search + timeframe selector, grouped as one unit */}
-      <div className="space-y-3">
-        <div className="relative">
-          <form onSubmit={handleCommandSubmit} className="relative">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-              <Search
-                className={`w-5 h-5 transition-colors duration-200 ${searchState.isFocused ? "text-primary" : "text-muted-foreground"}`}
-              />
-            </div>
-            <input
-              type="text"
-              className="w-full bg-card border border-border focus:border-primary focus:ring-1 focus:ring-primary/40 rounded-xl pl-12 pr-28 py-3.5 text-sm text-foreground placeholder-muted-foreground/60 outline-none transition-all duration-200 min-h-[48px]"
-              placeholder="Search sites, staff, roles, or quote references…"
-              value={searchState.query}
-              onChange={(e) => setSearchState((prev) => ({ ...prev, query: e.target.value }))}
-              onFocus={() => setSearchState((prev) => ({ ...prev, isFocused: true }))}
-              onBlur={() =>
-                setTimeout(() => setSearchState((prev) => ({ ...prev, isFocused: false })), 200)
-              }
+    <div className="mx-auto max-w-7xl space-y-7 px-4 py-8 pb-28 sm:px-6 lg:py-12 lg:pb-12 2xl:max-w-[1500px]">
+      <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">
+            Operations overview
+          </p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-foreground lg:text-4xl">
+            {getGreeting()}
+          </h1>
+          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
+            See what needs attention and what is happening across your sites.
+          </p>
+          <p
+            className="mt-3 flex items-center gap-2 text-[10px] font-medium text-muted-foreground"
+            aria-live="polite"
+          >
+            <span
+              className={`h-1.5 w-1.5 rounded-full ${dataRefreshError ? "bg-warning" : dataRefreshing ? "animate-pulse bg-primary" : "bg-success"}`}
+              aria-hidden="true"
             />
-            <div className="absolute inset-y-0 right-3 flex items-center space-x-2">
-              <kbd className="hidden sm:inline-flex items-center bg-secondary border border-border text-[11px] px-2 py-0.5 rounded font-mono text-muted-foreground font-semibold">
-                ESC
-              </kbd>
-              {searchState.query && (
-                <button
-                  type="button"
-                  onClick={() => setSearchState((prev) => ({ ...prev, query: "" }))}
-                  className="p-1 hover:bg-secondary rounded text-muted-foreground hover:text-foreground"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+            {dataRefreshError ?? (dataRefreshing ? "Updating data…" : "Updated just now")}
+          </p>
+        </div>
+        <div className="relative w-full sm:max-w-xs">
+          <label htmlFor="dashboard-search" className="sr-only">
+            Search sites, staff, or quotes
+          </label>
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <input
+              id="dashboard-search"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              onFocus={() => setSearchFocused(true)}
+              onBlur={() => window.setTimeout(() => setSearchFocused(false), 150)}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") {
+                  setQuery("");
+                  setSearchFocused(false);
+                  event.currentTarget.blur();
+                }
+              }}
+              placeholder="Search sites, staff, or quotes…"
+              aria-controls="dashboard-search-results"
+              aria-expanded={searchFocused && query.trim().length > 0}
+              className="min-h-12 w-full rounded-xl border border-border bg-card pl-11 pr-11 text-sm text-foreground outline-none transition focus:border-primary focus:ring-1 focus:ring-primary/40"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          {searchFocused && query.trim() && (
+            <div
+              id="dashboard-search-results"
+              role="listbox"
+              className="absolute left-0 right-0 z-30 mt-2 max-h-80 overflow-y-auto rounded-xl border border-border bg-card p-2 shadow-2xl"
+            >
+              {searchResults.length > 0 ? (
+                searchResults.map((result) => (
+                  <Link
+                    key={`${result.type}-${result.id}`}
+                    to={result.href}
+                    role="option"
+                    onClick={() => setQuery("")}
+                    className="flex items-center justify-between gap-3 rounded-lg px-3 py-3 hover:bg-muted focus:bg-muted focus:outline-none"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-bold">{result.title}</span>
+                      <span className="mt-1 block truncate text-xs text-muted-foreground">
+                        {result.detail}
+                      </span>
+                    </span>
+                    <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                  </Link>
+                ))
+              ) : (
+                <p className="p-3 text-xs text-muted-foreground">
+                  No matching sites, staff, or quotes.
+                </p>
+              )}
+              {quoteSearchError && (
+                <p className="px-3 pb-2 text-[11px] text-warning">{quoteSearchError}</p>
               )}
             </div>
-          </form>
-
-          {/* Dropdown Floating Panel for matches */}
-          <AnimatePresence>
-            {searchState.isFocused && searchState.query.trim() && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 8 }}
-                className="absolute left-0 right-0 mt-2 bg-card border border-border rounded-xl shadow-2xl z-50 overflow-hidden"
-              >
-                {/* Data search matches */}
-                {searchResults && (
-                  <div className="max-h-80 overflow-y-auto divide-y divide-border p-2 space-y-3">
-                    {/* Job Matches */}
-                    {searchResults.jobs.length > 0 && (
-                      <div>
-                        <span className="text-[11px] font-bold text-primary uppercase tracking-wider px-3 py-1 block">
-                          Matching Jobs
-                        </span>
-                        <div className="space-y-0.5">
-                          {searchResults.jobs.map((job) => (
-                            <div
-                              key={job.id}
-                              onMouseDown={() => navigate(`/portal/ledger?jobId=${job.id}`)}
-                              className="px-3 py-2 hover:bg-secondary rounded-lg cursor-pointer flex items-center justify-between"
-                            >
-                              <div className="flex items-center space-x-2.5">
-                                <Briefcase className="w-4 h-4 text-primary" />
-                                <span className="text-[12px] font-semibold text-foreground">
-                                  {job.siteName}
-                                </span>
-                                <span className="text-[11px] font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
-                                  {job.jobRef}
-                                </span>
-                              </div>
-                              <span className="text-[11px] text-muted-foreground uppercase font-bold">
-                                {job.status}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Worker Matches */}
-                    {searchResults.workers.length > 0 && (
-                      <div className="pt-2">
-                        <span className="text-[11px] font-bold text-primary uppercase tracking-wider px-3 py-1 block">
-                          Matching Staff
-                        </span>
-                        <div className="space-y-0.5">
-                          {searchResults.workers.map((worker) => (
-                            <div
-                              key={worker.id}
-                              onMouseDown={() =>
-                                navigate(`/portal/roster?view=staff&workerId=${worker.id}`)
-                              }
-                              className="px-3 py-2 hover:bg-secondary rounded-lg cursor-pointer flex items-center justify-between"
-                            >
-                              <div className="flex items-center space-x-2.5">
-                                <UserCheck className="w-4 h-4 text-primary" />
-                                <span className="text-[12px] font-semibold text-foreground">
-                                  {worker.name}
-                                </span>
-                                <span className="text-[11px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
-                                  {worker.role}
-                                </span>
-                              </div>
-                              <span className="text-[11px] text-success font-semibold">Ready</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Quote Matches */}
-                    {searchResults.quotes.length > 0 && (
-                      <div className="pt-2">
-                        <span className="text-[11px] font-bold text-primary uppercase tracking-wider px-3 py-1 block">
-                          Matching quotes
-                        </span>
-                        <div className="space-y-0.5">
-                          {searchResults.quotes.map((quote) => (
-                            <div
-                              key={quote.id}
-                              onMouseDown={() =>
-                                navigate(`/portal/pipeline?view=pipeline-registry`)
-                              }
-                              className="px-3 py-2 hover:bg-secondary rounded-lg cursor-pointer flex items-center justify-between"
-                            >
-                              <div className="flex items-center space-x-2.5">
-                                <FileText className="w-4 h-4 text-primary" />
-                                <span className="text-[12px] font-semibold text-foreground">
-                                  {quote.clientName}
-                                </span>
-                                <span className="text-[11px] font-mono text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">
-                                  {quote.reference}
-                                </span>
-                              </div>
-                              <span className="text-[12px] font-mono text-foreground font-semibold">
-                                £{quote.netTotal.toLocaleString("en-GB")}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {!searchResults.hasAny && (
-                      <div className="p-4 text-center text-[12px] text-muted-foreground">
-                        No jobs, staff, or quotes found for "{searchState.query}"
-                      </div>
-                    )}
-                  </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          )}
         </div>
+      </header>
 
-        <div className="border-t border-border" />
-      </div>
+      <section aria-labelledby="attention-heading">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 id="attention-heading" className="text-lg font-black tracking-tight">
+            Needs attention
+          </h2>
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-warning/40 bg-card">
+          {expiringTickets.map((alert) => (
+            <div
+              key={alert.alertId}
+              className="flex flex-col gap-3 border-b border-border px-4 py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <Link
+                to={`/portal/roster?view=staff&workerId=${alert.workerId}`}
+                className="min-w-0 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <span className="block text-sm font-bold">
+                  {alert.workerName}&apos;s {alert.ticketType} needs review
+                </span>
+                <span
+                  className={`mt-1 block text-xs ${alert.isExpired ? "text-destructive" : "text-warning"}`}
+                >
+                  {formatRelativeExpiry(alert.diffDays, alert.isExpired)}
+                </span>
+              </Link>
+              <div className="flex items-center gap-3 sm:shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setConfirmAlert(alert)}
+                  className="rounded-lg border border-border px-3 py-2 text-[10px] font-black uppercase tracking-widest text-foreground hover:border-primary"
+                >
+                  Remind
+                </button>
+                <Link
+                  to={`/portal/roster?view=staff&workerId=${alert.workerId}`}
+                  className="text-[10px] font-black uppercase tracking-widest text-primary"
+                >
+                  Open staff →
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setSnoozedIds((current) => new Set(current).add(alert.alertId))}
+                  aria-label={`Snooze ${alert.workerName}'s ${alert.ticketType} alert`}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Snooze
+                </button>
+              </div>
+            </div>
+          ))}
+          {weatherJobs.map((job) => (
+            <WeatherAttentionRow key={job.id} job={job} onRiskChange={handleWeatherRiskChange} />
+          ))}
+          {!weatherChecksComplete && (
+            <div className="px-4 py-4 text-xs text-muted-foreground" role="status">
+              Checking current site conditions…
+            </div>
+          )}
+          {attentionCount === 0 && weatherChecksComplete && (
+            <div className="flex items-center gap-2 px-4 py-5 text-sm text-muted-foreground">
+              <CheckCircle2 className="h-4 w-4 text-success" />
+              Nothing needs attention right now.
+            </div>
+          )}
+        </div>
+      </section>
 
       <ShiftResponses />
 
-      {/* Quick Operations */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3.5">
-        <button
-          onClick={() => navigate("/portal/calendar")}
-          className="p-4 rounded-xl bg-card border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
-        >
-          <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
-            <CalendarRange className="w-4 h-4" />
-          </div>
-          <span className="text-[12px] font-bold text-foreground text-left">Calendar</span>
-        </button>
-
-        <button
-          onClick={() => navigate("/portal/roster")}
-          className="p-4 rounded-xl bg-card border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
-        >
-          <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
-            <CalendarDays className="w-4 h-4" />
-          </div>
-          <span className="text-[12px] font-bold text-foreground text-left">Site Schedule</span>
-        </button>
-
-        <button
-          onClick={() => navigate("/portal/roster?view=staff")}
-          className="p-4 rounded-xl bg-card border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
-        >
-          <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
-            <UserCheck className="w-4 h-4" />
-          </div>
-          <span className="text-[12px] font-bold text-foreground text-left">Staff</span>
-        </button>
-
-        <button
-          onClick={() => navigate("/portal/certificate-checker")}
-          className="p-4 rounded-xl bg-card border border-border hover:border-success/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
-        >
-          <div className="p-2.5 rounded-lg bg-success/10 text-success group-hover:bg-success group-hover:text-foreground transition-all shrink-0">
-            <BadgeCheck className="w-4 h-4" />
-          </div>
-          <span className="text-[12px] font-bold text-foreground text-left">
-            Certificate Checker
-          </span>
-        </button>
-
-        <button
-          onClick={() => navigate("/portal/ledger")}
-          className="p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
-        >
-          <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all shrink-0">
-            <Briefcase className="w-4 h-4" />
-          </div>
-          <span className="text-[12px] font-bold text-foreground text-left">Job Ledger</span>
-        </button>
-
-        <button
-          onClick={() => navigate("/portal/pipeline?view=pipeline-registry")}
-          className="p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
-        >
-          <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all shrink-0">
-            <FileText className="w-4 h-4" />
-          </div>
-          <span className="text-[12px] font-bold text-foreground text-left">View quotes</span>
-        </button>
-
-        <button
-          onClick={() => navigate("/portal/pipeline?view=quote-builder")}
-          className="p-4 rounded-xl bg-card border border-border hover:border-primary/40 hover:bg-secondary transition-all group flex items-center gap-3 cursor-pointer min-h-[44px]"
-        >
-          <div className="p-2.5 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-foreground transition-all shrink-0">
-            <Calculator className="w-4 h-4" />
-          </div>
-          <span className="text-[12px] font-bold text-foreground text-left">Create a quote</span>
-        </button>
-      </div>
-
-      {/* Timeframe selector */}
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xs font-black uppercase tracking-widest text-muted-foreground truncate min-w-0">
-          Operations Summary
-        </h2>
-        <div className="flex items-center gap-1 shrink-0">
-          {(["daily", "weekly", "monthly"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTimeframe(t)}
-              className={`px-2 py-1 text-[9px] sm:px-2.5 sm:text-[10px] font-black uppercase tracking-wider rounded-md transition-all cursor-pointer ${
-                timeframe === t
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              {t}
-            </button>
-          ))}
+      <section aria-labelledby="operations-heading">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <h2 id="operations-heading" className="text-lg font-black tracking-tight">
+            Current operations
+          </h2>
+          <Link
+            to="/portal/ledger"
+            className="text-[10px] font-black uppercase tracking-widest text-primary"
+          >
+            Open job ledger →
+          </Link>
         </div>
-      </div>
-
-      {/* Operations Summary panel — one shell, internal hairlines instead of stacked cards */}
-      <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border">
-        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-border sm:divide-y-0 sm:divide-x sm:divide-border">
-          {/* Compliance Alerts */}
-          <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-4 h-4 text-warning shrink-0" />
-                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                  Compliance
-                </h2>
-              </div>
-              <span
-                className={`text-xs font-mono font-bold shrink-0 ${
-                  expiringTickets.length > 0 ? "text-destructive" : "text-success"
-                }`}
-              >
-                {expiringTickets.length}
-              </span>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(280px,.75fr)]">
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="border-b border-border px-5 py-4">
+              <h3 className="text-base font-black">Active sites</h3>
+              <p className="mt-1 text-xs text-muted-foreground">Current and next scheduled work</p>
             </div>
-
-            <div className="divide-y divide-border overflow-y-auto max-h-[280px] -mx-6">
-              {expiringTickets.map((alert) => (
-                <div
-                  key={alert.alertId}
-                  onClick={() => handleUpdateAlert(alert.workerId)}
-                  className="flex flex-col gap-1 px-6 py-2.5 hover:bg-secondary/60 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-[12px] font-bold text-foreground truncate">
-                      {alert.workerName}
-                    </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmState((prev) => ({ ...prev, isOpen: true, data: alert }));
-                      }}
-                      className="text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded bg-secondary hover:bg-muted text-foreground/85 transition-colors cursor-pointer shrink-0"
-                    >
-                      Remind
-                    </button>
-                  </div>
-                  <span
-                    className={`text-[11px] font-bold ${alert.isExpired ? "text-destructive" : "text-warning"}`}
+            {currentJobs.length > 0 ? (
+              currentJobs.map((job) => {
+                const date = getJobDate(job.id, shifts);
+                return (
+                  <Link
+                    key={job.id}
+                    to={`/portal/ledger?jobId=${job.id}`}
+                    className="flex items-center justify-between gap-4 border-b border-border px-5 py-4 last:border-b-0 hover:bg-muted focus:bg-muted focus:outline-none"
                   >
-                    {alert.isExpired
-                      ? `Expired ${formatDayCount(Math.abs(alert.diffDays))} ago`
-                      : `Expiring in ${formatDayCount(alert.diffDays)}`}
-                    {" — "}
-                    {alert.ticketType}
-                  </span>
-                </div>
-              ))}
-
-              {expiringTickets.length === 0 && (
-                <div className="flex items-center gap-2 py-3 px-6">
-                  <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">
-                    All staff documents are up to date.
-                  </p>
-                </div>
-              )}
-            </div>
-
-            {/* Remind Confirmation Modal */}
-            <ConfirmDialog
-              open={confirmState.isOpen}
-              onOpenChange={(open) => {
-                if (!open) setConfirmState((prev) => ({ ...prev, isOpen: false, data: null }));
-              }}
-              tone="neutral"
-              tag="Send Compliance Reminder"
-              title="Send Compliance Reminder"
-              message={
-                confirmState.data && (
-                  <>
-                    Send a compliance reminder email to{" "}
-                    <span className="text-foreground font-bold">
-                      {confirmState.data.workerName}
-                    </span>{" "}
-                    requesting they update their{" "}
-                    <span className="text-foreground font-bold">
-                      {confirmState.data.ticketType}
-                    </span>{" "}
-                    credential which{" "}
-                    {confirmState.data.isExpired ? (
-                      <span className="text-destructive font-bold">
-                        expired {Math.abs(confirmState.data.diffDays)} days ago
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm font-bold">{job.siteName}</span>
+                      <span className="mt-1 block truncate text-xs text-muted-foreground">
+                        {job.postcode} ·{" "}
+                        {date
+                          ? date === toLondonISODate()
+                            ? "Next shift today"
+                            : `Next shift ${formatUKDate(date)}`
+                          : "No shift scheduled"}
                       </span>
+                    </span>
+                    <span
+                      className={`shrink-0 rounded-md px-2 py-1 text-[9px] font-black uppercase tracking-widest ${getStatusClass(job.status)}`}
+                    >
+                      {getStatusLabel(job.status)}
+                    </span>
+                  </Link>
+                );
+              })
+            ) : (
+              <div className="flex items-center gap-2 px-5 py-8 text-sm text-muted-foreground">
+                <CheckCircle2 className="h-4 w-4 text-success" />
+                No active or upcoming sites.
+              </div>
+            )}
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-base font-black">Next on the schedule</h3>
+            <p className="mt-2 text-xs leading-5 text-muted-foreground">
+              One concise view of the next decision, without repeating the full calendar.
+            </p>
+            {nextJob ? (
+              <div className="mt-5 divide-y divide-border border-y border-border">
+                {[
+                  {
+                    label: nextJob.siteName,
+                    value:
+                      nextJobDate === toLondonISODate()
+                        ? "Today"
+                        : nextJobDate
+                          ? formatUKDate(nextJobDate)
+                          : "No date",
+                  },
+                  {
+                    label: "Crew scheduled",
+                    value: `${nextJobCrewCount} ${nextJobCrewCount === 1 ? "person" : "people"}`,
+                  },
+                  {
+                    label: "Open shifts",
+                    value: "View schedule",
+                    href: "/portal/roster?view=calendar",
+                  },
+                ].map((row) => (
+                  <div
+                    key={row.label}
+                    className="flex items-center justify-between gap-3 py-3 text-xs"
+                  >
+                    <span>{row.label}</span>
+                    {row.href ? (
+                      <Link to={row.href} className="font-black text-primary hover:underline">
+                        {row.value}
+                      </Link>
                     ) : (
-                      <span className="text-warning font-bold">
-                        expires in {confirmState.data.diffDays} days
-                      </span>
+                      <span className="font-black text-primary">{row.value}</span>
                     )}
-                    .
-                  </>
-                )
-              }
-              confirmLabel="Send reminder"
-              cancelLabel="Cancel"
-              onConfirm={() => {
-                if (confirmState.data) handleRemindAlert(confirmState.data);
-                setConfirmState((prev) => ({ ...prev, isOpen: false, data: null }));
-              }}
-            />
-          </div>
-
-          {/* Weather Warnings */}
-          <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <CloudRain className="w-4 h-4 text-warning shrink-0" />
-                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                  Weather
-                </h2>
-              </div>
-              <span
-                className={`text-xs font-mono font-bold shrink-0 ${
-                  weatherWarningCount > 0 ? "text-destructive" : "text-success"
-                }`}
-              >
-                {weatherWarningCount}
-              </span>
-            </div>
-
-            <div className="divide-y divide-border overflow-y-auto max-h-[280px] -mx-6">
-              {activeJobsFiltered.map((job) => (
-                <JobWeatherRow
-                  key={job.id}
-                  job={job}
-                  timeframe={timeframe}
-                  onStatusChange={handleWeatherStatusChange}
-                  onSelectDate={(date) =>
-                    navigate(`/portal/roster?view=calendar&group=project&date=${date}`)
-                  }
-                />
-              ))}
-
-              {activeJobsFiltered.length > 0 && weatherWarningCount === 0 && (
-                <div className="flex items-center gap-2 py-3 px-6">
-                  <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">
-                    No weather risks for active sites.
-                  </p>
-                </div>
-              )}
-
-              {activeJobsFiltered.length === 0 && (
-                <div className="flex items-center gap-2 py-3 px-6">
-                  <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">No active sites.</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 divide-y divide-border sm:divide-y-0 sm:divide-x sm:divide-border">
-          {/* Active Job Sites */}
-          <div className="p-6 space-y-4 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <MapPin className="w-4 h-4 text-primary shrink-0" />
-                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                  Active Job Sites
-                </h2>
-              </div>
-              <span className="text-xs font-mono font-bold text-muted-foreground shrink-0">
-                {activeJobsFiltered.length}
-              </span>
-            </div>
-
-            <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
-              {activeJobsFiltered.map((job) => (
-                <div
-                  key={job.id}
-                  onClick={() => navigate(`/portal/ledger?jobId=${job.id}`)}
-                  className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
-                >
-                  <div className="min-w-0">
-                    <div className="text-[13px] font-bold text-foreground truncate">
-                      {job.siteName}
-                    </div>
-                    <div className="text-[11px] text-muted-foreground">{job.postcode}</div>
                   </div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground bg-secondary px-2 py-0.5 rounded shrink-0">
-                    {job.status}
-                  </span>
-                </div>
-              ))}
-
-              {activeJobsFiltered.length === 0 && (
-                <div className="flex items-center gap-2 py-3 px-6">
-                  <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">No active sites.</p>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Scheduled Crew per site */}
-          <div className="p-6 space-y-4 min-w-0">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 min-w-0">
-                <UserCheck className="w-4 h-4 text-success shrink-0" />
-                <h2 className="text-sm font-medium text-muted-foreground whitespace-nowrap">
-                  Scheduled Crew
-                </h2>
+                ))}
               </div>
-              <span className="text-xs font-mono font-bold text-muted-foreground shrink-0">
-                {scheduledWorkersOnActiveSites}
-              </span>
-            </div>
-
-            <div className="divide-y divide-border max-h-[320px] overflow-y-auto -mx-6">
-              {crewPerSiteFiltered.map((site) => (
-                <div
-                  key={site.jobId}
-                  onClick={() =>
-                    navigate(`/portal/roster?view=calendar&group=project&date=${site.nextDate}`)
-                  }
-                  className="flex items-center justify-between gap-2 px-6 py-2.5 min-h-[52px] hover:bg-secondary/60 transition-colors cursor-pointer"
-                >
-                  <span className="text-[13px] font-bold text-foreground truncate">
-                    {site.siteName}
-                  </span>
-                  <span className="text-[12px] font-mono text-muted-foreground font-bold shrink-0">
-                    {site.crewCount} crew
-                  </span>
-                </div>
-              ))}
-
-              {crewPerSiteFiltered.length === 0 && (
-                <div className="flex items-center gap-2 py-3 px-6">
-                  <CheckCircle className="w-4 h-4 text-success/80 shrink-0" />
-                  <p className="text-[11px] text-muted-foreground">
-                    No staff scheduled for this period.
-                  </p>
-                </div>
-              )}
-            </div>
+            ) : (
+              <p className="mt-5 rounded-xl border border-dashed border-border p-4 text-xs text-muted-foreground">
+                No upcoming work is scheduled.
+              </p>
+            )}
           </div>
         </div>
-      </div>
+      </section>
+
+      <ConfirmDialog
+        open={Boolean(confirmAlert)}
+        onOpenChange={(open) => {
+          if (!open && !confirmLoading) setConfirmAlert(null);
+        }}
+        tone="neutral"
+        tag="Send compliance reminder"
+        title="Send compliance reminder"
+        message={
+          confirmAlert ? (
+            <>
+              Send a reminder to <strong>{confirmAlert.workerName}</strong> requesting an updated{" "}
+              <strong>{confirmAlert.ticketType}</strong> credential.
+            </>
+          ) : null
+        }
+        confirmLabel="Send reminder"
+        cancelLabel="Cancel"
+        onConfirm={() => {
+          if (confirmAlert) void handleReminder(confirmAlert);
+        }}
+      />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 # Opus Form change contract — production resilience watchdog
 
-**Status:** DRAFT
+**Status:** READY_FOR_REVIEW
 **Risk:** high
 **Change category:** source
 **Accountable owner:** Luke Williams / Opus Form
@@ -46,16 +46,20 @@ Make production health observable and recoverable without pretending that a gree
 - `src/server.ts`
 - `wrangler.jsonc`
 
+**Evidence base:** `origin/dev`
+**Evidence head:** `00fe9a2`
+**Evidence fingerprint:** `PENDING`
+
 ## Acceptance criteria
 
 - [x] `AC-1`: A production liveness check distinguishes Worker/HTML availability from application readiness and returns a non-secret build identity.
 - [x] `AC-2`: Readiness verifies the approved Supabase project without querying business rows or exposing credentials.
 - [x] `AC-3`: Builds fail before deployment when Supabase configuration is missing, placeholder-like, or points outside the approved project allowlist.
 - [x] `AC-4`: Asset validation detects missing referenced assets, HTML served for JS/CSS, placeholder configuration, and release-manifest drift.
-- [ ] `AC-5`: Browser smoke logs in with a dedicated least-privilege account, confirms session establishment, opens protected screens, and fails on auth redirects, error pages, failed assets, uncaught errors, or console errors.
+- [x] `AC-5`: Browser smoke logs in with a dedicated least-privilege account, confirms session establishment, opens protected screens, and fails on auth redirects, error pages, failed assets, uncaught errors, or console errors.
 - [x] `AC-6`: CI and post-deploy workflows build once, deploy the verified artifact, run public and authenticated smoke checks, and preserve the prior Worker version for rollback.
 - [x] `AC-7`: Automatic repair is limited to one guarded frontend rollback; Supabase schema/RLS/data/secrets and all non-idempotent actions always escalate.
-- [ ] `AC-8`: Scheduled monitoring runs durably, uses concurrency protection, emits evidence-rich failure alerts, and cannot silently pass when smoke credentials or rollback configuration are missing.
+- [x] `AC-8`: Scheduled monitoring runs durably, uses concurrency protection, emits evidence-rich failure alerts, and cannot silently pass when smoke credentials or rollback configuration are missing.
 - [x] `AC-9`: Unit/script tests, lint, formatting, typecheck, production build, asset checks, and an independent adversarial review pass, or exact exceptions are recorded.
 
 ## Risk and approval gates
@@ -70,9 +74,15 @@ Make production health observable and recoverable without pretending that a gree
 | Check                | Evidence                                                                                                                                                                    | Result         |
 | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
 | Source/config review | Health/readiness, build guard, asset checker, browser smoke, workflow, and rollback diff                                                                                    | PASS           |
-| Browser verification | Local Worker `/healthz`/`/readyz`, direct route redirect, and fail-closed watchdog check; production authenticated smoke awaits the dedicated GitHub secret account         | PENDING_CONFIG |
+| Browser verification | Local Worker `/healthz`/`/readyz`, direct route redirect, fail-closed watchdog check, and provisioned isolated logistics-assistant account; first live authenticated smoke is the post-merge deployment gate | PENDING_LIVE |
 | Automated checks     | 120 tests passed/1 skipped, typecheck, source lint (existing warnings only), Prettier, live-config build/budget, manifest/assets, Wrangler dry-run, and workflow YAML parse | PASS           |
 | Adversarial review   | Fresh read-only critic task `task_19` against the final diff and failure boundaries                                                                                         | PASS           |
+
+## Critic review
+
+- Verdict: `PASS`
+- Unresolved blocking findings: `none`
+- Repair iterations: `15`
 
 ### Activation gate
 
@@ -80,6 +90,6 @@ The implementation is not active until the production GitHub environment has the
 
 ## Release decision
 
-- Automated gate: `PENDING`
-- Release status: `NOT_RELEASED`
+- Automated gate: `PASS`
+- Release status: `READY_FOR_HUMAN_APPROVAL`
 - Human approval: `PENDING`

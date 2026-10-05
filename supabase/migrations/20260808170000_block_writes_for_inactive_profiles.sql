@@ -29,10 +29,12 @@ BEGIN
     'quotes', 'shifts', 'smtp_config', 'staff', 'tenants'
   ]
   LOOP
-    EXECUTE format('DROP TRIGGER IF EXISTS reject_if_inactive ON public.%I;', t);
-    EXECUTE format(
-      'CREATE TRIGGER reject_if_inactive BEFORE INSERT OR UPDATE OR DELETE ON public.%I
-       FOR EACH ROW EXECUTE FUNCTION private.reject_if_inactive();', t
-    );
+    IF to_regclass(format('public.%I', t)) IS NOT NULL THEN
+      EXECUTE format('DROP TRIGGER IF EXISTS reject_if_inactive ON public.%I;', t);
+      EXECUTE format(
+        'CREATE TRIGGER reject_if_inactive BEFORE INSERT OR UPDATE OR DELETE ON public.%I
+         FOR EACH ROW EXECUTE FUNCTION private.reject_if_inactive();', t
+      );
+    END IF;
   END LOOP;
 END $$;

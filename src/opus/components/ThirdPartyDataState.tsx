@@ -4,7 +4,7 @@ import { AlertCircle, RefreshCw } from "lucide-react";
 export const ThirdPartyDataError: React.FC<{
   message: string;
   onRetry: () => void;
-}> = ({ onRetry }) => (
+}> = ({ message, onRetry }) => (
   <section
     role="alert"
     className="mx-auto max-w-3xl rounded-2xl border border-destructive/40 bg-card p-6 text-center"
@@ -12,8 +12,7 @@ export const ThirdPartyDataError: React.FC<{
     <AlertCircle className="mx-auto h-6 w-6 text-destructive" aria-hidden="true" />
     <h2 className="mt-3 text-lg font-black">We couldn’t load this portal data</h2>
     <p className="mt-2 text-sm text-muted-foreground">
-      Check your connection and try again. If the problem continues, contact support and mention
-      that your portal data could not be loaded.
+      {message || "Check your connection and try again."} If the problem continues, contact support.
     </p>
     <button
       type="button"

@@ -118,9 +118,13 @@ export const PortalAuthPage: React.FC = () => {
         setFormMode("reset");
         return;
       }
-      navigate(role === "third_party" ? "/portal/third-party" : "/portal/dashboard", {
-        replace: true,
-      });
+      const destination =
+        role === "third_party"
+          ? "/portal/third-party"
+          : role === "site_foreman"
+            ? "/portal/foreman"
+            : "/portal/dashboard";
+      navigate(destination, { replace: true });
     }
   }, [isAuthenticated, navigate, formMode, notification, profile?.must_change_password, role]);
 
@@ -255,7 +259,7 @@ export const PortalAuthPage: React.FC = () => {
         "Your password has been reset successfully. You will now be redirected to the portal.",
     });
     setTimeout(() => {
-      navigate("/portal/dashboard");
+      navigate(role === "site_foreman" ? "/portal/foreman" : "/portal/dashboard");
     }, 3000);
   };
   return (
@@ -297,9 +301,9 @@ export const PortalAuthPage: React.FC = () => {
                   <div
                     role="alert"
                     aria-live="assertive"
-                    className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md text-[10px] font-bold text-red-400 uppercase tracking-widest flex items-center gap-2.5"
+                    className="mb-6 p-4 bg-status-error/10 border border-status-error/25 rounded-md text-[10px] font-bold text-status-error uppercase tracking-widest flex items-center gap-2.5"
                   >
-                    <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                    <AlertCircle className="w-4 h-4 shrink-0 text-status-error" />
                     <span>{formError}</span>
                   </div>
                 )}
@@ -454,9 +458,9 @@ export const PortalAuthPage: React.FC = () => {
                   <div
                     role="alert"
                     aria-live="assertive"
-                    className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-md text-[10px] font-bold text-red-400 uppercase tracking-widest flex items-center gap-2.5"
+                    className="mb-6 p-4 bg-status-error/10 border border-status-error/25 rounded-md text-[10px] font-bold text-status-error uppercase tracking-widest flex items-center gap-2.5"
                   >
-                    <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                    <AlertCircle className="w-4 h-4 shrink-0 text-status-error" />
                     <span>{formError}</span>
                   </div>
                 )}

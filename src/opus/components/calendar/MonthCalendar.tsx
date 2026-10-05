@@ -45,10 +45,10 @@ const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
 const MAX_CHIPS_PER_CELL = 3;
 
-const SITE_AMBER = "bg-amber-600 text-white shadow-amber-600/20";
+const SITE_AMBER = "bg-schedule-action text-schedule-action-foreground shadow-schedule-action/20";
 const SITE_STONE = "bg-card text-muted-foreground hover:text-foreground hover:bg-background";
 const SITE_BORDER = "border-border";
-const SITE_EVENT = "bg-sky-600/10 text-sky-700 dark:text-sky-300 border-sky-600/40";
+const SITE_EVENT = "bg-status-info/10 text-status-info border-status-info/35";
 
 interface EventFormState {
   id?: string;
@@ -284,10 +284,10 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                     {hasActivity && (
                       <div className="flex md:hidden items-center gap-0.5">
                         {cellJobs.length > 0 && (
-                          <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-schedule-action" />
                         )}
                         {cellEvents.length > 0 && (
-                          <div className="w-1.5 h-1.5 rounded-full bg-sky-500" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-status-info" />
                         )}
                       </div>
                     )}
@@ -389,7 +389,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                           <button
                             type="button"
                             onClick={() => setShiftToRemove(shift)}
-                            className="p-1 rounded-md text-muted-foreground hover:text-red-500 cursor-pointer"
+                            className="p-1 rounded-md text-muted-foreground hover:text-destructive cursor-pointer"
                             aria-label="Remove shift"
                           >
                             <Trash2 className="size-4" />
@@ -411,7 +411,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                   <button
                     type="button"
                     onClick={openNewEventForm}
-                    className="flex items-center gap-1 text-[11px] font-black text-amber-500 hover:text-amber-400 uppercase tracking-wider cursor-pointer"
+                    className="flex items-center gap-1 text-[11px] font-black text-schedule-action hover:text-schedule-action-hover uppercase tracking-wider cursor-pointer"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     Add Event
@@ -451,7 +451,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                             <button
                               type="button"
                               onClick={() => setEventToDelete(event)}
-                              className="p-1 rounded-md text-muted-foreground hover:text-red-500 cursor-pointer"
+                              className="p-1 rounded-md text-muted-foreground hover:text-destructive cursor-pointer"
                               aria-label="Delete event"
                             >
                               <Trash2 className="size-4" />
@@ -491,7 +491,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                       type="button"
                       onClick={saveEventForm}
                       disabled={!eventForm.title.trim()}
-                      className="flex-1 px-2.5 py-1.5 rounded-lg bg-amber-600 text-white text-[11px] font-black uppercase tracking-wider cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 px-2.5 py-1.5 rounded-lg bg-schedule-action text-schedule-action-foreground text-[11px] font-black uppercase tracking-wider cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-schedule-action-hover"
                     >
                       {eventForm.id ? "Save" : "Add"}
                     </button>

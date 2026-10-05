@@ -82,7 +82,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   };
 
   // --- Site Office Design Constants ---
-  const SITE_AMBER = "bg-amber-600 text-white shadow-amber-600/20";
+  const SITE_AMBER = "bg-schedule-action text-schedule-action-foreground shadow-schedule-action/20";
   const SITE_STONE = "bg-card text-muted-foreground hover:text-foreground hover:bg-background";
   const SITE_BORDER = "border-border";
   const SITE_CARD = "bg-background border-2 " + SITE_BORDER;
@@ -97,7 +97,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             onClick={() => onChangeGroup("project")}
             className={`flex items-center justify-center md:justify-start gap-2 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border-2 transition-all cursor-pointer ${
               group === "project"
-                ? SITE_AMBER + " border-amber-600"
+                ? SITE_AMBER + " border-schedule-action"
                 : SITE_STONE + " " + SITE_BORDER
             }`}
           >
@@ -108,7 +108,9 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
             type="button"
             onClick={() => onChangeGroup("staff")}
             className={`flex items-center justify-center md:justify-start gap-2 px-3.5 py-2 text-[11px] font-black uppercase tracking-widest rounded-xl border-2 transition-all cursor-pointer ${
-              group === "staff" ? SITE_AMBER + " border-amber-600" : SITE_STONE + " " + SITE_BORDER
+              group === "staff"
+                ? SITE_AMBER + " border-schedule-action"
+                : SITE_STONE + " " + SITE_BORDER
             }`}
           >
             <LayoutGrid className="w-4 h-4" />
@@ -124,7 +126,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search staff or sites…"
-              className={`w-full ${SITE_CARD} pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-amber-600 dark:focus:border-amber-400 transition-colors`}
+              className={`w-full ${SITE_CARD} pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-schedule-action transition-colors`}
             />
           </div>
         </div>

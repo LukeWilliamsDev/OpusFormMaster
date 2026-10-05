@@ -8,6 +8,7 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+    environment: production
     steps:
       - uses: actions/checkout@v4
         with:
@@ -25,9 +26,10 @@ jobs:
           # previously merged release commits makes every older contract look
           # stale again.
           QUALITY_BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || format('{0}^', github.sha) }} # current push commit
-          # placeholder values only — this checks the build compiles, it isn't a deploy;
-          # the real deploy pipeline supplies actual Supabase project secrets.
-          VITE_SUPABASE_URL: https://placeholder.supabase.co
-          VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key
-      - run: npm run check:build-assets
+          VITE_SUPABASE_URL: https://fgpthpxmiroyebrzjdzo.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          VITE_BUILD_SHA: ${{ github.sha }}
+          VITE_ALLOWED_SUPABASE_PROJECT_IDS: fgpthpxmiroyebrzjdzo
+          ALLOWED_SUPABASE_PROJECT_IDS: fgpthpxmiroyebrzjdzo
+      - run: npm run check:assets
       - run: npx wrangler deploy --dry-run --config wrangler.jsonc

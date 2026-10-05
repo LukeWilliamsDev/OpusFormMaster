@@ -1,0 +1,117 @@
+name: Production watchdog
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-mutation
+  cancel-in-progress: false
+
+env:
+  PRODUCTION_URL: https://opusform.co.uk
+  EXPECTED_SUPABASE_PROJECT_ID: fgpthpxmiroyebrzjdzo
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Check liveness, readiness, login, and representative screens
+        id: watchdog
+        continue-on-error: true
+        env:
+          PRODUCTION_URL: ${{ env.PRODUCTION_URL }}
+          EXPECTED_SUPABASE_PROJECT_ID: ${{ env.EXPECTED_SUPABASE_PROJECT_ID }}
+          SMOKE_EMAIL: ${{ secrets.PRODUCTION_SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.PRODUCTION_SMOKE_PASSWORD }}
+          SMOKE_ACCOUNTS_JSON: ${{ secrets.PRODUCTION_SMOKE_ACCOUNTS_JSON }}
+          WATCHDOG_RESULT_FILE: /tmp/watchdog-result.json
+        run: npm run watchdog
+      - name: Roll back only a demonstrable frontend failure
+        id: rollback
+        if: steps.watchdog.outcome == 'failure' && vars.ENABLE_AUTO_ROLLBACK == 'true' && vars.KNOWN_GOOD_WORKER_VERSION != ''
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          KNOWN_GOOD_WORKER_VERSION: ${{ vars.KNOWN_GOOD_WORKER_VERSION }}
+        run: |
+          category=$(jq -r '.category // "unknown"' /tmp/watchdog-result.json 2>/dev/null || echo unknown)
+          if [ "$category" != "frontend" ]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping rollback for $category; dependency/auth failures remain human-owned."
+            exit 0
+          fi
+          npx wrangler deployments list --name lovable-opus-form --json > /tmp/worker-deployment-history.json
+          node scripts/validate-worker-target.mjs /tmp/worker-deployment-history.json "$KNOWN_GOOD_WORKER_VERSION" >/dev/null
+          npx wrangler deployments status --name lovable-opus-form --json > /tmp/current-worker-deployment.json
+          active=$(node scripts/select-worker-version.mjs /tmp/current-worker-deployment.json)
+          echo "active=$active" >> "$GITHUB_OUTPUT"
+          if [ "$active" = "$KNOWN_GOOD_WORKER_VERSION" ]; then
+            echo "eligible=false" >> "$GITHUB_OUTPUT"
+            echo "Known-good Worker version is already active; no rollback needed."
+            exit 0
+          fi
+          echo "eligible=true" >> "$GITHUB_OUTPUT"
+          echo "attempted=true" >> "$GITHUB_OUTPUT"
+          echo "target=$KNOWN_GOOD_WORKER_VERSION" >> "$GITHUB_OUTPUT"
+          echo "succeeded=false" >> "$GITHUB_OUTPUT"
+          npx wrangler rollback "$KNOWN_GOOD_WORKER_VERSION" --name lovable-opus-form --yes --message "Watchdog recovery"
+          echo "succeeded=true" >> "$GITHUB_OUTPUT"
+      - name: Verify configured Worker version is active
+        id: rollback-version-check
+        if: steps.rollback.outputs.attempted == 'true'
+        continue-on-error: true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          KNOWN_GOOD_WORKER_VERSION: ${{ vars.KNOWN_GOOD_WORKER_VERSION }}
+        run: |
+          npx wrangler deployments status --name lovable-opus-form --json > /tmp/recovered-worker-deployment.json
+          active=$(node scripts/select-worker-version.mjs /tmp/recovered-worker-deployment.json)
+          test "$active" = "$KNOWN_GOOD_WORKER_VERSION"
+      - name: Verify configured rollback recovery
+        id: rollback-check
+        if: steps.rollback-version-check.outcome == 'success'
+        continue-on-error: true
+        env:
+          PRODUCTION_URL: ${{ env.PRODUCTION_URL }}
+          EXPECTED_SUPABASE_PROJECT_ID: ${{ env.EXPECTED_SUPABASE_PROJECT_ID }}
+          SMOKE_EMAIL: ${{ secrets.PRODUCTION_SMOKE_EMAIL }}
+          SMOKE_PASSWORD: ${{ secrets.PRODUCTION_SMOKE_PASSWORD }}
+          SMOKE_ACCOUNTS_JSON: ${{ secrets.PRODUCTION_SMOKE_ACCOUNTS_JSON }}
+          WATCHDOG_RESULT_FILE: /tmp/rollback-result.json
+        run: npm run watchdog
+      - name: Send watchdog failure alert
+        if: always() && (failure() || steps.watchdog.outcome == 'failure' || steps.rollback.outcome == 'failure' || steps.rollback-version-check.outcome == 'failure' || steps.rollback-check.outcome == 'failure')
+        env:
+          ALERT_WEBHOOK_URL: ${{ secrets.OPS_ALERT_WEBHOOK_URL }}
+        run: |
+          result=/tmp/watchdog-result.json
+          category=$(jq -r '.category // "unknown"' "$result" 2>/dev/null || echo unknown)
+          build_sha=$(jq -r '.buildSha // "unknown"' "$result" 2>/dev/null || echo unknown)
+          expected_sha=$(jq -r '.expectedBuildSha // "unknown"' "$result" 2>/dev/null || echo unknown)
+          failures=$(jq -c '.failures // []' "$result" 2>/dev/null || echo '[]')
+          recovery_result=/tmp/rollback-result.json
+          recovery_status="${{ steps.rollback-check.outcome || 'not-run' }}"
+          recovery_category=$(jq -r '.category // "not-run"' "$recovery_result" 2>/dev/null || echo not-run)
+          recovery_failures=$(jq -c '.failures // []' "$recovery_result" 2>/dev/null || echo '[]')
+          recovery_outcome="${{ steps.rollback-check.outcome || 'not-run' }}"
+          version_outcome="${{ steps.rollback-version-check.outcome || 'not-run' }}"
+          payload=$(jq -cn --arg category "$category" --arg buildSha "$build_sha" --arg expectedBuildSha "$expected_sha" --argjson failures "$failures" --arg recoveryStatus "$recovery_status" --arg recoveryCategory "$recovery_category" --argjson recoveryFailures "$recovery_failures" --arg rollbackAttempted "${{ steps.rollback.outputs.attempted || 'false' }}" --arg rollbackSucceeded "${{ steps.rollback.outputs.succeeded || 'false' }}" --arg rollbackTarget "${{ steps.rollback.outputs.target || '' }}" --arg rollbackVersionVerification "$version_outcome" --arg rollbackSmokeVerification "$recovery_outcome" --arg run "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" '{service:"opus-form",event:"production-watchdog-failed",category:$category,buildSha:$buildSha,expectedBuildSha:$expectedBuildSha,failures:$failures,rollbackAttempted:$rollbackAttempted,rollbackSucceeded:$rollbackSucceeded,rollbackTarget:$rollbackTarget,rollbackVersionVerification:$rollbackVersionVerification,rollbackSmokeVerification:$rollbackSmokeVerification,recoveryStatus:$recoveryStatus,recoveryCategory:$recoveryCategory,recoveryFailures:$recoveryFailures,run:$run}')
+          if [ -n "$ALERT_WEBHOOK_URL" ]; then
+            curl --fail-with-body --max-time 10 -X POST -H 'content-type: application/json' --data "$payload" "$ALERT_WEBHOOK_URL"
+          else
+            echo "OPS_ALERT_WEBHOOK_URL is not configured; GitHub Actions failure remains the alert."
+          fi
+      - name: Fail the workflow after recording the recovery result
+        if: steps.watchdog.outcome == 'failure' || steps.rollback.outcome == 'failure' || steps.rollback-version-check.outcome == 'failure' || steps.rollback-check.outcome == 'failure'
+        run: exit 1

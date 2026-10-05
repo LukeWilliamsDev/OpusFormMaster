@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { releaseMeta } from "./lib/release-meta";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -31,6 +32,85 @@ function isLocalRequest(request: Request): boolean {
   return url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "::1";
 }
 
+function jsonResponse(body: Record<string, unknown>, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" },
+  });
+}
+
+function isProbeRequest(request: Request, path: string): boolean {
+  if (request.method !== "GET" && request.method !== "HEAD") return false;
+  return new URL(request.url).pathname === path;
+}
+
+function healthResponse(): Response {
+  if (!isValidReleaseIdentity()) {
+    return jsonResponse(
+      { status: "not_ready", service: "opus-form", reason: "release_identity" },
+      503,
+    );
+  }
+  return jsonResponse({
+    status: "ok",
+    service: "opus-form",
+    buildSha: releaseMeta.buildSha,
+    buildTimestamp: releaseMeta.buildTimestamp,
+    supabaseProjectId: releaseMeta.supabaseProjectId,
+  });
+}
+
+function isValidReleaseIdentity(): boolean {
+  return (
+    Boolean(releaseMeta.buildSha) &&
+    !["local", "unknown"].includes(releaseMeta.buildSha) &&
+    Boolean(releaseMeta.supabaseProjectId) &&
+    releaseMeta.approvedSupabaseProjectIds.includes(releaseMeta.supabaseProjectId)
+  );
+}
+
+async function readinessResponse(): Promise<Response> {
+  if (
+    !isValidReleaseIdentity() ||
+    !releaseMeta.supabaseUrl ||
+    !releaseMeta.supabasePublishableKey
+  ) {
+    return jsonResponse(
+      { status: "not_ready", dependency: "supabase", reason: "release_identity" },
+      503,
+    );
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3_000);
+  try {
+    const response = await fetch(`${releaseMeta.supabaseUrl}/auth/v1/health`, {
+      headers: { apikey: releaseMeta.supabasePublishableKey },
+      signal: controller.signal,
+    });
+    const payload = (await response.json().catch(() => null)) as {
+      name?: unknown;
+      description?: unknown;
+    } | null;
+    if (!response.ok || payload?.name !== "GoTrue") {
+      return jsonResponse(
+        { status: "not_ready", dependency: "supabase", reason: "unavailable" },
+        503,
+      );
+    }
+    return jsonResponse({
+      status: "ready",
+      service: "opus-form",
+      buildSha: releaseMeta.buildSha,
+      dependencies: { supabase: "ok", supabaseProjectId: releaseMeta.supabaseProjectId },
+    });
+  } catch {
+    return jsonResponse({ status: "not_ready", dependency: "supabase", reason: "timeout" }, 503);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function withSecurityHeaders(response: Response, request: Request): Response {
   const headers = new Headers(response.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
@@ -58,8 +138,7 @@ function redirectDirectHashRoute(request: Request): Response | null {
   }
 
   const target = new URL(url.origin);
-  target.search = url.search;
-  target.hash = url.pathname;
+  target.hash = `${url.pathname}${url.search}`;
   return Response.redirect(target.toString(), 308);
 }
 
@@ -122,6 +201,12 @@ export default {
       if (url.protocol === "http:" && !isLocalRequest(request)) {
         url.protocol = "https:";
         return Response.redirect(url.toString(), 308);
+      }
+
+      if (isProbeRequest(request, "/healthz"))
+        return withSecurityHeaders(healthResponse(), request);
+      if (isProbeRequest(request, "/readyz")) {
+        return withSecurityHeaders(await readinessResponse(), request);
       }
 
       const hashRouteRedirect = redirectDirectHashRoute(request);

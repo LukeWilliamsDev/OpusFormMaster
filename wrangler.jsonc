@@ -1,12 +1,10 @@
-// Cloudflare deployment retry trigger
+// Production Worker configuration. Build output is created before deploy; Wrangler must not
+// rebuild a different generation or silently serve a stale .output directory.
 {
   "compatibility_date": "2026-09-28",
   "main": ".output/server/index.mjs",
   "assets": {
     "directory": ".output/public",
-  },
-  "build": {
-    "command": "npm run build",
   },
   "observability": {
     "enabled": true,

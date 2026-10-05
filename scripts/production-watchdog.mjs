@@ -55,8 +55,10 @@ function getSmokeAccounts() {
   return [{ name: "default", email: smokeEmail, password: smokePassword, routes: smokeRoutes }];
 }
 
-async function fetchJson(path) {
-  const response = await fetch(`${baseUrl}${path}`, { signal: AbortSignal.timeout(10_000) });
+async function fetchJson(path, timeoutMilliseconds = 10_000) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    signal: AbortSignal.timeout(timeoutMilliseconds),
+  });
   const body = await response.text();
   let json;
   try {
@@ -72,9 +74,9 @@ const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, mill
 
 async function fetchReleaseHealth() {
   let lastError = new Error("healthz did not become available");
-  for (let attempt = 1; attempt <= 6; attempt += 1) {
+  for (let attempt = 1; attempt <= 8; attempt += 1) {
     try {
-      const health = await fetchJson("/healthz");
+      const health = await fetchJson("/healthz", 2_000);
       if (
         health.status !== "ok" ||
         !health.buildSha ||
@@ -93,7 +95,7 @@ async function fetchReleaseHealth() {
       return health;
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
-      if (attempt < 6) await wait(2_000);
+      if (attempt < 8) await wait(2_000);
     }
   }
   throw new WatchdogFailure("frontend", lastError.message);

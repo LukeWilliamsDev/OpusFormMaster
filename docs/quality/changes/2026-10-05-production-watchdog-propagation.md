@@ -6,7 +6,7 @@
 **Accountable owner:** Luke Williams / Opus Form
 **Source of truth:** Production deploy run 37285428304 and its guarded rollback
 **Evidence base:** `origin/dev`
-**Evidence head:** `origin/dev`
+**Evidence head:** `4e375f3`
 **Evidence fingerprint:** `9166397f11285a4593b8f60204cb21e4d82735ec6f487d470a6ddc3c947878b7`
 
 ## Intent

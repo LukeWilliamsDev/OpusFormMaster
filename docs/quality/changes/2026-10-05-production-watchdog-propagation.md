@@ -20,10 +20,12 @@ Prevent a false frontend rollback when Cloudflare has accepted a new Worker vers
 - Retry `/healthz` for a bounded ten-second propagation grace period.
 - Keep expected build, approved Supabase project, browser smoke, and frontend-only rollback boundaries unchanged.
 - Document the grace period as an operational invariant.
-- Changed files:
-  - `docs/operations/PRODUCTION_RESILIENCE.md`
-  - `docs/quality/changes/2026-10-05-production-watchdog-propagation.md`
-  - `scripts/production-watchdog.mjs`
+
+### Changed files
+
+- `docs/operations/PRODUCTION_RESILIENCE.md`
+- `docs/quality/changes/2026-10-05-production-watchdog-propagation.md`
+- `scripts/production-watchdog.mjs`
 
 ### Out of scope
 

@@ -20,9 +20,11 @@ jobs:
       - run: npx prettier --check .
       - run: npm run typecheck
       - run: npm run test
-      # placeholder values only — this checks the build compiles, it isn't a deploy;
-      # the real deploy pipeline supplies actual Supabase project secrets.
       - run: npm run build:budget
         env:
-          VITE_SUPABASE_URL: https://placeholder.supabase.co
-          VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key
+          VITE_SUPABASE_URL: https://fgpthpxmiroyebrzjdzo.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          VITE_BUILD_SHA: ${{ github.sha }}
+          VITE_ALLOWED_SUPABASE_PROJECT_IDS: fgpthpxmiroyebrzjdzo
+          ALLOWED_SUPABASE_PROJECT_IDS: fgpthpxmiroyebrzjdzo
+      - run: npm run check:assets

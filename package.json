@@ -5,13 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite dev",
-    "build": "vite build",
+    "build": "node scripts/check-client-env.mjs && vite build && node scripts/write-release-manifest.mjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "tsc -p tsconfig.json",
     "test": "vitest run",
+    "check:assets": "node scripts/check-built-assets.mjs",
+    "watchdog": "node scripts/production-watchdog.mjs",
     "prepare": "husky",
     "build:budget": "npm run build && node scripts/check-bundle-budget.mjs"
   },

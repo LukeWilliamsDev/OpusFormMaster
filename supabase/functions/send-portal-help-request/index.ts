@@ -120,7 +120,7 @@ serve(async (req) => {
           : "Third-party portal help request",
       bodyHtml,
       footerName: "Opus Form Portal",
-      footerEmail: RECIPIENT_EMAIL,
+      footerEmail: "",
       accentColor: EMAIL_COLORS.accent,
     });
 

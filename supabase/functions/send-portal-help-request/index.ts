@@ -51,12 +51,7 @@ serve(async (req) => {
       .select("role, status")
       .eq("id", user.id)
       .single();
-    if (
-      profileError ||
-      !profile ||
-      profile.status !== "active" ||
-      !["third_party", "site_foreman"].includes(profile.role)
-    ) {
+    if (profileError || !profile || profile.status !== "active") {
       return new Response(
         JSON.stringify({ error: "This account cannot submit portal help requests." }),
         {

@@ -92,9 +92,9 @@ serve(async (req) => {
     }
     const config: Record<string, string> = {};
     for (const row of configRows) config[row.key] = row.value;
-    // Prefer the verified database configuration. The project-level secret can
-    // be stale even when the stored sending configuration is valid.
-    const resendApiKey = config.RESEND_API_KEY || Deno.env.get("RESEND_API_KEY");
+    // Prefer the current project secret, with the database configuration as a
+    // fallback for legacy deployments.
+    const resendApiKey = Deno.env.get("RESEND_API_KEY") || config.RESEND_API_KEY;
     if (!resendApiKey) {
       return new Response(
         JSON.stringify({ error: "Email service configuration is unavailable." }),

@@ -37,6 +37,7 @@ function jsonError(req: Request, error: string, status: number): Response {
 
 interface RequestPayload {
   toEmail: string;
+  ccEmails?: string[];
   clientName?: string;
   siteName?: string;
   postcode?: string;
@@ -46,6 +47,8 @@ interface RequestPayload {
   pdfUrl?: string; // Public URL pointer to PDF
   logoUrl?: string; // Absolute URL of corporate SVG logo
   netTotal?: number;
+  vatRate?: number;
+  vatTotal?: number;
   grossTotal?: number;
   fromEmail?: string; // Optional custom sender
 }
@@ -102,6 +105,7 @@ serve(async (req) => {
     const payload: RequestPayload = await req.json();
     const {
       toEmail,
+      ccEmails = [],
       clientName,
       siteName,
       postcode,
@@ -111,11 +115,44 @@ serve(async (req) => {
       pdfUrl,
       logoUrl,
       netTotal,
+      vatRate,
+      vatTotal,
       grossTotal,
       fromEmail,
     } = payload;
 
     if (!isValidEmail(toEmail)) return jsonError(req, "A valid recipient email is required.", 400);
+    const numericVatRate = Number(vatRate ?? 0);
+    if (!Number.isFinite(numericVatRate) || numericVatRate < 0 || numericVatRate > 100) {
+      return jsonError(req, "VAT rate must be between 0 and 100.", 400);
+    }
+    const numericNetTotal = Number(netTotal ?? 0);
+    if (!Number.isFinite(numericNetTotal) || numericNetTotal < 0) {
+      return jsonError(req, "Net total is invalid.", 400);
+    }
+    const roundedNetTotal = Math.round((numericNetTotal + Number.EPSILON) * 100) / 100;
+    const roundedVatTotal =
+      Math.round((roundedNetTotal * (numericVatRate / 100) + Number.EPSILON) * 100) / 100;
+    const roundedGrossTotal =
+      Math.round((roundedNetTotal + roundedVatTotal + Number.EPSILON) * 100) / 100;
+    if (
+      !Array.isArray(ccEmails) ||
+      ccEmails.length > 20 ||
+      ccEmails.some((email) => typeof email !== "string")
+    ) {
+      return jsonError(req, "Too many CC recipients.", 400);
+    }
+    const normalizedToEmail = toEmail.trim().toLowerCase();
+    const normalizedCcEmails = Array.from(
+      new Set(
+        ccEmails
+          .filter((email): email is string => typeof email === "string")
+          .map((email) => email.trim().toLowerCase()),
+      ),
+    ).filter((email) => email !== normalizedToEmail);
+    if (normalizedCcEmails.some((email) => !isValidEmail(email))) {
+      return jsonError(req, "Each CC recipient must be a valid email address.", 400);
+    }
 
     // Retrieve settings config from the secure smtp_config table
     const { data: configRows, error: configError } = await supabase
@@ -216,7 +253,20 @@ serve(async (req) => {
       '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">Net Subtotal</td>';
     bodyHtml +=
       '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900;">£' +
-      Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
+      roundedNetTotal.toLocaleString(undefined, { minimumFractionDigits: 2 }) +
+      "</td>";
+    bodyHtml += "        </tr>";
+    bodyHtml +=
+      '        <tr class="bg-page border-theme" style="border-bottom: 1px solid #D9D3C7;">';
+    bodyHtml +=
+      '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">VAT (' +
+      numericVatRate +
+      "%)</td>";
+    bodyHtml +=
+      '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900;">£' +
+      roundedVatTotal.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+      }) +
       "</td>";
     bodyHtml += "        </tr>";
     bodyHtml += '        <tr class="bg-header">';
@@ -224,7 +274,7 @@ serve(async (req) => {
       '          <td class="text-title" style="padding: 16px; font-weight: 900; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;">Total</td>';
     bodyHtml +=
       '          <td class="text-title" style="padding: 16px; text-align: right; font-weight: 900; font-size: 16px;">£' +
-      Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
+      roundedGrossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 }) +
       "</td>";
     bodyHtml += "        </tr>";
     bodyHtml += "      </table>";
@@ -256,7 +306,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: "Opus Form Billing <" + sender + ">",
-        to: [toEmail.trim()],
+        to: [normalizedToEmail],
+        ...(normalizedCcEmails.length > 0 ? { cc: normalizedCcEmails } : {}),
         subject:
           (label || "Quote #" + quoteRef) +
           " | " +

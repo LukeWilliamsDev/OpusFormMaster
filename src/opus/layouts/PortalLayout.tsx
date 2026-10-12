@@ -231,7 +231,7 @@ export const PortalLayout: React.FC = () => {
       roles: MANAGEMENT_ROLES,
     },
     { section: "ADMIN" },
-    { name: "AUDIT LOG", path: "/portal/audit", icon: History, roles: ["admin"] },
+    { name: "AUDIT LOG", path: "/portal/audit", icon: History, roles: ["admin", "director"] },
     { name: "USERS", path: "/portal/users", icon: UserCog, roles: ["admin", "director"] },
     {
       name: "PORTAL HOME",
@@ -272,7 +272,15 @@ export const PortalLayout: React.FC = () => {
 
   const checkIsActive = (path: string) => {
     const [itemPath, itemQuery] = path.split("?");
-    if (location.pathname !== itemPath) return false;
+    const supportsNestedPath = [
+      "/portal/foreman/sites",
+      "/portal/third-party/staff",
+      "/portal/third-party/sites",
+    ].includes(itemPath);
+    const pathMatches =
+      location.pathname === itemPath ||
+      (supportsNestedPath && location.pathname.startsWith(`${itemPath}/`));
+    if (!pathMatches) return false;
 
     const params = new URLSearchParams(location.search);
     const itemParams = new URLSearchParams(itemQuery || "");
@@ -285,10 +293,6 @@ export const PortalLayout: React.FC = () => {
 
     if (itemPath === "/portal/pipeline") {
       return true;
-    }
-
-    if (itemPath === "/portal/foreman/sites") {
-      return location.pathname === itemPath || location.pathname.startsWith(`${itemPath}/`);
     }
 
     return true;

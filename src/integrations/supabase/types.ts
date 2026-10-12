@@ -1138,6 +1138,10 @@ export type Database = {
         Args: { p_target_id: string };
         Returns: undefined;
       };
+      revert_audit_log: {
+        Args: { p_audit_log_id: string };
+        Returns: Json;
+      };
       submit_job_attachment: {
         Args: {
           p_file_name: string;

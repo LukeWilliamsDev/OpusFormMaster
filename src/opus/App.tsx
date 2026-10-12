@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  Outlet,
   useNavigate,
   useLocation,
   useParams,
@@ -247,7 +248,8 @@ class RouteErrorBoundary extends React.Component<React.PropsWithChildren, { hasE
 
 // Session gate — any /portal/* view requires a valid Supabase session.
 const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, authLoading, profile } = usePortal();
+  const { isAuthenticated, authLoading, profile, role } = usePortal();
+  const location = useLocation();
   if (authLoading) {
     return <div className="min-h-screen bg-background" />;
   }
@@ -255,6 +257,11 @@ const ProtectedRoute: React.FC = () => {
   // A must-change-password account has no business in the app until it changes it —
   // send it back to the auth page, which forces the reset form for this state.
   if (profile?.must_change_password) return <Navigate to="/portal" replace />;
+  // Users without portal access should see the standalone explanation rather
+  // than a shell full of links that their role cannot open.
+  if (location.pathname === "/portal/no-access" || role === "labourer") {
+    return <Outlet />;
+  }
   return <PortalLayout />;
 };
 
@@ -280,15 +287,15 @@ const RoleGuard: React.FC<{
   return <>{children}</>;
 };
 
-// Audit Log Gate - the full tenant audit trail is restricted to tenant admins.
-// Job-level history (a narrower view) is available to all ops roles via
-// JobDetails' History tab, backed by a separate job-scoped audit_logs RLS policy.
+// Audit Log Gate - the full tenant audit trail is available to admin/director
+// accounts. The database policy remains the source of truth for tenant scope;
+// the route gate keeps navigation and fallback behavior aligned with it.
 const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { role, user, authLoading } = usePortal();
+  const { role, authLoading } = usePortal();
   if (authLoading || role === null) {
     return <div className="min-h-screen bg-background" />;
   }
-  if (role !== "admin") {
+  if (role !== "admin" && role !== "director") {
     const fallback =
       role === "third_party"
         ? "/portal/third-party"

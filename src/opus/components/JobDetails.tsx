@@ -804,7 +804,7 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   );
 
   return (
-    <div className="space-y-6 font-sans text-foreground p-4 md:p-6 max-w-7xl mx-auto bg-background min-h-screen">
+    <div className="mx-auto min-h-screen w-full max-w-[2200px] space-y-6 bg-background p-4 font-sans text-foreground md:p-6 lg:px-8 2xl:px-10">
       <div className="flex items-center justify-between">
         <button
           onClick={onBack}
@@ -1327,6 +1327,32 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             loadingJobAuditLogs={loadingJobAuditLogs}
             auditSearch={auditSearch}
             setAuditSearch={setAuditSearch}
+            jobName={job.siteName}
+            onAuditRefresh={fetchJobAuditLogs}
+            onJobReverted={(revertedJob) => {
+              const validStatuses: Job["status"][] = [
+                "active",
+                "completed",
+                "on-hold",
+                "pending",
+                "in-progress",
+              ];
+              onUpdateJob({
+                ...job,
+                jobRef: revertedJob.job_ref,
+                siteName: revertedJob.site_name,
+                mainContractor: revertedJob.main_contractor ?? "",
+                postcode: revertedJob.postcode ?? "",
+                email: revertedJob.email ?? undefined,
+                currentPours: revertedJob.current_pours ?? 0,
+                contractMaxPours: revertedJob.contract_max_pours ?? 0,
+                status: validStatuses.includes(revertedJob.status as Job["status"])
+                  ? (revertedJob.status as Job["status"])
+                  : job.status,
+                scheduleValue: revertedJob.schedule_value ?? 0,
+                updatedAt: revertedJob.updated_at ?? job.updatedAt,
+              });
+            }}
           />
         </TabsContent>
 

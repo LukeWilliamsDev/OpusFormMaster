@@ -5,9 +5,9 @@
 **Change category:** source
 **Accountable owner:** Luke Williams / Opus Form
 **Source of truth:** User-approved dashboard direction and rendered desktop/tablet/mobile mockups from 2026-10-02
-**Evidence base:** `origin/main` at `2969442`
-**Evidence head:** working tree after adding the development-only mock-data preview
-**Evidence fingerprint:** `9f04e1e7f545acfa175b7e60c0b6162dd6b443151b2784ab601478a0deea2ef5`
+**Evidence base:** `d813e11` (current production main)
+**Evidence head:** `5d2790b` (`origin/main`)
+**Evidence fingerprint:** `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 
 ## Intent
 
@@ -22,27 +22,23 @@ Replace the management dashboard's duplicated navigation and dense operations ca
 - Removal of duplicate primary destinations from the Third Party More drawer.
 - Semantic keyboard-accessible dashboard links and controls where touched.
 - A development-only mock-data preview when Supabase client configuration is absent, without weakening production authentication.
-- Formatting-only correction required by the repository quality gate in `PortalContact.tsx`.
-- CI push evidence is scoped to the commit being tested so previously merged contracts do not block this release.
+- Preservation of the existing admin/director audit route and tenant/role boundaries while restoring the dashboard source.
 - Focused tests and repository quality evidence for the changed behavior.
 
 ### Out of scope
 
-- Database schema, RLS policy, migration, production deployment, or external service changes.
+- Database schema, RLS policy, migration, or production-data/external-service changes.
 - Redesign of Foreman or Third Party content beyond navigation de-duplication required by this change.
 - Changing management role permissions or expanding labourer access.
 - Replacing the full Job Ledger, Calendar, Staff, Quotes, or Certificate Checker workflows.
 
 ### Changed files
 
-- `src/opus/pages/Dashboard.tsx`
-- `src/opus/pages/DashboardPreview.tsx`
-- `src/opus/App.tsx`
-- `src/opus/layouts/PortalLayout.tsx`
-- `src/opus/components/ShiftResponses.tsx`
-- `src/opus/pages/PortalContact.tsx`
-- `.github/workflows/ci.yml`
 - `docs/quality/changes/2026-10-02-management-dashboard-navigation.md`
+
+The recovered dashboard source manifest is retained in commit `5d2790b` with
+fingerprint
+`2a7cb2d638e9292b44fad45bab843e5039e72100016782caf5c07cb35e5f1bfa`.
 
 ## Acceptance criteria
 
@@ -60,7 +56,7 @@ Replace the management dashboard's duplicated navigation and dense operations ca
 - [x] `AC-12`: Lint, formatting, typecheck, tests, production build, bundle budget, and the repository quality gate pass, or each exception is recorded with its exact reason.
 - [x] `AC-13`: A fresh read-only critic reviews the actual diff and records no unresolved blocking or major findings.
 - [x] `AC-14`: The development-only mock-data preview loads at the local preview URL without Supabase configuration and is excluded from production behavior.
-- [x] `AC-15`: Push CI uses the pushed commit's first parent as its quality base, while pull requests continue using the PR base SHA.
+- [x] `AC-15`: Restoring the dashboard does not weaken the existing admin/director audit route or other role and tenant boundaries — evidence: merged `App.tsx`/`PortalLayout.tsx` review and focused critic.
 
 ## Risk and approval gates
 
@@ -72,24 +68,26 @@ Replace the management dashboard's duplicated navigation and dense operations ca
 
 ## Verification evidence
 
-| Check                 | Exact command or evidence                             | Result                                                                                                        |
-| --------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Contract              | `npm run quality:contract`                            | PASS — final contract validation                                                                              |
-| Deterministic checks  | `npm run quality:gate`                                | PASS — lint (warnings only), format, typecheck, 141 tests with 1 skipped, production build, and bundle budget |
-| Manual/external check | Rendered approved mockups and local responsive review | COMPLETE; mock preview smoke-tested locally; authenticated multi-role runtime remains unavailable             |
+| Check                 | Exact command or evidence                                                                                               | Result                                                                                                        |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Contract              | `npm run quality:contract`                                                                                              | PASS — final contract validation                                                                              |
+| Deterministic checks  | `npm run quality:gate`                                                                                                  | PASS — lint (warnings only), format, typecheck, 162 tests with 1 skipped, production build, and bundle budget |
+| Manual/external check | Rendered approved mockups and local responsive review                                                                   | COMPLETE; mock preview smoke-tested locally; authenticated multi-role runtime remains unavailable             |
+| GitHub CI             | Check run for commit `5d2790b`                                                                                          | PASS                                                                                                          |
+| Cloudflare deployment | Worker build `b418e71a-9ce9-4066-9642-9ca2b47d5b09`, version `c0e6e5f4-7a5f-42be-859f-c8d3474e6889`, public shell check | PASS — HTTP 200; production Supabase config present                                                           |
 
 ## Critic review
 
-- Critic context/identity: fresh read-only critic pass `task_17` after mock preview addition
+- Critic context/identity: fresh read-only critic pass `task_34` on the restored dashboard and current audit release base
 - Review input: actual working-tree diff, this contract, approved mockups, and repository assurance rules
 - Verdict: `PASS`
 - Findings: No blocking or major findings remain. Authenticated runtime acceptance remains an explicit human gate.
 - Unresolved blocking findings: `none`
-- Repair iterations: `2`
+- Repair iterations: `3`
 
 ## Release decision
 
-- Automated gate: `PASS`
+- Automated gate: `PASS` — current-base quality gate passed with only the existing lint warnings.
 - Release status: `NOT_RELEASED`
 - Human approval: `PENDING`
-- Residual uncertainty or exception: authenticated multi-role browser acceptance and deployment provenance remain outside this local implementation pass.
+- Residual uncertainty or exception: authenticated multi-role browser acceptance remains outside this release evidence.

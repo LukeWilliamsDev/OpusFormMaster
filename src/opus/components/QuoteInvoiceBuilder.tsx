@@ -15,6 +15,8 @@ import {
   DocumentKind,
 } from "../lib/documentNaming";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { getValidCcEmails } from "../lib/quoteEmail";
+import { computeTotals } from "../lib/billing";
 import {
   Plus,
   Trash2,
@@ -56,14 +58,17 @@ interface Quote {
   clientInfo: {
     entity: string;
     email: string;
+    ccEmails?: string[];
     site: string;
     postcode: string;
   };
   items: MeasuredItem[];
   totals: {
     netTotal: number;
+    vatTotal?: number;
     grossTotal: number;
   };
+  vatRate?: number;
   isSavedLocal?: boolean;
   isSent?: boolean;
   job_ref?: string | null;
@@ -364,7 +369,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     email: prefill?.email || "",
     site: prefill?.site || "",
     postcode: prefill?.postcode || "",
+    ccEmails: [] as string[],
   });
+  const [ccInput, setCcInput] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isAlreadySent, setIsAlreadySent] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
@@ -373,6 +380,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const [unitFocusedItemId, setUnitFocusedItemId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [items, setItems] = useState<MeasuredItem[]>(INITIAL_ITEMS);
+  const [vatRate, setVatRate] = useState(mode === "finalBill" ? 0 : 20);
   const [terms, setTerms] = useState<string[]>([
     "Assumed total pours up to 1, additional pours shall be charged minimum of £3,500",
     "Cancelled pours with less than 24hrs notice shall be charged",
@@ -484,6 +492,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           clientInfo: row.client_info as Quote["clientInfo"],
           items: row.items as unknown as MeasuredItem[],
           totals: row.totals as Quote["totals"],
+          vatRate: Number((row as unknown as { vat_rate?: number }).vat_rate ?? 0),
           isSent: row.status === "sent",
         }));
         setSavedQuotes(loadedInvoices);
@@ -504,6 +513,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         clientInfo: row.client_info as Quote["clientInfo"],
         items: row.items as unknown as MeasuredItem[],
         totals: row.totals as Quote["totals"],
+        vatRate: Number((row as unknown as { vat_rate?: number }).vat_rate ?? 20),
         isSent: row.is_sent,
       }));
       setSavedQuotes(loadedQuotes);
@@ -564,24 +574,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   }, [previewOpen]);
 
   const totals = useMemo(() => {
-    const netTotal = items.reduce((acc, item) => {
-      let rateValue = 0;
-      if (typeof item.rate === "string") {
-        const uppercaseRate = item.rate.toUpperCase();
-        if (uppercaseRate === "INCLUDED" || uppercaseRate === "INCL") {
-          rateValue = 0;
-        } else {
-          const cleanRateStr = item.rate.replace(/[£$,\s]/g, "");
-          const parsed = parseFloat(cleanRateStr);
-          rateValue = isNaN(parsed) ? 0 : parsed;
-        }
-      } else {
-        rateValue = Number(item.rate || 0);
-      }
-      return acc + item.quantity * rateValue;
-    }, 0);
-    return { netTotal, grossTotal: netTotal };
-  }, [items]);
+    return computeTotals(items, mode === "finalBill" ? 0 : vatRate);
+  }, [items, mode, vatRate]);
 
   const generateNewReference = () => `JOB-${Math.floor(1000 + Math.random() * 9000)}`;
 
@@ -594,6 +588,17 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     }
 
     const quoteId = currentQuoteId;
+    const savedCcValidation = getValidCcEmails(ccInput, clientInfo.email);
+    if (savedCcValidation.invalid.length > 0) {
+      toast.error("Couldn’t save quote", {
+        description: "Correct the CC email addresses before saving the draft.",
+      });
+      return;
+    }
+    const savedClientInfo = {
+      ...clientInfo,
+      ccEmails: savedCcValidation.deduped,
+    };
 
     try {
       if (mode === "finalBill") {
@@ -603,10 +608,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           job_id: jobId,
           reference: quoteReference,
           date: new Date().toLocaleDateString("en-GB"),
-          client_info: clientInfo,
+          client_info: savedClientInfo,
           items,
           source_invoice_ids: sourceInvoiceIds || [],
-          vat_rate: 0,
+          vat_rate: vatRate,
           totals,
           status: "draft",
         };
@@ -618,9 +623,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           id: quoteId,
           reference: quoteReference,
           date: new Date().toLocaleDateString("en-GB"),
-          client_info: clientInfo,
+          client_info: savedClientInfo,
           items,
-          vat_rate: 0,
+          vat_rate: vatRate,
           totals,
           is_sent: false,
           job_ref: jobRefValue,
@@ -646,8 +651,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   };
 
   const loadQuote = (quote: Quote) => {
-    setClientInfo(quote.clientInfo);
+    setClientInfo({ ...quote.clientInfo, ccEmails: quote.clientInfo.ccEmails || [] });
+    setCcInput((quote.clientInfo.ccEmails || []).join(", "));
     setItems(quote.items);
+    setVatRate(mode === "finalBill" ? 0 : (quote.vatRate ?? 20));
     setQuoteReference(quote.reference);
     setCurrentQuoteId(quote.id);
     setIsAlreadySent(!!quote.isSent);
@@ -679,6 +686,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                   ? (data as unknown as { is_sent: boolean }).is_sent
                   : (data as unknown as { status: string }).status === "sent",
               job_ref: (data as unknown as { job_ref?: string | null }).job_ref,
+              vatRate: Number((data as unknown as { vat_rate?: number }).vat_rate ?? 20),
             };
             loadQuote(quote);
             if (onQuoteLoaded) onQuoteLoaded();
@@ -715,7 +723,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         );
         setItems(mergedItems);
         const firstClientInfo = data[0]?.client_info as Quote["clientInfo"] | undefined;
-        if (firstClientInfo) setClientInfo(firstClientInfo);
+        if (firstClientInfo)
+          setClientInfo({ ...firstClientInfo, ccEmails: firstClientInfo.ccEmails || [] });
       } catch (e) {
         console.error("Failed to merge source invoices into final bill", e);
       }
@@ -788,6 +797,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     const missingFields: string[] = [];
     if (!clientInfo.entity.trim()) missingFields.push("Client Name");
     if (!clientInfo.email.trim()) missingFields.push("Client Email");
+    const ccValidation = getValidCcEmails(ccInput, clientInfo.email);
+    if (ccValidation.invalid.length > 0) missingFields.push("Valid CC Email Addresses");
     if (!clientInfo.site.trim()) missingFields.push("Project/Site Name");
     if (clientInfo.postcode.trim() && !isValidUKPostcode(clientInfo.postcode)) {
       missingFields.push("Invalid Site Postcode format (e.g. M1 1AE)");
@@ -806,6 +817,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       setValidationErrors(missingFields);
       return;
     }
+
+    const ccEmails = ccValidation.deduped;
 
     if (!profile?.tenant_id) {
       toast.error("Not ready", {
@@ -887,10 +900,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           job_id: jobId,
           reference: quoteReference,
           date: new Date().toLocaleDateString("en-GB"),
-          client_info: clientInfo,
+          client_info: { ...clientInfo, ccEmails },
           items,
           source_invoice_ids: sourceInvoiceIds || [],
-          vat_rate: 0,
+          vat_rate: vatRate,
           totals,
           status: "sent",
         } as never);
@@ -953,6 +966,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             p_details: {
               reference: docRef,
               netTotal: totals.netTotal,
+              vatRate,
+              vatTotal: totals.vatTotal,
               grossTotal: totals.grossTotal,
             },
           });
@@ -974,6 +989,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       const { data, error } = await supabase.functions.invoke("send-quote-pdf", {
         body: {
           toEmail: clientInfo.email,
+          ccEmails,
           clientName: clientInfo.entity,
           siteName: clientInfo.site,
           postcode: clientInfo.postcode,
@@ -985,6 +1001,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               ? `${window.location.origin}/opus-form-primary-light.svg`
               : undefined,
           netTotal: totals.netTotal,
+          vatRate,
+          vatTotal: totals.vatTotal,
           grossTotal: totals.grossTotal,
         },
       });
@@ -1011,9 +1029,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               job_id: jobId,
               reference: quoteReference,
               date: new Date().toLocaleDateString("en-GB"),
-              client_info: clientInfo,
+              client_info: { ...clientInfo, ccEmails },
               items,
-              vat_rate: 0,
+              vat_rate: vatRate,
               totals,
               status: "sent",
             }
@@ -1021,9 +1039,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               id: quoteId,
               reference: quoteReference,
               date: new Date().toLocaleDateString("en-GB"),
-              client_info: clientInfo,
+              client_info: { ...clientInfo, ccEmails },
               items,
-              vat_rate: 0,
+              vat_rate: vatRate,
               totals,
               is_sent: true,
               job_ref: jobRefValue,
@@ -1151,6 +1169,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         clientInfo,
         items,
         totals,
+        vatRate,
       }}
       terms={terms}
       documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
@@ -1158,6 +1177,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       isPrintTarget={isPrintTarget}
     />
   );
+  const ccHasError =
+    ccInput.trim().length > 0 && getValidCcEmails(ccInput, clientInfo.email).invalid.length > 0;
 
   return (
     <div className="flex flex-col flex-1 w-full text-foreground">
@@ -1340,6 +1361,39 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                     placeholder="accounts@client.com"
                   />
                 </div>
+              </div>
+              <div className="flex flex-col gap-1.5 md:col-span-2">
+                <label
+                  htmlFor="quote-cc-recipients"
+                  className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+                >
+                  CC recipients{" "}
+                  <span className="normal-case font-normal">(optional, comma-separated)</span>
+                </label>
+                <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
+                  <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <input
+                    id="quote-cc-recipients"
+                    type="text"
+                    aria-invalid={ccHasError}
+                    aria-describedby={ccHasError ? "quote-cc-error" : undefined}
+                    className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium"
+                    value={ccInput}
+                    onChange={(e) => {
+                      setCcInput(e.target.value);
+                      setClientInfo({
+                        ...clientInfo,
+                        ccEmails: getValidCcEmails(e.target.value, clientInfo.email).deduped,
+                      });
+                    }}
+                    placeholder="manager@client.com, qs@client.com"
+                  />
+                </div>
+                {ccHasError && (
+                  <p id="quote-cc-error" className="text-[11px] font-semibold text-red-500">
+                    Enter valid email addresses separated by commas.
+                  </p>
+                )}
               </div>
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
@@ -1664,12 +1718,42 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
             {/* Totals grid */}
             <div className="flex flex-col gap-2">
+              {mode !== "finalBill" && (
+                <div className="flex items-center justify-between text-[13px] border-b border-border pb-2">
+                  <label htmlFor="vat-rate" className="text-muted-foreground">
+                    VAT rate
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      id="vat-rate"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={vatRate}
+                      onChange={(e) =>
+                        setVatRate(Math.min(100, Math.max(0, Number(e.target.value) || 0)))
+                      }
+                      className="w-20 rounded-md border border-border bg-secondary px-2 py-1 text-right font-mono text-[13px]"
+                    />
+                    <span className="text-muted-foreground">%</span>
+                  </div>
+                </div>
+              )}
               <div className="flex justify-between text-[13px] border-b border-border pb-2">
                 <span className="text-muted-foreground">Net Total</span>
                 <span className="font-semibold font-mono">
                   £{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
+              {mode !== "finalBill" && (
+                <div className="flex justify-between text-[13px] border-b border-border pb-2">
+                  <span className="text-muted-foreground">VAT ({vatRate}%)</span>
+                  <span className="font-semibold font-mono">
+                    £{totals.vatTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-[16px] pt-1">
                 <span className="font-bold text-foreground">Total</span>
                 <span className="font-extrabold text-primary font-mono">

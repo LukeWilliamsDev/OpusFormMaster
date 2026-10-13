@@ -18,6 +18,15 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { getValidCcEmails } from "../lib/quoteEmail";
 import { computeTotals } from "../lib/billing";
 import {
+  buildEligibleSuggestions,
+  classifyLineItemDescription,
+  LineItemCategory,
+  LineItemSuggestion,
+  LINE_ITEM_CATEGORY_LABELS,
+  REQUIRED_LINE_ITEM_CATEGORIES,
+  RecipientSuggestion,
+} from "../lib/eligibleQuoteData";
+import {
   Plus,
   Trash2,
   Mail,
@@ -39,6 +48,7 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  Search,
 } from "lucide-react";
 
 type QuoteInsertRow = Database["public"]["Tables"]["quotes"]["Insert"];
@@ -49,6 +59,7 @@ interface MeasuredItem {
   quantity: number;
   unit: string;
   rate: number | string;
+  category?: LineItemCategory;
 }
 
 interface Quote {
@@ -87,20 +98,14 @@ interface ValuationBuilderProps {
   sendOnly?: boolean;
 }
 
-const SUGGESTED_ITEMS = [
-  { description: "C30/37 Foundation Slab Pour", unit: "m³", rate: 145.0 },
-  { description: "C40/50 Columns & Reinforced Beam Work", unit: "m³", rate: 185.0 },
-  { description: "A393 Structural Rebar Steel Mesh", unit: "m²", rate: 12.5 },
-  { description: "DPM & Sand Blinding Preparation", unit: "m²", rate: 8.0 },
-  { description: "Double-Sided Formwork Shuttering", unit: "m²", rate: 45.0 },
-  { description: "Concrete Pump Hire - 36m Boom Setup", unit: "Sum", rate: 450.0 },
-  { description: "Operative Labor Day Rate", unit: "Day", rate: 240.0 },
-  { description: "Site Supervisor Day Rate", unit: "Day", rate: 280.0 },
-];
-
 const COMMON_UNITS = ["m²", "m³", "m", "No.", "Sum"];
 
 const INITIAL_ITEMS: MeasuredItem[] = [];
+
+const normalizeMeasuredItem = (item: MeasuredItem): MeasuredItem => ({
+  ...item,
+  category: item.category || classifyLineItemDescription(item.description),
+});
 
 const capitalizeWords = (str: string) => {
   if (!str) return "";
@@ -375,6 +380,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isAlreadySent, setIsAlreadySent] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [unitFocusedItemId, setUnitFocusedItemId] = useState<string | null>(null);
@@ -402,6 +408,12 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
   const [showSavedQuotes, setShowSavedQuotes] = useState(false);
   const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
+  const [recipientSuggestions, setRecipientSuggestions] = useState<RecipientSuggestion[]>([]);
+  const [lineItemSuggestions, setLineItemSuggestions] = useState<LineItemSuggestion[]>([]);
+  const [eligibleSuggestionsLoading, setEligibleSuggestionsLoading] = useState(false);
+  const [eligibleSuggestionsError, setEligibleSuggestionsError] = useState<string | null>(null);
+  const [recipientSearch, setRecipientSearch] = useState("");
+  const [recipientPickerOpen, setRecipientPickerOpen] = useState(false);
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [quoteReference, setQuoteReference] = useState(
@@ -526,6 +538,53 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   useEffect(() => {
     loadSavedQuotes();
   }, []);
+
+  useEffect(() => {
+    if (mode !== "quote") {
+      setRecipientSuggestions([]);
+      setLineItemSuggestions([]);
+      setEligibleSuggestionsLoading(false);
+      setEligibleSuggestionsError(null);
+      return;
+    }
+    let cancelled = false;
+    const loadEligibleSuggestions = async () => {
+      setEligibleSuggestionsLoading(true);
+      setEligibleSuggestionsError(null);
+      const [invoiceResult, quoteResult] = await Promise.all([
+        supabase
+          .from("invoices")
+          .select("client_info, items, created_at, job_id")
+          .eq("status", "draft")
+          .not("job_id", "is", null),
+        supabase.from("quotes").select("client_info, items, created_at").eq("is_sent", false),
+      ]);
+      if (cancelled) return;
+      if (invoiceResult.error || quoteResult.error) {
+        console.error("Failed to load eligible quote suggestions", {
+          invoiceError: invoiceResult.error,
+          quoteError: quoteResult.error,
+        });
+        setEligibleSuggestionsLoading(false);
+        setEligibleSuggestionsError("Eligible history could not be loaded.");
+        return;
+      }
+      const suggestions = buildEligibleSuggestions([
+        ...((invoiceResult.data || []).map((record) => ({
+          ...record,
+          source: "invoice",
+        })) as never[]),
+        ...((quoteResult.data || []).map((record) => ({ ...record, source: "quote" })) as never[]),
+      ]);
+      setRecipientSuggestions(suggestions.recipients);
+      setLineItemSuggestions(suggestions.lineItems);
+      setEligibleSuggestionsLoading(false);
+    };
+    loadEligibleSuggestions();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode]);
 
   // Scaling logic for the PDF preview
   const containerRef = useRef<HTMLDivElement>(null);
@@ -653,7 +712,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const loadQuote = (quote: Quote) => {
     setClientInfo({ ...quote.clientInfo, ccEmails: quote.clientInfo.ccEmails || [] });
     setCcInput((quote.clientInfo.ccEmails || []).join(", "));
-    setItems(quote.items);
+    setItems(mode === "quote" ? quote.items.map(normalizeMeasuredItem) : quote.items);
     setVatRate(mode === "finalBill" ? 0 : (quote.vatRate ?? 20));
     setQuoteReference(quote.reference);
     setCurrentQuoteId(quote.id);
@@ -790,10 +849,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     }
   };
 
-  const handleSend = async () => {
-    if (isAlreadySent) return;
-
-    // Validation checks before sending
+  const getValidationErrors = () => {
     const missingFields: string[] = [];
     if (!clientInfo.entity.trim()) missingFields.push("Client Name");
     if (!clientInfo.email.trim()) missingFields.push("Client Email");
@@ -805,18 +861,66 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     }
     if (items.length === 0) {
       missingFields.push("Line Items (at least one is required)");
-    } else if (items.some((i) => !i.description.trim())) {
-      missingFields.push("Line Item Description (all added items require a description)");
+    } else {
+      if (items.some((i) => !i.description.trim())) {
+        missingFields.push("Line Item Description (all added items require a description)");
+      }
+      if (mode === "quote") {
+        if (items.some((i) => !i.category)) {
+          missingFields.push("Line Item Categories (categorize every line item)");
+        }
+        if (items.some((i) => !i.unit.trim())) {
+          missingFields.push("Line Item Units (all added items require a unit)");
+        }
+        if (items.some((i) => !Number.isFinite(i.quantity) || i.quantity <= 0)) {
+          missingFields.push("Line Item Quantities (must be greater than zero)");
+        }
+        if (
+          items.some(
+            (i) =>
+              !isIncludedRate(i.rate) &&
+              (typeof i.rate === "string"
+                ? i.rate.trim() === "" || !Number.isFinite(Number(i.rate.replace(/[£$€,\s]/g, "")))
+                : !Number.isFinite(Number(i.rate))),
+          )
+        ) {
+          missingFields.push("Line Item Rates (enter a valid rate or mark INCLUDED)");
+        }
+        REQUIRED_LINE_ITEM_CATEGORIES.forEach((category) => {
+          if (!items.some((item) => item.category === category)) {
+            missingFields.push(`Required category: ${LINE_ITEM_CATEGORY_LABELS[category]}`);
+          }
+        });
+      }
     }
 
     const validTerms = terms.filter((t) => t.trim() !== "");
     if (validTerms.length === 0)
       missingFields.push("Terms & Summary Conditions (at least one condition is required)");
 
+    return missingFields;
+  };
+
+  const openSendReview = () => {
+    const errors = getValidationErrors();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    setReviewConfirmed(false);
+    setShowSendConfirm(true);
+  };
+
+  const handleSend = async () => {
+    if (isAlreadySent) return;
+
+    const missingFields = getValidationErrors();
     if (missingFields.length > 0) {
       setValidationErrors(missingFields);
       return;
     }
+
+    const ccValidation = getValidCcEmails(ccInput, clientInfo.email);
 
     const ccEmails = ccValidation.deduped;
 
@@ -1132,6 +1236,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       quantity: 1,
       unit: "",
       rate: 0,
+      category: undefined,
     };
     setItems([...items, newItem]);
   };
@@ -1179,6 +1284,13 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   );
   const ccHasError =
     ccInput.trim().length > 0 && getValidCcEmails(ccInput, clientInfo.email).invalid.length > 0;
+  const filteredRecipientSuggestions = recipientSuggestions
+    .filter((recipient) => {
+      const query = recipientSearch.trim().toLowerCase();
+      if (!query) return true;
+      return `${recipient.entity} ${recipient.email}`.toLowerCase().includes(query);
+    })
+    .slice(0, 8);
 
   return (
     <div className="flex flex-col flex-1 w-full text-foreground">
@@ -1233,7 +1345,13 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => (mode === "finalBill" ? setShowSendConfirm(true) : handleSend())}
+              onClick={() =>
+                mode === "quote"
+                  ? openSendReview()
+                  : mode === "finalBill"
+                    ? setShowSendConfirm(true)
+                    : handleSend()
+              }
               disabled={isSendingEmail || isAlreadySent}
               className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-primary hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-4 py-1.5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
             >
@@ -1332,6 +1450,75 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 Client & Project
               </h3>
             </div>
+            {mode === "quote" && (
+              <div className="relative">
+                <label
+                  htmlFor="eligible-recipient-search"
+                  className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+                >
+                  Use previous client or email
+                </label>
+                <div className="mt-1.5 flex items-center gap-2 bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
+                  <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <input
+                    id="eligible-recipient-search"
+                    type="search"
+                    autoComplete="off"
+                    value={recipientSearch}
+                    onFocus={() => setRecipientPickerOpen(true)}
+                    onBlur={() => setTimeout(() => setRecipientPickerOpen(false), 150)}
+                    onChange={(event) => {
+                      setRecipientSearch(event.target.value);
+                      setRecipientPickerOpen(true);
+                    }}
+                    placeholder="Search eligible clients and prior recipients…"
+                    className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium"
+                  />
+                </div>
+                {recipientPickerOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-lg border border-border bg-card shadow-2xl overflow-hidden">
+                    {eligibleSuggestionsLoading ? (
+                      <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                        Loading eligible prior recipients…
+                      </div>
+                    ) : eligibleSuggestionsError ? (
+                      <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                        {eligibleSuggestionsError} Enter a new client below instead.
+                      </div>
+                    ) : filteredRecipientSuggestions.length === 0 ? (
+                      <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                        No eligible prior recipients found. You can enter a new client below.
+                      </div>
+                    ) : (
+                      filteredRecipientSuggestions.map((recipient) => (
+                        <button
+                          key={`${recipient.entity}-${recipient.email}`}
+                          type="button"
+                          className="w-full px-3 py-2.5 text-left hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            setClientInfo({
+                              ...clientInfo,
+                              entity: recipient.entity,
+                              email: recipient.email,
+                            });
+                            setRecipientSearch(`${recipient.entity} — ${recipient.email}`);
+                            setRecipientPickerOpen(false);
+                          }}
+                        >
+                          <span className="block text-[11px] font-bold text-foreground">
+                            {recipient.entity}
+                          </span>
+                          <span className="block text-[11px] text-muted-foreground">
+                            {recipient.email}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
@@ -1481,7 +1668,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                           type="text"
                           className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-amber-500/70 font-bold tracking-wider py-1.5"
                           value={item.description}
-                          onChange={(e) => updateItem(item.id, { description: e.target.value })}
+                          onChange={(e) =>
+                            updateItem(item.id, {
+                              description: e.target.value,
+                              ...(mode === "quote"
+                                ? { category: classifyLineItemDescription(e.target.value) }
+                                : {}),
+                            })
+                          }
                           onFocus={() => setFocusedItemId(item.id)}
                           onBlur={() => {
                             setTimeout(() => setFocusedItemId(null), 200);
@@ -1495,47 +1689,105 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         </p>
                       )}
                       <AnimatePresence>
-                        {focusedItemId === item.id && (
+                        {mode === "quote" && focusedItemId === item.id && (
                           <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             className="absolute left-0 right-0 top-full mt-2 bg-card border border-border rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
                           >
-                            {SUGGESTED_ITEMS.filter(
-                              (s) =>
-                                !item.description ||
-                                s.description
-                                  .toLowerCase()
-                                  .includes(item.description.toLowerCase()),
-                            ).map((suggestion) => (
-                              <button
-                                key={suggestion.description}
-                                type="button"
-                                onClick={() => {
-                                  updateItem(item.id, {
-                                    description: suggestion.description,
-                                    unit: suggestion.unit,
-                                    rate: suggestion.rate,
-                                  });
-                                }}
-                                className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
-                              >
-                                <div className="flex justify-between items-center">
-                                  <span>{suggestion.description}</span>
-                                  <span className="text-primary/70 font-mono text-[11px]">
-                                    £{suggestion.rate}/{suggestion.unit}
-                                  </span>
+                            {lineItemSuggestions
+                              .filter(
+                                (s) =>
+                                  !item.description ||
+                                  s.description
+                                    .toLowerCase()
+                                    .includes(item.description.toLowerCase()),
+                              )
+                              .map((suggestion) => (
+                                <button
+                                  key={`${suggestion.description}-${suggestion.unit}`}
+                                  type="button"
+                                  onClick={() => {
+                                    updateItem(item.id, {
+                                      description: suggestion.description,
+                                      unit: suggestion.unit,
+                                      rate: suggestion.rate,
+                                      category: suggestion.category,
+                                    });
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <span>{suggestion.description}</span>
+                                    <span className="text-primary/70 font-mono text-[11px]">
+                                      £{suggestion.rate}/{suggestion.unit}
+                                    </span>
+                                  </div>
+                                </button>
+                              ))}
+                            {eligibleSuggestionsLoading ? (
+                              <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                                Loading eligible historical items…
+                              </div>
+                            ) : eligibleSuggestionsError ? (
+                              <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                                {eligibleSuggestionsError} Add the item manually instead.
+                              </div>
+                            ) : (
+                              lineItemSuggestions.filter(
+                                (s) =>
+                                  !item.description ||
+                                  s.description
+                                    .toLowerCase()
+                                    .includes(item.description.toLowerCase()),
+                              ).length === 0 && (
+                                <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                                  No eligible historical items match. Add the description manually.
                                 </div>
-                              </button>
-                            ))}
+                              )
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
                     </div>
 
                     {/* Labeled grid for inputs on all screen sizes */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div
+                      className={`grid grid-cols-2 ${mode === "quote" ? "sm:grid-cols-5" : "sm:grid-cols-4"} gap-2`}
+                    >
+                      {mode === "quote" && (
+                        <div className="flex flex-col gap-1 col-span-2 sm:col-span-1">
+                          <label
+                            htmlFor={`category-${item.id}`}
+                            className="text-[9px] font-black tracking-widest text-muted-foreground uppercase"
+                          >
+                            Category
+                          </label>
+                          <select
+                            id={`category-${item.id}`}
+                            value={item.category || ""}
+                            onChange={(event) =>
+                              updateItem(item.id, {
+                                category: (event.target.value || undefined) as
+                                  LineItemCategory | undefined,
+                              })
+                            }
+                            className={`w-full bg-card border rounded-lg h-9 px-2 text-[10px] font-bold ${
+                              item.category
+                                ? "border-border text-foreground"
+                                : "border-amber-500/50 text-amber-500"
+                            }`}
+                          >
+                            <option value="">Choose category</option>
+                            {REQUIRED_LINE_ITEM_CATEGORIES.map((category) => (
+                              <option key={category} value={category}>
+                                {LINE_ITEM_CATEGORY_LABELS[category]}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                       <div className="flex flex-col gap-1">
                         <span className="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
                           Qty
@@ -1879,21 +2131,41 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         onOpenChange={setShowSendConfirm}
         tone="neutral"
         tag="Please Confirm"
-        title="Send Invoice to Client"
+        title={mode === "quote" ? "Review Before Sending" : "Send Invoice to Client"}
         message={
-          <>
-            This will email the invoice to{" "}
-            <span className="font-bold text-foreground">
-              {clientInfo.email || clientInfo.entity}
-            </span>{" "}
-            and lock the source quotes so they can't be billed again.
-            <div className="mt-3 p-4 bg-white/5 border border-white/5 rounded-lg text-xs font-medium text-muted-foreground leading-relaxed">
-              Double-check the line items and totals before sending — once sent, this cannot be
-              recalled.
-            </div>
-          </>
+          mode === "quote" ? (
+            <>
+              Review the rendered quote on screen before sending it to{" "}
+              <span className="font-bold text-foreground">
+                {clientInfo.email || clientInfo.entity}
+              </span>
+              . Confirm the client, line items, categories, VAT, totals, and terms are correct.
+              <label className="mt-4 flex items-start gap-2 text-xs text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={reviewConfirmed}
+                  onChange={(event) => setReviewConfirmed(event.target.checked)}
+                  className="mt-0.5 accent-primary"
+                />
+                <span>I have reviewed the rendered document and confirm it is correct.</span>
+              </label>
+            </>
+          ) : (
+            <>
+              This will email the invoice to{" "}
+              <span className="font-bold text-foreground">
+                {clientInfo.email || clientInfo.entity}
+              </span>{" "}
+              and lock the source quotes so they can't be billed again.
+              <div className="mt-3 p-4 bg-white/5 border border-white/5 rounded-lg text-xs font-medium text-muted-foreground leading-relaxed">
+                Double-check the line items and totals before sending — once sent, this cannot be
+                recalled.
+              </div>
+            </>
+          )
         }
-        confirmLabel="Send Invoice"
+        confirmLabel={mode === "quote" ? "Send Quote" : "Send Invoice"}
+        confirmDisabled={mode === "quote" && !reviewConfirmed}
         onConfirm={() => {
           setShowSendConfirm(false);
           handleSend();

@@ -24,7 +24,6 @@ Restore the quote PDF implementation that was live before the parity experiment,
 ### Changed files
 
 - `docs/quality/changes/2026-10-13-revert-pdf-parity.md`
-- `docs/quality/changes/2026-10-13-canonical-quote-pdf.md`
 - `src/opus/components/QuoteInvoiceBuilder.tsx`
 - `src/opus/lib/quotePdf.tsx`
 - `src/opus/lib/__tests__/quotePdf.test.ts`

@@ -7,7 +7,7 @@
 **Source of truth:** User decision in this conversation
 **Evidence base:** `da967e6` (last accepted quote release)
 **Evidence head:** working tree (uncommitted)
-**Evidence fingerprint:** PENDING
+**Evidence fingerprint:** b57ff155cbc3385b4f389eef75dd297dc02924d3648e92e2d0f8f48a3e708449
 
 ## Intent
 

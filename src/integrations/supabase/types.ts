@@ -177,6 +177,7 @@ export type Database = {
           id: string;
           items: Json;
           job_id: string;
+          invoice_number: number | null;
           reference: string;
           sent_at: string | null;
           source_invoice_ids: string[];
@@ -193,6 +194,7 @@ export type Database = {
           id?: string;
           items?: Json;
           job_id: string;
+          invoice_number?: number | null;
           reference: string;
           sent_at?: string | null;
           source_invoice_ids?: string[];
@@ -209,6 +211,7 @@ export type Database = {
           id?: string;
           items?: Json;
           job_id?: string;
+          invoice_number?: number | null;
           reference?: string;
           sent_at?: string | null;
           source_invoice_ids?: string[];
@@ -783,8 +786,11 @@ export type Database = {
           id: string;
           is_sent: boolean;
           items: Json;
+          job_id: string | null;
           job_ref: string | null;
+          quote_number: number | null;
           reference: string;
+          revision: number;
           tenant_id: string;
           totals: Json;
           updated_at: string;
@@ -797,8 +803,11 @@ export type Database = {
           id?: string;
           is_sent?: boolean;
           items: Json;
+          job_id?: string | null;
           job_ref?: string | null;
+          quote_number?: number | null;
           reference: string;
+          revision?: number;
           tenant_id: string;
           totals: Json;
           updated_at?: string;
@@ -811,8 +820,11 @@ export type Database = {
           id?: string;
           is_sent?: boolean;
           items?: Json;
+          job_id?: string | null;
           job_ref?: string | null;
+          quote_number?: number | null;
           reference?: string;
+          revision?: number;
           tenant_id?: string;
           totals?: Json;
           updated_at?: string;
@@ -1105,6 +1117,10 @@ export type Database = {
     };
     Functions: {
       admin_delete_user: { Args: { target_id: string }; Returns: undefined };
+      allocate_document_number: {
+        Args: { p_document_kind: string; p_scope_id?: string | null };
+        Returns: number;
+      };
       check_email_registered: { Args: { _email: string }; Returns: boolean };
       check_expired_tickets: { Args: never; Returns: undefined };
       complete_job_document_request: {

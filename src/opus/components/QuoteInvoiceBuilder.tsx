@@ -7,7 +7,7 @@ import { isValidUKPostcode } from "../utils/geo";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { NoticeModal } from "@/components/ui/notice-modal";
-import { QuotePdfVectorDocument, generateQuotePdfBlob, generateBillPdf } from "../lib/quotePdf";
+import { generateQuotePdfBlob, generateBillPdf } from "../lib/quotePdf";
 import {
   computeDocumentLabel,
   computeDocSequenceLabel,
@@ -356,6 +356,65 @@ const preparePdfClone = (quoteReference: string) => {
   return { element, tempContainer, opt };
 };
 
+const ClientPdfPreview: React.FC<{
+  quote: Parameters<typeof generateQuotePdfBlob>[0];
+  terms: string[];
+  documentTitle: "QUOTE" | "INVOICE";
+}> = ({ quote, terms, documentTitle }) => {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    let objectUrl: string | null = null;
+    setPreviewUrl(null);
+    setError(false);
+
+    const generate = async () => {
+      const result =
+        documentTitle === "INVOICE"
+          ? await generateBillPdf(quote, { documentTitle, label: "preview", terms })
+          : await generateQuotePdfBlob(quote, { label: "preview", terms });
+      if (!active) return;
+      objectUrl = URL.createObjectURL(result.blob);
+      setPreviewUrl(objectUrl);
+    };
+
+    void generate().catch((generationError) => {
+      if (!active) return;
+      console.error("Failed to render PDF preview", generationError);
+      setError(true);
+    });
+
+    return () => {
+      active = false;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [quote, terms, documentTitle]);
+
+  if (error) {
+    return (
+      <div className="flex h-[760px] items-center justify-center px-6 text-center text-xs text-muted-foreground">
+        PDF preview unavailable. You can still try downloading the document.
+      </div>
+    );
+  }
+  if (!previewUrl) {
+    return (
+      <div className="flex h-[760px] items-center justify-center text-xs text-muted-foreground">
+        Preparing PDF preview…
+      </div>
+    );
+  }
+  return (
+    <iframe
+      title={`${documentTitle} PDF preview`}
+      src={previewUrl}
+      className="h-[760px] w-full border-0"
+    />
+  );
+};
+
 export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   onBack,
   quoteToLoadId,
@@ -597,18 +656,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   // Full-screen PDF preview modal (tablet/mobile only)
   const [previewOpen, setPreviewOpen] = useState(false);
   const modalContainerRef = useRef<HTMLDivElement>(null);
-  const [PdfViewer, setPdfViewer] = useState<React.ElementType | null>(null);
-
-  useEffect(() => {
-    let active = true;
-    void import("@react-pdf/renderer").then(({ PDFViewer: BrowserPdfViewer }) => {
-      if (active) setPdfViewer(() => BrowserPdfViewer as unknown as React.ElementType);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
-
   const totals = useMemo(() => {
     return computeTotals(items, mode === "finalBill" ? 0 : vatRate);
   }, [items, mode, vatRate]);
@@ -1266,30 +1313,23 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     return item.quantity * rateValue;
   };
 
-  const pdfDocument = () =>
-    PdfViewer ? (
-      <PdfViewer showToolbar={false} style={{ width: "100%", height: "760px", border: "none" }}>
-        <QuotePdfVectorDocument
-          quote={{
-            reference:
-              mode === "quote"
-                ? quoteReference
-                : computeDocSequenceLabel(mode === "finalBill" ? "invoice" : "quote", docSequence),
-            jobRef: effectiveJobRef,
-            clientInfo,
-            items,
-            totals,
-            vatRate,
-          }}
-          terms={terms}
-          documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
-        />
-      </PdfViewer>
-    ) : (
-      <div className="flex h-[760px] items-center justify-center text-xs text-muted-foreground">
-        Preparing PDF preview…
-      </div>
-    );
+  const pdfDocument = () => (
+    <ClientPdfPreview
+      quote={{
+        reference:
+          mode === "quote"
+            ? quoteReference
+            : computeDocSequenceLabel(mode === "finalBill" ? "invoice" : "quote", docSequence),
+        jobRef: effectiveJobRef,
+        clientInfo,
+        items,
+        totals,
+        vatRate,
+      }}
+      terms={terms}
+      documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
+    />
+  );
   const ccHasError =
     ccInput.trim().length > 0 && getValidCcEmails(ccInput, clientInfo.email).invalid.length > 0;
   const filteredRecipientSuggestions = recipientSuggestions

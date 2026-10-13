@@ -7,7 +7,7 @@
 **Source of truth:** User decision in this conversation
 **Evidence base:** `origin/main`
 **Evidence head:** working tree (uncommitted)
-**Evidence fingerprint:** ce47caaafe708786e162b55e74763f0ec74412094d6e009f685dba00fe7e063c
+**Evidence fingerprint:** 11ddff6a42937e9816990d76ea47df32fbad326e7abd1277479fb965e972c9b3
 
 ## Intent
 
@@ -37,7 +37,7 @@ Ensure the quote preview, downloaded PDF, and sent PDF are generated from the sa
 - [x] Preview, download, and send use the same reference, terms, items, totals, and client data.
 - [x] Formatted currency strings and INCLUDED rates render correctly.
 - [x] Job Billing and final-invoice behavior remain unchanged except for renderer parity.
-- [x] The browser-only preview viewer does not execute during server-side route rendering.
+- [x] The preview renders through a client-side PDF iframe without executing browser-only viewer components during server-side route rendering.
 
 ## Risk and approval gates
 

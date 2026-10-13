@@ -19,3 +19,10 @@ export const getValidCcEmails = (value: string, primaryEmail: string) => {
     deduped: emails.filter((email) => email !== primary),
   };
 };
+
+export const appendCcEmail = (value: string, email: string) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail || normalizeEmailList(value).includes(normalizedEmail)) return value;
+  const current = value.trim();
+  return current ? `${current}, ${normalizedEmail}` : normalizedEmail;
+};

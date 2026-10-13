@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getValidCcEmails, normalizeEmailList } from "../quoteEmail";
+import { appendCcEmail, getValidCcEmails, normalizeEmailList } from "../quoteEmail";
 
 describe("quote CC recipients", () => {
   it("normalizes comma, semicolon, and whitespace-separated addresses", () => {
@@ -17,5 +17,14 @@ describe("quote CC recipients", () => {
       invalid: ["not-an-email"],
       deduped: ["copy@example.com", "not-an-email"],
     });
+  });
+
+  it("appends a selected address without replacing or duplicating manual CC input", () => {
+    expect(appendCcEmail("manual@example.com", "Prior@example.com")).toBe(
+      "manual@example.com, prior@example.com",
+    );
+    expect(appendCcEmail("manual@example.com, prior@example.com", "PRIOR@example.com")).toBe(
+      "manual@example.com, prior@example.com",
+    );
   });
 });

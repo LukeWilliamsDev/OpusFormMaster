@@ -54,6 +54,18 @@ export const buildDefaultTerms = (entity: string | undefined) =>
 const isIncludedRate = (rate: number | string) =>
   typeof rate === "string" && ["INCLUDED", "INCL"].includes(rate.toUpperCase());
 
+const getRateValue = (rate: number | string) => {
+  if (isIncludedRate(rate)) return 0;
+  if (typeof rate === "string") {
+    const parsed = parseFloat(rate.replace(/[£$€,\s]/g, ""));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return Number(rate || 0);
+};
+
+const formatRate = (rate: number | string) =>
+  isIncludedRate(rate) ? "INCLUDED" : `£${getRateValue(rate).toFixed(2)}`;
+
 const getLineTotal = (item: QuoteItem) => {
   if (isIncludedRate(item.rate)) return 0;
   let rateValue = 0;
@@ -214,9 +226,7 @@ export const QuotePdfDocument: React.FC<{
                       {item.unit}
                     </td>
                     <td className="p-3 text-xs text-right text-slate-900">
-                      {isIncludedRate(item.rate)
-                        ? "INCLUDED"
-                        : `£${Number(item.rate || 0).toFixed(2)}`}
+                      {formatRate(item.rate)}
                     </td>
                     <td className="p-3 text-xs text-right text-slate-900 font-black">
                       {isIncludedRate(item.rate)
@@ -798,11 +808,7 @@ export const QuotePdfVectorDocument: React.FC<{
                   <Text style={pdfStyles.tdDesc}>{item.description || "..."}</Text>
                   <Text style={pdfStyles.tdQty}>{item.quantity}</Text>
                   <Text style={pdfStyles.tdUnit}>{item.unit}</Text>
-                  <Text style={pdfStyles.tdRate}>
-                    {isIncludedRate(item.rate)
-                      ? "INCLUDED"
-                      : `£${Number(item.rate || 0).toFixed(2)}`}
-                  </Text>
+                  <Text style={pdfStyles.tdRate}>{formatRate(item.rate)}</Text>
                   <Text style={pdfStyles.tdTotal}>
                     {isIncludedRate(item.rate)
                       ? "INCLUDED"

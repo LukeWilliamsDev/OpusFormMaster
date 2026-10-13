@@ -15,7 +15,7 @@ import {
   DocumentKind,
 } from "../lib/documentNaming";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { getValidCcEmails } from "../lib/quoteEmail";
+import { appendCcEmail, getValidCcEmails } from "../lib/quoteEmail";
 import { computeTotals } from "../lib/billing";
 import {
   buildEligibleSuggestions,
@@ -414,6 +414,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const [eligibleSuggestionsError, setEligibleSuggestionsError] = useState<string | null>(null);
   const [recipientSearch, setRecipientSearch] = useState("");
   const [recipientPickerOpen, setRecipientPickerOpen] = useState(false);
+  const [ccRecipientSearch, setCcRecipientSearch] = useState("");
+  const [ccRecipientPickerOpen, setCcRecipientPickerOpen] = useState(false);
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [quoteReference, setQuoteReference] = useState(
@@ -551,34 +553,38 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     const loadEligibleSuggestions = async () => {
       setEligibleSuggestionsLoading(true);
       setEligibleSuggestionsError(null);
-      const [invoiceResult, quoteResult] = await Promise.all([
-        supabase
-          .from("invoices")
-          .select("client_info, items, created_at, job_id")
-          .eq("status", "draft")
-          .not("job_id", "is", null),
-        supabase.from("quotes").select("client_info, items, created_at").eq("is_sent", false),
-      ]);
-      if (cancelled) return;
-      if (invoiceResult.error || quoteResult.error) {
-        console.error("Failed to load eligible quote suggestions", {
-          invoiceError: invoiceResult.error,
-          quoteError: quoteResult.error,
-        });
-        setEligibleSuggestionsLoading(false);
+      try {
+        const [invoiceResult, quoteResult] = await Promise.all([
+          supabase
+            .from("invoices")
+            .select("client_info, items, created_at, job_id")
+            .eq("status", "draft")
+            .not("job_id", "is", null),
+          supabase.from("quotes").select("client_info, items, created_at").eq("is_sent", false),
+        ]);
+        if (cancelled) return;
+        if (invoiceResult.error || quoteResult.error) {
+          throw invoiceResult.error || quoteResult.error;
+        }
+        const suggestions = buildEligibleSuggestions([
+          ...((invoiceResult.data || []).map((record) => ({
+            ...record,
+            source: "invoice",
+          })) as never[]),
+          ...((quoteResult.data || []).map((record) => ({
+            ...record,
+            source: "quote",
+          })) as never[]),
+        ]);
+        setRecipientSuggestions(suggestions.recipients);
+        setLineItemSuggestions(suggestions.lineItems);
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Failed to load eligible quote suggestions", error);
         setEligibleSuggestionsError("Eligible history could not be loaded.");
-        return;
+      } finally {
+        if (!cancelled) setEligibleSuggestionsLoading(false);
       }
-      const suggestions = buildEligibleSuggestions([
-        ...((invoiceResult.data || []).map((record) => ({
-          ...record,
-          source: "invoice",
-        })) as never[]),
-        ...((quoteResult.data || []).map((record) => ({ ...record, source: "quote" })) as never[]),
-      ]);
-      setRecipientSuggestions(suggestions.recipients);
-      setLineItemSuggestions(suggestions.lineItems);
-      setEligibleSuggestionsLoading(false);
     };
     loadEligibleSuggestions();
     return () => {
@@ -944,15 +950,16 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         sequence: docSequence,
       });
       const docRef = computeDocSequenceLabel(docKind, docSequence);
+      const pdfReference = mode === "quote" ? quoteReference : docRef;
       const { blob } =
         mode === "finalBill"
           ? await generateBillPdf(
-              { reference: docRef, jobRef: effectiveJobRef, clientInfo, items, totals },
+              { reference: pdfReference, jobRef: effectiveJobRef, clientInfo, items, totals },
               { documentTitle: "INVOICE", label: docLabel },
             )
           : await generateQuotePdfBlob(
               {
-                reference: docRef,
+                reference: pdfReference,
                 jobRef: effectiveJobRef,
                 clientInfo,
                 items,
@@ -1269,7 +1276,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const pdfDocument = (scaleValue: number, isPrintTarget = false) => (
     <QuotePdfDocument
       quote={{
-        reference: computeDocSequenceLabel(mode === "finalBill" ? "invoice" : "quote", docSequence),
+        reference:
+          mode === "quote"
+            ? quoteReference
+            : computeDocSequenceLabel(mode === "finalBill" ? "invoice" : "quote", docSequence),
         jobRef: effectiveJobRef,
         clientInfo,
         items,
@@ -1289,6 +1299,19 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       const query = recipientSearch.trim().toLowerCase();
       if (!query) return true;
       return `${recipient.entity} ${recipient.email}`.toLowerCase().includes(query);
+    })
+    .slice(0, 8);
+  const existingCcEmails = getValidCcEmails(ccInput, clientInfo.email).deduped;
+  const filteredCcRecipientSuggestions = recipientSuggestions
+    .filter((recipient) => {
+      const query = ccRecipientSearch.trim().toLowerCase();
+      const matchesQuery =
+        !query || `${recipient.entity} ${recipient.email}`.toLowerCase().includes(query);
+      return (
+        matchesQuery &&
+        recipient.email !== clientInfo.email.trim().toLowerCase() &&
+        !existingCcEmails.includes(recipient.email)
+      );
     })
     .slice(0, 8);
 
@@ -1549,39 +1572,123 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                   />
                 </div>
               </div>
-              <div className="flex flex-col gap-1.5 md:col-span-2">
-                <label
-                  htmlFor="quote-cc-recipients"
-                  className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
-                >
-                  CC recipients{" "}
-                  <span className="normal-case font-normal">(optional, comma-separated)</span>
-                </label>
-                <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
-                  <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <input
-                    id="quote-cc-recipients"
-                    type="text"
-                    aria-invalid={ccHasError}
-                    aria-describedby={ccHasError ? "quote-cc-error" : undefined}
-                    className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium"
-                    value={ccInput}
-                    onChange={(e) => {
-                      setCcInput(e.target.value);
-                      setClientInfo({
-                        ...clientInfo,
-                        ccEmails: getValidCcEmails(e.target.value, clientInfo.email).deduped,
-                      });
-                    }}
-                    placeholder="manager@client.com, qs@client.com"
-                  />
+              {mode === "quote" && (
+                <div className="flex flex-col gap-1.5 md:col-span-2">
+                  <label
+                    htmlFor="quote-cc-recipients"
+                    className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+                  >
+                    CC recipients{" "}
+                    <span className="normal-case font-normal">(optional, comma-separated)</span>
+                  </label>
+                  <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
+                    <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <input
+                      id="quote-cc-recipients"
+                      type="text"
+                      aria-invalid={ccHasError}
+                      aria-describedby={ccHasError ? "quote-cc-error" : undefined}
+                      className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium"
+                      value={ccInput}
+                      onChange={(e) => {
+                        setCcInput(e.target.value);
+                        setClientInfo({
+                          ...clientInfo,
+                          ccEmails: getValidCcEmails(e.target.value, clientInfo.email).deduped,
+                        });
+                      }}
+                      placeholder="manager@client.com, qs@client.com"
+                    />
+                  </div>
+                  {ccHasError && (
+                    <p id="quote-cc-error" className="text-[11px] font-semibold text-red-500">
+                      Enter valid email addresses separated by commas.
+                    </p>
+                  )}
+                  {mode === "quote" && (
+                    <div className="relative">
+                      <label
+                        htmlFor="eligible-cc-recipient-search"
+                        className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+                      >
+                        Add previous recipient to CC
+                      </label>
+                      <div className="mt-1.5 flex items-center gap-2 bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
+                        <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <input
+                          id="eligible-cc-recipient-search"
+                          type="search"
+                          autoComplete="off"
+                          role="combobox"
+                          aria-autocomplete="list"
+                          aria-expanded={ccRecipientPickerOpen}
+                          aria-controls="eligible-cc-recipient-options"
+                          value={ccRecipientSearch}
+                          onFocus={() => setCcRecipientPickerOpen(true)}
+                          onBlur={() => setTimeout(() => setCcRecipientPickerOpen(false), 150)}
+                          onChange={(event) => {
+                            setCcRecipientSearch(event.target.value);
+                            setCcRecipientPickerOpen(true);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Escape") setCcRecipientPickerOpen(false);
+                          }}
+                          placeholder="Search prior recipients to CC…"
+                          className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium"
+                        />
+                      </div>
+                      {ccRecipientPickerOpen && (
+                        <div
+                          id="eligible-cc-recipient-options"
+                          role="listbox"
+                          className="absolute left-0 right-0 top-full mt-2 z-50 rounded-lg border border-border bg-card shadow-2xl overflow-hidden"
+                        >
+                          {eligibleSuggestionsLoading ? (
+                            <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                              Loading eligible prior recipients…
+                            </div>
+                          ) : eligibleSuggestionsError ? (
+                            <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                              {eligibleSuggestionsError} Enter a CC address manually instead.
+                            </div>
+                          ) : filteredCcRecipientSuggestions.length === 0 ? (
+                            <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                              No additional eligible recipients found.
+                            </div>
+                          ) : (
+                            filteredCcRecipientSuggestions.map((recipient) => (
+                              <button
+                                key={`cc-${recipient.entity}-${recipient.email}`}
+                                type="button"
+                                className="w-full px-3 py-2.5 text-left hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
+                                onMouseDown={(event) => event.preventDefault()}
+                                onClick={() => {
+                                  const nextCcInput = appendCcEmail(ccInput, recipient.email);
+                                  setCcInput(nextCcInput);
+                                  setClientInfo({
+                                    ...clientInfo,
+                                    ccEmails: getValidCcEmails(nextCcInput, clientInfo.email)
+                                      .deduped,
+                                  });
+                                  setCcRecipientSearch("");
+                                  setCcRecipientPickerOpen(false);
+                                }}
+                              >
+                                <span className="block text-[11px] font-bold text-foreground">
+                                  {recipient.entity}
+                                </span>
+                                <span className="block text-[11px] text-muted-foreground">
+                                  {recipient.email}
+                                </span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
-                {ccHasError && (
-                  <p id="quote-cc-error" className="text-[11px] font-semibold text-red-500">
-                    Enter valid email addresses separated by commas.
-                  </p>
-                )}
-              </div>
+              )}
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                   Project / Site Name

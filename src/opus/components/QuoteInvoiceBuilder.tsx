@@ -7,7 +7,7 @@ import { isValidUKPostcode } from "../utils/geo";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { NoticeModal } from "@/components/ui/notice-modal";
-import { generateQuotePdfBlob, generateBillPdf } from "../lib/quotePdf";
+import { QuotePdfDocument, generateQuotePdfBlob, generateBillPdf } from "../lib/quotePdf";
 import {
   computeDocumentLabel,
   computeDocSequenceLabel,
@@ -200,7 +200,7 @@ const preparePdfClone = (quoteReference: string) => {
   const opt = {
     margin: 0,
     filename: `OpusForm_Quote_${quoteReference}.pdf`,
-    image: { type: "png" },
+    image: { type: "png" as const },
     html2canvas: {
       scale: 2,
       useCORS: true,
@@ -356,63 +356,17 @@ const preparePdfClone = (quoteReference: string) => {
   return { element, tempContainer, opt };
 };
 
-const ClientPdfPreview: React.FC<{
-  quote: Parameters<typeof generateQuotePdfBlob>[0];
-  terms: string[];
-  documentTitle: "QUOTE" | "INVOICE";
-}> = ({ quote, terms, documentTitle }) => {
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [error, setError] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    let objectUrl: string | null = null;
-    setPreviewUrl(null);
-    setError(false);
-
-    const generate = async () => {
-      const result =
-        documentTitle === "INVOICE"
-          ? await generateBillPdf(quote, { documentTitle, label: "preview", terms })
-          : await generateQuotePdfBlob(quote, { label: "preview", terms });
-      if (!active) return;
-      objectUrl = URL.createObjectURL(result.blob);
-      setPreviewUrl(objectUrl);
-    };
-
-    void generate().catch((generationError) => {
-      if (!active) return;
-      console.error("Failed to render PDF preview", generationError);
-      setError(true);
-    });
-
-    return () => {
-      active = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-    };
-  }, [quote, terms, documentTitle]);
-
-  if (error) {
-    return (
-      <div className="flex h-[760px] items-center justify-center px-6 text-center text-xs text-muted-foreground">
-        PDF preview unavailable. You can still try downloading the document.
-      </div>
-    );
+const generateHtmlPdfBlob = async (label: string) => {
+  const { element, tempContainer, opt } = preparePdfClone(label);
+  try {
+    const { default: html2pdf } = await import("html2pdf.js");
+    const output = await html2pdf().set(opt).from(element).outputPdf("blob");
+    const blob = output instanceof Blob ? output : new Blob([output], { type: "application/pdf" });
+    if (!blob.size) throw new Error("The PDF renderer returned an empty document.");
+    return { blob, filename: documentPdfFilename(label) };
+  } finally {
+    tempContainer.remove();
   }
-  if (!previewUrl) {
-    return (
-      <div className="flex h-[760px] items-center justify-center text-xs text-muted-foreground">
-        Preparing PDF preview…
-      </div>
-    );
-  }
-  return (
-    <iframe
-      title={`${documentTitle} PDF preview`}
-      src={previewUrl}
-      className="h-[760px] w-full border-0"
-    />
-  );
 };
 
 export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
@@ -839,18 +793,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     }
   };
 
-  const getRenderedPreviewPdf = async () => {
-    const iframe =
-      containerRef.current?.querySelector<HTMLIFrameElement>("iframe") ??
-      modalContainerRef.current?.querySelector<HTMLIFrameElement>("iframe");
-    const previewUrl = iframe?.src;
-    if (!previewUrl?.startsWith("blob:")) return null;
-    const response = await fetch(previewUrl);
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    return blob.size > 0 ? blob : null;
-  };
-
   const handleDownloadPDF = async () => {
     try {
       const downloadKind: DocumentKind = mode === "finalBill" ? "invoice" : "quote";
@@ -867,16 +809,21 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         items,
         totals,
       };
-      const previewBlob = await getRenderedPreviewPdf();
-      const { blob, filename } = previewBlob
-        ? { blob: previewBlob, filename: documentPdfFilename(downloadLabel) }
-        : downloadKind === "invoice"
-          ? await generateBillPdf(downloadQuote, {
-              documentTitle: "INVOICE",
-              label: downloadLabel,
-              terms,
-            })
-          : await generateQuotePdfBlob(downloadQuote, { label: downloadLabel, terms });
+      let generatedPdf;
+      try {
+        generatedPdf = await generateHtmlPdfBlob(downloadLabel);
+      } catch (htmlError) {
+        console.error("HTML PDF fallback failed; trying vector renderer", htmlError);
+        generatedPdf =
+          downloadKind === "invoice"
+            ? await generateBillPdf(downloadQuote, {
+                documentTitle: "INVOICE",
+                label: downloadLabel,
+                terms,
+              })
+            : await generateQuotePdfBlob(downloadQuote, { label: downloadLabel, terms });
+      }
+      const { blob, filename } = generatedPdf;
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -989,24 +936,29 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       });
       const docRef = computeDocSequenceLabel(docKind, docSequence);
       const pdfReference = mode === "quote" ? quoteReference : docRef;
-      const previewBlob = await getRenderedPreviewPdf();
-      const { blob } = previewBlob
-        ? { blob: previewBlob }
-        : mode === "finalBill"
-          ? await generateBillPdf(
-              { reference: pdfReference, jobRef: effectiveJobRef, clientInfo, items, totals },
-              { documentTitle: "INVOICE", label: docLabel, terms },
-            )
-          : await generateQuotePdfBlob(
-              {
-                reference: pdfReference,
-                jobRef: effectiveJobRef,
-                clientInfo,
-                items,
-                totals,
-              },
-              { label: docLabel, terms },
-            );
+      let generatedPdf;
+      try {
+        generatedPdf = await generateHtmlPdfBlob(docLabel);
+      } catch (htmlError) {
+        console.error("HTML PDF fallback failed; trying vector renderer", htmlError);
+        generatedPdf =
+          mode === "finalBill"
+            ? await generateBillPdf(
+                { reference: pdfReference, jobRef: effectiveJobRef, clientInfo, items, totals },
+                { documentTitle: "INVOICE", label: docLabel, terms },
+              )
+            : await generateQuotePdfBlob(
+                {
+                  reference: pdfReference,
+                  jobRef: effectiveJobRef,
+                  clientInfo,
+                  items,
+                  totals,
+                },
+                { label: docLabel, terms },
+              );
+      }
+      const { blob } = generatedPdf;
 
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
@@ -1314,7 +1266,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   };
 
   const pdfDocument = () => (
-    <ClientPdfPreview
+    <QuotePdfDocument
       quote={{
         reference:
           mode === "quote"
@@ -1328,6 +1280,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       }}
       terms={terms}
       documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
+      isPrintTarget
     />
   );
   const ccHasError =

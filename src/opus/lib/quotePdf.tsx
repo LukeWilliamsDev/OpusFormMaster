@@ -38,18 +38,6 @@ const COMPANY_INFO = {
   accountNumber: "31840773",
 };
 
-const asRecord = (value: unknown): Record<string, unknown> =>
-  value && typeof value === "object" ? (value as Record<string, unknown>) : {};
-
-const asPdfText = (value: unknown) => (typeof value === "string" ? value : "");
-
-const asPdfNumber = (value: unknown) => {
-  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-  if (typeof value !== "string") return 0;
-  const parsed = Number(value.replace(/[£$€,\s]/g, ""));
-  return Number.isFinite(parsed) ? parsed : 0;
-};
-
 export const buildDefaultTerms = (entity: string | undefined) =>
   [
     "Assumed total pours up to 1, additional pours shall be charged minimum of £3,500",
@@ -65,52 +53,6 @@ export const buildDefaultTerms = (entity: string | undefined) =>
 
 const isIncludedRate = (rate: number | string) =>
   typeof rate === "string" && ["INCLUDED", "INCL"].includes(rate.toUpperCase());
-
-const asPdfRate = (value: unknown): number | string => {
-  if (typeof value === "string" && isIncludedRate(value)) return "INCLUDED";
-  return asPdfNumber(value);
-};
-
-export const normalizeQuoteForPdf = (quote: Quote): Quote => {
-  const rawQuote = asRecord(quote);
-  const rawClientInfo = asRecord(rawQuote.clientInfo);
-  const rawItems = Array.isArray(rawQuote.items) ? rawQuote.items : [];
-  const rawTotals = asRecord(rawQuote.totals);
-
-  return {
-    reference: asPdfText(rawQuote.reference),
-    jobRef: asPdfText(rawQuote.jobRef),
-    clientInfo: {
-      entity: asPdfText(rawClientInfo.entity),
-      email: asPdfText(rawClientInfo.email),
-      site: asPdfText(rawClientInfo.site),
-      postcode: asPdfText(rawClientInfo.postcode),
-      ccEmails: Array.isArray(rawClientInfo.ccEmails)
-        ? rawClientInfo.ccEmails.filter((email): email is string => typeof email === "string")
-        : [],
-    },
-    items: rawItems
-      .filter((item): item is Record<string, unknown> => Boolean(item && typeof item === "object"))
-      .map((item, index) => ({
-        id: asPdfText(item.id) || `item-${index + 1}`,
-        description: asPdfText(item.description),
-        quantity: asPdfNumber(item.quantity),
-        unit: asPdfText(item.unit),
-        rate: asPdfRate(item.rate),
-      })),
-    totals: {
-      netTotal: asPdfNumber(rawTotals.netTotal),
-      vatTotal: asPdfNumber(rawTotals.vatTotal),
-      grossTotal: asPdfNumber(rawTotals.grossTotal),
-    },
-    vatRate: asPdfNumber(rawQuote.vatRate),
-  };
-};
-
-const normalizePdfTerms = (terms: unknown, entity: string | undefined) =>
-  Array.isArray(terms)
-    ? terms.filter((term): term is string => typeof term === "string")
-    : buildDefaultTerms(entity);
 
 const getRateValue = (rate: number | string) => {
   if (isIncludedRate(rate)) return 0;
@@ -964,30 +906,18 @@ export const QuotePdfVectorDocument: React.FC<{
 };
 
 // Generates a native vector PDF Blob
-export async function generateQuotePdfBlob(
-  quote: Quote,
-  opts: { label: string; terms?: string[] },
-) {
-  const normalizedQuote = normalizeQuoteForPdf(quote);
-  const terms = normalizePdfTerms(opts.terms, normalizedQuote.clientInfo?.entity);
-  const pdfInstance = pdf(<QuotePdfVectorDocument quote={normalizedQuote} terms={terms} />);
+export async function generateQuotePdfBlob(quote: Quote, opts: { label: string }) {
+  const terms = buildDefaultTerms(quote.clientInfo?.entity);
+  const pdfInstance = pdf(<QuotePdfVectorDocument quote={quote} terms={terms} />);
   const blob = await pdfInstance.toBlob();
   const filename = documentPdfFilename(opts.label);
   return { blob, filename };
 }
 
-export async function generateBillPdf(
-  bill: Quote,
-  opts: { documentTitle: string; label: string; terms?: string[] },
-) {
-  const normalizedBill = normalizeQuoteForPdf(bill);
-  const terms = normalizePdfTerms(opts.terms, normalizedBill.clientInfo?.entity);
+export async function generateBillPdf(bill: Quote, opts: { documentTitle: string; label: string }) {
+  const terms = buildDefaultTerms(bill.clientInfo?.entity);
   const pdfInstance = pdf(
-    <QuotePdfVectorDocument
-      quote={normalizedBill}
-      terms={terms}
-      documentTitle={opts.documentTitle}
-    />,
+    <QuotePdfVectorDocument quote={bill} terms={terms} documentTitle={opts.documentTitle} />,
   );
   const blob = await pdfInstance.toBlob();
   const filename = documentPdfFilename(opts.label);

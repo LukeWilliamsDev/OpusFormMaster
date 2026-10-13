@@ -200,7 +200,7 @@ const preparePdfClone = (quoteReference: string) => {
   const opt = {
     margin: 0,
     filename: `OpusForm_Quote_${quoteReference}.pdf`,
-    image: { type: "png" as const },
+    image: { type: "png" },
     html2canvas: {
       scale: 2,
       useCORS: true,
@@ -354,19 +354,6 @@ const preparePdfClone = (quoteReference: string) => {
   };
 
   return { element, tempContainer, opt };
-};
-
-const generateHtmlPdfBlob = async (label: string) => {
-  const { element, tempContainer, opt } = preparePdfClone(label);
-  try {
-    const { default: html2pdf } = await import("html2pdf.js");
-    const output = await html2pdf().set(opt).from(element).outputPdf("blob");
-    const blob = output instanceof Blob ? output : new Blob([output], { type: "application/pdf" });
-    if (!blob.size) throw new Error("The PDF renderer returned an empty document.");
-    return { blob, filename: documentPdfFilename(label) };
-  } finally {
-    tempContainer.remove();
-  }
 };
 
 export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
@@ -605,11 +592,52 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     };
   }, [mode]);
 
+  // Scaling logic for the PDF preview
   const containerRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+
+  useEffect(() => {
+    const updateScale = () => {
+      if (containerRef.current) {
+        const containerWidth = containerRef.current.clientWidth;
+        const baseWidth = 794; // A4 width in px at 96dpi
+        setScale(containerWidth / baseWidth);
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(updateScale);
+    if (containerRef.current) {
+      resizeObserver.observe(containerRef.current);
+    }
+    updateScale();
+
+    return () => resizeObserver.disconnect();
+  }, []);
 
   // Full-screen PDF preview modal (tablet/mobile only)
   const [previewOpen, setPreviewOpen] = useState(false);
   const modalContainerRef = useRef<HTMLDivElement>(null);
+  const [modalScale, setModalScale] = useState(1);
+
+  useEffect(() => {
+    if (!previewOpen) return;
+    const updateModalScale = () => {
+      if (modalContainerRef.current) {
+        const containerWidth = modalContainerRef.current.clientWidth;
+        const baseWidth = 794;
+        setModalScale(containerWidth / baseWidth);
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(updateModalScale);
+    if (modalContainerRef.current) {
+      resizeObserver.observe(modalContainerRef.current);
+    }
+    updateModalScale();
+
+    return () => resizeObserver.disconnect();
+  }, [previewOpen]);
+
   const totals = useMemo(() => {
     return computeTotals(items, mode === "finalBill" ? 0 : vatRate);
   }, [items, mode, vatRate]);
@@ -801,29 +829,16 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         kind: downloadKind,
         sequence: docSequence,
       });
-      const downloadQuote = {
-        reference:
-          mode === "quote" ? quoteReference : computeDocSequenceLabel(downloadKind, docSequence),
-        jobRef: effectiveJobRef,
-        clientInfo,
-        items,
-        totals,
-      };
-      let generatedPdf;
-      try {
-        generatedPdf = await generateHtmlPdfBlob(downloadLabel);
-      } catch (htmlError) {
-        console.error("HTML PDF fallback failed; trying vector renderer", htmlError);
-        generatedPdf =
-          downloadKind === "invoice"
-            ? await generateBillPdf(downloadQuote, {
-                documentTitle: "INVOICE",
-                label: downloadLabel,
-                terms,
-              })
-            : await generateQuotePdfBlob(downloadQuote, { label: downloadLabel, terms });
-      }
-      const { blob, filename } = generatedPdf;
+      const { blob, filename } = await generateQuotePdfBlob(
+        {
+          reference: computeDocSequenceLabel(downloadKind, docSequence),
+          jobRef: effectiveJobRef,
+          clientInfo,
+          items,
+          totals,
+        },
+        { label: downloadLabel },
+      );
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -936,29 +951,22 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       });
       const docRef = computeDocSequenceLabel(docKind, docSequence);
       const pdfReference = mode === "quote" ? quoteReference : docRef;
-      let generatedPdf;
-      try {
-        generatedPdf = await generateHtmlPdfBlob(docLabel);
-      } catch (htmlError) {
-        console.error("HTML PDF fallback failed; trying vector renderer", htmlError);
-        generatedPdf =
-          mode === "finalBill"
-            ? await generateBillPdf(
-                { reference: pdfReference, jobRef: effectiveJobRef, clientInfo, items, totals },
-                { documentTitle: "INVOICE", label: docLabel, terms },
-              )
-            : await generateQuotePdfBlob(
-                {
-                  reference: pdfReference,
-                  jobRef: effectiveJobRef,
-                  clientInfo,
-                  items,
-                  totals,
-                },
-                { label: docLabel, terms },
-              );
-      }
-      const { blob } = generatedPdf;
+      const { blob } =
+        mode === "finalBill"
+          ? await generateBillPdf(
+              { reference: pdfReference, jobRef: effectiveJobRef, clientInfo, items, totals },
+              { documentTitle: "INVOICE", label: docLabel },
+            )
+          : await generateQuotePdfBlob(
+              {
+                reference: pdfReference,
+                jobRef: effectiveJobRef,
+                clientInfo,
+                items,
+                totals,
+              },
+              { label: docLabel },
+            );
 
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
@@ -1265,7 +1273,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     return item.quantity * rateValue;
   };
 
-  const pdfDocument = () => (
+  const pdfDocument = (scaleValue: number, isPrintTarget = false) => (
     <QuotePdfDocument
       quote={{
         reference:
@@ -1280,7 +1288,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       }}
       terms={terms}
       documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
-      isPrintTarget
+      scaleValue={scaleValue}
+      isPrintTarget={isPrintTarget}
     />
   );
   const ccHasError =
@@ -2130,7 +2139,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               ref={containerRef}
               className="w-full relative flex justify-center items-start overflow-hidden bg-background border border-border py-6 rounded-xl font-archivo no-scrollbar"
             >
-              {pdfDocument()}
+              {pdfDocument(scale, true)}
             </div>
           </div>
         </div>
@@ -2164,7 +2173,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               ref={modalContainerRef}
               className="flex-1 overflow-y-auto flex justify-center items-start bg-background py-6 px-3 font-archivo no-scrollbar"
             >
-              {pdfDocument()}
+              {pdfDocument(modalScale)}
             </div>
           </motion.div>
         )}

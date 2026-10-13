@@ -7,7 +7,8 @@ import { isValidUKPostcode } from "../utils/geo";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { NoticeModal } from "@/components/ui/notice-modal";
-import { QuotePdfDocument, generateQuotePdfBlob, generateBillPdf } from "../lib/quotePdf";
+import { PDFViewer } from "@react-pdf/renderer";
+import { QuotePdfVectorDocument, generateQuotePdfBlob, generateBillPdf } from "../lib/quotePdf";
 import {
   computeDocumentLabel,
   computeDocSequenceLabel,
@@ -592,51 +593,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     };
   }, [mode]);
 
-  // Scaling logic for the PDF preview
   const containerRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(1);
-
-  useEffect(() => {
-    const updateScale = () => {
-      if (containerRef.current) {
-        const containerWidth = containerRef.current.clientWidth;
-        const baseWidth = 794; // A4 width in px at 96dpi
-        setScale(containerWidth / baseWidth);
-      }
-    };
-
-    const resizeObserver = new ResizeObserver(updateScale);
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
-    }
-    updateScale();
-
-    return () => resizeObserver.disconnect();
-  }, []);
 
   // Full-screen PDF preview modal (tablet/mobile only)
   const [previewOpen, setPreviewOpen] = useState(false);
   const modalContainerRef = useRef<HTMLDivElement>(null);
-  const [modalScale, setModalScale] = useState(1);
-
-  useEffect(() => {
-    if (!previewOpen) return;
-    const updateModalScale = () => {
-      if (modalContainerRef.current) {
-        const containerWidth = modalContainerRef.current.clientWidth;
-        const baseWidth = 794;
-        setModalScale(containerWidth / baseWidth);
-      }
-    };
-
-    const resizeObserver = new ResizeObserver(updateModalScale);
-    if (modalContainerRef.current) {
-      resizeObserver.observe(modalContainerRef.current);
-    }
-    updateModalScale();
-
-    return () => resizeObserver.disconnect();
-  }, [previewOpen]);
 
   const totals = useMemo(() => {
     return computeTotals(items, mode === "finalBill" ? 0 : vatRate);
@@ -829,16 +790,22 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         kind: downloadKind,
         sequence: docSequence,
       });
-      const { blob, filename } = await generateQuotePdfBlob(
-        {
-          reference: computeDocSequenceLabel(downloadKind, docSequence),
-          jobRef: effectiveJobRef,
-          clientInfo,
-          items,
-          totals,
-        },
-        { label: downloadLabel },
-      );
+      const downloadQuote = {
+        reference:
+          mode === "quote" ? quoteReference : computeDocSequenceLabel(downloadKind, docSequence),
+        jobRef: effectiveJobRef,
+        clientInfo,
+        items,
+        totals,
+      };
+      const { blob, filename } =
+        downloadKind === "invoice"
+          ? await generateBillPdf(downloadQuote, {
+              documentTitle: "INVOICE",
+              label: downloadLabel,
+              terms,
+            })
+          : await generateQuotePdfBlob(downloadQuote, { label: downloadLabel, terms });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -955,7 +922,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         mode === "finalBill"
           ? await generateBillPdf(
               { reference: pdfReference, jobRef: effectiveJobRef, clientInfo, items, totals },
-              { documentTitle: "INVOICE", label: docLabel },
+              { documentTitle: "INVOICE", label: docLabel, terms },
             )
           : await generateQuotePdfBlob(
               {
@@ -965,7 +932,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 items,
                 totals,
               },
-              { label: docLabel },
+              { label: docLabel, terms },
             );
 
       const reader = new FileReader();
@@ -1273,24 +1240,24 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     return item.quantity * rateValue;
   };
 
-  const pdfDocument = (scaleValue: number, isPrintTarget = false) => (
-    <QuotePdfDocument
-      quote={{
-        reference:
-          mode === "quote"
-            ? quoteReference
-            : computeDocSequenceLabel(mode === "finalBill" ? "invoice" : "quote", docSequence),
-        jobRef: effectiveJobRef,
-        clientInfo,
-        items,
-        totals,
-        vatRate,
-      }}
-      terms={terms}
-      documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
-      scaleValue={scaleValue}
-      isPrintTarget={isPrintTarget}
-    />
+  const pdfDocument = () => (
+    <PDFViewer showToolbar={false} style={{ width: "100%", height: "760px", border: "none" }}>
+      <QuotePdfVectorDocument
+        quote={{
+          reference:
+            mode === "quote"
+              ? quoteReference
+              : computeDocSequenceLabel(mode === "finalBill" ? "invoice" : "quote", docSequence),
+          jobRef: effectiveJobRef,
+          clientInfo,
+          items,
+          totals,
+          vatRate,
+        }}
+        terms={terms}
+        documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
+      />
+    </PDFViewer>
   );
   const ccHasError =
     ccInput.trim().length > 0 && getValidCcEmails(ccInput, clientInfo.email).invalid.length > 0;
@@ -2139,7 +2106,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               ref={containerRef}
               className="w-full relative flex justify-center items-start overflow-hidden bg-background border border-border py-6 rounded-xl font-archivo no-scrollbar"
             >
-              {pdfDocument(scale, true)}
+              {pdfDocument()}
             </div>
           </div>
         </div>
@@ -2173,7 +2140,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               ref={modalContainerRef}
               className="flex-1 overflow-y-auto flex justify-center items-start bg-background py-6 px-3 font-archivo no-scrollbar"
             >
-              {pdfDocument(modalScale)}
+              {pdfDocument()}
             </div>
           </motion.div>
         )}

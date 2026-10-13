@@ -7,7 +7,6 @@ import { isValidUKPostcode } from "../utils/geo";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { NoticeModal } from "@/components/ui/notice-modal";
-import { PDFViewer } from "@react-pdf/renderer";
 import { QuotePdfVectorDocument, generateQuotePdfBlob, generateBillPdf } from "../lib/quotePdf";
 import {
   computeDocumentLabel,
@@ -598,6 +597,17 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   // Full-screen PDF preview modal (tablet/mobile only)
   const [previewOpen, setPreviewOpen] = useState(false);
   const modalContainerRef = useRef<HTMLDivElement>(null);
+  const [PdfViewer, setPdfViewer] = useState<React.ElementType | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void import("@react-pdf/renderer").then(({ PDFViewer: BrowserPdfViewer }) => {
+      if (active) setPdfViewer(() => BrowserPdfViewer as unknown as React.ElementType);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const totals = useMemo(() => {
     return computeTotals(items, mode === "finalBill" ? 0 : vatRate);
@@ -1256,25 +1266,30 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     return item.quantity * rateValue;
   };
 
-  const pdfDocument = () => (
-    <PDFViewer showToolbar={false} style={{ width: "100%", height: "760px", border: "none" }}>
-      <QuotePdfVectorDocument
-        quote={{
-          reference:
-            mode === "quote"
-              ? quoteReference
-              : computeDocSequenceLabel(mode === "finalBill" ? "invoice" : "quote", docSequence),
-          jobRef: effectiveJobRef,
-          clientInfo,
-          items,
-          totals,
-          vatRate,
-        }}
-        terms={terms}
-        documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
-      />
-    </PDFViewer>
-  );
+  const pdfDocument = () =>
+    PdfViewer ? (
+      <PdfViewer showToolbar={false} style={{ width: "100%", height: "760px", border: "none" }}>
+        <QuotePdfVectorDocument
+          quote={{
+            reference:
+              mode === "quote"
+                ? quoteReference
+                : computeDocSequenceLabel(mode === "finalBill" ? "invoice" : "quote", docSequence),
+            jobRef: effectiveJobRef,
+            clientInfo,
+            items,
+            totals,
+            vatRate,
+          }}
+          terms={terms}
+          documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
+        />
+      </PdfViewer>
+    ) : (
+      <div className="flex h-[760px] items-center justify-center text-xs text-muted-foreground">
+        Preparing PDF preview…
+      </div>
+    );
   const ccHasError =
     ccInput.trim().length > 0 && getValidCcEmails(ccInput, clientInfo.email).invalid.length > 0;
   const filteredRecipientSuggestions = recipientSuggestions

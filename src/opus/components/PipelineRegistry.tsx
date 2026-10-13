@@ -19,7 +19,7 @@ import { usePortal, jobToRow } from "../context/PortalContext";
 import { supabase } from "@/integrations/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { generateQuotePdfBlob } from "../lib/quotePdf";
-import { computeDocumentLabel } from "../lib/documentNaming";
+import { computeDocumentLabel, formatJobReference } from "../lib/documentNaming";
 import { toast } from "sonner";
 import { derivePoursFromQuote } from "../utils/pourDerivation";
 
@@ -52,6 +52,7 @@ interface Quote {
   isSavedLocal?: boolean;
   isSent?: boolean;
   job_ref?: string | null;
+  quote_number?: number | null;
 }
 
 interface PipelineRegistryProps {
@@ -111,6 +112,7 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         totals: row.totals as Quote["totals"],
         isSent: row.is_sent,
         job_ref: (row as unknown as { job_ref?: string | null }).job_ref,
+        quote_number: (row as unknown as { quote_number?: number | null }).quote_number,
       }));
       setQuotes(loadedQuotes);
     } catch (e) {
@@ -160,12 +162,27 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
     const derivedPours = derivePoursFromQuote(convertingQuote.items || []);
 
+    let allocatedJobRef = convertingQuote.job_ref ?? "";
+    if (!allocatedJobRef && typeof convertingQuote.quote_number === "number") {
+      allocatedJobRef = formatJobReference(convertingQuote.quote_number);
+    }
+    if (!allocatedJobRef) {
+      const { data: jobNumber, error: jobNumberError } = await supabase.rpc(
+        "allocate_document_number",
+        { p_document_kind: "job", p_scope_id: null },
+      );
+      if (!jobNumberError && typeof jobNumber === "number") {
+        allocatedJobRef = formatJobReference(jobNumber);
+      } else {
+        console.error("Failed to allocate stable job reference", jobNumberError);
+        allocatedJobRef = convertingQuote.reference.replace("QTE", "OP").replace("JOB", "OP");
+      }
+    }
+
     // Create a new active Job object
     const newJob: Job = {
       id: Math.random().toString(36).substr(2, 9),
-      jobRef:
-        convertingQuote.job_ref ??
-        convertingQuote.reference.replace("QTE", "OP").replace("JOB", "OP"),
+      jobRef: allocatedJobRef,
       siteName: convertingQuote.clientInfo.site || "New Unassigned Site",
       mainContractor: convertingQuote.clientInfo.entity || "Contractor",
       postcode: convertingQuote.clientInfo.postcode || "N/A",
@@ -468,7 +485,14 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     >
                       {/* Quote Ref */}
                       <div className="font-mono text-[13px] font-semibold text-primary">
-                        {quote.reference || `QTE-${quote.id.substring(0, 4).toUpperCase()}`}
+                        <div>
+                          {quote.reference || `QTE-${quote.id.substring(0, 4).toUpperCase()}`}
+                        </div>
+                        {quote.job_ref && (
+                          <div className="mt-0.5 text-[10px] font-semibold text-muted-foreground">
+                            Job {quote.job_ref}
+                          </div>
+                        )}
                       </div>
 
                       {/* Site / Contractor */}
@@ -539,7 +563,14 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 {/* Ref + Status */}
                 <div className="flex items-center justify-between">
                   <span className="font-mono text-[13px] font-semibold text-primary">
-                    {quote.reference || `QTE-${quote.id.substring(0, 4).toUpperCase()}`}
+                    <span>
+                      {quote.reference || `QTE-${quote.id.substring(0, 4).toUpperCase()}`}
+                    </span>
+                    {quote.job_ref && (
+                      <span className="ml-2 text-[10px] font-semibold text-muted-foreground">
+                        Job {quote.job_ref}
+                      </span>
+                    )}
                   </span>
                   <span
                     className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-medium ${

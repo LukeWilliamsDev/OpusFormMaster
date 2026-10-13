@@ -13,6 +13,9 @@ import {
   computeDocSequenceLabel,
   documentPdfFilename,
   DocumentKind,
+  formatInvoiceReference,
+  formatReferenceForJob,
+  formatQuoteReference,
 } from "../lib/documentNaming";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { appendCcEmail, getValidCcEmails } from "../lib/quoteEmail";
@@ -83,6 +86,10 @@ interface Quote {
   isSavedLocal?: boolean;
   isSent?: boolean;
   job_ref?: string | null;
+  job_id?: string | null;
+  quote_number?: number | null;
+  invoice_number?: number | null;
+  revision?: number;
 }
 
 interface ValuationBuilderProps {
@@ -420,33 +427,46 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [quoteReference, setQuoteReference] = useState(
     mode === "finalBill"
-      ? `INV-${Math.floor(1000 + Math.random() * 9000)}`
-      : jobRef || `OP-${Math.floor(1000 + Math.random() * 9000)}`,
+      ? `INV-${String(new Date().getFullYear()).slice(-2)}-DRAFT`
+      : `Q-${String(new Date().getFullYear()).slice(-2)}-DRAFT`,
   );
-  const [jobRefValue, setJobRefValue] = useState<string>(
-    () => jobRef || (mode === "quote" ? `OP-${Math.floor(1000 + Math.random() * 9000)}-X` : ""),
-  );
+  const [jobRefValue, setJobRefValue] = useState<string>(() => jobRef || "");
   const effectiveJobRef = jobRef || (mode === "quote" ? jobRefValue : "");
   const [docSequence, setDocSequence] = useState<number>(1);
+  const [documentNumber, setDocumentNumber] = useState<number | null>(null);
   const [currentQuoteId, setCurrentQuoteId] = useState<string>(
     () => quoteToLoadId || crypto.randomUUID(),
   );
 
-  // Standalone quotes (Quotes Management, no job) get a random REF that doesn't
-  // collide with any reference already in use.
   useEffect(() => {
-    if (mode !== "quote" || quoteToLoadId) return;
+    if (quoteToLoadId || (mode !== "quote" && mode !== "finalBill")) return;
     let cancelled = false;
-    const pickUniqueReference = async () => {
-      const { data } = await supabase.from("quotes").select("reference");
-      const used = new Set((data || []).map((row) => row.reference));
-      let candidate = "";
-      do {
-        candidate = `OP-${Math.floor(1000 + Math.random() * 9000)}`;
-      } while (used.has(candidate));
-      if (!cancelled) setQuoteReference(candidate);
+    const allocateReference = async () => {
+      const kind = mode === "finalBill" ? "invoice" : "quote";
+      const relatedReference = formatReferenceForJob(kind, jobRef);
+      const relatedNumber = relatedReference?.match(/-(\d{4})$/)?.[1];
+      if (relatedReference && relatedNumber) {
+        if (!cancelled) {
+          setDocumentNumber(Number(relatedNumber));
+          setQuoteReference(relatedReference);
+        }
+        return;
+      }
+      const { data, error } = await supabase.rpc("allocate_document_number", {
+        p_document_kind: kind,
+        p_scope_id: null,
+      });
+      if (cancelled) return;
+      if (error || typeof data !== "number") {
+        console.error(`Failed to allocate ${kind} reference`, error);
+        return;
+      }
+      setDocumentNumber(data);
+      setQuoteReference(
+        mode === "finalBill" ? formatInvoiceReference(data) : formatQuoteReference(data),
+      );
     };
-    pickUniqueReference();
+    allocateReference();
     return () => {
       cancelled = true;
     };
@@ -508,6 +528,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           totals: row.totals as Quote["totals"],
           vatRate: Number((row as unknown as { vat_rate?: number }).vat_rate ?? 0),
           isSent: row.status === "sent",
+          invoice_number: (row as unknown as { invoice_number?: number | null }).invoice_number,
         }));
         setSavedQuotes(loadedInvoices);
         return;
@@ -529,6 +550,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         totals: row.totals as Quote["totals"],
         vatRate: Number((row as unknown as { vat_rate?: number }).vat_rate ?? 20),
         isSent: row.is_sent,
+        job_id: (row as unknown as { job_id?: string | null }).job_id,
+        quote_number: (row as unknown as { quote_number?: number | null }).quote_number,
+        revision: (row as unknown as { revision?: number }).revision,
       }));
       setSavedQuotes(loadedQuotes);
     } catch (e) {
@@ -642,8 +666,6 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     return computeTotals(items, mode === "finalBill" ? 0 : vatRate);
   }, [items, mode, vatRate]);
 
-  const generateNewReference = () => `JOB-${Math.floor(1000 + Math.random() * 9000)}`;
-
   const handleSaveDraft = async () => {
     if (!clientInfo.entity.trim()) {
       toast.error("Couldn’t save quote", {
@@ -676,6 +698,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           client_info: savedClientInfo,
           items,
           source_invoice_ids: sourceInvoiceIds || [],
+          invoice_number: documentNumber,
           vat_rate: vatRate,
           totals,
           status: "draft",
@@ -693,7 +716,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           vat_rate: vatRate,
           totals,
           is_sent: false,
+          job_id: jobId || null,
           job_ref: jobRefValue,
+          quote_number: documentNumber,
+          revision: 1,
           tenant_id: profile?.tenant_id,
         } as unknown as QuoteInsertRow;
         const { error } = await supabase.from("quotes").upsert(newQuote);
@@ -721,6 +747,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     setItems(mode === "quote" ? quote.items.map(normalizeMeasuredItem) : quote.items);
     setVatRate(mode === "finalBill" ? 0 : (quote.vatRate ?? 20));
     setQuoteReference(quote.reference);
+    setDocumentNumber(
+      mode === "finalBill" ? (quote.invoice_number ?? null) : (quote.quote_number ?? null),
+    );
     setCurrentQuoteId(quote.id);
     setIsAlreadySent(!!quote.isSent);
     if (mode !== "finalBill" && quote.job_ref) setJobRefValue(quote.job_ref);
@@ -751,6 +780,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                   ? (data as unknown as { is_sent: boolean }).is_sent
                   : (data as unknown as { status: string }).status === "sent",
               job_ref: (data as unknown as { job_ref?: string | null }).job_ref,
+              job_id: (data as unknown as { job_id?: string | null }).job_id,
+              quote_number: (data as unknown as { quote_number?: number | null }).quote_number,
+              invoice_number: (data as unknown as { invoice_number?: number | null })
+                .invoice_number,
+              revision: (data as unknown as { revision?: number }).revision,
               vatRate: Number((data as unknown as { vat_rate?: number }).vat_rate ?? 20),
             };
             loadQuote(quote);
@@ -1331,13 +1365,26 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             <div className="w-px h-4 bg-border hidden sm:block" />
             <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 flex-1 sm:flex-initial min-w-0">
               <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase whitespace-nowrap">
-                Ref
+                Job ref
               </span>
               <input
                 className="bg-transparent border-none outline-none text-primary text-xs font-black tracking-widest uppercase font-mono w-full sm:w-24 min-w-0"
+                value={effectiveJobRef}
+                onChange={(e) => setJobRefValue(e.target.value)}
+                placeholder="JOB-26-0001"
+                disabled={Boolean(jobRef)}
+              />
+            </div>
+            <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 flex-1 sm:flex-initial min-w-0">
+              <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase whitespace-nowrap">
+                {mode === "finalBill" ? "Invoice no." : "Quote no."}
+              </span>
+              <input
+                className="bg-transparent border-none outline-none text-primary text-xs font-black tracking-widest uppercase font-mono w-full sm:w-28 min-w-0"
                 value={quoteReference}
                 onChange={(e) => setQuoteReference(e.target.value)}
-                placeholder="JOB-0000"
+                placeholder={mode === "finalBill" ? "INV-26-0001" : "Q-26-0001"}
+                readOnly={documentNumber !== null}
               />
             </div>
           </div>

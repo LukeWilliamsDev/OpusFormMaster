@@ -180,8 +180,9 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
             const totals = computeTotals(inv.items || [], inv.vat_rate);
             const badgeColor = STATUS_BADGE[inv.status] || STATUS_BADGE.draft;
             const sequence = invoices.length - index;
-            const label = computeDocumentLabel({ jobRef, kind: "quote", sequence });
-            const shortRef = computeDocSequenceLabel("quote", sequence);
+            const label =
+              inv.reference || computeDocumentLabel({ jobRef, kind: "quote", sequence });
+            const shortRef = inv.reference || computeDocSequenceLabel("quote", sequence);
             const billed = inv.status === "billed";
             const selected = selectedIds.includes(inv.id);
             const locked = selectMode && billed;

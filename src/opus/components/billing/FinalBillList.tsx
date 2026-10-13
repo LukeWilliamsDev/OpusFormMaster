@@ -141,8 +141,9 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
             const totals = computeTotals(bill.items || [], bill.vat_rate);
             const badgeColor = STATUS_BADGE[bill.status] || STATUS_BADGE.draft;
             const sequence = bills.length - index;
-            const label = computeDocumentLabel({ jobRef, kind: "invoice", sequence });
-            const shortRef = computeDocSequenceLabel("invoice", sequence);
+            const label =
+              bill.reference || computeDocumentLabel({ jobRef, kind: "invoice", sequence });
+            const shortRef = bill.reference || computeDocSequenceLabel("invoice", sequence);
             return (
               <div
                 key={bill.id}

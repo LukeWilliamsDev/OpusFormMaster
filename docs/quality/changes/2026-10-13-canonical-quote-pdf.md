@@ -7,7 +7,7 @@
 **Source of truth:** User decision in this conversation
 **Evidence base:** `origin/main`
 **Evidence head:** working tree (uncommitted)
-**Evidence fingerprint:** 11ddff6a42937e9816990d76ea47df32fbad326e7abd1277479fb965e972c9b3
+**Evidence fingerprint:** c1b2dfed281db13f178ffc9fc6b099e80b1febbde23ae4eeb953318dfb6f4139
 
 ## Intent
 
@@ -25,7 +25,8 @@ Ensure the quote preview, downloaded PDF, and sent PDF are generated from the sa
 ### Changed files
 
 - `docs/quality/changes/2026-10-13-canonical-quote-pdf.md`
-- `src/opus/components/QuoteInvoiceBuilder.tsx`
+- `src/opus/lib/quotePdf.tsx`
+- `src/opus/lib/__tests__/quotePdf.test.ts`
 
 ### Out of scope
 
@@ -38,6 +39,7 @@ Ensure the quote preview, downloaded PDF, and sent PDF are generated from the sa
 - [x] Formatted currency strings and INCLUDED rates render correctly.
 - [x] Job Billing and final-invoice behavior remain unchanged except for renderer parity.
 - [x] The preview renders through a client-side PDF iframe without executing browser-only viewer components during server-side route rendering.
+- [x] Malformed persisted quote fields are normalized before React-PDF rendering.
 
 ## Risk and approval gates
 
@@ -48,12 +50,12 @@ Ensure the quote preview, downloaded PDF, and sent PDF are generated from the sa
 
 ## Verification evidence
 
-| Check         | Evidence                                                      | Result |
-| ------------- | ------------------------------------------------------------- | ------ |
-| Typecheck     | `npm run typecheck` passed                                    | PASS   |
-| Tests         | Full Vitest — 178 passed, 1 skipped                           | PASS   |
-| Build         | Production build and bundle budget passed                     | PASS   |
-| Critic review | Read-only audit identified and repaired the renderer mismatch | PASS   |
+| Check         | Evidence                                                              | Result |
+| ------------- | --------------------------------------------------------------------- | ------ |
+| Typecheck     | `npm run typecheck` passed                                            | PASS   |
+| Tests         | Full Vitest — 178 passed, 1 skipped; malformed PDF payload tests pass | PASS   |
+| Build         | Production build and bundle budget passed                             | PASS   |
+| Critic review | Read-only audit identified and repaired the renderer mismatch         | PASS   |
 
 ## Critic review
 

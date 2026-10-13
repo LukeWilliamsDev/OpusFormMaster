@@ -782,6 +782,18 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     }
   };
 
+  const getRenderedPreviewPdf = async () => {
+    const iframe =
+      containerRef.current?.querySelector<HTMLIFrameElement>("iframe") ??
+      modalContainerRef.current?.querySelector<HTMLIFrameElement>("iframe");
+    const previewUrl = iframe?.src;
+    if (!previewUrl?.startsWith("blob:")) return null;
+    const response = await fetch(previewUrl);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    return blob.size > 0 ? blob : null;
+  };
+
   const handleDownloadPDF = async () => {
     try {
       const downloadKind: DocumentKind = mode === "finalBill" ? "invoice" : "quote";
@@ -798,8 +810,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         items,
         totals,
       };
-      const { blob, filename } =
-        downloadKind === "invoice"
+      const previewBlob = await getRenderedPreviewPdf();
+      const { blob, filename } = previewBlob
+        ? { blob: previewBlob, filename: documentPdfFilename(downloadLabel) }
+        : downloadKind === "invoice"
           ? await generateBillPdf(downloadQuote, {
               documentTitle: "INVOICE",
               label: downloadLabel,
@@ -918,8 +932,10 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       });
       const docRef = computeDocSequenceLabel(docKind, docSequence);
       const pdfReference = mode === "quote" ? quoteReference : docRef;
-      const { blob } =
-        mode === "finalBill"
+      const previewBlob = await getRenderedPreviewPdf();
+      const { blob } = previewBlob
+        ? { blob: previewBlob }
+        : mode === "finalBill"
           ? await generateBillPdf(
               { reference: pdfReference, jobRef: effectiveJobRef, clientInfo, items, totals },
               { documentTitle: "INVOICE", label: docLabel, terms },

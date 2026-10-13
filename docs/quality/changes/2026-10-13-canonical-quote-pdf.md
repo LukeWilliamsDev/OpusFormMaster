@@ -7,7 +7,7 @@
 **Source of truth:** User decision in this conversation
 **Evidence base:** `origin/main`
 **Evidence head:** working tree (uncommitted)
-**Evidence fingerprint:** 7249297a92adfd10c092cb9372557be1e053bfe675dd12feb39e9a5234b3f443
+**Evidence fingerprint:** bffba212faacc882647be3227a6baa2ed538cda756341ff015486cbf9992cc06
 
 ## Intent
 
@@ -26,7 +26,6 @@ Ensure the quote preview, downloaded PDF, and sent PDF are generated from the sa
 
 - `docs/quality/changes/2026-10-13-canonical-quote-pdf.md`
 - `src/opus/components/QuoteInvoiceBuilder.tsx`
-- `src/opus/lib/quotePdf.tsx`
 
 ### Out of scope
 

@@ -7,7 +7,7 @@
 **Source of truth:** User decision in this conversation
 **Evidence base:** `origin/main`
 **Evidence head:** working tree (uncommitted)
-**Evidence fingerprint:** c1b2dfed281db13f178ffc9fc6b099e80b1febbde23ae4eeb953318dfb6f4139
+**Evidence fingerprint:** f31ec5bf762b66db65835e5c4b86d9f2dfe33094ff8807253855549b3730cd05
 
 ## Intent
 
@@ -25,8 +25,7 @@ Ensure the quote preview, downloaded PDF, and sent PDF are generated from the sa
 ### Changed files
 
 - `docs/quality/changes/2026-10-13-canonical-quote-pdf.md`
-- `src/opus/lib/quotePdf.tsx`
-- `src/opus/lib/__tests__/quotePdf.test.ts`
+- `src/opus/components/QuoteInvoiceBuilder.tsx`
 
 ### Out of scope
 
@@ -40,6 +39,7 @@ Ensure the quote preview, downloaded PDF, and sent PDF are generated from the sa
 - [x] Job Billing and final-invoice behavior remain unchanged except for renderer parity.
 - [x] The preview renders through a client-side PDF iframe without executing browser-only viewer components during server-side route rendering.
 - [x] Malformed persisted quote fields are normalized before React-PDF rendering.
+- [x] Download and send use the canonical HTML preview PDF path first, with vector generation as fallback.
 
 ## Risk and approval gates
 

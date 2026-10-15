@@ -11,14 +11,14 @@ describe("eligible quote suggestions", () => {
       },
       {
         created_at: "2026-10-01T00:00:00Z",
-        client_info: { entity: "acme", email: "accounts@acme.test" },
+        client_info: { entity: "Acme Trading", email: "accounts@acme.test" },
         items: [{ description: "Concrete", unit: "m³", rate: 125 }],
       },
     ]);
 
     expect(result.recipients).toEqual([
       {
-        entity: "Acme",
+        entity: "Acme Trading",
         email: "accounts@acme.test",
         recordCount: 2,
         lastUsed: "2026-10-01T00:00:00Z",

@@ -17,6 +17,7 @@ export interface BillClientInfo {
 
 export interface BillTotals {
   netTotal: number;
+  vatTotal: number;
   grossTotal: number;
 }
 
@@ -32,13 +33,16 @@ export const getLineTotal = (item: BillItem) => {
   } else {
     rateValue = Number(item.rate || 0);
   }
-  return item.quantity * rateValue;
+  return roundCurrency(item.quantity * rateValue);
 };
 
+export const roundCurrency = (value: number) => Math.round((value + Number.EPSILON) * 100) / 100;
+
 export const computeTotals = (items: BillItem[], vatRate: number): BillTotals => {
-  const netTotal = items.reduce((sum, item) => sum + getLineTotal(item), 0);
-  const grossTotal = netTotal * (1 + vatRate / 100);
-  return { netTotal, grossTotal };
+  const netTotal = roundCurrency(items.reduce((sum, item) => sum + getLineTotal(item), 0));
+  const vatTotal = roundCurrency(netTotal * (vatRate / 100));
+  const grossTotal = roundCurrency(netTotal + vatTotal);
+  return { netTotal, vatTotal, grossTotal };
 };
 
 export const newBillItem = (sourceInvoiceId?: string): BillItem => ({

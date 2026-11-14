@@ -17,14 +17,17 @@ export interface Quote {
   clientInfo?: {
     entity?: string;
     email?: string;
+    ccEmails?: string[];
     site?: string;
     postcode?: string;
   };
   items?: QuoteItem[];
   totals?: {
     netTotal?: number;
+    vatTotal?: number;
     grossTotal?: number;
   };
+  vatRate?: number;
 }
 
 const COMPANY_INFO = {
@@ -51,6 +54,18 @@ export const buildDefaultTerms = (entity: string | undefined) =>
 const isIncludedRate = (rate: number | string) =>
   typeof rate === "string" && ["INCLUDED", "INCL"].includes(rate.toUpperCase());
 
+const getRateValue = (rate: number | string) => {
+  if (isIncludedRate(rate)) return 0;
+  if (typeof rate === "string") {
+    const parsed = parseFloat(rate.replace(/[£$€,\s]/g, ""));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return Number(rate || 0);
+};
+
+const formatRate = (rate: number | string) =>
+  isIncludedRate(rate) ? "INCLUDED" : `£${getRateValue(rate).toFixed(2)}`;
+
 const getLineTotal = (item: QuoteItem) => {
   if (isIncludedRate(item.rate)) return 0;
   let rateValue = 0;
@@ -71,7 +86,7 @@ export const QuotePdfDocument: React.FC<{
   isPrintTarget?: boolean;
   documentTitle?: string;
 }> = ({ quote, terms, scaleValue = 1, isPrintTarget = false, documentTitle = "QUOTE" }) => {
-  const { reference, jobRef, clientInfo, items, totals } = quote;
+  const { reference, jobRef, clientInfo, items, totals, vatRate = 0 } = quote;
   return (
     <div
       className={`bg-white shadow-2xl text-slate-900 flex flex-col origin-top shrink-0 ${
@@ -211,9 +226,7 @@ export const QuotePdfDocument: React.FC<{
                       {item.unit}
                     </td>
                     <td className="p-3 text-xs text-right text-slate-900">
-                      {isIncludedRate(item.rate)
-                        ? "INCLUDED"
-                        : `£${Number(item.rate || 0).toFixed(2)}`}
+                      {formatRate(item.rate)}
                     </td>
                     <td className="p-3 text-xs text-right text-slate-900 font-black">
                       {isIncludedRate(item.rate)
@@ -246,6 +259,17 @@ export const QuotePdfDocument: React.FC<{
                 £{(totals?.netTotal ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </span>
             </div>
+            {vatRate > 0 && (
+              <div className="flex justify-between p-2 px-3 text-xs border-b border-stone-200 text-stone-600">
+                <span className="uppercase tracking-widest">VAT ({vatRate}%)</span>
+                <span className="font-black text-slate-900">
+                  £
+                  {(
+                    totals?.vatTotal ?? (totals?.grossTotal ?? 0) - (totals?.netTotal ?? 0)
+                  ).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between items-center p-3.5 px-3 bg-[#1b1c20] text-white font-black text-[15px]">
               <span className="uppercase tracking-widest">Total</span>
               <span className="text-white text-[15px]">
@@ -658,7 +682,7 @@ export const QuotePdfVectorDocument: React.FC<{
   terms: string[];
   documentTitle?: string;
 }> = ({ quote, terms, documentTitle = "QUOTE" }) => {
-  const { reference, jobRef, clientInfo, items, totals } = quote;
+  const { reference, jobRef, clientInfo, items, totals, vatRate = 0 } = quote;
   const logoUrl =
     typeof window !== "undefined" ? `${window.location.origin}/opus-form-primary-dark.png` : "";
 
@@ -784,11 +808,7 @@ export const QuotePdfVectorDocument: React.FC<{
                   <Text style={pdfStyles.tdDesc}>{item.description || "..."}</Text>
                   <Text style={pdfStyles.tdQty}>{item.quantity}</Text>
                   <Text style={pdfStyles.tdUnit}>{item.unit}</Text>
-                  <Text style={pdfStyles.tdRate}>
-                    {isIncludedRate(item.rate)
-                      ? "INCLUDED"
-                      : `£${Number(item.rate || 0).toFixed(2)}`}
-                  </Text>
+                  <Text style={pdfStyles.tdRate}>{formatRate(item.rate)}</Text>
                   <Text style={pdfStyles.tdTotal}>
                     {isIncludedRate(item.rate)
                       ? "INCLUDED"
@@ -817,6 +837,17 @@ export const QuotePdfVectorDocument: React.FC<{
                   })}
                 </Text>
               </View>
+              {vatRate > 0 && (
+                <View style={pdfStyles.subtotalRow}>
+                  <Text style={pdfStyles.subtotalLabel}>VAT ({vatRate}%)</Text>
+                  <Text style={pdfStyles.subtotalVal}>
+                    £
+                    {(
+                      totals?.vatTotal ?? (totals?.grossTotal ?? 0) - (totals?.netTotal ?? 0)
+                    ).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </Text>
+                </View>
+              )}
               <View style={pdfStyles.totalRow}>
                 <Text style={pdfStyles.totalLabel}>Total</Text>
                 <Text style={pdfStyles.totalVal}>

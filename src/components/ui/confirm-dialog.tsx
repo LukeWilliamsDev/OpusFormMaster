@@ -27,6 +27,7 @@ export interface ConfirmDialogProps {
   message: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
+  confirmDisabled?: boolean;
   onConfirm: () => void;
 }
 
@@ -39,6 +40,7 @@ export function ConfirmDialog({
   message,
   confirmLabel = "Confirm",
   cancelLabel = "Cancel",
+  confirmDisabled = false,
   onConfirm,
 }: ConfirmDialogProps) {
   return (
@@ -81,6 +83,7 @@ export function ConfirmDialog({
               <Button
                 variant={tone === "destructive" ? "destructive" : "default"}
                 className="flex-1"
+                disabled={confirmDisabled}
                 onClick={onConfirm}
               >
                 {confirmLabel}

@@ -1,17 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { renderBillingPdf } from "../_shared/billing-pdf.ts";
 
 // NOTE: This Edge Function MUST be deployed with `verify_jwt: false`
 // to allow email clients (Gmail, Outlook, etc.) to fetch the corporate SVG logo
 // via the GET endpoint without Supabase authorization headers.
 
-// _shared/cors.ts and _shared/email-theme.ts are duplicated inline below
-// instead of imported: this function is deployed via the Supabase Management
-// API as a single-file bundle (no local CLI session), which can't resolve
-// relative imports. If CLI deploy access is restored, switch back to
-// `import { corsHeaders } from "../_shared/cors.ts"` and
-// `import { emailShell, logoSvg } from "../_shared/email-theme.ts"` and delete
-// the block below.
+// The email shell remains inline for the legacy deployment bundle. The
+// authoritative PDF renderer is imported from _shared and must be deployed
+// with a bundle-aware Supabase CLI/management path; a single-file deployment
+// that drops this import is not an approved release artifact.
 
 const ALLOWED_ORIGINS = [
   "https://opusform.co.uk",
@@ -141,12 +139,7 @@ function logoSvg(theme: "light" | "dark"): string {
   );
 }
 
-const AUTHORIZED_SEND_ROLES = new Set([
-  "admin",
-  "director",
-  "logistics_coordinator",
-  "logistics_assistant",
-]);
+const AUTHORIZED_SEND_ROLES = new Set(["admin", "director", "logistics_coordinator"]);
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function isValidEmail(value: unknown): value is string {
@@ -171,16 +164,9 @@ function escapeHtml(value: string): string {
 
 interface RequestPayload {
   finalBillId: string;
-  toEmail: string;
-  clientName?: string;
-  siteName?: string;
-  postcode?: string;
-  billRef: string;
-  label?: string;
-  pdfBase64: string; // Base64 encoded string from frontend
-  netTotal?: number;
-  grossTotal?: number;
-  fromEmail?: string; // Optional custom sender
+  // Legacy fields remain optional while clients roll forward. The server
+  // derives recipient, metadata, totals, and PDF bytes from the saved row.
+  toEmail?: string;
 }
 
 serve(async (req) => {
@@ -205,6 +191,11 @@ serve(async (req) => {
 
   if (req.method !== "POST") return jsonError(req, "Method not allowed.", 405);
 
+  let claimedFinalBillId: string | null = null;
+  let providerCallStarted = false;
+  let providerAccepted = false;
+  let providerRejected = false;
+  let artifactPath: string | null = null;
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -226,34 +217,147 @@ serve(async (req) => {
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role,status,tenant_id")
       .eq("id", user.id)
       .maybeSingle();
     if (profileError || !profile) return jsonError(req, "Forbidden.", 403);
-    if (!AUTHORIZED_SEND_ROLES.has(profile.role)) return jsonError(req, "Forbidden.", 403);
+    if (profile.status !== "active" || !AUTHORIZED_SEND_ROLES.has(profile.role)) {
+      return jsonError(req, "Forbidden.", 403);
+    }
 
     const payload: RequestPayload = await req.json();
-    const {
-      finalBillId,
-      toEmail,
-      clientName,
-      siteName,
-      postcode,
-      billRef,
-      label,
-      pdfBase64,
-      netTotal,
-      grossTotal,
-      fromEmail,
-    } = payload;
+    const { finalBillId, toEmail: legacyToEmail } = payload;
 
     if (!finalBillId) {
       return jsonError(req, "finalBillId is required.", 400);
     }
-    if (!pdfBase64) {
-      return jsonError(req, "pdfBase64 is required.", 400);
+    // The service-role client bypasses RLS, so re-apply tenant/object checks
+    // explicitly before reading or mutating billing state. A sent bill is
+    // idempotent: do not send it again when a client retries the same request.
+    let { data: finalBill, error: finalBillError } = await supabase
+      .from("final_bills")
+      .select("id,tenant_id,status,reference,client_info,items,totals,vat_rate,date,job_id")
+      .eq("id", finalBillId)
+      .maybeSingle();
+    if (finalBillError || !finalBill) return jsonError(req, "Invoice not found.", 404);
+    if (!profile.tenant_id || finalBill.tenant_id !== profile.tenant_id) {
+      return jsonError(req, "Forbidden.", 403);
     }
-    if (!isValidEmail(toEmail)) return jsonError(req, "A valid recipient email is required.", 400);
+    let storedClientInfo =
+      finalBill.client_info && typeof finalBill.client_info === "object"
+        ? (finalBill.client_info as Record<string, unknown>)
+        : {};
+    let storedEmail =
+      typeof storedClientInfo.email === "string" ? storedClientInfo.email.trim() : "";
+    if (!isValidEmail(storedEmail)) {
+      return jsonError(req, "The saved invoice recipient is unavailable.", 409);
+    }
+    if (
+      legacyToEmail &&
+      (!isValidEmail(legacyToEmail) ||
+        legacyToEmail.trim().toLowerCase() !== storedEmail.toLowerCase())
+    ) {
+      return jsonError(req, "The recipient does not match the saved invoice.", 403);
+    }
+    let safeClientName =
+      typeof storedClientInfo.entity === "string" ? storedClientInfo.entity : "Valued Client";
+    let safeSiteName = typeof storedClientInfo.site === "string" ? storedClientInfo.site : "Site";
+    let safePostcode =
+      typeof storedClientInfo.postcode === "string" ? storedClientInfo.postcode : "";
+    if (finalBill.status === "sent") {
+      return new Response(JSON.stringify({ success: true, alreadySent: true }), {
+        headers: { ...corsHeaders(req), "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+    if (finalBill.status === "sending") {
+      return jsonError(req, "This invoice is already being sent. Please retry later.", 409);
+    }
+
+    // Claim first, then take the authoritative snapshot. The database trigger
+    // prevents draft edits while this claim is in flight.
+    const { data: claimedFinalBill, error: claimError } = await supabase
+      .from("final_bills")
+      .update({ status: "sending" })
+      .eq("id", finalBillId)
+      .eq("tenant_id", profile.tenant_id)
+      .eq("status", "draft")
+      .select("id")
+      .maybeSingle();
+    if (claimError) {
+      console.error("Failed to claim final bill for sending:", claimError);
+      return jsonError(req, "Unable to reserve the invoice for sending.", 503);
+    }
+    if (!claimedFinalBill) {
+      return jsonError(req, "This invoice is already being sent. Please retry later.", 409);
+    }
+    claimedFinalBillId = claimedFinalBill.id;
+
+    const { data: claimedSnapshot, error: claimedSnapshotError } = await supabase
+      .from("final_bills")
+      .select("id,tenant_id,status,reference,client_info,items,totals,vat_rate,date,job_id")
+      .eq("id", finalBillId)
+      .eq("tenant_id", profile.tenant_id)
+      .eq("status", "sending")
+      .maybeSingle();
+    if (claimedSnapshotError || !claimedSnapshot) {
+      throw new Error("The claimed invoice snapshot could not be loaded.");
+    }
+    finalBill = claimedSnapshot;
+    storedClientInfo =
+      finalBill.client_info && typeof finalBill.client_info === "object"
+        ? (finalBill.client_info as Record<string, unknown>)
+        : {};
+    storedEmail = typeof storedClientInfo.email === "string" ? storedClientInfo.email.trim() : "";
+    if (!isValidEmail(storedEmail)) {
+      throw new Error("The saved invoice recipient is unavailable.");
+    }
+    if (
+      legacyToEmail &&
+      (!isValidEmail(legacyToEmail) ||
+        legacyToEmail.trim().toLowerCase() !== storedEmail.toLowerCase())
+    ) {
+      throw new Error("The recipient does not match the saved invoice.");
+    }
+    safeClientName =
+      typeof storedClientInfo.entity === "string" ? storedClientInfo.entity : "Valued Client";
+    safeSiteName = typeof storedClientInfo.site === "string" ? storedClientInfo.site : "Site";
+    safePostcode = typeof storedClientInfo.postcode === "string" ? storedClientInfo.postcode : "";
+
+    const { data: job } = await supabase
+      .from("jobs")
+      .select("job_ref")
+      .eq("id", finalBill.job_id)
+      .eq("tenant_id", profile.tenant_id)
+      .maybeSingle();
+    let renderedPdf;
+    try {
+      renderedPdf = await renderBillingPdf({
+        kind: "final_bill",
+        reference: finalBill.reference,
+        date: finalBill.date,
+        jobRef: job?.job_ref,
+        clientInfo: storedClientInfo,
+        items: Array.isArray(finalBill.items) ? finalBill.items : [],
+        vatRate: finalBill.vat_rate,
+        totals: finalBill.totals,
+      });
+    } catch (renderError) {
+      console.error("Failed to render authoritative final-bill PDF:", renderError);
+      throw new Error("The saved invoice cannot be rendered safely.");
+    }
+    const safeBillRef = finalBill.reference;
+    const safeLabel = `Invoice #${safeBillRef}`;
+    const toEmail = storedEmail.toLowerCase();
+    const storedCcEmails = Array.isArray(storedClientInfo.ccEmails)
+      ? storedClientInfo.ccEmails.filter((email): email is string => typeof email === "string")
+      : [];
+    if (storedCcEmails.length > 20) {
+      throw new Error("Too many CC recipients.");
+    }
+    if (storedCcEmails.some((email) => !isValidEmail(email))) {
+      throw new Error("Each CC recipient must be a valid email address.");
+    }
 
     // Retrieve settings config from the secure smtp_config table
     const { data: configRows, error: configError } = await supabase
@@ -262,7 +366,7 @@ serve(async (req) => {
 
     if (configError || !configRows || configRows.length === 0) {
       console.error("send-final-bill: failed to load email configuration", configError);
-      return jsonError(req, "Email service unavailable.", 503);
+      throw new Error("Email service unavailable.");
     }
 
     const config: Record<string, string> = {};
@@ -275,20 +379,20 @@ serve(async (req) => {
 
     if (!resendApiKey) {
       console.error("send-final-bill: RESEND_API_KEY is not configured");
-      return jsonError(req, "Email service unavailable.", 503);
+      throw new Error("Email service unavailable.");
     }
 
     let bodyHtml = "";
     bodyHtml +=
       '      <p class="text-title" style="margin: 0 0 16px; font-size: 16px; font-weight: 700;">Dear ' +
-      escapeHtml(clientName || "Valued Client") +
+      escapeHtml(safeClientName) +
       ",</p>";
     bodyHtml +=
       '      <p class="text-secondary" style="margin: 0 0 24px;">Please find attached the invoice <strong class="text-title">#' +
-      escapeHtml(billRef) +
+      escapeHtml(safeBillRef) +
       "</strong> for the concrete works at " +
-      escapeHtml(siteName || "Site") +
-      (postcode ? ", " + escapeHtml(postcode) : "") +
+      escapeHtml(safeSiteName) +
+      (safePostcode ? ", " + escapeHtml(safePostcode) : "") +
       ".</p>";
     bodyHtml += "      <!-- Summary Table -->";
     bodyHtml +=
@@ -299,7 +403,18 @@ serve(async (req) => {
       '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">Net Subtotal</td>';
     bodyHtml +=
       '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900;">£' +
-      Number(netTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
+      renderedPdf.financials.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 }) +
+      "</td>";
+    bodyHtml += "        </tr>";
+    bodyHtml +=
+      '        <tr class="bg-page border-theme" style="border-bottom: 1px solid #D9D3C7;">';
+    bodyHtml +=
+      '          <td class="text-secondary" style="padding: 14px 16px; font-weight: bold; text-transform: uppercase; font-size: 10px; letter-spacing: 0.1em;">VAT (' +
+      renderedPdf.financials.vatRate +
+      "%)</td>";
+    bodyHtml +=
+      '          <td class="text-title" style="padding: 14px 16px; text-align: right; font-weight: 900;">£' +
+      renderedPdf.financials.vatTotal.toLocaleString(undefined, { minimumFractionDigits: 2 }) +
       "</td>";
     bodyHtml += "        </tr>";
     bodyHtml += '        <tr class="bg-header">';
@@ -307,7 +422,7 @@ serve(async (req) => {
       '          <td class="text-title" style="padding: 16px; font-weight: 900; text-transform: uppercase; font-size: 11px; letter-spacing: 0.15em;">Total Due</td>';
     bodyHtml +=
       '          <td class="text-title" style="padding: 16px; text-align: right; font-weight: 900; font-size: 16px;">£' +
-      Number(grossTotal || 0).toLocaleString(undefined, { minimumFractionDigits: 2 }) +
+      renderedPdf.financials.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 }) +
       "</td>";
     bodyHtml += "        </tr>";
     bodyHtml += "      </table>";
@@ -324,8 +439,39 @@ serve(async (req) => {
     });
 
     const defaultSender = config["RESEND_FROM_EMAIL"] || "onboarding@resend.dev";
-    const sender = fromEmail && fromEmail === defaultSender ? fromEmail : defaultSender;
+    const sender = defaultSender;
+    const normalizedCcEmails = Array.from(
+      new Set(storedCcEmails.map((email) => email.trim().toLowerCase())),
+    ).filter((email) => email !== toEmail && isValidEmail(email));
 
+    artifactPath = `${profile.tenant_id}/final_bill/${finalBill.id}/${renderedPdf.sha256}.pdf`;
+    const { error: artifactUploadError } = await supabase.storage
+      .from("billing-artifacts")
+      .upload(artifactPath, renderedPdf.bytes, { contentType: "application/pdf", upsert: true });
+    if (artifactUploadError) {
+      console.error("Failed to store authoritative final-bill PDF:", artifactUploadError);
+      throw new Error("The invoice artifact could not be stored.");
+    }
+    const { error: artifactError } = await supabase.from("billing_artifacts").upsert(
+      {
+        tenant_id: profile.tenant_id,
+        document_kind: "final_bill",
+        document_id: finalBill.id,
+        storage_path: artifactPath,
+        sha256: renderedPdf.sha256,
+        byte_size: renderedPdf.byteSize,
+        status: "generated",
+        generated_at: new Date().toISOString(),
+        sent_at: null,
+      },
+      { onConflict: "document_kind,document_id" },
+    );
+    if (artifactError) {
+      console.error("Failed to record authoritative final-bill PDF:", artifactError);
+      throw new Error("The invoice artifact could not be recorded.");
+    }
+
+    providerCallStarted = true;
     const resendResponse = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
@@ -334,44 +480,108 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: "Opus Form Billing <" + sender + ">",
-        to: [toEmail.trim()],
+        to: [toEmail],
+        ...(normalizedCcEmails.length > 0 ? { cc: normalizedCcEmails } : {}),
         subject:
-          (label || "Invoice #" + billRef) +
+          safeLabel +
           " | " +
-          (siteName || "Project") +
-          (postcode ? ", " + postcode : "") +
+          safeSiteName +
+          (safePostcode ? ", " + safePostcode : "") +
           " – " +
-          (clientName || "Client"),
+          safeClientName,
         html: emailHtml,
         attachments: [
           {
-            content: pdfBase64,
-            filename: (label ? "OpusForm_" + label : "Invoice_" + billRef) + ".pdf",
+            content: renderedPdf.base64,
+            filename: renderedPdf.filename,
           },
         ],
       }),
     });
 
+    providerRejected = !resendResponse.ok;
+    providerAccepted = resendResponse.ok;
     const resendData = await resendResponse.json();
 
-    if (!resendResponse.ok) {
+    if (providerRejected) {
       throw new Error(resendData.message || JSON.stringify(resendData));
     }
 
     const { error: updateError } = await supabase
       .from("final_bills")
       .update({ status: "sent", sent_at: new Date().toISOString() })
-      .eq("id", finalBillId);
+      .eq("id", finalBillId)
+      .eq("tenant_id", profile.tenant_id)
+      .neq("status", "sent");
 
     if (updateError) {
       console.error("Failed to mark final bill as sent:", updateError);
+      await supabase
+        .from("billing_artifacts")
+        .update({ status: "reconciliation_required" })
+        .eq("tenant_id", profile.tenant_id)
+        .eq("document_kind", "final_bill")
+        .eq("document_id", finalBill.id);
+      // Do not reset a bill after the provider accepted the email: a retry
+      // could send a duplicate. Leave the explicit `sending` state for a
+      // reviewed reconciliation job/operator instead.
+      return jsonError(
+        req,
+        "Invoice delivered, but its billing record needs reconciliation before retrying.",
+        503,
+      );
     }
+    const { error: artifactSentError } = await supabase
+      .from("billing_artifacts")
+      .update({ status: "sent", sent_at: new Date().toISOString() })
+      .eq("tenant_id", profile.tenant_id)
+      .eq("document_kind", "final_bill")
+      .eq("document_id", finalBill.id)
+      .eq("sha256", renderedPdf.sha256);
+    if (artifactSentError) {
+      console.error("Failed to mark final-bill artifact as sent:", artifactSentError);
+      return jsonError(
+        req,
+        "Invoice delivered, but its artifact record needs reconciliation before retrying.",
+        503,
+      );
+    }
+    claimedFinalBillId = null;
 
     return new Response(JSON.stringify({ success: true, id: resendData?.id ?? null }), {
       headers: { ...corsHeaders(req), "Content-Type": "application/json" },
       status: 200,
     });
   } catch (error) {
+    // Reset only when the provider call never started or explicitly rejected
+    // the request. A timeout/transport error can hide provider acceptance, so
+    // preserve `sending` and require reconciliation rather than duplicating an
+    // invoice on retry.
+    if (claimedFinalBillId && (!providerCallStarted || providerRejected) && !providerAccepted) {
+      const recoveryUrl = Deno.env.get("SUPABASE_URL");
+      const recoveryKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (recoveryUrl && recoveryKey) {
+        const recoveryClient = createClient(recoveryUrl, recoveryKey);
+        const { error: releaseError } = await recoveryClient
+          .from("final_bills")
+          .update({ status: "draft" })
+          .eq("id", claimedFinalBillId)
+          .eq("status", "sending");
+        if (releaseError) console.error("Failed to release final-bill send claim:", releaseError);
+      }
+    }
+    if (claimedFinalBillId && providerCallStarted && !providerAccepted && !providerRejected) {
+      console.error("Final-bill provider outcome is unknown; preserving sending claim");
+      const recoveryUrl = Deno.env.get("SUPABASE_URL");
+      const recoveryKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (recoveryUrl && recoveryKey && artifactPath) {
+        const recoveryClient = createClient(recoveryUrl, recoveryKey);
+        await recoveryClient
+          .from("billing_artifacts")
+          .update({ status: "reconciliation_required" })
+          .eq("storage_path", artifactPath);
+      }
+    }
     console.error("Error sending final bill via Resend:", error);
     return jsonError(req, "Unable to send the final bill.", 502);
   }

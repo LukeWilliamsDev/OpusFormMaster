@@ -12,7 +12,6 @@ import { toast } from "sonner";
 import { supabase } from "../../../integrations/supabase/client";
 import type { Json } from "@/integrations/supabase/types";
 import { handleError } from "../../utils/errorHandler";
-import { generateBillPdf } from "../../lib/quotePdf";
 import { BillItemsEditor } from "./BillItemsEditor";
 import {
   BillItem,
@@ -99,6 +98,17 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
   const totals = computeTotals(items, vatRate);
 
   const saveDraft = async (): Promise<string | null> => {
+    if (finalBillId) {
+      const { data: existingBill, error: existingBillError } = await supabase
+        .from("final_bills")
+        .select("status")
+        .eq("id", finalBillId)
+        .maybeSingle();
+      if (existingBillError) throw existingBillError;
+      if (existingBill?.status === "sent" || existingBill?.status === "sending") {
+        throw new Error("This invoice has already been sent or is currently being sent.");
+      }
+    }
     const row = {
       id: finalBillId,
       job_id: jobId,
@@ -108,9 +118,11 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
       source_invoice_ids: sourceInvoiceIds,
       vat_rate: vatRate,
       totals: totals as unknown as Json,
+      date: new Date().toISOString(),
+      status: "draft",
     };
     const { data, error } = await supabase.from("final_bills").upsert(row).select("id").single();
-    if (error || !data) throw error;
+    if (error || !data) throw error ?? new Error("The invoice draft could not be saved.");
     setFinalBillId(data.id);
     return data.id;
   };
@@ -144,33 +156,14 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
     }
     setSending(true);
     const sendingToastId = toast.loading("SENDING INVOICE", {
-      description: "Generating the PDF and sending it to the client…",
+      description: "Preparing the saved billing artifact and sending it to the client…",
     });
     try {
       const id = await saveDraft();
 
-      const { blob } = await generateBillPdf(
-        { reference, clientInfo, items, totals },
-        { documentTitle: "INVOICE", label: `Invoice-01_${reference}` },
-      );
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onloadend = () => resolve((reader.result as string).split(",")[1]);
-        reader.onerror = reject;
-      });
-      reader.readAsDataURL(blob);
-      const base64 = await base64Promise;
-
-      const { error } = await supabase.functions.invoke("send-final-bill", {
+      const { data: sendResult, error } = await supabase.functions.invoke("send-final-bill", {
         body: {
           finalBillId: id,
-          clientName: clientInfo.entity,
-          siteName: clientInfo.site,
-          postcode: clientInfo.postcode,
-          billRef: reference,
-          pdfBase64: base64,
-          netTotal: totals.netTotal,
-          grossTotal: totals.grossTotal,
         },
       });
       if (error) {
@@ -182,6 +175,15 @@ export const FinalBillBuilder: React.FC<FinalBillBuilderProps> = ({
           // fallback to default message
         }
         throw new Error(errMsg);
+      }
+      if (sendResult?.alreadySent) {
+        toast.info("Invoice already sent", {
+          id: sendingToastId,
+          description: "No changes were written to the sent invoice.",
+        });
+        onSaved();
+        onClose();
+        return;
       }
 
       toast.success("INVOICE SENT", {

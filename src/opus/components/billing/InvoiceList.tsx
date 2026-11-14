@@ -5,8 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { toast } from "sonner";
 import { supabase } from "../../../integrations/supabase/client";
 import { BillItem, BillClientInfo, computeTotals } from "../../lib/billing";
-import { generateQuotePdfBlob } from "../../lib/quotePdf";
+import { downloadPdfBlob, generateQuotePdfBlob } from "../../lib/quotePdf";
 import { computeDocumentLabel, computeDocSequenceLabel } from "../../lib/documentNaming";
+import { formatUKDate } from "../../utils/week";
 
 export interface InvoiceRow {
   id: string;
@@ -83,17 +84,11 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
           clientInfo: invoice.client_info,
           items: invoice.items,
           totals,
+          vatRate: invoice.vat_rate,
         },
         { label },
       );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadPdfBlob(blob, filename);
     } catch (err) {
       toast.error("Couldn't generate PDF", {
         description: err instanceof Error ? err.message : undefined,
@@ -210,7 +205,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                   <span className="text-sm font-semibold truncate">{label}</span>
                 </div>
                 <div className="flex items-center gap-4 shrink-0 ml-auto">
-                  <span className="text-xs text-muted-foreground">{inv.date}</span>
+                  <span className="text-xs text-muted-foreground">{formatUKDate(inv.date)}</span>
                   <span className="text-sm font-bold text-right w-20">
                     £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
@@ -238,7 +233,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
               </DialogHeader>
               <div className="flex items-center justify-between gap-3 -mt-2">
                 <span className="text-xs text-muted-foreground">
-                  {previewInvoice.date} · {previewInvoice.status.toUpperCase()}
+                  {formatUKDate(previewInvoice.date)} · {previewInvoice.status.toUpperCase()}
                 </span>
                 <Button
                   size="sm"

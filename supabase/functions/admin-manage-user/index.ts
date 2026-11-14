@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const LUKE_ADMIN_EMAIL = "luke@opusform.co.uk";
 const ROLES = [
   "admin",
@@ -45,28 +47,30 @@ const rest = async (base: string, key: string, path: string, init: RequestInit =
     },
   });
 
-const tokenSubject = (token: string): string | null => {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1] ?? ""));
-    return typeof payload.sub === "string" ? payload.sub : null;
-  } catch {
-    return null;
-  }
-};
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req) });
   try {
     const base = Deno.env.get("SUPABASE_URL");
     const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
-    const callerId = token ? tokenSubject(token) : null;
-    if (!base || !key || !callerId) return response(req, { error: "Unauthorized." }, 401);
+    if (!base || !key || !token || token === key) {
+      return response(req, { error: "Unauthorized." }, 401);
+    }
+
+    // Verify the signature, issuer, expiry, and subject through Supabase Auth;
+    // never trust a locally decoded JWT payload for account management.
+    const authClient = createClient(base, key);
+    const {
+      data: { user },
+      error: userError,
+    } = await authClient.auth.getUser(token);
+    const callerId = user?.id ?? null;
+    if (userError || !callerId) return response(req, { error: "Unauthorized." }, 401);
 
     const callerProfileResponse = await rest(
       base,
       key,
-      `/rest/v1/profiles?id=eq.${encodeURIComponent(callerId)}&select=role,status`,
+      `/rest/v1/profiles?id=eq.${encodeURIComponent(callerId)}&select=role,status,tenant_id`,
     );
     const callerProfiles = await callerProfileResponse.json();
     const callerProfile = callerProfiles?.[0];
@@ -92,15 +96,21 @@ Deno.serve(async (req) => {
         400,
       );
     }
+    if (!callerProfile.tenant_id) {
+      return response(req, { error: "Your account is not assigned to a tenant." }, 403);
+    }
 
     const targetResponse = await rest(
       base,
       key,
-      `/rest/v1/profiles?id=eq.${encodeURIComponent(user_id)}&select=email,tenant_id,full_name,role,status`,
+      `/rest/v1/profiles?id=eq.${encodeURIComponent(user_id)}&tenant_id=eq.${encodeURIComponent(callerProfile.tenant_id)}&select=email,tenant_id,full_name,role,status`,
     );
     const targets = await targetResponse.json();
     const target = targets?.[0];
     if (!target) return response(req, { error: "User not found." }, 404);
+    if (String(target.tenant_id).toLowerCase() !== String(callerProfile.tenant_id).toLowerCase()) {
+      return response(req, { error: "You may only manage users in your own tenant." }, 403);
+    }
 
     if (action === "update") {
       const nextEmail = (email ?? target.email ?? "").toLowerCase();
@@ -168,14 +178,45 @@ Deno.serve(async (req) => {
     const updateResponse = await rest(
       base,
       key,
-      `/rest/v1/profiles?id=eq.${encodeURIComponent(user_id)}`,
+      `/rest/v1/profiles?id=eq.${encodeURIComponent(user_id)}&tenant_id=eq.${encodeURIComponent(callerProfile.tenant_id)}`,
       {
         method: "PATCH",
         headers: { Prefer: "return=minimal" },
         body: JSON.stringify(update),
       },
     );
-    if (!updateResponse.ok) return response(req, { error: await updateResponse.text() }, 500);
+    if (!updateResponse.ok) {
+      // Auth is updated before the profile row for email/status operations.
+      // Compensate best-effort and still return failure so callers cannot treat
+      // a divergent Auth/profile pair as success.
+      if (action === "update" && email && email !== target.email) {
+        const rollbackEmail = await fetch(`${base}/auth/v1/admin/users/${user_id}`, {
+          method: "PUT",
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ email: target.email }),
+        });
+        if (!rollbackEmail.ok) console.error("admin-manage-user email rollback failed");
+      }
+      if (action === "disable" || action === "archive" || action === "reactivate") {
+        const rollbackAuth = await fetch(`${base}/auth/v1/admin/users/${user_id}`, {
+          method: "PUT",
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ban_duration: target.status === "active" ? "none" : "876000h",
+          }),
+        });
+        if (!rollbackAuth.ok) console.error("admin-manage-user status rollback failed");
+      }
+      return response(req, { error: await updateResponse.text() }, 500);
+    }
 
     return response(req, { success: true, action: auditAction });
   } catch (error) {

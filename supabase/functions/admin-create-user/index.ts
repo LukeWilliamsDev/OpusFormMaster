@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const LUKE_ADMIN_EMAIL = "luke@opusform.co.uk";
 const ROLES = [
   "admin",
@@ -44,28 +46,30 @@ const rest = (base: string, key: string, path: string, init: RequestInit = {}) =
     },
   });
 
-const tokenSubject = (token: string): string | null => {
-  try {
-    const payload = JSON.parse(atob(token.split(".")[1] ?? ""));
-    return typeof payload.sub === "string" ? payload.sub : null;
-  } catch {
-    return null;
-  }
-};
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders(req) });
   try {
     const base = Deno.env.get("SUPABASE_URL");
     const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const token = req.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
-    const callerId = token ? tokenSubject(token) : null;
-    if (!base || !key || !callerId) return response(req, { error: "Unauthorized." }, 401);
+    if (!base || !key || !token || token === key) {
+      return response(req, { error: "Unauthorized." }, 401);
+    }
+
+    // Decode and trust no JWT payload locally. The Supabase Auth API verifies
+    // the signature, expiry, issuer, and subject before we use the identity.
+    const authClient = createClient(base, key);
+    const {
+      data: { user },
+      error: userError,
+    } = await authClient.auth.getUser(token);
+    const callerId = user?.id ?? null;
+    if (userError || !callerId) return response(req, { error: "Unauthorized." }, 401);
 
     const callerProfileResponse = await rest(
       base,
       key,
-      `/rest/v1/profiles?id=eq.${encodeURIComponent(callerId)}&select=role,status`,
+      `/rest/v1/profiles?id=eq.${encodeURIComponent(callerId)}&select=role,status,tenant_id`,
     );
     const callerProfiles = await callerProfileResponse.json();
     const callerProfile = callerProfiles?.[0];
@@ -80,6 +84,12 @@ Deno.serve(async (req) => {
     const { email, full_name, role, tenant_id, redirectTo } = await req.json();
     if (!email || !role || !tenant_id) {
       return response(req, { error: "email, role and tenant_id are required." }, 400);
+    }
+    if (
+      !callerProfile.tenant_id ||
+      String(tenant_id).toLowerCase() !== String(callerProfile.tenant_id).toLowerCase()
+    ) {
+      return response(req, { error: "You may only create users in your own tenant." }, 403);
     }
     if (!ROLES.includes(role)) return response(req, { error: "Invalid role." }, 400);
     if (role === "admin" && email.toLowerCase() !== LUKE_ADMIN_EMAIL) {
@@ -122,13 +132,24 @@ Deno.serve(async (req) => {
         headers: { Prefer: "return=minimal" },
         body: JSON.stringify({
           role,
-          tenant_id,
+          tenant_id: callerProfile.tenant_id,
           full_name: full_name ?? "",
           must_change_password: true,
         }),
       },
     );
-    if (!profileResponse.ok) return response(req, { error: await profileResponse.text() }, 500);
+    if (!profileResponse.ok) {
+      // The Auth invitation has already created a user. Compensate so a failed
+      // profile write cannot leave an invited account outside the application.
+      const rollback = await fetch(`${base}/auth/v1/admin/users/${invited.id}`, {
+        method: "DELETE",
+        headers: { apikey: key, Authorization: `Bearer ${key}` },
+      });
+      if (!rollback.ok) {
+        console.error("admin-create-user rollback failed:", await rollback.text());
+      }
+      return response(req, { error: await profileResponse.text() }, 500);
+    }
     return response(req, { success: true, user_id: invited.id });
   } catch (error) {
     console.error("admin-create-user error:", error);

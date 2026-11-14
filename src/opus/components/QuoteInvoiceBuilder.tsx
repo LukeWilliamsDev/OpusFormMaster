@@ -7,14 +7,34 @@ import { isValidUKPostcode } from "../utils/geo";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
 import { NoticeModal } from "@/components/ui/notice-modal";
-import { QuotePdfDocument, generateQuotePdfBlob, generateBillPdf } from "../lib/quotePdf";
+import {
+  QuotePdfDocument,
+  downloadPdfBlob,
+  generateQuotePdfBlob,
+  generateBillPdf,
+} from "../lib/quotePdf";
 import {
   computeDocumentLabel,
   computeDocSequenceLabel,
   documentPdfFilename,
   DocumentKind,
+  formatInvoiceReference,
+  formatReferenceForJob,
+  formatQuoteReference,
 } from "../lib/documentNaming";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { appendCcEmail, getValidCcEmails } from "../lib/quoteEmail";
+import { computeTotals } from "../lib/billing";
+import { formatUKDate } from "../utils/week";
+import {
+  buildEligibleSuggestions,
+  classifyLineItemDescription,
+  LineItemCategory,
+  LineItemSuggestion,
+  LINE_ITEM_CATEGORY_LABELS,
+  REQUIRED_LINE_ITEM_CATEGORIES,
+  RecipientSuggestion,
+} from "../lib/eligibleQuoteData";
 import {
   Plus,
   Trash2,
@@ -37,6 +57,7 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
+  Search,
 } from "lucide-react";
 
 type QuoteInsertRow = Database["public"]["Tables"]["quotes"]["Insert"];
@@ -47,6 +68,7 @@ interface MeasuredItem {
   quantity: number;
   unit: string;
   rate: number | string;
+  category?: LineItemCategory;
 }
 
 interface Quote {
@@ -56,17 +78,54 @@ interface Quote {
   clientInfo: {
     entity: string;
     email: string;
+    ccEmails?: string[];
     site: string;
     postcode: string;
   };
   items: MeasuredItem[];
   totals: {
     netTotal: number;
+    vatTotal?: number;
     grossTotal: number;
   };
+  vatRate?: number;
   isSavedLocal?: boolean;
   isSent?: boolean;
   job_ref?: string | null;
+  job_id?: string | null;
+  quote_number?: number | null;
+  invoice_number?: number | null;
+  revision?: number;
+}
+
+export interface FinalBillSendPayloadInput {
+  finalBillId: string;
+  clientInfo: Quote["clientInfo"];
+  ccEmails?: string[];
+  billRef?: string;
+  label?: string;
+  pdfBase64?: string;
+  netTotal?: number;
+  vatRate?: number;
+  vatTotal?: number;
+  grossTotal?: number;
+}
+
+/**
+ * Build the server payload for a final-bill send only after the client has
+ * validated the form. Keeping this pure makes the recipient contract
+ * regression-testable without invoking Supabase or sending an email.
+ */
+export function buildFinalBillSendPayload({ finalBillId, clientInfo }: FinalBillSendPayloadInput) {
+  const toEmail = clientInfo.email.trim();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(toEmail)) {
+    throw new Error("A valid client email is required to send the final bill.");
+  }
+
+  // The Edge Function derives the recipient, metadata, totals, and PDF from
+  // the persisted final-bill row. The client-side renderer is only a local
+  // preview/internal attachment and is never an email source of truth.
+  return { finalBillId };
 }
 
 interface ValuationBuilderProps {
@@ -82,20 +141,14 @@ interface ValuationBuilderProps {
   sendOnly?: boolean;
 }
 
-const SUGGESTED_ITEMS = [
-  { description: "C30/37 Foundation Slab Pour", unit: "m³", rate: 145.0 },
-  { description: "C40/50 Columns & Reinforced Beam Work", unit: "m³", rate: 185.0 },
-  { description: "A393 Structural Rebar Steel Mesh", unit: "m²", rate: 12.5 },
-  { description: "DPM & Sand Blinding Preparation", unit: "m²", rate: 8.0 },
-  { description: "Double-Sided Formwork Shuttering", unit: "m²", rate: 45.0 },
-  { description: "Concrete Pump Hire - 36m Boom Setup", unit: "Sum", rate: 450.0 },
-  { description: "Operative Labor Day Rate", unit: "Day", rate: 240.0 },
-  { description: "Site Supervisor Day Rate", unit: "Day", rate: 280.0 },
-];
-
 const COMMON_UNITS = ["m²", "m³", "m", "No.", "Sum"];
 
 const INITIAL_ITEMS: MeasuredItem[] = [];
+
+const normalizeMeasuredItem = (item: MeasuredItem): MeasuredItem => ({
+  ...item,
+  category: item.category || classifyLineItemDescription(item.description),
+});
 
 const capitalizeWords = (str: string) => {
   if (!str) return "";
@@ -364,15 +417,19 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     email: prefill?.email || "",
     site: prefill?.site || "",
     postcode: prefill?.postcode || "",
+    ccEmails: [] as string[],
   });
+  const [ccInput, setCcInput] = useState("");
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const [isAlreadySent, setIsAlreadySent] = useState(false);
   const [showSendConfirm, setShowSendConfirm] = useState(false);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [focusedItemId, setFocusedItemId] = useState<string | null>(null);
   const [unitFocusedItemId, setUnitFocusedItemId] = useState<string | null>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [items, setItems] = useState<MeasuredItem[]>(INITIAL_ITEMS);
+  const [vatRate, setVatRate] = useState(mode === "finalBill" ? 0 : 20);
   const [terms, setTerms] = useState<string[]>([
     "Assumed total pours up to 1, additional pours shall be charged minimum of £3,500",
     "Cancelled pours with less than 24hrs notice shall be charged",
@@ -394,37 +451,58 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
   const [showSavedQuotes, setShowSavedQuotes] = useState(false);
   const [savedQuotes, setSavedQuotes] = useState<Quote[]>([]);
+  const [recipientSuggestions, setRecipientSuggestions] = useState<RecipientSuggestion[]>([]);
+  const [lineItemSuggestions, setLineItemSuggestions] = useState<LineItemSuggestion[]>([]);
+  const [eligibleSuggestionsLoading, setEligibleSuggestionsLoading] = useState(false);
+  const [eligibleSuggestionsError, setEligibleSuggestionsError] = useState<string | null>(null);
+  const [recipientSearch, setRecipientSearch] = useState("");
+  const [recipientPickerOpen, setRecipientPickerOpen] = useState(false);
+  const [ccRecipientSearch, setCcRecipientSearch] = useState("");
+  const [ccRecipientPickerOpen, setCcRecipientPickerOpen] = useState(false);
   const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
   const [lastSaved, setLastSaved] = useState<string | null>(null);
   const [quoteReference, setQuoteReference] = useState(
     mode === "finalBill"
-      ? `INV-${Math.floor(1000 + Math.random() * 9000)}`
-      : jobRef || `OP-${Math.floor(1000 + Math.random() * 9000)}`,
+      ? `INV-${String(new Date().getFullYear()).slice(-2)}-DRAFT`
+      : `Q-${String(new Date().getFullYear()).slice(-2)}-DRAFT`,
   );
-  const [jobRefValue, setJobRefValue] = useState<string>(
-    () => jobRef || (mode === "quote" ? `OP-${Math.floor(1000 + Math.random() * 9000)}-X` : ""),
-  );
+  const [jobRefValue, setJobRefValue] = useState<string>(() => jobRef || "");
   const effectiveJobRef = jobRef || (mode === "quote" ? jobRefValue : "");
   const [docSequence, setDocSequence] = useState<number>(1);
+  const [documentNumber, setDocumentNumber] = useState<number | null>(null);
   const [currentQuoteId, setCurrentQuoteId] = useState<string>(
     () => quoteToLoadId || crypto.randomUUID(),
   );
 
-  // Standalone quotes (Quotes Management, no job) get a random REF that doesn't
-  // collide with any reference already in use.
   useEffect(() => {
-    if (mode !== "quote" || quoteToLoadId) return;
+    if (quoteToLoadId || (mode !== "quote" && mode !== "finalBill")) return;
     let cancelled = false;
-    const pickUniqueReference = async () => {
-      const { data } = await supabase.from("quotes").select("reference");
-      const used = new Set((data || []).map((row) => row.reference));
-      let candidate = "";
-      do {
-        candidate = `OP-${Math.floor(1000 + Math.random() * 9000)}`;
-      } while (used.has(candidate));
-      if (!cancelled) setQuoteReference(candidate);
+    const allocateReference = async () => {
+      const kind = mode === "finalBill" ? "invoice" : "quote";
+      const relatedReference = formatReferenceForJob(kind, jobRef);
+      const relatedNumber = relatedReference?.match(/-(\d{4})$/)?.[1];
+      if (relatedReference && relatedNumber) {
+        if (!cancelled) {
+          setDocumentNumber(Number(relatedNumber));
+          setQuoteReference(relatedReference);
+        }
+        return;
+      }
+      const { data, error } = await supabase.rpc("allocate_document_number", {
+        p_document_kind: kind,
+        p_scope_id: null,
+      });
+      if (cancelled) return;
+      if (error || typeof data !== "number") {
+        console.error(`Failed to allocate ${kind} reference`, error);
+        return;
+      }
+      setDocumentNumber(data);
+      setQuoteReference(
+        mode === "finalBill" ? formatInvoiceReference(data) : formatQuoteReference(data),
+      );
     };
-    pickUniqueReference();
+    allocateReference();
     return () => {
       cancelled = true;
     };
@@ -484,7 +562,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           clientInfo: row.client_info as Quote["clientInfo"],
           items: row.items as unknown as MeasuredItem[],
           totals: row.totals as Quote["totals"],
+          vatRate: Number((row as unknown as { vat_rate?: number }).vat_rate ?? 0),
           isSent: row.status === "sent",
+          invoice_number: (row as unknown as { invoice_number?: number | null }).invoice_number,
         }));
         setSavedQuotes(loadedInvoices);
         return;
@@ -504,7 +584,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         clientInfo: row.client_info as Quote["clientInfo"],
         items: row.items as unknown as MeasuredItem[],
         totals: row.totals as Quote["totals"],
+        vatRate: Number((row as unknown as { vat_rate?: number }).vat_rate ?? 20),
         isSent: row.is_sent,
+        job_id: (row as unknown as { job_id?: string | null }).job_id,
+        quote_number: (row as unknown as { quote_number?: number | null }).quote_number,
+        revision: (row as unknown as { revision?: number }).revision,
       }));
       setSavedQuotes(loadedQuotes);
     } catch (e) {
@@ -516,6 +600,57 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   useEffect(() => {
     loadSavedQuotes();
   }, []);
+
+  useEffect(() => {
+    if (mode !== "quote") {
+      setRecipientSuggestions([]);
+      setLineItemSuggestions([]);
+      setEligibleSuggestionsLoading(false);
+      setEligibleSuggestionsError(null);
+      return;
+    }
+    let cancelled = false;
+    const loadEligibleSuggestions = async () => {
+      setEligibleSuggestionsLoading(true);
+      setEligibleSuggestionsError(null);
+      try {
+        const [invoiceResult, quoteResult] = await Promise.all([
+          supabase
+            .from("invoices")
+            .select("client_info, items, created_at, job_id")
+            .eq("status", "draft")
+            .not("job_id", "is", null),
+          supabase.from("quotes").select("client_info, items, created_at").eq("is_sent", false),
+        ]);
+        if (cancelled) return;
+        if (invoiceResult.error || quoteResult.error) {
+          throw invoiceResult.error || quoteResult.error;
+        }
+        const suggestions = buildEligibleSuggestions([
+          ...((invoiceResult.data || []).map((record) => ({
+            ...record,
+            source: "invoice",
+          })) as never[]),
+          ...((quoteResult.data || []).map((record) => ({
+            ...record,
+            source: "quote",
+          })) as never[]),
+        ]);
+        setRecipientSuggestions(suggestions.recipients);
+        setLineItemSuggestions(suggestions.lineItems);
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Failed to load eligible quote suggestions", error);
+        setEligibleSuggestionsError("Eligible history could not be loaded.");
+      } finally {
+        if (!cancelled) setEligibleSuggestionsLoading(false);
+      }
+    };
+    loadEligibleSuggestions();
+    return () => {
+      cancelled = true;
+    };
+  }, [mode]);
 
   // Scaling logic for the PDF preview
   const containerRef = useRef<HTMLDivElement>(null);
@@ -564,28 +699,16 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   }, [previewOpen]);
 
   const totals = useMemo(() => {
-    const netTotal = items.reduce((acc, item) => {
-      let rateValue = 0;
-      if (typeof item.rate === "string") {
-        const uppercaseRate = item.rate.toUpperCase();
-        if (uppercaseRate === "INCLUDED" || uppercaseRate === "INCL") {
-          rateValue = 0;
-        } else {
-          const cleanRateStr = item.rate.replace(/[£$,\s]/g, "");
-          const parsed = parseFloat(cleanRateStr);
-          rateValue = isNaN(parsed) ? 0 : parsed;
-        }
-      } else {
-        rateValue = Number(item.rate || 0);
-      }
-      return acc + item.quantity * rateValue;
-    }, 0);
-    return { netTotal, grossTotal: netTotal };
-  }, [items]);
-
-  const generateNewReference = () => `JOB-${Math.floor(1000 + Math.random() * 9000)}`;
+    return computeTotals(items, mode === "finalBill" ? 0 : vatRate);
+  }, [items, mode, vatRate]);
 
   const handleSaveDraft = async () => {
+    if (isAlreadySent) {
+      toast.error("This document has already been sent", {
+        description: "Create a new revision instead of changing the sent record.",
+      });
+      return;
+    }
     if (!clientInfo.entity.trim()) {
       toast.error("Couldn’t save quote", {
         description: "Enter a client name before saving the draft.",
@@ -594,19 +717,40 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     }
 
     const quoteId = currentQuoteId;
+    const savedCcValidation = getValidCcEmails(ccInput, clientInfo.email);
+    if (savedCcValidation.invalid.length > 0) {
+      toast.error("Couldn’t save quote", {
+        description: "Correct the CC email addresses before saving the draft.",
+      });
+      return;
+    }
+    const savedClientInfo = {
+      ...clientInfo,
+      ccEmails: savedCcValidation.deduped,
+    };
 
     try {
       if (mode === "finalBill") {
         if (!jobId) throw new Error("Missing job for invoice save");
+        const { data: existingFinalBill, error: existingFinalBillError } = await supabase
+          .from("final_bills")
+          .select("status")
+          .eq("id", quoteId)
+          .maybeSingle();
+        if (existingFinalBillError) throw existingFinalBillError;
+        if (existingFinalBill?.status === "sent" || existingFinalBill?.status === "sending") {
+          throw new Error("This invoice has already been sent or is currently being sent.");
+        }
         const newFinalBill = {
           id: quoteId,
           job_id: jobId,
           reference: quoteReference,
-          date: new Date().toLocaleDateString("en-GB"),
-          client_info: clientInfo,
+          date: new Date().toISOString(),
+          client_info: savedClientInfo,
           items,
           source_invoice_ids: sourceInvoiceIds || [],
-          vat_rate: 0,
+          invoice_number: documentNumber,
+          vat_rate: vatRate,
           totals,
           status: "draft",
         };
@@ -614,16 +758,26 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         if (error) throw error;
       } else {
         if (!profile?.tenant_id) throw new Error("Profile still loading — try again in a moment.");
+        const { data: existingQuote, error: existingQuoteError } = await supabase
+          .from("quotes")
+          .select("is_sent")
+          .eq("id", quoteId)
+          .maybeSingle();
+        if (existingQuoteError) throw existingQuoteError;
+        if (existingQuote?.is_sent) throw new Error("This quotation has already been sent.");
         const newQuote = {
           id: quoteId,
           reference: quoteReference,
-          date: new Date().toLocaleDateString("en-GB"),
-          client_info: clientInfo,
+          date: new Date().toISOString(),
+          client_info: savedClientInfo,
           items,
-          vat_rate: 0,
+          vat_rate: vatRate,
           totals,
           is_sent: false,
+          job_id: jobId || null,
           job_ref: jobRefValue,
+          quote_number: documentNumber,
+          revision: 1,
           tenant_id: profile?.tenant_id,
         } as unknown as QuoteInsertRow;
         const { error } = await supabase.from("quotes").upsert(newQuote);
@@ -646,9 +800,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   };
 
   const loadQuote = (quote: Quote) => {
-    setClientInfo(quote.clientInfo);
-    setItems(quote.items);
+    setClientInfo({ ...quote.clientInfo, ccEmails: quote.clientInfo.ccEmails || [] });
+    setCcInput((quote.clientInfo.ccEmails || []).join(", "));
+    setItems(mode === "quote" ? quote.items.map(normalizeMeasuredItem) : quote.items);
+    setVatRate(mode === "finalBill" ? 0 : (quote.vatRate ?? 20));
     setQuoteReference(quote.reference);
+    setDocumentNumber(
+      mode === "finalBill" ? (quote.invoice_number ?? null) : (quote.quote_number ?? null),
+    );
     setCurrentQuoteId(quote.id);
     setIsAlreadySent(!!quote.isSent);
     if (mode !== "finalBill" && quote.job_ref) setJobRefValue(quote.job_ref);
@@ -679,6 +838,12 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                   ? (data as unknown as { is_sent: boolean }).is_sent
                   : (data as unknown as { status: string }).status === "sent",
               job_ref: (data as unknown as { job_ref?: string | null }).job_ref,
+              job_id: (data as unknown as { job_id?: string | null }).job_id,
+              quote_number: (data as unknown as { quote_number?: number | null }).quote_number,
+              invoice_number: (data as unknown as { invoice_number?: number | null })
+                .invoice_number,
+              revision: (data as unknown as { revision?: number }).revision,
+              vatRate: Number((data as unknown as { vat_rate?: number }).vat_rate ?? 20),
             };
             loadQuote(quote);
             if (onQuoteLoaded) onQuoteLoaded();
@@ -715,7 +880,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         );
         setItems(mergedItems);
         const firstClientInfo = data[0]?.client_info as Quote["clientInfo"] | undefined;
-        if (firstClientInfo) setClientInfo(firstClientInfo);
+        if (firstClientInfo)
+          setClientInfo({ ...firstClientInfo, ccEmails: firstClientInfo.ccEmails || [] });
       } catch (e) {
         console.error("Failed to merge source invoices into final bill", e);
       }
@@ -762,17 +928,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           clientInfo,
           items,
           totals,
+          vatRate,
         },
         { label: downloadLabel },
       );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadPdfBlob(blob, filename);
     } catch (err) {
       const { message } = handleError(err, { message: "Error generating PDF download" });
       toast.error("PDF GENERATION FAILURE", {
@@ -781,31 +941,80 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
     }
   };
 
-  const handleSend = async () => {
-    if (isAlreadySent) return;
-
-    // Validation checks before sending
+  const getValidationErrors = () => {
     const missingFields: string[] = [];
     if (!clientInfo.entity.trim()) missingFields.push("Client Name");
     if (!clientInfo.email.trim()) missingFields.push("Client Email");
+    const ccValidation = getValidCcEmails(ccInput, clientInfo.email);
+    if (ccValidation.invalid.length > 0) missingFields.push("Valid CC Email Addresses");
     if (!clientInfo.site.trim()) missingFields.push("Project/Site Name");
     if (clientInfo.postcode.trim() && !isValidUKPostcode(clientInfo.postcode)) {
       missingFields.push("Invalid Site Postcode format (e.g. M1 1AE)");
     }
     if (items.length === 0) {
       missingFields.push("Line Items (at least one is required)");
-    } else if (items.some((i) => !i.description.trim())) {
-      missingFields.push("Line Item Description (all added items require a description)");
+    } else {
+      if (items.some((i) => !i.description.trim())) {
+        missingFields.push("Line Item Description (all added items require a description)");
+      }
+      if (mode === "quote") {
+        if (items.some((i) => !i.category)) {
+          missingFields.push("Line Item Categories (categorize every line item)");
+        }
+        if (items.some((i) => !i.unit.trim())) {
+          missingFields.push("Line Item Units (all added items require a unit)");
+        }
+        if (items.some((i) => !Number.isFinite(i.quantity) || i.quantity <= 0)) {
+          missingFields.push("Line Item Quantities (must be greater than zero)");
+        }
+        if (
+          items.some(
+            (i) =>
+              !isIncludedRate(i.rate) &&
+              (typeof i.rate === "string"
+                ? i.rate.trim() === "" || !Number.isFinite(Number(i.rate.replace(/[£$€,\s]/g, "")))
+                : !Number.isFinite(Number(i.rate))),
+          )
+        ) {
+          missingFields.push("Line Item Rates (enter a valid rate or mark INCLUDED)");
+        }
+        REQUIRED_LINE_ITEM_CATEGORIES.forEach((category) => {
+          if (!items.some((item) => item.category === category)) {
+            missingFields.push(`Required category: ${LINE_ITEM_CATEGORY_LABELS[category]}`);
+          }
+        });
+      }
     }
 
     const validTerms = terms.filter((t) => t.trim() !== "");
     if (validTerms.length === 0)
       missingFields.push("Terms & Summary Conditions (at least one condition is required)");
 
+    return missingFields;
+  };
+
+  const openSendReview = () => {
+    const errors = getValidationErrors();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
+    setReviewConfirmed(false);
+    setShowSendConfirm(true);
+  };
+
+  const handleSend = async () => {
+    if (isAlreadySent) return;
+
+    const missingFields = getValidationErrors();
     if (missingFields.length > 0) {
       setValidationErrors(missingFields);
       return;
     }
+
+    const ccValidation = getValidCcEmails(ccInput, clientInfo.email);
+
+    const ccEmails = ccValidation.deduped;
 
     if (!profile?.tenant_id) {
       toast.error("Not ready", {
@@ -827,50 +1036,71 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         sequence: docSequence,
       });
       const docRef = computeDocSequenceLabel(docKind, docSequence);
+      const pdfReference = mode === "quote" ? quoteReference : docRef;
+      // This browser PDF is retained only for the internal job attachment.
+      // Customer email uses the server-rendered billing artifact exclusively.
       const { blob } =
         mode === "finalBill"
           ? await generateBillPdf(
-              { reference: docRef, jobRef: effectiveJobRef, clientInfo, items, totals },
-              { documentTitle: "INVOICE", label: docLabel },
-            )
-          : await generateQuotePdfBlob(
               {
-                reference: docRef,
+                reference: pdfReference,
                 jobRef: effectiveJobRef,
                 clientInfo,
                 items,
                 totals,
+                vatRate,
+              },
+              { documentTitle: "INVOICE", label: docLabel },
+            )
+          : await generateQuotePdfBlob(
+              {
+                reference: pdfReference,
+                jobRef: effectiveJobRef,
+                clientInfo,
+                items,
+                totals,
+                vatRate,
               },
               { label: docLabel },
             );
 
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onloadend = () => {
-          const res = reader.result as string;
-          resolve(res.split(",")[1]);
-        };
-        reader.onerror = reject;
-      });
-      reader.readAsDataURL(blob);
-      const base64 = await base64Promise;
-
       if (mode === "finalBill") {
         if (!jobId) throw new Error("Missing job for invoice send");
 
-        const { error: fnError } = await supabase.functions.invoke("send-final-bill", {
-          body: {
-            finalBillId: currentQuoteId,
-            clientName: clientInfo.entity,
-            siteName: clientInfo.site,
-            postcode: clientInfo.postcode,
-            billRef: quoteReference,
-            label: docLabel,
-            pdfBase64: base64,
-            netTotal: totals.netTotal,
-            grossTotal: totals.grossTotal,
+        const { data: existingFinalBill, error: existingFinalBillError } = await supabase
+          .from("final_bills")
+          .select("status")
+          .eq("id", currentQuoteId)
+          .maybeSingle();
+        if (existingFinalBillError) throw existingFinalBillError;
+        if (existingFinalBill?.status === "sent" || existingFinalBill?.status === "sending") {
+          throw new Error("This invoice has already been sent or is currently being sent.");
+        }
+
+        const persistedClientInfo = { ...clientInfo, email: clientInfo.email.trim(), ccEmails };
+        const { error: draftError } = await supabase.from("final_bills").upsert({
+          id: currentQuoteId,
+          job_id: jobId,
+          reference: quoteReference,
+          date: new Date().toISOString(),
+          client_info: persistedClientInfo,
+          items,
+          source_invoice_ids: sourceInvoiceIds || [],
+          vat_rate: vatRate,
+          totals,
+          status: "draft",
+        } as never);
+        if (draftError) throw draftError;
+
+        const { data: finalBillSendResult, error: fnError } = await supabase.functions.invoke(
+          "send-final-bill",
+          {
+            body: buildFinalBillSendPayload({
+              finalBillId: currentQuoteId,
+              clientInfo: persistedClientInfo,
+            }),
           },
-        });
+        );
         if (fnError) {
           let errMsg = fnError.message;
           try {
@@ -881,25 +1111,11 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
           }
           throw new Error(errMsg);
         }
-
-        const { error: upsertError } = await supabase.from("final_bills").upsert({
-          id: currentQuoteId,
-          job_id: jobId,
-          reference: quoteReference,
-          date: new Date().toLocaleDateString("en-GB"),
-          client_info: clientInfo,
-          items,
-          source_invoice_ids: sourceInvoiceIds || [],
-          vat_rate: 0,
-          totals,
-          status: "sent",
-        } as never);
-
-        if (upsertError) {
-          console.error("Invoice sent but failed to update database:", upsertError);
-          toast.warning("Email sent", {
+        if (finalBillSendResult?.alreadySent) {
+          setIsAlreadySent(true);
+          toast.info("Invoice already sent", {
             id: sendingToastId,
-            description: "Email sent, but the invoice status couldn't be saved. Please refresh.",
+            description: "No changes were written to the sent invoice.",
           });
           onBack();
           return;
@@ -953,6 +1169,8 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             p_details: {
               reference: docRef,
               netTotal: totals.netTotal,
+              vatRate,
+              vatTotal: totals.vatTotal,
               grossTotal: totals.grossTotal,
             },
           });
@@ -970,22 +1188,64 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         return;
       }
 
+      // Persist a draft before sending so a successful email can never exist
+      // without a durable billing record. A failed send leaves a retryable draft.
+      const persistedClientInfo = { ...clientInfo, email: clientInfo.email.trim(), ccEmails };
+      if (mode === "extraQuote") {
+        const { data: existingInvoice, error: existingInvoiceError } = await supabase
+          .from("invoices")
+          .select("status")
+          .eq("id", currentQuoteId)
+          .maybeSingle();
+        if (existingInvoiceError) throw existingInvoiceError;
+        if (existingInvoice?.status === "sent" || existingInvoice?.status === "billed") {
+          throw new Error("This invoice has already been sent or billed.");
+        }
+      } else {
+        const { data: existingQuote, error: existingQuoteError } = await supabase
+          .from("quotes")
+          .select("is_sent")
+          .eq("id", currentQuoteId)
+          .maybeSingle();
+        if (existingQuoteError) throw existingQuoteError;
+        if (existingQuote?.is_sent) throw new Error("This quotation has already been sent.");
+      }
+      const draftDate = new Date().toISOString();
+      const draftRecord =
+        mode === "extraQuote"
+          ? {
+              id: currentQuoteId,
+              job_id: jobId,
+              reference: quoteReference,
+              date: draftDate,
+              client_info: persistedClientInfo,
+              items,
+              vat_rate: vatRate,
+              totals,
+              status: "draft",
+            }
+          : {
+              id: currentQuoteId,
+              reference: quoteReference,
+              date: draftDate,
+              client_info: persistedClientInfo,
+              items,
+              vat_rate: vatRate,
+              totals,
+              is_sent: false,
+              job_ref: jobRefValue,
+              tenant_id: profile?.tenant_id,
+            };
+      const { error: draftError } = await supabase
+        .from(recordTable as "quotes")
+        .upsert(draftRecord as never);
+      if (draftError) throw draftError;
+
       // Invoke Supabase Edge Function send-quote-pdf
       const { data, error } = await supabase.functions.invoke("send-quote-pdf", {
         body: {
-          toEmail: clientInfo.email,
-          clientName: clientInfo.entity,
-          siteName: clientInfo.site,
-          postcode: clientInfo.postcode,
-          quoteRef: quoteReference,
-          label: docLabel,
-          pdfBase64: base64,
-          logoUrl:
-            typeof window !== "undefined"
-              ? `${window.location.origin}/opus-form-primary-light.svg`
-              : undefined,
-          netTotal: totals.netTotal,
-          grossTotal: totals.grossTotal,
+          quoteId: currentQuoteId,
+          documentTable: mode === "extraQuote" ? "invoices" : "quotes",
         },
       });
 
@@ -1001,6 +1261,15 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         }
         throw new Error(errMsg);
       }
+      if (data?.alreadySent) {
+        setIsAlreadySent(true);
+        toast.info("Quotation already sent", {
+          id: sendingToastId,
+          description: "No changes were written to the sent quotation.",
+        });
+        onBack();
+        return;
+      }
 
       // Update this quote/invoice in database to mark it as sent
       const quoteId = currentQuoteId;
@@ -1010,20 +1279,20 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
               id: quoteId,
               job_id: jobId,
               reference: quoteReference,
-              date: new Date().toLocaleDateString("en-GB"),
-              client_info: clientInfo,
+              date: new Date().toISOString(),
+              client_info: persistedClientInfo,
               items,
-              vat_rate: 0,
+              vat_rate: vatRate,
               totals,
               status: "sent",
             }
           : {
               id: quoteId,
               reference: quoteReference,
-              date: new Date().toLocaleDateString("en-GB"),
-              client_info: clientInfo,
+              date: new Date().toISOString(),
+              client_info: persistedClientInfo,
               items,
-              vat_rate: 0,
+              vat_rate: vatRate,
               totals,
               is_sent: true,
               job_ref: jobRefValue,
@@ -1114,6 +1383,7 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       quantity: 1,
       unit: "",
       rate: 0,
+      category: undefined,
     };
     setItems([...items, newItem]);
   };
@@ -1146,11 +1416,15 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
   const pdfDocument = (scaleValue: number, isPrintTarget = false) => (
     <QuotePdfDocument
       quote={{
-        reference: computeDocSequenceLabel(mode === "finalBill" ? "invoice" : "quote", docSequence),
+        reference:
+          mode === "quote"
+            ? quoteReference
+            : computeDocSequenceLabel(mode === "finalBill" ? "invoice" : "quote", docSequence),
         jobRef: effectiveJobRef,
         clientInfo,
         items,
         totals,
+        vatRate,
       }}
       terms={terms}
       documentTitle={mode === "finalBill" ? "INVOICE" : "QUOTE"}
@@ -1158,6 +1432,28 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
       isPrintTarget={isPrintTarget}
     />
   );
+  const ccHasError =
+    ccInput.trim().length > 0 && getValidCcEmails(ccInput, clientInfo.email).invalid.length > 0;
+  const filteredRecipientSuggestions = recipientSuggestions
+    .filter((recipient) => {
+      const query = recipientSearch.trim().toLowerCase();
+      if (!query) return true;
+      return `${recipient.entity} ${recipient.email}`.toLowerCase().includes(query);
+    })
+    .slice(0, 8);
+  const existingCcEmails = getValidCcEmails(ccInput, clientInfo.email).deduped;
+  const filteredCcRecipientSuggestions = recipientSuggestions
+    .filter((recipient) => {
+      const query = ccRecipientSearch.trim().toLowerCase();
+      const matchesQuery =
+        !query || `${recipient.entity} ${recipient.email}`.toLowerCase().includes(query);
+      return (
+        matchesQuery &&
+        recipient.email !== clientInfo.email.trim().toLowerCase() &&
+        !existingCcEmails.includes(recipient.email)
+      );
+    })
+    .slice(0, 8);
 
   return (
     <div className="flex flex-col flex-1 w-full text-foreground">
@@ -1175,13 +1471,26 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             <div className="w-px h-4 bg-border hidden sm:block" />
             <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 flex-1 sm:flex-initial min-w-0">
               <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase whitespace-nowrap">
-                Ref
+                Job ref
               </span>
               <input
                 className="bg-transparent border-none outline-none text-primary text-xs font-black tracking-widest uppercase font-mono w-full sm:w-24 min-w-0"
+                value={effectiveJobRef}
+                onChange={(e) => setJobRefValue(e.target.value)}
+                placeholder="JOB-26-0001"
+                disabled={Boolean(jobRef)}
+              />
+            </div>
+            <div className="flex items-center gap-2 bg-card border border-border rounded-lg px-3 py-1.5 flex-1 sm:flex-initial min-w-0">
+              <span className="text-[11px] font-black tracking-widest text-muted-foreground uppercase whitespace-nowrap">
+                {mode === "finalBill" ? "Invoice no." : "Quote no."}
+              </span>
+              <input
+                className="bg-transparent border-none outline-none text-primary text-xs font-black tracking-widest uppercase font-mono w-full sm:w-28 min-w-0"
                 value={quoteReference}
                 onChange={(e) => setQuoteReference(e.target.value)}
-                placeholder="JOB-0000"
+                placeholder={mode === "finalBill" ? "INV-26-0001" : "Q-26-0001"}
+                readOnly={documentNumber !== null}
               />
             </div>
           </div>
@@ -1212,7 +1521,13 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => (mode === "finalBill" ? setShowSendConfirm(true) : handleSend())}
+              onClick={() =>
+                mode === "quote"
+                  ? openSendReview()
+                  : mode === "finalBill"
+                    ? setShowSendConfirm(true)
+                    : handleSend()
+              }
               disabled={isSendingEmail || isAlreadySent}
               className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 bg-primary hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg px-4 py-1.5 text-white text-[11px] font-black uppercase tracking-widest cursor-pointer transition-all"
             >
@@ -1277,7 +1592,9 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                                   })
                                 : q.reference}
                             </span>
-                            <span className="text-[11px] text-muted-foreground">{q.date}</span>
+                            <span className="text-[11px] text-muted-foreground">
+                              {formatUKDate(q.date)}
+                            </span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2.5">
@@ -1311,6 +1628,75 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                 Client & Project
               </h3>
             </div>
+            {mode === "quote" && (
+              <div className="relative">
+                <label
+                  htmlFor="eligible-recipient-search"
+                  className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+                >
+                  Use previous client or email
+                </label>
+                <div className="mt-1.5 flex items-center gap-2 bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
+                  <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <input
+                    id="eligible-recipient-search"
+                    type="search"
+                    autoComplete="off"
+                    value={recipientSearch}
+                    onFocus={() => setRecipientPickerOpen(true)}
+                    onBlur={() => setTimeout(() => setRecipientPickerOpen(false), 150)}
+                    onChange={(event) => {
+                      setRecipientSearch(event.target.value);
+                      setRecipientPickerOpen(true);
+                    }}
+                    placeholder="Search eligible clients and prior recipients…"
+                    className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium"
+                  />
+                </div>
+                {recipientPickerOpen && (
+                  <div className="absolute left-0 right-0 top-full mt-2 z-50 rounded-lg border border-border bg-card shadow-2xl overflow-hidden">
+                    {eligibleSuggestionsLoading ? (
+                      <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                        Loading eligible prior recipients…
+                      </div>
+                    ) : eligibleSuggestionsError ? (
+                      <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                        {eligibleSuggestionsError} Enter a new client below instead.
+                      </div>
+                    ) : filteredRecipientSuggestions.length === 0 ? (
+                      <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                        No eligible prior recipients found. You can enter a new client below.
+                      </div>
+                    ) : (
+                      filteredRecipientSuggestions.map((recipient) => (
+                        <button
+                          key={`${recipient.entity}-${recipient.email}`}
+                          type="button"
+                          className="w-full px-3 py-2.5 text-left hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
+                          onMouseDown={(event) => event.preventDefault()}
+                          onClick={() => {
+                            setClientInfo({
+                              ...clientInfo,
+                              entity: recipient.entity,
+                              email: recipient.email,
+                            });
+                            setRecipientSearch(`${recipient.entity} — ${recipient.email}`);
+                            setRecipientPickerOpen(false);
+                          }}
+                        >
+                          <span className="block text-[11px] font-bold text-foreground">
+                            {recipient.entity}
+                          </span>
+                          <span className="block text-[11px] text-muted-foreground">
+                            {recipient.email}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
@@ -1341,6 +1727,123 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                   />
                 </div>
               </div>
+              {mode === "quote" && (
+                <div className="flex flex-col gap-1.5 md:col-span-2">
+                  <label
+                    htmlFor="quote-cc-recipients"
+                    className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+                  >
+                    CC recipients{" "}
+                    <span className="normal-case font-normal">(optional, comma-separated)</span>
+                  </label>
+                  <div className="flex items-center gap-2 bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
+                    <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <input
+                      id="quote-cc-recipients"
+                      type="text"
+                      aria-invalid={ccHasError}
+                      aria-describedby={ccHasError ? "quote-cc-error" : undefined}
+                      className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium"
+                      value={ccInput}
+                      onChange={(e) => {
+                        setCcInput(e.target.value);
+                        setClientInfo({
+                          ...clientInfo,
+                          ccEmails: getValidCcEmails(e.target.value, clientInfo.email).deduped,
+                        });
+                      }}
+                      placeholder="manager@client.com, qs@client.com"
+                    />
+                  </div>
+                  {ccHasError && (
+                    <p id="quote-cc-error" className="text-[11px] font-semibold text-red-500">
+                      Enter valid email addresses separated by commas.
+                    </p>
+                  )}
+                  {mode === "quote" && (
+                    <div className="relative">
+                      <label
+                        htmlFor="eligible-cc-recipient-search"
+                        className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase"
+                      >
+                        Add previous recipient to CC
+                      </label>
+                      <div className="mt-1.5 flex items-center gap-2 bg-secondary border border-border rounded-xl p-2.5 px-3 focus-within:border-primary transition-colors">
+                        <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                        <input
+                          id="eligible-cc-recipient-search"
+                          type="search"
+                          autoComplete="off"
+                          role="combobox"
+                          aria-autocomplete="list"
+                          aria-expanded={ccRecipientPickerOpen}
+                          aria-controls="eligible-cc-recipient-options"
+                          value={ccRecipientSearch}
+                          onFocus={() => setCcRecipientPickerOpen(true)}
+                          onBlur={() => setTimeout(() => setCcRecipientPickerOpen(false), 150)}
+                          onChange={(event) => {
+                            setCcRecipientSearch(event.target.value);
+                            setCcRecipientPickerOpen(true);
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key === "Escape") setCcRecipientPickerOpen(false);
+                          }}
+                          placeholder="Search prior recipients to CC…"
+                          className="w-full bg-transparent border-none outline-none text-foreground text-[11px] placeholder:text-muted-foreground/50 font-medium"
+                        />
+                      </div>
+                      {ccRecipientPickerOpen && (
+                        <div
+                          id="eligible-cc-recipient-options"
+                          role="listbox"
+                          className="absolute left-0 right-0 top-full mt-2 z-50 rounded-lg border border-border bg-card shadow-2xl overflow-hidden"
+                        >
+                          {eligibleSuggestionsLoading ? (
+                            <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                              Loading eligible prior recipients…
+                            </div>
+                          ) : eligibleSuggestionsError ? (
+                            <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                              {eligibleSuggestionsError} Enter a CC address manually instead.
+                            </div>
+                          ) : filteredCcRecipientSuggestions.length === 0 ? (
+                            <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                              No additional eligible recipients found.
+                            </div>
+                          ) : (
+                            filteredCcRecipientSuggestions.map((recipient) => (
+                              <button
+                                key={`cc-${recipient.entity}-${recipient.email}`}
+                                type="button"
+                                className="w-full px-3 py-2.5 text-left hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
+                                onMouseDown={(event) => event.preventDefault()}
+                                onClick={() => {
+                                  const nextCcInput = appendCcEmail(ccInput, recipient.email);
+                                  setCcInput(nextCcInput);
+                                  setClientInfo({
+                                    ...clientInfo,
+                                    ccEmails: getValidCcEmails(nextCcInput, clientInfo.email)
+                                      .deduped,
+                                  });
+                                  setCcRecipientSearch("");
+                                  setCcRecipientPickerOpen(false);
+                                }}
+                              >
+                                <span className="block text-[11px] font-bold text-foreground">
+                                  {recipient.entity}
+                                </span>
+                                <span className="block text-[11px] text-muted-foreground">
+                                  {recipient.email}
+                                </span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">
                   Project / Site Name
@@ -1427,7 +1930,14 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                           type="text"
                           className="w-full bg-transparent border-none outline-none text-foreground text-xs placeholder:text-amber-500/70 font-bold tracking-wider py-1.5"
                           value={item.description}
-                          onChange={(e) => updateItem(item.id, { description: e.target.value })}
+                          onChange={(e) =>
+                            updateItem(item.id, {
+                              description: e.target.value,
+                              ...(mode === "quote"
+                                ? { category: classifyLineItemDescription(e.target.value) }
+                                : {}),
+                            })
+                          }
                           onFocus={() => setFocusedItemId(item.id)}
                           onBlur={() => {
                             setTimeout(() => setFocusedItemId(null), 200);
@@ -1441,47 +1951,105 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
                         </p>
                       )}
                       <AnimatePresence>
-                        {focusedItemId === item.id && (
+                        {mode === "quote" && focusedItemId === item.id && (
                           <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -10 }}
                             className="absolute left-0 right-0 top-full mt-2 bg-card border border-border rounded-lg shadow-2xl z-50 max-h-48 overflow-y-auto no-scrollbar"
                           >
-                            {SUGGESTED_ITEMS.filter(
-                              (s) =>
-                                !item.description ||
-                                s.description
-                                  .toLowerCase()
-                                  .includes(item.description.toLowerCase()),
-                            ).map((suggestion) => (
-                              <button
-                                key={suggestion.description}
-                                type="button"
-                                onClick={() => {
-                                  updateItem(item.id, {
-                                    description: suggestion.description,
-                                    unit: suggestion.unit,
-                                    rate: suggestion.rate,
-                                  });
-                                }}
-                                className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
-                              >
-                                <div className="flex justify-between items-center">
-                                  <span>{suggestion.description}</span>
-                                  <span className="text-primary/70 font-mono text-[11px]">
-                                    £{suggestion.rate}/{suggestion.unit}
-                                  </span>
+                            {lineItemSuggestions
+                              .filter(
+                                (s) =>
+                                  !item.description ||
+                                  s.description
+                                    .toLowerCase()
+                                    .includes(item.description.toLowerCase()),
+                              )
+                              .map((suggestion) => (
+                                <button
+                                  key={`${suggestion.description}-${suggestion.unit}`}
+                                  type="button"
+                                  onClick={() => {
+                                    updateItem(item.id, {
+                                      description: suggestion.description,
+                                      unit: suggestion.unit,
+                                      rate: suggestion.rate,
+                                      category: suggestion.category,
+                                    });
+                                  }}
+                                  className="w-full text-left px-3 py-2 text-[11px] uppercase font-bold tracking-wider text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors border-b border-border/30 last:border-none"
+                                >
+                                  <div className="flex justify-between items-center">
+                                    <span>{suggestion.description}</span>
+                                    <span className="text-primary/70 font-mono text-[11px]">
+                                      £{suggestion.rate}/{suggestion.unit}
+                                    </span>
+                                  </div>
+                                </button>
+                              ))}
+                            {eligibleSuggestionsLoading ? (
+                              <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                                Loading eligible historical items…
+                              </div>
+                            ) : eligibleSuggestionsError ? (
+                              <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                                {eligibleSuggestionsError} Add the item manually instead.
+                              </div>
+                            ) : (
+                              lineItemSuggestions.filter(
+                                (s) =>
+                                  !item.description ||
+                                  s.description
+                                    .toLowerCase()
+                                    .includes(item.description.toLowerCase()),
+                              ).length === 0 && (
+                                <div className="px-3 py-3 text-[11px] text-muted-foreground">
+                                  No eligible historical items match. Add the description manually.
                                 </div>
-                              </button>
-                            ))}
+                              )
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
                     </div>
 
                     {/* Labeled grid for inputs on all screen sizes */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div
+                      className={`grid grid-cols-2 ${mode === "quote" ? "sm:grid-cols-5" : "sm:grid-cols-4"} gap-2`}
+                    >
+                      {mode === "quote" && (
+                        <div className="flex flex-col gap-1 col-span-2 sm:col-span-1">
+                          <label
+                            htmlFor={`category-${item.id}`}
+                            className="text-[9px] font-black tracking-widest text-muted-foreground uppercase"
+                          >
+                            Category
+                          </label>
+                          <select
+                            id={`category-${item.id}`}
+                            value={item.category || ""}
+                            onChange={(event) =>
+                              updateItem(item.id, {
+                                category: (event.target.value || undefined) as
+                                  LineItemCategory | undefined,
+                              })
+                            }
+                            className={`w-full bg-card border rounded-lg h-9 px-2 text-[10px] font-bold ${
+                              item.category
+                                ? "border-border text-foreground"
+                                : "border-amber-500/50 text-amber-500"
+                            }`}
+                          >
+                            <option value="">Choose category</option>
+                            {REQUIRED_LINE_ITEM_CATEGORIES.map((category) => (
+                              <option key={category} value={category}>
+                                {LINE_ITEM_CATEGORY_LABELS[category]}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                       <div className="flex flex-col gap-1">
                         <span className="text-[9px] font-black tracking-widest text-muted-foreground uppercase">
                           Qty
@@ -1664,12 +2232,42 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
 
             {/* Totals grid */}
             <div className="flex flex-col gap-2">
+              {mode !== "finalBill" && (
+                <div className="flex items-center justify-between text-[13px] border-b border-border pb-2">
+                  <label htmlFor="vat-rate" className="text-muted-foreground">
+                    VAT rate
+                  </label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      id="vat-rate"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      value={vatRate}
+                      onChange={(e) =>
+                        setVatRate(Math.min(100, Math.max(0, Number(e.target.value) || 0)))
+                      }
+                      className="w-20 rounded-md border border-border bg-secondary px-2 py-1 text-right font-mono text-[13px]"
+                    />
+                    <span className="text-muted-foreground">%</span>
+                  </div>
+                </div>
+              )}
               <div className="flex justify-between text-[13px] border-b border-border pb-2">
                 <span className="text-muted-foreground">Net Total</span>
                 <span className="font-semibold font-mono">
                   £{totals.netTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
               </div>
+              {mode !== "finalBill" && (
+                <div className="flex justify-between text-[13px] border-b border-border pb-2">
+                  <span className="text-muted-foreground">VAT ({vatRate}%)</span>
+                  <span className="font-semibold font-mono">
+                    £{totals.vatTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between text-[16px] pt-1">
                 <span className="font-bold text-foreground">Total</span>
                 <span className="font-extrabold text-primary font-mono">
@@ -1795,21 +2393,41 @@ export const QuoteInvoiceBuilder: React.FC<ValuationBuilderProps> = ({
         onOpenChange={setShowSendConfirm}
         tone="neutral"
         tag="Please Confirm"
-        title="Send Invoice to Client"
+        title={mode === "quote" ? "Review Before Sending" : "Send Invoice to Client"}
         message={
-          <>
-            This will email the invoice to{" "}
-            <span className="font-bold text-foreground">
-              {clientInfo.email || clientInfo.entity}
-            </span>{" "}
-            and lock the source quotes so they can't be billed again.
-            <div className="mt-3 p-4 bg-white/5 border border-white/5 rounded-lg text-xs font-medium text-muted-foreground leading-relaxed">
-              Double-check the line items and totals before sending — once sent, this cannot be
-              recalled.
-            </div>
-          </>
+          mode === "quote" ? (
+            <>
+              Review the rendered quote on screen before sending it to{" "}
+              <span className="font-bold text-foreground">
+                {clientInfo.email || clientInfo.entity}
+              </span>
+              . Confirm the client, line items, categories, VAT, totals, and terms are correct.
+              <label className="mt-4 flex items-start gap-2 text-xs text-foreground cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={reviewConfirmed}
+                  onChange={(event) => setReviewConfirmed(event.target.checked)}
+                  className="mt-0.5 accent-primary"
+                />
+                <span>I have reviewed the rendered document and confirm it is correct.</span>
+              </label>
+            </>
+          ) : (
+            <>
+              This will email the invoice to{" "}
+              <span className="font-bold text-foreground">
+                {clientInfo.email || clientInfo.entity}
+              </span>{" "}
+              and lock the source quotes so they can't be billed again.
+              <div className="mt-3 p-4 bg-white/5 border border-white/5 rounded-lg text-xs font-medium text-muted-foreground leading-relaxed">
+                Double-check the line items and totals before sending — once sent, this cannot be
+                recalled.
+              </div>
+            </>
+          )
         }
-        confirmLabel="Send Invoice"
+        confirmLabel={mode === "quote" ? "Send Quote" : "Send Invoice"}
+        confirmDisabled={mode === "quote" && !reviewConfirmed}
         onConfirm={() => {
           setShowSendConfirm(false);
           handleSend();

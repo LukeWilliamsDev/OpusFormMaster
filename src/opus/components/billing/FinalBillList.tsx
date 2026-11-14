@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { supabase } from "../../../integrations/supabase/client";
 import { BillItem, BillClientInfo, computeTotals } from "../../lib/billing";
-import { generateBillPdf } from "../../lib/quotePdf";
+import { downloadPdfBlob, generateBillPdf } from "../../lib/quotePdf";
 import { computeDocumentLabel, computeDocSequenceLabel } from "../../lib/documentNaming";
+import { formatUKDate } from "../../utils/week";
 
 export interface FinalBillRow {
   id: string;
@@ -80,17 +81,17 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
     try {
       const totals = computeTotals(bill.items || [], bill.vat_rate);
       const { blob, filename } = await generateBillPdf(
-        { reference: shortRef, jobRef, clientInfo: bill.client_info, items: bill.items, totals },
+        {
+          reference: shortRef,
+          jobRef,
+          clientInfo: bill.client_info,
+          items: bill.items,
+          totals,
+          vatRate: bill.vat_rate,
+        },
         { documentTitle: "INVOICE", label },
       );
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadPdfBlob(blob, filename);
     } catch (err) {
       toast.error("Couldn't generate PDF", {
         description: err instanceof Error ? err.message : undefined,
@@ -162,7 +163,7 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
                   <span className="text-sm font-semibold truncate">{label}</span>
                 </div>
                 <div className="flex items-center gap-4 shrink-0 ml-auto">
-                  <span className="text-xs text-muted-foreground">{bill.date}</span>
+                  <span className="text-xs text-muted-foreground">{formatUKDate(bill.date)}</span>
                   <span className="text-sm font-bold text-right w-20">
                     £{totals.grossTotal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
@@ -190,7 +191,7 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
               </DialogHeader>
               <div className="flex items-center justify-between gap-3 -mt-2">
                 <span className="text-xs text-muted-foreground">
-                  {previewBill.date} · {previewBill.status.toUpperCase()}
+                  {formatUKDate(previewBill.date)} · {previewBill.status.toUpperCase()}
                 </span>
                 <div className="flex items-center gap-2 shrink-0">
                   <Button

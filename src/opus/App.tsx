@@ -254,9 +254,43 @@ const RoleGuard: React.FC<{
   allow: Array<AppRole>;
   children: React.ReactNode;
 }> = ({ allow, children }) => {
-  const { role, authLoading } = usePortal();
+  const { role, authLoading, dataError, dataRefreshError, reloadPortalData } = usePortal();
   if (authLoading || role === null) {
+    if (dataError || dataRefreshError) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background p-6">
+          <div className="max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
+            <h1 className="text-lg font-black text-foreground">Your portal could not load</h1>
+            <p className="mt-2 text-sm text-muted-foreground">{dataError || dataRefreshError}</p>
+            <button
+              type="button"
+              onClick={reloadPortalData}
+              className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+              Try again
+            </button>
+          </div>
+        </div>
+      );
+    }
     return <div className="min-h-screen bg-background" />;
+  }
+  if (dataError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background p-6">
+        <div className="max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
+          <h1 className="text-lg font-black text-foreground">Your portal could not load</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{dataError}</p>
+          <button
+            type="button"
+            onClick={reloadPortalData}
+            className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
   }
   if (!allow.includes(role)) {
     const fallback =
@@ -267,7 +301,23 @@ const RoleGuard: React.FC<{
           : "/portal/dashboard";
     return <Navigate to={fallback} replace />;
   }
-  return <>{children}</>;
+  return (
+    <>
+      {dataRefreshError && (
+        <div className="fixed inset-x-0 top-0 z-[100] flex items-center justify-between gap-3 border-b border-warning/30 bg-warning/10 px-4 py-2 text-xs text-foreground shadow-sm">
+          <span>{dataRefreshError}</span>
+          <button
+            type="button"
+            onClick={reloadPortalData}
+            className="shrink-0 rounded-md border border-warning/40 px-2.5 py-1 font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          >
+            Refresh
+          </button>
+        </div>
+      )}
+      {children}
+    </>
+  );
 };
 
 // Audit Log Gate - the full tenant audit trail is restricted to tenant admins.

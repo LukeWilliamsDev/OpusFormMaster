@@ -137,7 +137,12 @@ export const formatUKDate = (isoDate: string | null | undefined): string => {
   try {
     const d = new Date(isoDate);
     if (isNaN(d.getTime())) return isoDate;
-    return d.toLocaleDateString("en-GB");
+    return new Intl.DateTimeFormat("en-GB", {
+      timeZone: "Europe/London",
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    }).format(d);
   } catch {
     return isoDate;
   }

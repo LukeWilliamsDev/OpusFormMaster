@@ -11,6 +11,20 @@ interface RequestPayload {
   expiresAt: string;
 }
 
+function requestIdFromUploadUrl(uploadUrl: string): string | null {
+  try {
+    const parsed = new URL(uploadUrl);
+    const hashQuery = parsed.hash.includes("?") ? parsed.hash.split("?")[1] : "";
+    const token = new URLSearchParams(hashQuery || parsed.search.slice(1)).get("token");
+    return token &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(token)
+      ? token
+      : null;
+  } catch {
+    return null;
+  }
+}
+
 function escapeHtml(value: string): string {
   return String(value)
     .replace(/&/g, "&amp;")
@@ -20,12 +34,7 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-const AUTHORIZED_SEND_ROLES = new Set([
-  "admin",
-  "director",
-  "logistics_coordinator",
-  "logistics_assistant",
-]);
+const AUTHORIZED_SEND_ROLES = new Set(["admin", "director", "logistics_coordinator"]);
 const ALLOWED_UPLOAD_HOSTS = new Set(["opusform.co.uk", "www.opusform.co.uk"]);
 const SAFE_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -74,18 +83,64 @@ serve(async (req) => {
     // 3. Verify user's administrative privileges
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role,status,tenant_id")
       .eq("id", user.id)
       .single();
 
-    if (profileError || !profile || !AUTHORIZED_SEND_ROLES.has(profile.role)) {
+    if (
+      profileError ||
+      !profile ||
+      profile.status !== "active" ||
+      !AUTHORIZED_SEND_ROLES.has(profile.role)
+    ) {
       return jsonError(req, "Forbidden.", 403);
     }
 
     const payload: RequestPayload = await req.json();
-    const { toEmail, workerName, requestedCerts, uploadUrl, expiresAt } = payload;
+    const { toEmail, uploadUrl } = payload;
 
     if (!isValidEmail(toEmail)) return jsonError(req, "A valid recipient email is required.", 400);
+
+    // The upload URL is a bearer link, so resolve its request record and tenant
+    // server-side instead of trusting caller-supplied worker/certificate/
+    // expiry fields. This also prevents an authorized sender from emailing a
+    // link for another tenant's request.
+    const requestId = requestIdFromUploadUrl(uploadUrl);
+    if (!requestId || !profile.tenant_id) {
+      return jsonError(req, "The upload link is invalid.", 400);
+    }
+    const { data: requestRow, error: requestError } = await supabase
+      .from("document_requests")
+      .select("id,worker_id,tenant_id,requested_certs,expires_at,completed_at")
+      .eq("id", requestId)
+      .eq("tenant_id", profile.tenant_id)
+      .maybeSingle();
+    if (
+      requestError ||
+      !requestRow ||
+      requestRow.completed_at ||
+      new Date(requestRow.expires_at).getTime() <= Date.now()
+    ) {
+      return jsonError(req, "The upload request is expired or unavailable.", 409);
+    }
+    const { data: worker, error: workerError } = await supabase
+      .from("staff")
+      .select("name,email")
+      .eq("id", requestRow.worker_id)
+      .eq("tenant_id", profile.tenant_id)
+      .maybeSingle();
+    if (workerError || !worker || !isValidEmail(worker.email)) {
+      return jsonError(req, "The upload request recipient is unavailable.", 409);
+    }
+    if (worker.email.trim().toLowerCase() !== toEmail.trim().toLowerCase()) {
+      return jsonError(req, "The recipient does not match the upload request.", 403);
+    }
+
+    const workerName = worker.name;
+    const requestedCerts = Array.isArray(requestRow.requested_certs)
+      ? requestRow.requested_certs.filter((cert): cert is string => typeof cert === "string")
+      : [];
+    const expiresAt = requestRow.expires_at;
 
     let safeUploadUrl: string;
     try {

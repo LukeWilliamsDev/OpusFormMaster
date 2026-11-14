@@ -9,6 +9,7 @@ import {
   formatDayHeading,
   defaultSelectedDay,
   isValidISODate,
+  formatUKDate,
 } from "../week";
 
 describe("toLocalISODate / parseLocalISODate", () => {
@@ -107,5 +108,11 @@ describe("isValidISODate", () => {
     expect(isValidISODate("06-07-2026")).toBe(false);
     expect(isValidISODate("2026-02-30")).toBe(false);
     expect(isValidISODate("nonsense")).toBe(false);
+  });
+});
+
+describe("formatUKDate", () => {
+  it("formats ISO timestamps in Europe/London rather than browser-local time", () => {
+    expect(formatUKDate("2026-06-30T23:30:00.000Z")).toBe("01/07/2026");
   });
 });

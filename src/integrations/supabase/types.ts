@@ -77,13 +77,66 @@ export type Database = {
           },
         ];
       };
+      billing_artifacts: {
+        Row: {
+          byte_size: number;
+          created_at: string;
+          document_id: string;
+          document_kind: string;
+          generated_at: string;
+          id: string;
+          sent_at: string | null;
+          sha256: string;
+          status: string;
+          storage_path: string;
+          tenant_id: string;
+          updated_at: string;
+        };
+        Insert: {
+          byte_size: number;
+          created_at?: string;
+          document_id: string;
+          document_kind: string;
+          generated_at?: string;
+          id?: string;
+          sent_at?: string | null;
+          sha256: string;
+          status?: string;
+          storage_path: string;
+          tenant_id: string;
+          updated_at?: string;
+        };
+        Update: {
+          byte_size?: number;
+          created_at?: string;
+          document_id?: string;
+          document_kind?: string;
+          generated_at?: string;
+          id?: string;
+          sent_at?: string | null;
+          sha256?: string;
+          status?: string;
+          storage_path?: string;
+          tenant_id?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "billing_artifacts_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       calendar_events: {
         Row: {
           created_at: string;
           created_by: string | null;
           created_by_email: string | null;
           date: string;
-          description: string | null;
+          description: string;
           id: string;
           job_id: string | null;
           tenant_id: string;
@@ -95,7 +148,7 @@ export type Database = {
           created_by?: string | null;
           created_by_email?: string | null;
           date: string;
-          description?: string | null;
+          description: string;
           id?: string;
           job_id?: string | null;
           tenant_id?: string;
@@ -107,7 +160,7 @@ export type Database = {
           created_by?: string | null;
           created_by_email?: string | null;
           date?: string;
-          description?: string | null;
+          description?: string;
           id?: string;
           job_id?: string | null;
           tenant_id?: string;
@@ -177,6 +230,7 @@ export type Database = {
           id: string;
           items: Json;
           job_id: string;
+          invoice_number: number | null;
           reference: string;
           sent_at: string | null;
           source_invoice_ids: string[];
@@ -193,6 +247,7 @@ export type Database = {
           id?: string;
           items?: Json;
           job_id: string;
+          invoice_number?: number | null;
           reference: string;
           sent_at?: string | null;
           source_invoice_ids?: string[];
@@ -209,6 +264,7 @@ export type Database = {
           id?: string;
           items?: Json;
           job_id?: string;
+          invoice_number?: number | null;
           reference?: string;
           sent_at?: string | null;
           source_invoice_ids?: string[];
@@ -310,31 +366,40 @@ export type Database = {
       };
       job_attachments: {
         Row: {
+          foreman_visible: boolean;
           file_name: string;
           file_size_bytes: number;
           file_url: string;
           id: string;
           job_id: string;
+          tenant_id: string;
+          third_party_visible: boolean;
           type: string;
           uploaded_at: string | null;
           uploaded_by: string;
         };
         Insert: {
+          foreman_visible?: boolean;
           file_name: string;
           file_size_bytes?: number;
           file_url: string;
           id?: string;
           job_id: string;
+          tenant_id?: string;
+          third_party_visible?: boolean;
           type: string;
           uploaded_at?: string | null;
           uploaded_by: string;
         };
         Update: {
+          foreman_visible?: boolean;
           file_name?: string;
           file_size_bytes?: number;
           file_url?: string;
           id?: string;
           job_id?: string;
+          tenant_id?: string;
+          third_party_visible?: boolean;
           type?: string;
           uploaded_at?: string | null;
           uploaded_by?: string;
@@ -352,30 +417,66 @@ export type Database = {
       job_diary: {
         Row: {
           created_at: string | null;
+          created_by: string | null;
+          blocker_details: string | null;
           date: string;
+          entry_status: string;
           hs_checklist: Json;
           id: string;
+          issue_id: string | null;
           job_id: string;
+          next_steps: string | null;
           notes: string | null;
+          progress_status: string;
+          ready_for_next_shift: string;
+          submitted_at: string | null;
+          submitted_by: string | null;
+          tenant_id: string;
           updated_at: string | null;
+          updated_by: string | null;
+          work_summary: string | null;
         };
         Insert: {
           created_at?: string | null;
+          created_by?: string | null;
+          blocker_details?: string | null;
           date?: string;
+          entry_status?: string;
           hs_checklist?: Json;
           id?: string;
+          issue_id?: string | null;
           job_id: string;
+          next_steps?: string | null;
           notes?: string | null;
+          progress_status?: string;
+          ready_for_next_shift?: string;
+          submitted_at?: string | null;
+          submitted_by?: string | null;
+          tenant_id?: string;
           updated_at?: string | null;
+          updated_by?: string | null;
+          work_summary?: string | null;
         };
         Update: {
           created_at?: string | null;
+          created_by?: string | null;
+          blocker_details?: string | null;
           date?: string;
+          entry_status?: string;
           hs_checklist?: Json;
           id?: string;
+          issue_id?: string | null;
           job_id?: string;
+          next_steps?: string | null;
           notes?: string | null;
+          progress_status?: string;
+          ready_for_next_shift?: string;
+          submitted_at?: string | null;
+          submitted_by?: string | null;
+          tenant_id?: string;
           updated_at?: string | null;
+          updated_by?: string | null;
+          work_summary?: string | null;
         };
         Relationships: [
           {
@@ -383,6 +484,76 @@ export type Database = {
             columns: ["job_id"];
             isOneToOne: false;
             referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "job_diary_issue_id_fkey";
+            columns: ["issue_id"];
+            isOneToOne: false;
+            referencedRelation: "job_issues";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      job_issues: {
+        Row: {
+          created_at: string;
+          description: string;
+          id: string;
+          job_id: string;
+          reported_by: string;
+          resolution_summary: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          severity: string;
+          status: string;
+          tenant_id: string;
+          title: string;
+          updated_at: string;
+        };
+        Insert: {
+          created_at?: string;
+          description: string;
+          id?: string;
+          job_id: string;
+          reported_by: string;
+          resolution_summary?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          severity?: string;
+          status?: string;
+          tenant_id?: string;
+          title: string;
+          updated_at?: string;
+        };
+        Update: {
+          created_at?: string;
+          description?: string;
+          id?: string;
+          job_id?: string;
+          reported_by?: string;
+          resolution_summary?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          severity?: string;
+          status?: string;
+          tenant_id?: string;
+          title?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "job_issues_job_id_fkey";
+            columns: ["job_id"];
+            isOneToOne: false;
+            referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "job_issues_tenant_id_fkey";
+            columns: ["tenant_id"];
+            isOneToOne: false;
+            referencedRelation: "tenants";
             referencedColumns: ["id"];
           },
         ];
@@ -424,6 +595,8 @@ export type Database = {
       };
       job_notes: {
         Row: {
+          author_staff_id: string | null;
+          author_type: string;
           body: string;
           created_at: string;
           id: string;
@@ -434,6 +607,8 @@ export type Database = {
           user_id: string | null;
         };
         Insert: {
+          author_staff_id?: string | null;
+          author_type?: string;
           body: string;
           created_at?: string;
           id?: string;
@@ -444,6 +619,8 @@ export type Database = {
           user_id?: string | null;
         };
         Update: {
+          author_staff_id?: string | null;
+          author_type?: string;
           body?: string;
           created_at?: string;
           id?: string;
@@ -459,6 +636,44 @@ export type Database = {
             columns: ["job_id"];
             isOneToOne: false;
             referencedRelation: "jobs";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      job_note_replies: {
+        Row: {
+          author_first_name: string | null;
+          author_id: string;
+          body: string;
+          created_at: string;
+          id: string;
+          note_id: string;
+          tenant_id: string;
+        };
+        Insert: {
+          author_first_name?: string | null;
+          author_id: string;
+          body: string;
+          created_at?: string;
+          id?: string;
+          note_id: string;
+          tenant_id?: string;
+        };
+        Update: {
+          author_first_name?: string | null;
+          author_id?: string;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          note_id?: string;
+          tenant_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "job_note_replies_note_id_fkey";
+            columns: ["note_id"];
+            isOneToOne: false;
+            referencedRelation: "job_notes";
             referencedColumns: ["id"];
           },
         ];
@@ -624,8 +839,12 @@ export type Database = {
           id: string;
           is_sent: boolean;
           items: Json;
+          job_id: string | null;
           job_ref: string | null;
+          quote_number: number | null;
           reference: string;
+          revision: number;
+          send_status: string;
           tenant_id: string;
           totals: Json;
           updated_at: string;
@@ -638,8 +857,12 @@ export type Database = {
           id?: string;
           is_sent?: boolean;
           items: Json;
+          job_id?: string | null;
           job_ref?: string | null;
+          quote_number?: number | null;
           reference: string;
+          revision?: number;
+          send_status?: string;
           tenant_id: string;
           totals: Json;
           updated_at?: string;
@@ -652,8 +875,12 @@ export type Database = {
           id?: string;
           is_sent?: boolean;
           items?: Json;
+          job_id?: string | null;
           job_ref?: string | null;
+          quote_number?: number | null;
           reference?: string;
+          revision?: number;
+          send_status?: string;
           tenant_id?: string;
           totals?: Json;
           updated_at?: string;
@@ -946,8 +1173,13 @@ export type Database = {
     };
     Functions: {
       admin_delete_user: { Args: { target_id: string }; Returns: undefined };
+      allocate_document_number: {
+        Args: { p_document_kind: string; p_scope_id?: string | null };
+        Returns: number;
+      };
       check_email_registered: { Args: { _email: string }; Returns: boolean };
       check_expired_tickets: { Args: never; Returns: undefined };
+      complete_password_change: { Args: never; Returns: undefined };
       complete_job_document_request: {
         Args: { p_token: string };
         Returns: undefined;
@@ -978,6 +1210,27 @@ export type Database = {
       revoke_telegram_link: {
         Args: { p_target_id: string };
         Returns: undefined;
+      };
+      recover_final_bill_send: {
+        Args: { p_final_bill_id: string; p_reason: string };
+        Returns: undefined;
+      };
+      recover_quote_or_invoice_send: {
+        Args: { p_document_id: string; p_document_kind: string; p_reason: string };
+        Returns: undefined;
+      };
+      reconcile_billing_artifact: {
+        Args: {
+          p_document_id: string;
+          p_document_kind: string;
+          p_reason: string;
+          p_status: string;
+        };
+        Returns: undefined;
+      };
+      revert_audit_log: {
+        Args: { p_audit_log_id: string };
+        Returns: Json;
       };
       submit_job_attachment: {
         Args: {

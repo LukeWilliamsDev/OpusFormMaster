@@ -892,3 +892,20 @@ export async function generateBillPdf(bill: Quote, opts: { documentTitle: string
   const filename = documentPdfFilename(opts.label);
   return { blob, filename };
 }
+
+/**
+ * Start a browser download without revoking the object URL before the browser
+ * has consumed it. Immediate revocation is ignored by some browsers and
+ * cancels the download entirely.
+ */
+export function downloadPdfBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}

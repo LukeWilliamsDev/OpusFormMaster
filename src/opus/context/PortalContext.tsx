@@ -80,6 +80,30 @@ const INITIAL_JOBS: Job[] = [
   },
 ];
 
+const LOCAL_FOREMAN_JOB_ID = "local-foreman-site-001";
+const LOCAL_FOREMAN_UPCOMING_JOB_ID = "local-foreman-site-002";
+const LOCAL_FOREMAN_BLOCKED_JOB_ID = "local-foreman-site-003";
+const LOCAL_FOREMAN_COMPLETED_JOB_ID = "local-foreman-site-004";
+const LOCAL_FOREMAN_WORKER_ID = "local-foreman-worker-001";
+const LOCAL_FOREMAN_CREW_IDS = ["local-foreman-crew-001", "local-foreman-crew-002"];
+
+function localLondonDate(): string {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function addDays(date: string, days: number): string {
+  const next = new Date(`${date}T12:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + days);
+  return next.toISOString().slice(0, 10);
+}
+
 export type AppRole =
   | "admin"
   | "director"
@@ -100,14 +124,15 @@ export const ALL_ROLES: AppRole[] = [
 ];
 export const INTERNAL_ROLES: AppRole[] = ALL_ROLES.filter((role) => role !== "third_party");
 
-// Authenticated portal access is intentionally limited to management roles and
-// the separate third-party portal. Site foremen and labourers are defined
-// roles, but are not currently assigned access to any portal page.
+// Authenticated portal access is intentionally limited to management roles,
+// the dedicated Foreman workspace, and the separate third-party portal.
+// Labourers remain unassigned until their separate surface is approved.
 export const PORTAL_ACCESS_ROLES: AppRole[] = [
   "admin",
   "director",
   "logistics_coordinator",
   "logistics_assistant",
+  "site_foreman",
   "third_party",
 ];
 
@@ -129,10 +154,11 @@ export const MANAGEMENT_ROLES: AppRole[] = [
 export const MANAGEMENT_WRITE_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
 // Document sending is an operational management action, not a field-user action.
 export const DOCUMENT_SEND_ROLES: AppRole[] = MANAGEMENT_WRITE_ROLES;
-// Defined but currently unassigned/no portal access.
+// Field users are intentionally restricted to the dedicated foreman workspace;
+// labourers remain unassigned until their separate surface is approved.
 export const FIELD_ROLES: AppRole[] = ["site_foreman", "labourer"];
 // Field users may see only the shifts assigned to their own staff record.
-export const ASSIGNED_SHIFT_ROLES: AppRole[] = [];
+export const ASSIGNED_SHIFT_ROLES: AppRole[] = ["site_foreman"];
 // Full schedule visibility without granting operational write access.
 export const SCHEDULE_ROLES: AppRole[] = MANAGEMENT_ROLES;
 
@@ -296,11 +322,16 @@ interface PortalContextType {
   isAuthenticated: boolean;
   authLoading: boolean;
   dataLoading: boolean;
+  dataRefreshing: boolean;
+  dataRefreshError: string | null;
   dataError: string | null;
   reloadPortalData: () => void;
   session: Session | null;
   user: User | null;
   role: AppRole | null;
+  // The staff row linked to a foreman login. Crew rows intentionally do not
+  // include email addresses; only this identity lookup needs the email.
+  currentStaffId: string | null;
   profile: {
     full_name: string;
     phone_number: string;
@@ -328,6 +359,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [role, setRole] = useState<AppRole | null>(null);
+  const [currentStaffId, setCurrentStaffId] = useState<string | null>(null);
   const [profile, setProfileState] = useState<{
     full_name: string;
     phone_number: string;
@@ -342,6 +374,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
+  const [dataRefreshing, setDataRefreshing] = useState(false);
+  const [dataRefreshError, setDataRefreshError] = useState<string | null>(null);
   const [dataError, setDataError] = useState<string | null>(null);
   const [dataLoadAttempt, setDataLoadAttempt] = useState(0);
 
@@ -361,11 +395,9 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
+    const root = document.documentElement;
+    root.classList.toggle("dark", theme === "dark");
+    root.dataset.theme = theme;
   }, [theme]);
 
   // Track previous ids per table so we can compute deletions on sync.
@@ -381,6 +413,34 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const lastSavedJobsRef = useRef<string>("");
   const lastSavedShiftsRef = useRef<string>("");
   const lastSavedCalendarEventsRef = useRef<string>("");
+  const [writeRetryNonce, setWriteRetryNonce] = useState(0);
+  const writeRetryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const writeRetryAttemptsRef = useRef(0);
+
+  const reportWriteFailure = (scope: string, error: unknown) => {
+    const message =
+      error && typeof error === "object" && "message" in error
+        ? String((error as { message?: unknown }).message ?? "")
+        : error instanceof Error
+          ? error.message
+          : "Unknown persistence error";
+    setDataRefreshError(
+      `Could not save ${scope}${message ? `: ${message}` : ""}. Retrying automatically…`,
+    );
+    if (writeRetryTimerRef.current !== null || writeRetryAttemptsRef.current >= 3) return;
+    writeRetryAttemptsRef.current += 1;
+    writeRetryTimerRef.current = setTimeout(() => {
+      writeRetryTimerRef.current = null;
+      setWriteRetryNonce((attempt) => attempt + 1);
+    }, 5000);
+  };
+
+  useEffect(
+    () => () => {
+      if (writeRetryTimerRef.current !== null) clearTimeout(writeRetryTimerRef.current);
+    },
+    [],
+  );
 
   // Bootstrap session + subscribe to auth changes
   useEffect(() => {
@@ -423,6 +483,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (!newSession) {
         localStorage.removeItem(LAST_LOGIN_KEY);
         setRole(null);
+        setCurrentStaffId(null);
         setProfileState(null);
         // Clear cached data on sign-out to avoid leaking one user's view.
         hydratedRef.current = false;
@@ -463,6 +524,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     if (!user) {
       setRole(null);
+      setCurrentStaffId(null);
       setProfileState(null);
       return;
     }
@@ -493,7 +555,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [user, dataLoadAttempt]);
 
   // Poll for account status changes (disabled/archived) so an admin action
   // takes effect for an already-logged-in user instead of waiting for their
@@ -517,47 +579,228 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Load operational data from Supabase whenever we have a signed-in user.
   useEffect(() => {
-    if (!user) return;
+    if (!user || !role) {
+      if (!user) {
+        setDataLoading(true);
+        setDataRefreshing(false);
+        setDataRefreshError(null);
+      }
+      return;
+    }
     let cancelled = false;
     (async () => {
-      setDataLoading(true);
+      const initialDataLoad = !hydratedRef.current;
+      setDataRefreshing(true);
+      setDataRefreshError(null);
+      if (initialDataLoad) setDataLoading(true);
       setDataError(null);
-      const startStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-      const endStr = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
-      const [wRes, jRes, sRes, ceRes] = await Promise.all([
-        supabase.from("staff").select(STAFF_SELECT),
-        supabase.from("jobs").select(JOB_SELECT),
-        role === "third_party"
+      // Foremen do not have company calendar access. Avoid querying a table
+      // that their RLS role intentionally cannot read; their workspace uses
+      // assigned shifts instead.
+      const calendarQuery =
+        role === "site_foreman"
+          ? Promise.resolve({ data: [], error: null })
+          : supabase.from("calendar_events").select(CALENDAR_EVENT_SELECT);
+      const foremanIdentityQuery =
+        role === "site_foreman"
+          ? supabase
+              .from("staff")
+              .select("id")
+              .ilike("email", (user.email ?? "").replace(/[\\%_]/g, "\\$&"))
+              .eq("is_archived", false)
+              .limit(1)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null });
+      const [wRes, jRes, sRes, ceRes, foremanIdentityRes] = await Promise.all([
+        role === "site_foreman"
+          ? supabase.from("staff").select("id,name,role,is_archived")
+          : supabase.from("staff").select(STAFF_SELECT),
+        role === "site_foreman"
+          ? supabase
+              .from("jobs")
+              .select(
+                "id,job_ref,site_name,postcode,current_pours,contract_max_pours,status,updated_at",
+              )
+          : supabase.from("jobs").select(JOB_SELECT),
+        role === "third_party" || role === "site_foreman"
           ? supabase.from("shifts").select(SHIFT_SELECT)
-          : supabase.from("shifts").select(SHIFT_SELECT).gte("date", startStr).lte("date", endStr),
-        supabase
-          .from("calendar_events")
-          .select(CALENDAR_EVENT_SELECT)
-          .gte("date", startStr)
-          .lte("date", endStr),
+          : supabase.from("shifts").select(SHIFT_SELECT),
+        calendarQuery,
+        foremanIdentityQuery,
       ]);
       if (cancelled) return;
       if (wRes.error) console.error("load workers", wRes.error);
       if (jRes.error) console.error("load jobs", jRes.error);
       if (sRes.error) console.error("load shifts", sRes.error);
       if (ceRes.error) console.error("load calendar events", ceRes.error);
+      if (foremanIdentityRes.error)
+        console.error("load foreman identity", foremanIdentityRes.error);
       const failedResources = [
         wRes.error && "staff",
         jRes.error && "sites",
         sRes.error && "assignments",
         ceRes.error && "calendar",
+        foremanIdentityRes.error && "foreman identity",
       ].filter(Boolean) as string[];
       if (failedResources.length) {
-        setDataError(
-          `We could not load ${failedResources.join(", ")}. Check your connection and try again.`,
-        );
+        const message = `We could not refresh ${failedResources.join(", ")}.`;
+        if (initialDataLoad) {
+          // Do not retain an earlier assignment set after the initial load
+          // fails; there is no verified content to keep on screen yet.
+          setCurrentStaffId(null);
+          setWorkers([]);
+          setJobs([]);
+          setShifts([]);
+          setCalendarEvents([]);
+          hydratedRef.current = false;
+          setDataError(`${message} Check your connection and try again.`);
+        } else {
+          // A transient background failure must not blank a page the user is
+          // actively reading. A successful response with no assignments still
+          // replaces the data, so revoked access is not retained indefinitely.
+          setDataRefreshError(`${message} Showing the last loaded data.`);
+          setDataError(null);
+        }
         setDataLoading(false);
+        setDataRefreshing(false);
         return;
       }
-      const wList = (wRes.data ?? []).map(rowToWorker);
-      const jList = (jRes.data ?? []).map(rowToJob);
+      setCurrentStaffId(
+        role === "site_foreman"
+          ? ((foremanIdentityRes.data as { id: string } | null)?.id ?? null)
+          : null,
+      );
+      const wList = (wRes.data ?? []).map((row) => rowToWorker(row as unknown as StaffRow));
+      const jList = (jRes.data ?? []).map((row) => rowToJob(row as unknown as JobRow));
       const sList = (sRes.data ?? []).map(rowToShift);
       const ceList = (ceRes.data ?? []).map(rowToCalendarEvent);
+
+      // Local-only fixture for testing the Foreman workspace without writing
+      // synthetic jobs, staff, or shifts into Supabase. It is deliberately
+      // gated to Vite development builds and never participates in sync.
+      if (import.meta.env.DEV && role === "site_foreman" && user.email) {
+        const today = localLondonDate();
+        const foremanName = profile?.full_name || "Luke Williams";
+        wList.push(
+          {
+            id: LOCAL_FOREMAN_WORKER_ID,
+            name: foremanName,
+            role: "Concrete Pour Supervisor",
+            email: user.email,
+            tickets: [],
+            isArchived: false,
+          },
+          {
+            id: LOCAL_FOREMAN_CREW_IDS[0],
+            name: "Demo Crew Member",
+            role: "Concrete Finisher",
+            email: "demo-crew-1@local.invalid",
+            tickets: [],
+            isArchived: false,
+          },
+          {
+            id: LOCAL_FOREMAN_CREW_IDS[1],
+            name: "Demo Site Operative",
+            role: "Concrete Operative",
+            email: "demo-crew-2@local.invalid",
+            tickets: [],
+            isArchived: false,
+          },
+        );
+        jList.push({
+          id: LOCAL_FOREMAN_JOB_ID,
+          jobRef: "LOCAL-FOREMAN-001",
+          siteName: "Local Foreman Test Site",
+          mainContractor: "Synthetic test fixture",
+          postcode: "SW1A 1AA",
+          currentPours: 2,
+          contractMaxPours: 6,
+          status: "in-progress",
+          scheduleValue: 0,
+        });
+        jList.push(
+          {
+            id: LOCAL_FOREMAN_UPCOMING_JOB_ID,
+            jobRef: "LOCAL-FOREMAN-002",
+            siteName: "North Park Development",
+            mainContractor: "Synthetic test fixture",
+            postcode: "M1 1AE",
+            currentPours: 0,
+            contractMaxPours: 4,
+            status: "pending",
+            scheduleValue: 0,
+          },
+          {
+            id: LOCAL_FOREMAN_BLOCKED_JOB_ID,
+            jobRef: "LOCAL-FOREMAN-003",
+            siteName: "Harbour View Works",
+            mainContractor: "Synthetic test fixture",
+            postcode: "BS1 4DJ",
+            currentPours: 1,
+            contractMaxPours: 4,
+            status: "on-hold",
+            scheduleValue: 0,
+          },
+          {
+            id: LOCAL_FOREMAN_COMPLETED_JOB_ID,
+            jobRef: "LOCAL-FOREMAN-004",
+            siteName: "Riverside Phase 2",
+            mainContractor: "Synthetic test fixture",
+            postcode: "B1 1AA",
+            currentPours: 6,
+            contractMaxPours: 6,
+            status: "completed",
+            scheduleValue: 0,
+          },
+        );
+        sList.push(
+          {
+            id: "local-foreman-shift-001",
+            workerId: LOCAL_FOREMAN_WORKER_ID,
+            jobId: LOCAL_FOREMAN_JOB_ID,
+            date: today,
+          },
+          {
+            id: "local-foreman-shift-002",
+            workerId: LOCAL_FOREMAN_CREW_IDS[0],
+            jobId: LOCAL_FOREMAN_JOB_ID,
+            date: today,
+          },
+          {
+            id: "local-foreman-shift-003",
+            workerId: LOCAL_FOREMAN_CREW_IDS[1],
+            jobId: LOCAL_FOREMAN_JOB_ID,
+            date: today,
+          },
+          {
+            id: "local-foreman-shift-004",
+            workerId: LOCAL_FOREMAN_WORKER_ID,
+            jobId: LOCAL_FOREMAN_JOB_ID,
+            date: addDays(today, 1),
+          },
+          {
+            id: "local-foreman-shift-005",
+            workerId: LOCAL_FOREMAN_WORKER_ID,
+            jobId: LOCAL_FOREMAN_UPCOMING_JOB_ID,
+            date: addDays(today, 1),
+          },
+          {
+            id: "local-foreman-shift-006",
+            workerId: LOCAL_FOREMAN_WORKER_ID,
+            jobId: LOCAL_FOREMAN_BLOCKED_JOB_ID,
+            date: addDays(today, 2),
+          },
+          {
+            id: "local-foreman-shift-007",
+            workerId: LOCAL_FOREMAN_WORKER_ID,
+            jobId: LOCAL_FOREMAN_COMPLETED_JOB_ID,
+            date: addDays(today, -1),
+          },
+        );
+      }
+      if (import.meta.env.DEV && role === "site_foreman" && user.email) {
+        setCurrentStaffId(LOCAL_FOREMAN_WORKER_ID);
+      }
       prevWorkerIdsRef.current = new Set(wList.map((w) => w.id));
       prevJobIdsRef.current = new Set(jList.map((j) => j.id));
       prevShiftIdsRef.current = new Set(sList.map((s) => s.id));
@@ -583,6 +826,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setTimeout(() => {
         hydratedRef.current = true;
         setDataLoading(false);
+        setDataRefreshing(false);
       }, 50);
     })();
     return () => {
@@ -596,11 +840,29 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   const reloadPortalData = () => setDataLoadAttempt((attempt) => attempt + 1);
 
+  // Assignment visibility is security-sensitive: combine realtime with a
+  // bounded poll so a missed websocket event cannot leave revoked content on
+  // screen indefinitely.
+  useEffect(() => {
+    if (!user || role !== "site_foreman") return;
+    const refresh = () => setDataLoadAttempt((attempt) => attempt + 1);
+    const channel = supabase
+      .channel(`foreman-assignment-changes-${user.id}`)
+      .on("postgres_changes", { event: "*", schema: "public", table: "shifts" }, refresh)
+      .on("postgres_changes", { event: "*", schema: "public", table: "jobs" }, refresh)
+      .subscribe();
+    const interval = window.setInterval(refresh, 30000);
+    return () => {
+      window.clearInterval(interval);
+      void supabase.removeChannel(channel);
+    };
+  }, [user, role]);
+
   // Keep the roster live: anonymous submissions (e.g. the credential portal)
   // write to `staff` outside this session's own upsert loop below, so without
   // this the compliance tab only refreshes on next login.
   useEffect(() => {
-    if (!user || !profile?.tenant_id) return;
+    if (!user || !profile?.tenant_id || role === "site_foreman") return;
     const channel = supabase
       .channel(`staff-changes-${user.id}`)
       .on(
@@ -639,13 +901,13 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, profile?.tenant_id]);
+  }, [user, profile?.tenant_id, role]);
 
   // Keep jobs live: changes made outside this session's own upsert loop
   // (e.g. direct DB edits, another tenant session) should reflect immediately
   // instead of only on next login.
   useEffect(() => {
-    if (!user || !profile?.tenant_id) return;
+    if (!user || !profile?.tenant_id || role === "site_foreman") return;
     const channel = supabase
       .channel(`jobs-changes-${user.id}`)
       .on(
@@ -684,12 +946,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, profile?.tenant_id]);
+  }, [user, profile?.tenant_id, role]);
 
   // Keep the roster's shifts live for the same reason jobs are subscribed
   // above: other sessions/direct edits should reflect immediately.
   useEffect(() => {
-    if (!user || !profile?.tenant_id) return;
+    if (!user || !profile?.tenant_id || role === "site_foreman") return;
     const channel = supabase
       .channel(`shifts-changes-${user.id}`)
       .on(
@@ -726,12 +988,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, profile?.tenant_id]);
+  }, [user, profile?.tenant_id, role]);
 
   // Keep generic calendar events live for the same reason shifts are
   // subscribed above: other sessions/direct edits should reflect immediately.
   useEffect(() => {
-    if (!user || !profile?.tenant_id) return;
+    if (!user || !profile?.tenant_id || role === "site_foreman") return;
     const channel = supabase
       .channel(`calendar-events-changes-${user.id}`)
       .on(
@@ -768,95 +1030,155 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, profile?.tenant_id]);
+  }, [user, profile?.tenant_id, role]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
+    if (
+      !hydratedRef.current ||
+      !user ||
+      !profile?.tenant_id ||
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
+    )
+      return;
     const rows = workers.map((w) => workerToRow(w, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedWorkersRef.current) return;
-    lastSavedWorkersRef.current = serialized;
 
     const currentIds = new Set(workers.map((w) => w.id));
     const removed = [...prevWorkerIdsRef.current].filter((id) => !currentIds.has(id));
-    prevWorkerIdsRef.current = currentIds;
     (async () => {
+      let writeError: unknown = null;
       if (workers.length > 0) {
         const { error } = await supabase.from("staff").upsert(rows);
-        if (error) console.error("upsert staff", error);
+        if (error) writeError = error;
       }
-      if (removed.length > 0) {
+      if (!writeError && removed.length > 0) {
         const { error } = await supabase.from("staff").delete().in("id", removed);
-        if (error) console.error("delete workers", error);
+        if (error) writeError = error;
       }
+      if (writeError) {
+        console.error("persist staff", writeError);
+        reportWriteFailure("staff", writeError);
+        return;
+      }
+      lastSavedWorkersRef.current = serialized;
+      prevWorkerIdsRef.current = currentIds;
+      writeRetryAttemptsRef.current = 0;
+      setDataRefreshError(null);
     })();
-  }, [workers, user, profile?.tenant_id, role]);
+  }, [workers, user, profile?.tenant_id, role, writeRetryNonce]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
+    if (
+      !hydratedRef.current ||
+      !user ||
+      !profile?.tenant_id ||
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
+    )
+      return;
     const rows = jobs.map((j) => jobToRow(j, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedJobsRef.current) return;
-    lastSavedJobsRef.current = serialized;
 
     const currentIds = new Set(jobs.map((j) => j.id));
     const removed = [...prevJobIdsRef.current].filter((id) => !currentIds.has(id));
-    prevJobIdsRef.current = currentIds;
     (async () => {
+      let writeError: unknown = null;
       if (jobs.length > 0) {
         const { error } = await supabase.from("jobs").upsert(rows);
-        if (error) console.error("upsert jobs", error);
+        if (error) writeError = error;
       }
-      if (removed.length > 0) {
+      if (!writeError && removed.length > 0) {
         const { error } = await supabase.from("jobs").delete().in("id", removed);
-        if (error) console.error("delete jobs", error);
+        if (error) writeError = error;
       }
+      if (writeError) {
+        console.error("persist jobs", writeError);
+        reportWriteFailure("jobs", writeError);
+        return;
+      }
+      lastSavedJobsRef.current = serialized;
+      prevJobIdsRef.current = currentIds;
+      writeRetryAttemptsRef.current = 0;
+      setDataRefreshError(null);
     })();
-  }, [jobs, user, profile?.tenant_id, role]);
+  }, [jobs, user, profile?.tenant_id, role, writeRetryNonce]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
+    if (
+      !hydratedRef.current ||
+      !user ||
+      !profile?.tenant_id ||
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
+    )
+      return;
     const rows = shifts.map((s) => shiftToRow(s, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedShiftsRef.current) return;
-    lastSavedShiftsRef.current = serialized;
 
     const currentIds = new Set(shifts.map((s) => s.id));
     const removed = [...prevShiftIdsRef.current].filter((id) => !currentIds.has(id));
-    prevShiftIdsRef.current = currentIds;
     (async () => {
+      let writeError: unknown = null;
       if (shifts.length > 0) {
         const { error } = await supabase.from("shifts").upsert(rows);
-        if (error) console.error("upsert shifts", error);
+        if (error) writeError = error;
       }
-      if (removed.length > 0) {
+      if (!writeError && removed.length > 0) {
         const { error } = await supabase.from("shifts").delete().in("id", removed);
-        if (error) console.error("delete shifts", error);
+        if (error) writeError = error;
       }
+      if (writeError) {
+        console.error("persist shifts", writeError);
+        reportWriteFailure("shifts", writeError);
+        return;
+      }
+      lastSavedShiftsRef.current = serialized;
+      prevShiftIdsRef.current = currentIds;
+      writeRetryAttemptsRef.current = 0;
+      setDataRefreshError(null);
     })();
-  }, [shifts, user, profile?.tenant_id, role]);
+  }, [shifts, user, profile?.tenant_id, role, writeRetryNonce]);
 
   useEffect(() => {
-    if (!hydratedRef.current || !user || !profile?.tenant_id || role === "third_party") return;
+    if (
+      !hydratedRef.current ||
+      !user ||
+      !profile?.tenant_id ||
+      !role ||
+      !MANAGEMENT_WRITE_ROLES.includes(role)
+    )
+      return;
     const rows = calendarEvents.map((e) => calendarEventToRow(e, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedCalendarEventsRef.current) return;
-    lastSavedCalendarEventsRef.current = serialized;
 
     const currentIds = new Set(calendarEvents.map((e) => e.id));
     const removed = [...prevCalendarEventIdsRef.current].filter((id) => !currentIds.has(id));
-    prevCalendarEventIdsRef.current = currentIds;
     (async () => {
+      let writeError: unknown = null;
       if (calendarEvents.length > 0) {
         const { error } = await supabase.from("calendar_events").upsert(rows);
-        if (error) console.error("upsert calendar events", error);
+        if (error) writeError = error;
       }
-      if (removed.length > 0) {
+      if (!writeError && removed.length > 0) {
         const { error } = await supabase.from("calendar_events").delete().in("id", removed);
-        if (error) console.error("delete calendar events", error);
+        if (error) writeError = error;
       }
+      if (writeError) {
+        console.error("persist calendar events", writeError);
+        reportWriteFailure("calendar events", writeError);
+        return;
+      }
+      lastSavedCalendarEventsRef.current = serialized;
+      prevCalendarEventIdsRef.current = currentIds;
+      writeRetryAttemptsRef.current = 0;
+      setDataRefreshError(null);
     })();
-  }, [calendarEvents, user, profile?.tenant_id, role]);
+  }, [calendarEvents, user, profile?.tenant_id, role, writeRetryNonce]);
 
   // window.confirm can't be used here since ConfirmDialog is async/non-blocking.
   // Instead we stash the "pending confirmation" as state and render the dialog
@@ -936,19 +1258,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        const { data: prof } = await supabase
-          .from("profiles")
-          .select("tenant_id")
-          .eq("id", user.id)
-          .maybeSingle();
-        await supabase.from("audit_logs").insert({
-          user_id: user.id,
-          user_email: email,
-          tenant_id: prof?.tenant_id as string,
-          action: "LOGIN_SUCCESS",
-          target_type: "auth",
-          target_id: user.id,
-          details: { message: "Successful user authentication" },
+        await supabase.rpc("log_anonymous_audit", {
+          p_user_email: email,
+          p_action: "LOGIN_SUCCESS",
+          p_target_type: "auth",
+          p_target_id: user.id,
+          p_details: { message: "Successful user authentication" },
         });
       }
     }
@@ -960,14 +1275,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      await supabase.from("audit_logs").insert({
-        user_id: user.id,
-        user_email: user.email,
-        tenant_id: profile?.tenant_id as string,
-        action: "LOGOUT",
-        target_type: "auth",
-        target_id: user.id,
-        details: { message: "User terminated active session" },
+      await supabase.rpc("log_anonymous_audit", {
+        p_user_email: user.email || "",
+        p_action: "LOGOUT",
+        p_target_type: "auth",
+        p_target_id: user.id,
+        p_details: { message: "User terminated active session" },
       });
     }
     await supabase.auth.signOut();
@@ -1001,16 +1314,15 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        await supabase.from("profiles").update({ must_change_password: false }).eq("id", user.id);
+        const { error: profileError } = await supabase.rpc("complete_password_change");
+        if (profileError) return { error: profileError.message };
         setProfileState((prev) => (prev ? { ...prev, must_change_password: false } : prev));
-        await supabase.from("audit_logs").insert({
-          user_id: user.id,
-          user_email: user.email,
-          tenant_id: profile?.tenant_id as string,
-          action: "PASSWORD_RESET_SUCCESS",
-          target_type: "auth",
-          target_id: user.id,
-          details: { message: "Successfully updated password credentials" },
+        await supabase.rpc("log_anonymous_audit", {
+          p_user_email: user.email || "",
+          p_action: "PASSWORD_RESET_SUCCESS",
+          p_target_type: "auth",
+          p_target_id: user.id,
+          p_details: { message: "Successfully updated password credentials" },
         });
       }
     }
@@ -1037,14 +1349,12 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               ...updates,
             },
       );
-      await supabase.from("audit_logs").insert({
-        user_id: user.id,
-        user_email: user.email,
-        tenant_id: profile?.tenant_id as string,
-        action: "PROFILE_UPDATE",
-        target_type: "auth",
-        target_id: user.id,
-        details: { updates },
+      await supabase.rpc("log_anonymous_audit", {
+        p_user_email: user.email || "",
+        p_action: "PROFILE_UPDATE",
+        p_target_type: "auth",
+        p_target_id: user.id,
+        p_details: { updates },
       });
     }
     return { error: error?.message ?? null };
@@ -1065,11 +1375,14 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         isAuthenticated: !!session,
         authLoading,
         dataLoading,
+        dataRefreshing,
+        dataRefreshError,
         dataError,
         reloadPortalData,
         session,
         user,
         role,
+        currentStaffId,
         profile,
         updateProfile,
         signIn,

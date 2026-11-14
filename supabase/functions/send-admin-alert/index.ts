@@ -4,12 +4,7 @@ import { EMAIL_COLORS, emailShell } from "../_shared/email-theme.ts";
 import { corsHeaders } from "../_shared/cors.ts";
 
 const ADMIN_EMAIL = "admin@opusform.co.uk";
-const AUTHORIZED_SEND_ROLES = new Set([
-  "admin",
-  "director",
-  "logistics_coordinator",
-  "logistics_assistant",
-]);
+const AUTHORIZED_SEND_ROLES = new Set(["admin", "director", "logistics_coordinator"]);
 
 function escapeHtml(value: string): string {
   return String(value)
@@ -74,11 +69,16 @@ serve(async (req) => {
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role,status,tenant_id")
       .eq("id", user.id)
       .single();
 
-    if (profileError || !profile || !AUTHORIZED_SEND_ROLES.has(profile.role)) {
+    if (
+      profileError ||
+      !profile ||
+      profile.status !== "active" ||
+      !AUTHORIZED_SEND_ROLES.has(profile.role)
+    ) {
       return new Response(
         JSON.stringify({
           error: "Forbidden.",

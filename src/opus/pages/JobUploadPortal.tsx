@@ -194,7 +194,10 @@ export const JobUploadPortalPage: React.FC = () => {
       }
 
       // Mark document request as completed
-      await supabase.rpc("complete_job_document_request", { p_token: token! });
+      const { error: completionError } = await supabase.rpc("complete_job_document_request", {
+        p_token: token!,
+      });
+      if (completionError) throw completionError;
 
       setSubmitState((prev) => ({ ...prev, loading: false, success: true }));
     } catch (err) {

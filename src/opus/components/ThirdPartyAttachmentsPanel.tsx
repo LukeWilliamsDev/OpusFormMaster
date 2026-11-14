@@ -120,7 +120,7 @@ export const ThirdPartyAttachmentsPanel: React.FC<{
       {confirmation && (
         <p
           role="status"
-          className="mb-3 flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-700 dark:text-emerald-300"
+          className="mb-3 flex items-center gap-2 rounded-lg border border-status-success/30 bg-status-success/10 px-3 py-2 text-xs text-status-success"
         >
           <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden="true" />
           {confirmation}

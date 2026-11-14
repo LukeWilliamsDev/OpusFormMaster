@@ -7,50 +7,43 @@ export interface JobColorClasses {
 }
 
 // Muted/earthy palette tuned to sit alongside the brand's warm cream (light)
-// / charcoal (dark) surfaces and burnt-orange primary — desaturated hues
-// instead of stock bright Tailwind colors. Green is deliberately excluded:
-// it's reserved app-wide for "good" states (compliance received, etc.), same
-// as red/rose being reserved for warnings/errors.
+// / charcoal (dark) surfaces and burnt-orange primary. Green remains reserved
+// app-wide for positive states rather than being used for arbitrary jobs.
 const PALETTES: JobColorClasses[] = [
   {
-    // Dusty teal
-    bg: "bg-teal-600/15 dark:bg-teal-600/15 border-teal-600/40 dark:border-teal-600/45 text-teal-700 dark:text-teal-200 hover:bg-teal-600/20 dark:hover:bg-teal-600/20 hover:border-teal-600/50 dark:hover:border-teal-600/55",
-    text: "text-teal-700 dark:text-teal-200",
-    border: "border-teal-600/40 dark:border-teal-600/45",
-    bullet: "bg-teal-600/70 dark:bg-teal-400",
-    lightBg: "bg-teal-600/15 dark:bg-teal-600/15",
+    bg: "bg-job-teal/12 border-job-teal/35 text-job-teal hover:bg-job-teal/18 hover:border-job-teal/50",
+    text: "text-job-teal",
+    border: "border-job-teal/35",
+    bullet: "bg-job-teal/75",
+    lightBg: "bg-job-teal/12",
   },
   {
-    // Slate blue
-    bg: "bg-slate-500/15 dark:bg-slate-500/15 border-slate-500/40 dark:border-slate-500/45 text-slate-700 dark:text-slate-200 hover:bg-slate-500/20 dark:hover:bg-slate-500/20 hover:border-slate-500/50 dark:hover:border-slate-500/55",
-    text: "text-slate-700 dark:text-slate-200",
-    border: "border-slate-500/40 dark:border-slate-500/45",
-    bullet: "bg-slate-500/70 dark:bg-slate-300",
-    lightBg: "bg-slate-500/15 dark:bg-slate-500/15",
+    bg: "bg-job-slate/12 border-job-slate/35 text-job-slate hover:bg-job-slate/18 hover:border-job-slate/50",
+    text: "text-job-slate",
+    border: "border-job-slate/35",
+    bullet: "bg-job-slate/75",
+    lightBg: "bg-job-slate/12",
   },
   {
-    // Plum
-    bg: "bg-purple-600/15 dark:bg-purple-600/15 border-purple-600/40 dark:border-purple-600/45 text-purple-700 dark:text-purple-200 hover:bg-purple-600/20 dark:hover:bg-purple-600/20 hover:border-purple-600/50 dark:hover:border-purple-600/55",
-    text: "text-purple-700 dark:text-purple-200",
-    border: "border-purple-600/40 dark:border-purple-600/45",
-    bullet: "bg-purple-600/70 dark:bg-purple-400",
-    lightBg: "bg-purple-600/15 dark:bg-purple-600/15",
+    bg: "bg-job-plum/12 border-job-plum/35 text-job-plum hover:bg-job-plum/18 hover:border-job-plum/50",
+    text: "text-job-plum",
+    border: "border-job-plum/35",
+    bullet: "bg-job-plum/75",
+    lightBg: "bg-job-plum/12",
   },
   {
-    // Ochre
-    bg: "bg-amber-600/15 dark:bg-amber-600/15 border-amber-600/40 dark:border-amber-600/45 text-amber-700 dark:text-amber-200 hover:bg-amber-600/20 dark:hover:bg-amber-600/20 hover:border-amber-600/50 dark:hover:border-amber-600/55",
-    text: "text-amber-700 dark:text-amber-200",
-    border: "border-amber-600/40 dark:border-amber-600/45",
-    bullet: "bg-amber-600/70 dark:bg-amber-400",
-    lightBg: "bg-amber-600/15 dark:bg-amber-600/15",
+    bg: "bg-job-ochre/12 border-job-ochre/35 text-job-ochre hover:bg-job-ochre/18 hover:border-job-ochre/50",
+    text: "text-job-ochre",
+    border: "border-job-ochre/35",
+    bullet: "bg-job-ochre/75",
+    lightBg: "bg-job-ochre/12",
   },
   {
-    // Warm stone
-    bg: "bg-stone-500/15 dark:bg-stone-500/15 border-stone-500/40 dark:border-stone-500/45 text-stone-700 dark:text-stone-200 hover:bg-stone-500/20 dark:hover:bg-stone-500/20 hover:border-stone-500/50 dark:hover:border-stone-500/55",
-    text: "text-stone-700 dark:text-stone-200",
-    border: "border-stone-500/40 dark:border-stone-500/45",
-    bullet: "bg-stone-500/70 dark:bg-stone-300",
-    lightBg: "bg-stone-500/15 dark:bg-stone-500/15",
+    bg: "bg-job-stone/12 border-job-stone/35 text-job-stone hover:bg-job-stone/18 hover:border-job-stone/50",
+    text: "text-job-stone",
+    border: "border-job-stone/35",
+    bullet: "bg-job-stone/75",
+    lightBg: "bg-job-stone/12",
   },
 ];
 

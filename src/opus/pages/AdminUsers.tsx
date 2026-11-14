@@ -459,7 +459,7 @@ export const AdminUsers: React.FC = () => {
   });
 
   return (
-    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in text-foreground flex flex-col bg-background">
+    <div className="portal-page-container flex flex-col space-y-6 bg-background py-6 text-foreground animate-fade-in lg:py-10">
       <div className="flex items-center gap-3 border-b border-border pb-6">
         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
           <Users2 className="w-5 h-5 text-primary" />

@@ -1,5 +1,13 @@
 // Cloudflare deployment retry trigger
 {
+  "compatibility_date": "2026-09-28",
+  "main": ".output/server/index.mjs",
+  "assets": {
+    "directory": ".output/public",
+  },
+  "build": {
+    "command": "npm run build",
+  },
   "observability": {
     "enabled": true,
     "logs": {

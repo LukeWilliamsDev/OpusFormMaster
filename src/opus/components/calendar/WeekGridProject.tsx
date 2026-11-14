@@ -13,10 +13,10 @@ const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) =
   if (!weather) return null;
 
   const colorClass = !weather.isImpactful
-    ? "bg-emerald-100 dark:bg-emerald-900/30 border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400"
+    ? "bg-status-success/10 border-status-success/30 text-status-success"
     : weather.riskLevel === "High"
-      ? "bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400"
-      : "bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400";
+      ? "bg-status-error/10 border-status-error/30 text-status-error"
+      : "bg-status-warning/10 border-status-warning/30 text-status-warning";
 
   return (
     <div
@@ -61,7 +61,7 @@ const SITE_DEPLOYED_TEXT = "text-success";
 const SITE_EMPTY_TEXT = "text-muted-foreground";
 const SITE_JOB_CARD = "border border-border rounded-lg bg-card p-2 space-y-2";
 const SITE_ADD_STAFF =
-  "w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-amber-600 text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer";
+  "w-full flex items-center justify-center gap-1 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-schedule-action text-[10px] font-black uppercase tracking-wider transition-colors cursor-pointer";
 
 export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
   jobs,

@@ -13,6 +13,11 @@
 
 Add topic files in `docs/learnings/` and list them here.
 
+## Change assurance
+
+- [`quality/AGENTIC_CHANGE_ASSURANCE.md`](quality/AGENTIC_CHANGE_ASSURANCE.md) — reusable implementation prompt, critic loop, evidence rules, and approval boundaries
+- [`quality/CHANGE_CONTRACT_TEMPLATE.md`](quality/CHANGE_CONTRACT_TEMPLATE.md) — machine-checkable change contract template
+
 ---
 
 **Last Updated**: 2026-07-21

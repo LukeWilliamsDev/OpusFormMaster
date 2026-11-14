@@ -33,11 +33,12 @@ export const CertificateCheckerPage: React.FC = () => {
   const [staffId, setStaffId] = useState(searchParams.get("staffId") ?? "");
   const [certificateNumber, setCertificateNumber] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
-  const [result, setResult] = useState<CheckResult>("verified");
+  const [result, setResult] = useState<CheckResult | "">("");
   const [expiryDate, setExpiryDate] = useState("");
   const [notes, setNotes] = useState("");
   const [evidence, setEvidence] = useState<File | null>(null);
   const [checks, setChecks] = useState<any[]>([]);
+  const [checkActors, setCheckActors] = useState<Record<string, string>>({});
   const [loadingChecks, setLoadingChecks] = useState(false);
   const [saving, setSaving] = useState(false);
   const selectedWorker = useMemo(
@@ -58,6 +59,30 @@ export const CertificateCheckerPage: React.FC = () => {
     setLoadingChecks(false);
     if (error) return toast.error(error.message || "Unable to load check history");
     setChecks(data ?? []);
+
+    const actorIds: string[] = Array.from(
+      new Set<string>(
+        (data ?? [])
+          .map((check: { checked_by?: string | null }) => check.checked_by)
+          .filter(
+            (value: string | null | undefined): value is string =>
+              typeof value === "string" && value.length > 0,
+          ),
+      ),
+    );
+    if (actorIds.length === 0) {
+      setCheckActors({});
+      return;
+    }
+    const { data: actors } = await supabase
+      .from("profiles")
+      .select("id, full_name, email")
+      .in("id", actorIds);
+    setCheckActors(
+      Object.fromEntries(
+        (actors ?? []).map((actor) => [actor.id, actor.full_name || actor.email || actor.id]),
+      ),
+    );
   };
 
   useEffect(() => {
@@ -74,7 +99,7 @@ export const CertificateCheckerPage: React.FC = () => {
 
   const recordCheck = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!staffId || !certificateNumber.trim() || !user || !profile?.tenant_id) return;
+    if (!staffId || !certificateNumber.trim() || !result || !user || !profile?.tenant_id) return;
     setSaving(true);
     let evidencePath: string | null = null;
     if (evidence) {
@@ -135,7 +160,8 @@ export const CertificateCheckerPage: React.FC = () => {
             <div>
               <h2 className="text-sm font-black uppercase tracking-widest">New CSCS check</h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                The date of birth is used only while checking and is never stored.
+                Enter the date of birth in the official CSCS checker. Opus Form does not submit or
+                store it.
               </p>
             </div>
           </div>
@@ -189,10 +215,12 @@ export const CertificateCheckerPage: React.FC = () => {
             <label className="text-xs font-bold text-muted-foreground">
               Checker result
               <select
+                required
                 value={result}
                 onChange={(event) => setResult(event.target.value as CheckResult)}
                 className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-3 text-sm text-foreground"
               >
+                <option value="">Select the outcome recorded by the official checker</option>
                 {Object.entries(RESULT_LABELS).map(([value, label]) => (
                   <option key={value} value={value}>
                     {label}
@@ -290,8 +318,14 @@ export const CertificateCheckerPage: React.FC = () => {
                     {check.certificate_type} · {check.certificate_number}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    Checked {formatUKDate(check.created_at?.slice(0, 10))}
+                    Checked{" "}
+                    {check.created_at
+                      ? new Date(check.created_at).toLocaleString("en-GB")
+                      : "Time not recorded"}
                     {check.expiry_date ? ` · Expires ${formatUKDate(check.expiry_date)}` : ""}
+                  </p>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    By {checkActors[check.checked_by] || "System / Automated"}
                   </p>
                 </div>
                 <div className="flex items-center gap-3">

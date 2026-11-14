@@ -20,6 +20,7 @@ export interface InvoiceRow {
 }
 
 interface InvoiceListProps {
+  readOnly?: boolean;
   jobId: string;
   jobRef: string;
   refreshKey: number;
@@ -37,6 +38,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export const InvoiceList: React.FC<InvoiceListProps> = ({
+  readOnly = false,
   jobId,
   jobRef,
   refreshKey,
@@ -107,53 +109,55 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
             Select any not yet billed to create an invoice
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {selectMode ? (
-            <>
-              <span className="text-xs text-muted-foreground font-medium hidden sm:inline">
-                {selectedIds.length} selected
-              </span>
-              <Button
-                size="sm"
-                onClick={onCreateInvoice}
-                disabled={selectedIds.length === 0}
-                className="gap-1.5 shrink-0"
-              >
-                Create Invoice
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  selectedIds.forEach((id) => onToggleSelect(id));
-                  setSelectMode(false);
-                }}
-                className="gap-1.5 shrink-0"
-              >
-                <X className="w-3.5 h-3.5" /> Cancel
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={() => setSelectMode(true)}
-                className="gap-1.5 shrink-0"
-              >
-                <CheckSquare className="w-3.5 h-3.5" /> Select
-              </Button>
-              <Button
-                size="sm"
-                onClick={onCreateNew}
-                variant="secondary"
-                className="gap-1.5 shrink-0"
-              >
-                <Plus className="w-3.5 h-3.5" /> New Quote
-              </Button>
-            </>
-          )}
-        </div>
+        {!readOnly && (
+          <div className="flex items-center gap-2 shrink-0">
+            {selectMode ? (
+              <>
+                <span className="text-xs text-muted-foreground font-medium hidden sm:inline">
+                  {selectedIds.length} selected
+                </span>
+                <Button
+                  size="sm"
+                  onClick={onCreateInvoice}
+                  disabled={selectedIds.length === 0}
+                  className="gap-1.5 shrink-0"
+                >
+                  Create Invoice
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    selectedIds.forEach((id) => onToggleSelect(id));
+                    setSelectMode(false);
+                  }}
+                  className="gap-1.5 shrink-0"
+                >
+                  <X className="w-3.5 h-3.5" /> Cancel
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setSelectMode(true)}
+                  className="gap-1.5 shrink-0"
+                >
+                  <CheckSquare className="w-3.5 h-3.5" /> Select
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={onCreateNew}
+                  variant="secondary"
+                  className="gap-1.5 shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" /> New Quote
+                </Button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -171,8 +175,9 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
             const totals = computeTotals(inv.items || [], inv.vat_rate);
             const badgeColor = STATUS_BADGE[inv.status] || STATUS_BADGE.draft;
             const sequence = invoices.length - index;
-            const label = computeDocumentLabel({ jobRef, kind: "quote", sequence });
-            const shortRef = computeDocSequenceLabel("quote", sequence);
+            const label =
+              inv.reference || computeDocumentLabel({ jobRef, kind: "quote", sequence });
+            const shortRef = inv.reference || computeDocSequenceLabel("quote", sequence);
             const billed = inv.status === "billed";
             const selected = selectedIds.includes(inv.id);
             const locked = selectMode && billed;
@@ -184,7 +189,7 @@ export const InvoiceList: React.FC<InvoiceListProps> = ({
                 } ${selectMode && selected ? "bg-primary/10 shadow-[inset_2px_0_0_theme(colors.primary.DEFAULT)]" : ""}`}
                 onClick={() => {
                   if (locked) return;
-                  if (selectMode) {
+                  if (!readOnly && selectMode) {
                     onToggleSelect(inv.id);
                     return;
                   }

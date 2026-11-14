@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  Outlet,
   useNavigate,
   useLocation,
   useParams,
@@ -12,12 +13,15 @@ import {
   PortalProvider,
   usePortal,
   AppRole,
+  ALL_ROLES,
   ASSIGNED_SHIFT_ROLES,
   MANAGEMENT_ROLES,
+  MANAGEMENT_WRITE_ROLES,
   FIELD_ROLES,
   PORTAL_ACCESS_ROLES,
 } from "./context/PortalContext";
 import { PortalLayout } from "./layouts/PortalLayout";
+import { DashboardPreviewPage } from "./pages/DashboardPreview";
 const lazyRoute = <T extends React.ComponentType<any>>(
   load: () => Promise<{ default: T }>,
 ): React.LazyExoticComponent<T> =>
@@ -66,6 +70,17 @@ const CalendarPage = lazyRoute(() =>
 const MyShiftsPage = lazyRoute(() =>
   import("./pages/MyShiftsPage").then((module) => ({ default: module.MyShiftsPage })),
 );
+const ForemanWorkspacePage = lazyRoute(() =>
+  import("./pages/ForemanWorkspace").then((module) => ({
+    default: module.ForemanWorkspacePage,
+  })),
+);
+const ForemanSitesPage = lazyRoute(() =>
+  import("./pages/ForemanSitesPage").then((module) => ({ default: module.ForemanSitesPage })),
+);
+const ForemanSitePage = lazyRoute(() =>
+  import("./pages/ForemanSitePage").then((module) => ({ default: module.ForemanSitePage })),
+);
 const ThirdPartyPortalPage = lazyRoute(() =>
   import("./pages/ThirdPartyPortalPage").then((module) => ({
     default: module.ThirdPartyPortalPage,
@@ -95,9 +110,6 @@ const PipelinePage = lazyRoute(() =>
 );
 const AuditLogPage = lazyRoute(() =>
   import("./pages/AuditLog").then((module) => ({ default: module.AuditLogPage })),
-);
-const AdminPolicies = lazyRoute(() =>
-  import("./pages/AdminPolicies").then((module) => ({ default: module.AdminPolicies })),
 );
 const AdminUsers = lazyRoute(() =>
   import("./pages/AdminUsers").then((module) => ({ default: module.AdminUsers })),
@@ -237,7 +249,8 @@ class RouteErrorBoundary extends React.Component<React.PropsWithChildren, { hasE
 
 // Session gate — any /portal/* view requires a valid Supabase session.
 const ProtectedRoute: React.FC = () => {
-  const { isAuthenticated, authLoading, profile } = usePortal();
+  const { isAuthenticated, authLoading, profile, role } = usePortal();
+  const location = useLocation();
   if (authLoading) {
     return <div className="min-h-screen bg-background" />;
   }
@@ -245,6 +258,11 @@ const ProtectedRoute: React.FC = () => {
   // A must-change-password account has no business in the app until it changes it —
   // send it back to the auth page, which forces the reset form for this state.
   if (profile?.must_change_password) return <Navigate to="/portal" replace />;
+  // Users without portal access should see the standalone explanation rather
+  // than a shell full of links that their role cannot open.
+  if (location.pathname === "/portal/no-access" || role === "labourer") {
+    return <Outlet />;
+  }
   return <PortalLayout />;
 };
 
@@ -320,15 +338,15 @@ const RoleGuard: React.FC<{
   );
 };
 
-// Audit Log Gate - the full tenant audit trail is restricted to tenant admins.
-// Job-level history (a narrower view) is available to all ops roles via
-// JobDetails' History tab, backed by a separate job-scoped audit_logs RLS policy.
+// Audit Log Gate - the full tenant audit trail is available to admin/director
+// accounts. The database policy remains the source of truth for tenant scope;
+// the route gate keeps navigation and fallback behavior aligned with it.
 const AuditLogGuard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { role, user, authLoading } = usePortal();
+  const { role, authLoading } = usePortal();
   if (authLoading || role === null) {
     return <div className="min-h-screen bg-background" />;
   }
-  if (role !== "admin") {
+  if (role !== "admin" && role !== "director") {
     const fallback =
       role === "third_party"
         ? "/portal/third-party"
@@ -364,6 +382,13 @@ const LandingPageWrapper: React.FC = () => {
 };
 
 export default function App() {
+  if (
+    import.meta.env.DEV &&
+    (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY)
+  ) {
+    return <DashboardPreviewPage />;
+  }
+
   return (
     <PortalProvider>
       <HashRouter>
@@ -436,6 +461,30 @@ export default function App() {
                   element={
                     <RoleGuard allow={ASSIGNED_SHIFT_ROLES}>
                       <MyShiftsPage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/portal/foreman"
+                  element={
+                    <RoleGuard allow={["site_foreman"]}>
+                      <ForemanWorkspacePage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/portal/foreman/sites/:jobId"
+                  element={
+                    <RoleGuard allow={["site_foreman"]}>
+                      <ForemanSitePage />
+                    </RoleGuard>
+                  }
+                />
+                <Route
+                  path="/portal/foreman/sites"
+                  element={
+                    <RoleGuard allow={["site_foreman"]}>
+                      <ForemanSitesPage />
                     </RoleGuard>
                   }
                 />
@@ -514,7 +563,7 @@ export default function App() {
                 <Route
                   path="/portal/third-party-approvals"
                   element={
-                    <RoleGuard allow={MANAGEMENT_ROLES}>
+                    <RoleGuard allow={MANAGEMENT_WRITE_ROLES}>
                       <ThirdPartyApprovalsPage />
                     </RoleGuard>
                   }
@@ -524,14 +573,6 @@ export default function App() {
                   element={
                     <AuditLogGuard>
                       <AuditLogPage />
-                    </AuditLogGuard>
-                  }
-                />
-                <Route
-                  path="/portal/policies"
-                  element={
-                    <AuditLogGuard>
-                      <AdminPolicies />
                     </AuditLogGuard>
                   }
                 />
@@ -570,7 +611,7 @@ export default function App() {
                 <Route
                   path="/portal/contact"
                   element={
-                    <RoleGuard allow={PORTAL_ACCESS_ROLES}>
+                    <RoleGuard allow={ALL_ROLES}>
                       <PortalContactPage />
                     </RoleGuard>
                   }
@@ -651,10 +692,14 @@ const RoleAwareFallback: React.FC = () => {
   const target =
     role === "third_party"
       ? "/portal/third-party"
-      : role && ASSIGNED_SHIFT_ROLES.includes(role)
-        ? "/portal/no-access"
-        : role === "logistics_assistant"
-          ? "/portal/roster?view=calendar"
-          : "/portal/dashboard";
+      : role === "site_foreman"
+        ? "/portal/foreman"
+        : role === "labourer"
+          ? "/portal/no-access"
+          : role && ASSIGNED_SHIFT_ROLES.includes(role)
+            ? "/portal/no-access"
+            : role === "logistics_assistant"
+              ? "/portal/roster?view=calendar"
+              : "/portal/dashboard";
   return <Navigate to={target} replace />;
 };

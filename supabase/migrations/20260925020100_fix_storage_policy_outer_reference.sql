@@ -1,3 +1,5 @@
+-- Re-sequenced from the colliding 20260925020000 prefix so clean local
+-- replays have a deterministic migration history.
 -- Correct the storage policy path expressions after the initial remediation.
 -- In nested EXISTS clauses, an unqualified `name` can resolve to staff.name;
 -- always qualify the outer storage row as storage.objects.name.

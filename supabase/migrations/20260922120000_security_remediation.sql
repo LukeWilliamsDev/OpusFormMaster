@@ -227,11 +227,22 @@ BEGIN
     EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon', f.signature);
   END LOOP;
 END $$;
-GRANT EXECUTE ON FUNCTION public.check_email_registered(text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_document_request_details(uuid) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.get_job_document_request_details(text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.is_valid_job_document_token(text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.submit_job_attachment(text, text, text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.submit_worker_documents(uuid, jsonb) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.complete_job_document_request(text) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION public.log_anonymous_audit(text, text, text, text, jsonb) TO anon, authenticated;
+DO $$
+DECLARE signature text;
+BEGIN
+  FOREACH signature IN ARRAY ARRAY[
+    'public.check_email_registered(text)',
+    'public.get_document_request_details(uuid)',
+    'public.get_job_document_request_details(text)',
+    'public.is_valid_job_document_token(text)',
+    'public.submit_job_attachment(text,text,text)',
+    'public.submit_job_attachment(text,text,text,bigint)',
+    'public.submit_worker_documents(uuid,jsonb)',
+    'public.complete_job_document_request(text)',
+    'public.log_anonymous_audit(text,text,text,text,jsonb)'
+  ] LOOP
+    IF to_regprocedure(signature) IS NOT NULL THEN
+      EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO anon, authenticated', signature);
+    END IF;
+  END LOOP;
+END $$;

@@ -1,7 +1,7 @@
-DROP TABLE IF EXISTS public.shifts CASCADE;
-DROP TABLE IF EXISTS public.jobs CASCADE;
-DROP TABLE IF EXISTS public.workers CASCADE;
-DROP TABLE IF EXISTS public.profiles CASCADE;
-DROP FUNCTION IF EXISTS public.handle_new_user() CASCADE;
-DROP FUNCTION IF EXISTS public.prevent_role_self_escalation() CASCADE;
-DROP FUNCTION IF EXISTS public.set_updated_at() CASCADE;
+-- Historical reset migration. The deployed project has already passed this
+-- point; keep the version as a no-op so a clean local replay cannot destroy
+-- the schema created by the preceding migrations.
+DO $$
+BEGIN
+  NULL;
+END $$;

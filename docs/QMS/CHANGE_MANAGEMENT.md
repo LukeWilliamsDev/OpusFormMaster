@@ -26,6 +26,23 @@ Defines how changes to the Opus Form platform — code, database schema, configu
 
 ## 3. Change Process
 
+### Agent-assisted assurance loop
+
+All changes follow the repository's machine-checkable contract and critic loop in
+[`docs/quality/AGENTIC_CHANGE_ASSURANCE.md`](../quality/AGENTIC_CHANGE_ASSURANCE.md):
+
+```
+Plan → Contract → Implement → Deterministic checks → Independent critic → Repair → Human review → Merge/deploy
+```
+
+The contract records observable acceptance criteria, risk, evidence, critic findings,
+and release status. `npm run quality:contract` runs before a staged commit and
+`npm run quality:gate` runs the full local/CI checks. An AI critic may identify or
+block on findings, but its output is not approval, independent security assurance,
+legal advice, or permission to merge/deploy. The named accountable human remains
+responsible for accepting residual risk and approving schema, RLS, security, policy,
+production, and external-service changes.
+
 ### Standard Changes (Schema / Feature)
 
 ```

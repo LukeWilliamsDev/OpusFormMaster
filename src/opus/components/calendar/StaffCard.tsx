@@ -49,7 +49,8 @@ export const StaffCard: React.FC<StaffCardProps> = ({
     : undefined;
 
   // Site office design constants
-  const SITE_AMBER = "bg-amber-600 text-white shadow-amber-600/20 hover:bg-amber-700";
+  const SITE_AMBER =
+    "bg-schedule-action text-schedule-action-foreground shadow-schedule-action/20 hover:bg-schedule-action-hover";
   const SITE_STONE_BG = "bg-card";
   const SITE_STONE_BORDER = "border-border";
   const SITE_STONE_TEXT = "text-foreground";
@@ -62,12 +63,12 @@ export const StaffCard: React.FC<StaffCardProps> = ({
   const SITE_ROW_UNASSIGNED =
     "opacity-75 2xl:pointer-events-auto 2xl:cursor-pointer 2xl:hover:bg-background 2xl:-mx-2 2xl:px-2 2xl:rounded-lg";
   const SITE_BUTTON_PRIMARY = `flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border font-black uppercase tracking-wider text-[10px] transition-colors cursor-pointer shrink-0 ${SITE_AMBER}`;
-  const SITE_BUTTON_SECONDARY = `flex items-center gap-1 px-2 py-1.5 rounded-lg border border-dashed ${SITE_STONE_BORDER} ${SITE_MUTED_TEXT} hover:text-foreground hover:border-amber-600 dark:hover:border-amber-400 font-black uppercase tracking-wider text-[10px] transition-colors cursor-pointer shrink-0`;
-  const SITE_BUTTON_DANGER = `pointer-events-auto flex items-center px-2 py-2.5 -my-1 rounded-lg border border-dashed border-red-500/50 text-red-400 [.light-theme_&]:text-red-600 font-black uppercase tracking-wider text-[10px] whitespace-nowrap shrink-0 cursor-not-allowed`;
+  const SITE_BUTTON_SECONDARY = `flex items-center gap-1 px-2 py-1.5 rounded-lg border border-dashed ${SITE_STONE_BORDER} ${SITE_MUTED_TEXT} hover:text-foreground hover:border-schedule-action font-black uppercase tracking-wider text-[10px] transition-colors cursor-pointer shrink-0`;
+  const SITE_BUTTON_DANGER = `pointer-events-auto flex items-center px-2 py-2.5 -my-1 rounded-lg border border-dashed border-status-error/35 text-status-error font-black uppercase tracking-wider text-[10px] whitespace-nowrap shrink-0 cursor-not-allowed`;
   const SITE_REMOVE_BTN =
-    "p-2.5 -m-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer shrink-0";
+    "p-2.5 -m-1 text-muted-foreground hover:text-destructive transition-colors cursor-pointer shrink-0";
   const SITE_REMOVE_BTN_DENSE =
-    "p-1 -m-1 text-muted-foreground hover:text-red-400 transition-colors cursor-pointer";
+    "p-1 -m-1 text-muted-foreground hover:text-destructive transition-colors cursor-pointer";
   const SITE_TAG = `flex items-center gap-1.5 px-2 py-1.5 rounded-lg border text-[10px] font-bold shrink-0`;
   const SITE_AVATAR = `w-7 h-7 rounded-full border flex items-center justify-center font-black text-[10px] shrink-0`;
 
@@ -261,7 +262,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
         {!compact && !isAssigned && onAssign && blocked && (
           <span
             title={blockedTitle}
-            className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-red-500/50 text-red-400 [.light-theme_&]:text-red-600 font-black uppercase tracking-wider cursor-not-allowed ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}
+            className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-status-error/35 text-status-error font-black uppercase tracking-wider cursor-not-allowed ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}
           >
             No Valid Certificate
           </span>
@@ -271,7 +272,7 @@ export const StaffCard: React.FC<StaffCardProps> = ({
           <button
             type="button"
             onClick={onAssign}
-            className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed ${SITE_STONE_BORDER} ${SITE_MUTED_TEXT} hover:text-foreground hover:border-amber-600 dark:hover:border-amber-400 font-black uppercase tracking-wider transition-colors cursor-pointer ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}
+            className={`w-full flex items-center justify-center gap-1.5 rounded-lg border border-dashed ${SITE_STONE_BORDER} ${SITE_MUTED_TEXT} hover:text-foreground hover:border-schedule-action font-black uppercase tracking-wider transition-colors cursor-pointer ${dense ? "px-2 py-1.5 text-[10px]" : "px-2.5 py-2 text-[11px]"}`}
           >
             <Plus className={dense ? "w-3 h-3" : "w-3.5 h-3.5"} />
             {dense ? "Assign" : "Assign to Site"}

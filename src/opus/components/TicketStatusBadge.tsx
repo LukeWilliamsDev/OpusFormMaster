@@ -13,8 +13,8 @@ export const TicketStatusBadge: React.FC<TicketStatusBadgeProps> = ({ ticket }) 
 
   const colorClasses =
     status === "EXPIRED" || status === "INVALID"
-      ? "bg-red-500/20 border-red-500/30 text-red-400"
-      : "bg-amber-500/10 border-amber-500/20 text-amber-400 animate-pulse";
+      ? "bg-status-error/12 border-status-error/30 text-status-error"
+      : "bg-status-warning/10 border-status-warning/25 text-status-warning";
   const statusText =
     status === "INVALID" ? "NEEDS REVIEW" : status === "EXPIRED" ? "EXPIRED" : "EXPIRING";
 

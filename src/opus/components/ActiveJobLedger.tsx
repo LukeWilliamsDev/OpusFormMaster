@@ -5,6 +5,7 @@ import { CloudSun, AlertCircle, HardHat, DollarSign } from "lucide-react";
 import { Job } from "../types/erp";
 import { useJobForecast, getWeatherOnDate } from "../utils/weather";
 import { toLocalISODate } from "../utils/week";
+import { PortalFilterGroup } from "./PortalNavigationPrimitives";
 
 interface ActiveJobLedgerProps {
   filteredJobs: Job[];
@@ -76,24 +77,18 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
           </h2>
         </div>
         <div className="w-full sm:w-auto">
-          <div className="flex flex-nowrap items-center bg-card border border-border rounded-lg p-1 gap-1 overflow-x-auto">
-            {(["all", "in-progress", "pending", "completed", "archived"] as const).map((status) => (
-              <button
-                type="button"
-                key={status}
-                onClick={() => setFilterStatus(status)}
-                aria-pressed={filterStatus === status}
-                aria-label={`Show ${status.replace("-", " ")} jobs`}
-                className={`rounded px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider whitespace-nowrap transition-all duration-200 min-h-[36px] flex items-center justify-center cursor-pointer ${
-                  filterStatus === status
-                    ? "bg-primary text-white shadow-md"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                }`}
-              >
-                {status.replace("-", " ")}
-              </button>
-            ))}
-          </div>
+          <PortalFilterGroup
+            value={filterStatus}
+            onChange={setFilterStatus}
+            ariaLabel="Filter jobs"
+            options={[
+              { value: "all", label: "All jobs" },
+              { value: "in-progress", label: "In progress" },
+              { value: "pending", label: "Pending" },
+              { value: "completed", label: "Completed" },
+              { value: "archived", label: "Archived" },
+            ]}
+          />
         </div>
       </div>
 
@@ -103,9 +98,9 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
       </p>
 
       {/* Ledger list container */}
-      <div className="md:bg-card md:border md:border-border rounded-xl md:overflow-hidden md:shadow-2xl">
+      <div className="lg:bg-card lg:border lg:border-border rounded-xl lg:overflow-hidden lg:shadow-2xl">
         {/* Table Header (hidden on mobile) */}
-        <div className="hidden md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_100px] gap-4 px-5 py-3.5 border-b border-border bg-muted/40">
+        <div className="hidden lg:grid lg:grid-cols-[120px_2.2fr_1.3fr_1.5fr_100px] gap-4 px-5 py-3.5 border-b border-border bg-muted/40">
           <span className="text-[11px] font-bold tracking-wider uppercase text-muted-foreground">
             Job Ref
           </span>
@@ -123,7 +118,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
           </span>
         </div>
 
-        <div className="flex flex-col gap-3 md:gap-0 md:divide-y md:divide-border">
+        <div className="flex flex-col gap-3 lg:gap-0 lg:divide-y lg:divide-border">
           <AnimatePresence mode="popLayout">
             {filteredJobs.length === 0 ? (
               <div className="px-5 py-16 text-center text-[13px] font-bold uppercase tracking-wider text-muted-foreground">
@@ -154,16 +149,16 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                         onSelectJob(job.id);
                       }
                     }}
-                    className="group flex flex-col md:grid md:grid-cols-[120px_2.2fr_1.3fr_1.5fr_100px] gap-4 px-5 py-5 md:py-0 md:min-h-[64px] items-center hover:bg-muted/30 active:bg-muted/30 transition-all duration-150 cursor-pointer border border-border md:border-0 md:border-b rounded-xl md:rounded-none shadow-lg md:shadow-none border-l-[3px] border-l-primary/25 hover:border-l-primary active:border-l-primary bg-card relative overflow-hidden"
+                    className="group flex flex-col lg:grid lg:grid-cols-[120px_2.2fr_1.3fr_1.5fr_100px] gap-4 px-5 py-5 lg:py-0 lg:min-h-[64px] items-center hover:bg-muted/30 active:bg-muted/30 transition-all duration-150 cursor-pointer border border-border lg:border-0 lg:border-b rounded-xl lg:rounded-none shadow-lg lg:shadow-none border-l-[3px] border-l-primary/25 hover:border-l-primary active:border-l-primary bg-card relative overflow-hidden"
                   >
                     {/* Job Ref Column */}
-                    <div className="flex justify-between items-center w-full md:w-auto md:contents">
+                    <div className="flex justify-between items-center w-full lg:w-auto lg:contents">
                       <div className="text-[13px] font-mono font-semibold text-primary group-hover:text-foreground transition-colors">
                         {job.jobRef}
                       </div>
 
                       {/* Mobile-only status badge */}
-                      <div className="md:hidden">
+                      <div className="lg:hidden">
                         <span
                           className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-bold tracking-wide uppercase border ${
                             job.status === "in-progress"
@@ -179,7 +174,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                     </div>
 
                     {/* Site / Contractor Column */}
-                    <div className="w-full md:w-auto space-y-0.5 py-1">
+                    <div className="w-full lg:w-auto space-y-0.5 py-1">
                       <div className="text-[14px] font-semibold text-foreground group-hover:text-primary transition-colors">
                         {job.siteName}
                       </div>
@@ -188,7 +183,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                       </div>
 
                       {/* Mobile-only warning badges & Value / Progress */}
-                      <div className="md:hidden space-y-2 mt-3 pt-2.5 border-t border-border">
+                      <div className="lg:hidden space-y-2 mt-3 pt-2.5 border-t border-border">
                         <div className="flex flex-wrap items-center gap-1.5">
                           <JobWarnings job={job} followup={followup} dense />
                         </div>
@@ -217,12 +212,12 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                     </div>
 
                     {/* Desktop Warnings Column */}
-                    <div className="hidden md:flex flex-col items-start justify-center gap-1.5 w-full text-left">
+                    <div className="hidden lg:flex flex-col items-start justify-center gap-1.5 w-full text-left">
                       <JobWarnings job={job} followup={followup} />
                     </div>
 
                     {/* Progress Column */}
-                    <div className="hidden md:flex items-center justify-center w-full py-1 text-center">
+                    <div className="hidden lg:flex items-center justify-center w-full py-1 text-center">
                       <span
                         className="text-[13px] font-mono font-bold text-foreground"
                         role="progressbar"
@@ -236,7 +231,7 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                     </div>
 
                     {/* Status Column (Desktop-only) */}
-                    <div className="hidden md:block text-right">
+                    <div className="hidden lg:block text-right">
                       <span
                         className={`inline-flex items-center rounded px-2 py-0.5 text-[11px] font-bold uppercase border tracking-wider ${
                           job.status === "in-progress"

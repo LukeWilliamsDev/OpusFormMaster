@@ -318,6 +318,15 @@ DROP POLICY IF EXISTS "Allow authenticated upload job-attachments" ON storage.ob
 DROP POLICY IF EXISTS "Allow anonymous upload job-attachments" ON storage.objects;
 DROP POLICY IF EXISTS "Allow anonymous upload job-attachments via valid token" ON storage.objects;
 DROP POLICY IF EXISTS "Allow ops delete job-attachments" ON storage.objects;
+DROP POLICY IF EXISTS job_attachments_storage_read ON storage.objects;
+DROP POLICY IF EXISTS job_attachments_storage_write ON storage.objects;
+DROP POLICY IF EXISTS job_attachments_storage_delete ON storage.objects;
+DROP POLICY IF EXISTS job_attachments_storage_anon_upload ON storage.objects;
+DROP POLICY IF EXISTS compliance_documents_anon_upload ON storage.objects;
+DROP POLICY IF EXISTS compliance_documents_ops_read ON storage.objects;
+DROP POLICY IF EXISTS compliance_documents_ops_insert ON storage.objects;
+DROP POLICY IF EXISTS compliance_documents_ops_update ON storage.objects;
+DROP POLICY IF EXISTS compliance_documents_ops_delete ON storage.objects;
 CREATE POLICY job_attachments_storage_read ON storage.objects FOR SELECT TO authenticated
   USING (
     bucket_id = 'job-attachments'

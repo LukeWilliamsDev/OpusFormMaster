@@ -84,7 +84,7 @@ export interface EmailShellOptions {
   eyebrow: string;
   bodyHtml: string;
   footerName: string;
-  footerEmail: string;
+  footerEmail?: string;
   accentColor?: string;
 }
 
@@ -106,7 +106,9 @@ export function emailShell(opts: EmailShellOptions): string {
     `      <div class="border-theme" style="border-top: 1px solid ${EMAIL_COLORS.light.border}; padding-top: 24px; margin-top: 32px;">` +
     `        <p class="text-title" style="margin: 0 0 4px; color: ${EMAIL_COLORS.light.foreground}; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Kind regards,</p>` +
     `        <p class="text-title" style="margin: 0 0 4px; color: ${EMAIL_COLORS.light.foreground}; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">${opts.footerName}</p>` +
-    `        <a href="mailto:${opts.footerEmail}" style="color: ${accent}; text-decoration: none; font-size: 12px; font-weight: 700;">${opts.footerEmail}</a>` +
+    (opts.footerEmail
+      ? `        <a href="mailto:${opts.footerEmail}" style="color: ${accent}; text-decoration: none; font-size: 12px; font-weight: 700;">${opts.footerEmail}</a>`
+      : "") +
     "      </div>" +
     "    </div>" +
     "  </div>" +

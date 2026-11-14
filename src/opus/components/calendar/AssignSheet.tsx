@@ -160,15 +160,15 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
               </div>
 
               {error && (
-                <div className="mx-4 mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-bold">
+                <div className="mx-4 mt-3 flex items-start gap-2 px-3 py-2.5 rounded-lg bg-status-error/10 border border-status-error/30 text-status-error text-xs font-bold">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
               )}
 
               {pending && (
-                <div className="mx-4 mt-3 px-3 py-3 rounded-lg bg-amber-500/10 border border-amber-500/30 space-y-2.5">
-                  <p className="text-xs font-bold text-amber-400">
+                <div className="mx-4 mt-3 px-3 py-3 rounded-lg bg-status-warning/10 border border-status-warning/30 space-y-2.5">
+                  <p className="text-xs font-bold text-status-warning">
                     {pending.workerName} is already deployed to “{pending.currentJobName}” on this
                     day. Reallocate?
                   </p>
@@ -183,7 +183,7 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
                         );
                         onClose();
                       }}
-                      className="flex-1 h-auto px-3 py-2 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-black uppercase tracking-wider hover:bg-amber-500/30 shadow-none"
+                      className="flex-1 h-auto px-3 py-2 rounded-lg bg-status-warning/15 border border-status-warning/35 text-status-warning text-[11px] font-black uppercase tracking-wider hover:bg-status-warning/25 shadow-none"
                     >
                       Reallocate
                     </Button>

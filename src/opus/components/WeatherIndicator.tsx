@@ -17,10 +17,10 @@ export const WeatherIndicator: React.FC<WeatherProps> = ({ weather }) => {
       <span
         className={`text-[8px] px-1 py-0.5 rounded font-medium ${
           weather.riskLevel === "High"
-            ? "bg-red-500/10 text-red-400"
+            ? "bg-status-error/10 text-status-error"
             : weather.riskLevel === "Medium"
-              ? "bg-amber-500/10 text-amber-400"
-              : "bg-emerald-500/10 text-emerald-400"
+              ? "bg-status-warning/10 text-status-warning"
+              : "bg-status-success/10 text-status-success"
         }`}
       >
         {weather.riskLevel} Risk

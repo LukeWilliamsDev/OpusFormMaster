@@ -8,7 +8,8 @@ interface DayTabsProps {
 }
 
 // Site office design constants
-const SITE_ACTIVE = "bg-amber-600 border-amber-600 text-white shadow-amber-600/20";
+const SITE_ACTIVE =
+  "bg-schedule-action border-schedule-action text-schedule-action-foreground shadow-schedule-action/20";
 const SITE_INACTIVE =
   "bg-card border-border text-muted-foreground hover:text-foreground hover:bg-background";
 

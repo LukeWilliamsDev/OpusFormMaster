@@ -13,8 +13,8 @@ export const TicketWarningBadge: React.FC<{ worker: Worker }> = ({ worker }) => 
 
   const colorClasses =
     worst.status === "EXPIRED" || worst.status === "INVALID"
-      ? "bg-red-500/25 [.light-theme_&]:bg-red-500/15 border-red-500/50 [.light-theme_&]:border-red-600/60 text-red-400 [.light-theme_&]:text-red-600"
-      : "bg-amber-500/25 [.light-theme_&]:bg-amber-500/15 border-amber-500/50 [.light-theme_&]:border-amber-600/60 text-amber-400 [.light-theme_&]:text-amber-700";
+      ? "bg-status-error/12 border-status-error/30 text-status-error"
+      : "bg-status-warning/10 border-status-warning/25 text-status-warning";
   const statusDescription =
     worst.status === "INVALID"
       ? "has an invalid expiry date"

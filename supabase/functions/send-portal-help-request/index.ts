@@ -51,7 +51,7 @@ serve(async (req) => {
       .select("role, status")
       .eq("id", user.id)
       .single();
-    if (profileError || !profile || profile.status !== "active" || profile.role !== "third_party") {
+    if (profileError || !profile || profile.status !== "active") {
       return new Response(
         JSON.stringify({ error: "This account cannot submit portal help requests." }),
         {
@@ -82,17 +82,13 @@ serve(async (req) => {
     if (configError || !configRows?.length) {
       return new Response(
         JSON.stringify({ error: "Email service configuration is unavailable." }),
-        {
-          status: 500,
-          headers,
-        },
+        { status: 500, headers },
       );
     }
-
     const config: Record<string, string> = {};
     for (const row of configRows) config[row.key] = row.value;
-    // Prefer the current Edge Function secret. The legacy decrypted config view
-    // can contain an older revoked key and must not override the live secret.
+    // Prefer the current project secret, with the database configuration as a
+    // fallback for legacy deployments.
     const resendApiKey = Deno.env.get("RESEND_API_KEY") || config.RESEND_API_KEY;
     if (!resendApiKey) {
       return new Response(
@@ -109,7 +105,8 @@ serve(async (req) => {
       dateStyle: "medium",
       timeStyle: "short",
     });
-    const sender = config.RESEND_FROM_EMAIL || "support@opusform.co.uk";
+    const sender =
+      config.RESEND_FROM_EMAIL || Deno.env.get("RESEND_FROM_EMAIL") || "support@opusform.co.uk";
     const bodyHtml = `
       <p class="text-title" style="margin: 0 0 16px; font-size: 16px; font-weight: 700;">${escapeHtml(subject)}</p>
       <p class="text-secondary" style="margin: 0 0 8px; font-size: 12px;">From: <strong class="text-title">${escapeHtml(user.email ?? "Unknown account")}</strong></p>
@@ -117,10 +114,13 @@ serve(async (req) => {
       <div class="bg-page border-theme" style="border: 1px solid #D9D3C7; border-left: 3px solid ${EMAIL_COLORS.accent}; border-radius: 6px; padding: 16px; white-space: pre-wrap; word-break: break-word; font-size: 12px;">${escapeHtml(message)}</div>
     `;
     const emailHtml = emailShell({
-      eyebrow: "Third-party portal help request",
+      eyebrow:
+        profile.role === "site_foreman"
+          ? "Foreman portal help request"
+          : "Third-party portal help request",
       bodyHtml,
       footerName: "Opus Form Portal",
-      footerEmail: RECIPIENT_EMAIL,
+      footerEmail: "",
       accentColor: EMAIL_COLORS.accent,
     });
 
@@ -131,7 +131,7 @@ serve(async (req) => {
         from: `Opus Form Portal <${sender}>`,
         to: [RECIPIENT_EMAIL],
         reply_to: user.email ?? undefined,
-        subject: `[Portal help] ${subject}`,
+        subject: `[Portal help · ${profile.role === "site_foreman" ? "Foreman" : "Third party"}] ${subject}`,
         html: emailHtml,
       }),
     });

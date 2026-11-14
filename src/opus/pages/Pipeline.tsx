@@ -1,5 +1,5 @@
 import React from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { Navigate, useSearchParams, useNavigate } from "react-router-dom";
 import { QuoteInvoiceBuilder } from "../components/QuoteInvoiceBuilder";
 import { PipelineRegistry } from "../components/PipelineRegistry";
 import { usePortal } from "../context/PortalContext";
@@ -12,6 +12,10 @@ export const PipelinePage: React.FC = () => {
 
   const currentView = searchParams.get("view") || "pipeline-registry";
   const quoteToLoadId = searchParams.get("quoteId");
+
+  if (readOnly && currentView === "quote-builder") {
+    return <Navigate to="/portal/pipeline?view=pipeline-registry" replace />;
+  }
 
   const handleEditQuote = (quoteId: string) => {
     setSearchParams({ view: "quote-builder", quoteId });
@@ -26,7 +30,7 @@ export const PipelinePage: React.FC = () => {
   };
 
   return (
-    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto space-y-6 animate-fade-in">
+    <div className="portal-page-container space-y-6 py-6 lg:py-10 animate-fade-in">
       {!readOnly && currentView === "quote-builder" ? (
         <QuoteInvoiceBuilder
           onLogout={() => {}}

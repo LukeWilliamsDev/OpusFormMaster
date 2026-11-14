@@ -1,7 +1,9 @@
 -- supabase/migrations/20260808120000_add_invoices_final_bills.sql
 -- Job-scoped invoices (interim billing) and final_bills (merged, reviewed,
 -- sent-to-client document combining a job's invoices).
-CREATE TABLE public.invoices (
+-- Re-sequenced from the colliding 20260808120000 prefix so clean local
+-- replays have a deterministic migration history.
+CREATE TABLE IF NOT EXISTS public.invoices (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   job_id text NOT NULL REFERENCES public.jobs(id),
   reference text UNIQUE NOT NULL,
@@ -16,13 +18,17 @@ CREATE TABLE public.invoices (
   tenant_id uuid NOT NULL DEFAULT private.current_tenant_id()
 );
 
-CREATE INDEX invoices_job_id_idx ON public.invoices(job_id);
-CREATE INDEX invoices_tenant_id_idx ON public.invoices(tenant_id);
+CREATE INDEX IF NOT EXISTS invoices_job_id_idx ON public.invoices(job_id);
+CREATE INDEX IF NOT EXISTS invoices_tenant_id_idx ON public.invoices(tenant_id);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.invoices TO authenticated;
 GRANT ALL ON public.invoices TO service_role;
 ALTER TABLE public.invoices ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS invoices_select_ops ON public.invoices;
+DROP POLICY IF EXISTS invoices_insert_ops ON public.invoices;
+DROP POLICY IF EXISTS invoices_update_ops ON public.invoices;
+DROP POLICY IF EXISTS invoices_delete_ops ON public.invoices;
 CREATE POLICY invoices_select_ops ON public.invoices FOR SELECT TO authenticated
   USING (tenant_id = private.current_tenant_id());
 CREATE POLICY invoices_insert_ops ON public.invoices FOR INSERT TO authenticated
@@ -33,13 +39,24 @@ CREATE POLICY invoices_update_ops ON public.invoices FOR UPDATE TO authenticated
 CREATE POLICY invoices_delete_ops ON public.invoices FOR DELETE TO authenticated
   USING (private.can_write_ops(auth.uid()) AND tenant_id = private.current_tenant_id());
 
+DROP TRIGGER IF EXISTS invoices_set_updated_at ON public.invoices;
 CREATE TRIGGER invoices_set_updated_at BEFORE UPDATE ON public.invoices
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.invoices;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'invoices'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.invoices;
+  END IF;
+END $$;
 
 
-CREATE TABLE public.final_bills (
+CREATE TABLE IF NOT EXISTS public.final_bills (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   job_id text NOT NULL REFERENCES public.jobs(id),
   reference text UNIQUE NOT NULL,
@@ -56,13 +73,17 @@ CREATE TABLE public.final_bills (
   tenant_id uuid NOT NULL DEFAULT private.current_tenant_id()
 );
 
-CREATE INDEX final_bills_job_id_idx ON public.final_bills(job_id);
-CREATE INDEX final_bills_tenant_id_idx ON public.final_bills(tenant_id);
+CREATE INDEX IF NOT EXISTS final_bills_job_id_idx ON public.final_bills(job_id);
+CREATE INDEX IF NOT EXISTS final_bills_tenant_id_idx ON public.final_bills(tenant_id);
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.final_bills TO authenticated;
 GRANT ALL ON public.final_bills TO service_role;
 ALTER TABLE public.final_bills ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS final_bills_select_ops ON public.final_bills;
+DROP POLICY IF EXISTS final_bills_insert_ops ON public.final_bills;
+DROP POLICY IF EXISTS final_bills_update_ops ON public.final_bills;
+DROP POLICY IF EXISTS final_bills_delete_ops ON public.final_bills;
 CREATE POLICY final_bills_select_ops ON public.final_bills FOR SELECT TO authenticated
   USING (tenant_id = private.current_tenant_id());
 CREATE POLICY final_bills_insert_ops ON public.final_bills FOR INSERT TO authenticated
@@ -73,7 +94,18 @@ CREATE POLICY final_bills_update_ops ON public.final_bills FOR UPDATE TO authent
 CREATE POLICY final_bills_delete_ops ON public.final_bills FOR DELETE TO authenticated
   USING (private.can_write_ops(auth.uid()) AND tenant_id = private.current_tenant_id());
 
+DROP TRIGGER IF EXISTS final_bills_set_updated_at ON public.final_bills;
 CREATE TRIGGER final_bills_set_updated_at BEFORE UPDATE ON public.final_bills
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
-ALTER PUBLICATION supabase_realtime ADD TABLE public.final_bills;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+      AND schemaname = 'public'
+      AND tablename = 'final_bills'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.final_bills;
+  END IF;
+END $$;

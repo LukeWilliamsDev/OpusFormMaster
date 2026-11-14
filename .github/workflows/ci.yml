@@ -10,19 +10,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
       - run: npm audit --omit=dev --audit-level=high
-      - run: npm run lint
-      - run: npx prettier --check .
-      - run: npm run typecheck
-      - run: npm run test
-      # placeholder values only — this checks the build compiles, it isn't a deploy;
-      # the real deploy pipeline supplies actual Supabase project secrets.
-      - run: npm run build:budget
+      - run: npm run quality:gate
         env:
+          QUALITY_BASE_REF: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          # placeholder values only — this checks the build compiles, it isn't a deploy;
+          # the real deploy pipeline supplies actual Supabase project secrets.
           VITE_SUPABASE_URL: https://placeholder.supabase.co
           VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key
+      - run: npm run check:build-assets
+      - run: npx wrangler deploy --dry-run --config wrangler.jsonc

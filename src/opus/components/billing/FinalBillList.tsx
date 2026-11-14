@@ -21,6 +21,7 @@ export interface FinalBillRow {
 }
 
 interface FinalBillListProps {
+  readOnly?: boolean;
   jobId: string;
   jobRef: string;
   refreshKey: number;
@@ -34,6 +35,7 @@ const STATUS_BADGE: Record<string, string> = {
 };
 
 export const FinalBillList: React.FC<FinalBillListProps> = ({
+  readOnly = false,
   jobId,
   jobRef,
   refreshKey,
@@ -48,6 +50,7 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
   const [billToMarkPaid, setBillToMarkPaid] = useState<FinalBillRow | null>(null);
 
   const markAsPaid = async (bill: FinalBillRow) => {
+    if (readOnly) return;
     setMarkingPaid(true);
     const { error } = await supabase
       .from("final_bills")
@@ -139,8 +142,9 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
             const totals = computeTotals(bill.items || [], bill.vat_rate);
             const badgeColor = STATUS_BADGE[bill.status] || STATUS_BADGE.draft;
             const sequence = bills.length - index;
-            const label = computeDocumentLabel({ jobRef, kind: "invoice", sequence });
-            const shortRef = computeDocSequenceLabel("invoice", sequence);
+            const label =
+              bill.reference || computeDocumentLabel({ jobRef, kind: "invoice", sequence });
+            const shortRef = bill.reference || computeDocSequenceLabel("invoice", sequence);
             return (
               <div
                 key={bill.id}
@@ -204,7 +208,7 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
                     <Download className="w-3.5 h-3.5" />
                     PDF
                   </Button>
-                  {previewBill.status === "sent" && (
+                  {!readOnly && previewBill.status === "sent" && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -254,7 +258,7 @@ export const FinalBillList: React.FC<FinalBillListProps> = ({
       </Dialog>
 
       <ConfirmDialog
-        open={!!billToMarkPaid}
+        open={!readOnly && !!billToMarkPaid}
         onOpenChange={(open) => {
           if (!open) setBillToMarkPaid(null);
         }}

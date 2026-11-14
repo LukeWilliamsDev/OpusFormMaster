@@ -1,11 +1,7 @@
 import React from "react";
 import { useSearchParams } from "react-router-dom";
 import { usePortal } from "../context/PortalContext";
-import {
-  ASSIGNED_SHIFT_ROLES,
-  DOCUMENT_SEND_ROLES,
-  MANAGEMENT_WRITE_ROLES,
-} from "../context/PortalContext";
+import { ASSIGNED_SHIFT_ROLES, MANAGEMENT_WRITE_ROLES } from "../context/PortalContext";
 import { RosterView } from "../components/RosterView";
 import { CalendarBoard, CalendarGroup } from "../components/calendar/CalendarBoard";
 import { defaultSelectedDay, isValidISODate } from "../utils/week";
@@ -20,10 +16,7 @@ export const LaborRosterPage: React.FC = () => {
   }
 
   const requestedView = searchParams.get("view") === "staff" ? "staff" : "calendar";
-  const currentView =
-    role && !DOCUMENT_SEND_ROLES.includes(role) && requestedView === "staff"
-      ? "calendar"
-      : requestedView;
+  const currentView = requestedView;
   const selectedWorkerId = searchParams.get("workerId");
   const initialDossierTab = searchParams.get("tab") === "assignments" ? "assignments" : undefined;
   const autoOpenAddWorker = searchParams.get("addWorker") === "1";
@@ -49,7 +42,7 @@ export const LaborRosterPage: React.FC = () => {
   };
 
   return (
-    <div className="py-6 lg:py-10 px-4 sm:px-6 max-w-7xl 2xl:max-w-[1700px] mx-auto animate-fade-in space-y-6">
+    <div className="portal-page-container animate-fade-in space-y-6 py-6 lg:py-8">
       {currentView === "staff" ? (
         <RosterView
           workers={workers}

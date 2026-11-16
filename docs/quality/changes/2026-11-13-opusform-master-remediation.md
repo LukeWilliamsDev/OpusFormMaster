@@ -185,7 +185,7 @@ external services untouched until the required gates are explicitly verified.
 | Edge Function/deployment    | `send-quote-pdf` active v56; `send-final-bill` active v21; both deployed 2026-11-16 | PASS                |
 | Migration ledger/SQL lint   | Supabase dry-run up to date; live `db lint` reports no schema errors                         | PASS                |
 | Artifact schema/Storage     | `billing_artifacts` exists; private `billing-artifacts` bucket verified                      | PASS                |
-| RLS/Storage/runtime        | All billing tables RLS-enabled; QA admin cross-tenant invoice read returned zero rows        | PASS / STORAGE PENDING |
+| RLS/Storage/runtime        | All billing tables RLS-enabled; cross-tenant invoice read returned zero rows; non-QA Storage object returned `NoSuchKey` to QA user | PASS |
 | Billing send QA             | Quote, concurrent quote claim, and final-bill sends succeeded; artifact hashes/bytes matched; fixtures cleaned | PASS |
 | Cloudflare deployment       | Worker `lovable-opus-form`; version `428512d8-0e7b-4615-a719-9c0459f7e3c9`; public/Worker HTTP 200 | PASS |
 | Independent critic          | Final source review PASS; environment and human release gates remain separate               | PASS / GATES PENDING |
@@ -193,11 +193,11 @@ external services untouched until the required gates are explicitly verified.
 ## Critic review
 
 - Verdict: `PASS`
-- Unresolved blocking findings: `None in source or deployed billing checks. Private Storage negative-path and visual mailbox approval remain unverified`
+- Unresolved blocking findings: `None in source or deployed billing checks. Visual mailbox review and final human release sign-off remain unrecorded`
 - Repair iterations: `5`
 
 ## Release decision
 
-- Automated gate: `PASS for local/source, live schema, Edge, Worker, and billing-artifact assurance — visual mailbox approval remains pending`
+- Automated gate: `PASS for local/source, live schema, Edge, Worker, RLS/Storage, and billing-artifact assurance — visual mailbox approval remains pending`
 - Release status: `NOT_RELEASED`
 - Human approval: `PENDING`

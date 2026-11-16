@@ -188,7 +188,7 @@ external services untouched until the required gates are explicitly verified.
 | Artifact schema/Storage     | `billing_artifacts` exists; private `billing-artifacts` bucket verified                      | PASS                |
 | RLS/Storage/runtime        | All billing tables RLS-enabled; cross-tenant invoice read returned zero rows; non-QA Storage object returned `NoSuchKey` to QA user | PASS |
 | Billing send QA             | Quote, concurrent quote claim, final-bill, and corrected-logo sends succeeded; artifact hashes/bytes matched; fixtures cleaned | PASS |
-| Cloudflare deployment       | Worker `lovable-opus-form`; version `43f9fd77-e8cd-4931-9bc7-e4aaf9052789`; public/Worker HTTP 200 | PASS |
+| Cloudflare deployment       | Worker `lovable-opus-form`; version `9385307a-5e70-4847-9117-90ce4069df78`; public/Worker HTTP 200; browser root and `/#/portal` verified with no console errors | PASS |
 | Independent critic          | Final source review PASS; environment and human release gates remain separate               | PASS / GATES PENDING |
 
 ## Critic review

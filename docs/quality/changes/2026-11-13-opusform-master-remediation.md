@@ -5,9 +5,9 @@
 **Change category:** cross-system-remediation
 **Accountable owner:** Luke Williams / Opus Form
 **Source of truth:** 2026-11-13 read-only Opus Form audit, four independent domain audits, and two adversarial reconciliation reviews
-**Evidence base:** `promote-live@6562e22` versus clean `origin/main@d344fb1`; no live mutation performed
-**Evidence head:** `origin/main@d344fb1` remediation worktree
-**Evidence fingerprint:** 3b8ec0d98229d49cd4e946e118e79cd13245f09d9af8be5d96a1a218022e648a
+**Evidence base:** `promote-live@da1533d` versus clean `origin/main@d344fb1`; live schema reconciled through `fbafb22`
+**Evidence head:** `promote-live@fbafb22`
+**Evidence fingerprint:** 3462d34c7bfbb2dcf38f8b6fbf74db9346662e39a6ad7675d2928b034a0b5014
 
 ## Intent
 
@@ -176,24 +176,26 @@ external services untouched until the required gates are explicitly verified.
 
 | Check                       | Evidence                                                                                     | Result              |
 | --------------------------- | -------------------------------------------------------------------------------------------- | ------------------- |
-| Baseline/ref reconciliation | Clean `origin/main@d344fb1`; dirty `promote-live@6562e22` retained separately                | PASS                |
+| Baseline/ref reconciliation | Clean `origin/main@d344fb1`; `promote-live@da1533d`; prior dirty edits retained separately         | PASS                |
 | Typecheck                   | `npx tsc -p tsconfig.json --pretty false`                                                    | PASS                |
 | Tests                       | `npm test` — 20 files, 187 passed, 1 skipped; `.letta` excluded                              | PASS                |
 | Lint                        | Focused changed-source lint — 0 errors, 14 existing warnings                                 | PASS                |
 | Formatting                  | Prettier check for changed TypeScript/Edge Function sources                                  | PASS                |
 | Build/assets                | `npm run build:budget && npm run check:build-assets`                                         | PASS                |
-| Edge Function syntax        | TypeScript parser over 8 changed Edge Function/shared sources; Deno/Supabase CLI unavailable | PASS / DENO PENDING |
-| RLS/Storage/SQL/runtime     | Source review only; live catalog/runtime not verified                                        | PENDING             |
+| Edge Function syntax        | TypeScript parser over 8 changed Edge Function/shared sources; deployment token rejected with 401 | PASS / DEPLOY PENDING |
+| Migration ledger/SQL lint   | Supabase dry-run up to date; live `db lint` reports no schema errors                         | PASS                |
+| Artifact schema/Storage     | `billing_artifacts` exists; private `billing-artifacts` bucket verified                      | PASS                |
+| RLS/Storage/runtime        | Authenticated role, cross-tenant, artifact hash, and email-send checks not yet exercised     | PENDING             |
 | Independent critic          | Final source review PASS; environment and human release gates remain separate               | PASS / GATES PENDING |
 
 ## Critic review
 
 - Verdict: `PASS`
-- Unresolved blocking findings: `None in source. Deno/SQL/live artifact execution, visual approval, migration reconciliation, and human release gates remain unverified`
+- Unresolved blocking findings: `None in source. Edge deployment authentication, authenticated/cross-tenant runtime checks, artifact/email hash verification, visual approval, and human release gates remain unverified`
 - Repair iterations: `5`
 
 ## Release decision
 
-- Automated gate: `PASS for local/source assurance — Deno/SQL/live artifact and approval gates remain pending`
+- Automated gate: `PASS for local/source and live schema assurance — Edge deployment, runtime, artifact/email, visual, and approval gates remain pending`
 - Release status: `NOT_RELEASED`
 - Human approval: `PENDING`

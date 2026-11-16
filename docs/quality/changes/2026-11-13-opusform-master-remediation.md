@@ -5,9 +5,9 @@
 **Change category:** cross-system-remediation
 **Accountable owner:** Luke Williams / Opus Form
 **Source of truth:** 2026-11-13 read-only Opus Form audit, four independent domain audits, and two adversarial reconciliation reviews
-**Evidence base:** `promote-live@da1533d` versus clean `origin/main@d344fb1`; live schema and deployment reconciled through `1b68c2c`
-**Evidence head:** `promote-live@1b68c2c`
-**Evidence fingerprint:** 3462d34c7bfbb2dcf38f8b6fbf74db9346662e39a6ad7675d2928b034a0b5014
+**Evidence base:** `promote-live@da1533d` versus clean `origin/main@d344fb1`; live schema and deployment reconciled through `2b4e489`
+**Evidence head:** `promote-live@2b4e489`
+**Evidence fingerprint:** 5b6307cad2a6db065bcc80506093fc9e04086883c16fc6cf6328155bdde19cbf
 
 ## Intent
 
@@ -183,12 +183,12 @@ external services untouched until the required gates are explicitly verified.
 | Lint                        | Focused changed-source lint — 0 errors, 14 existing warnings                                 | PASS                |
 | Formatting                  | Prettier check for changed TypeScript/Edge Function sources                                  | PASS                |
 | Build/assets                | `npm run build:budget && npm run check:build-assets`                                         | PASS                |
-| Edge Function/deployment    | `send-quote-pdf` active v56; `send-final-bill` active v21; both deployed 2026-11-16 | PASS                |
+| Edge Function/deployment    | `send-quote-pdf` active v57; `send-final-bill` active v22; both deployed 2026-11-16 | PASS                |
 | Migration ledger/SQL lint   | Supabase dry-run up to date; live `db lint` reports no schema errors                         | PASS                |
 | Artifact schema/Storage     | `billing_artifacts` exists; private `billing-artifacts` bucket verified                      | PASS                |
 | RLS/Storage/runtime        | All billing tables RLS-enabled; cross-tenant invoice read returned zero rows; non-QA Storage object returned `NoSuchKey` to QA user | PASS |
-| Billing send QA             | Quote, concurrent quote claim, and final-bill sends succeeded; artifact hashes/bytes matched; fixtures cleaned | PASS |
-| Cloudflare deployment       | Worker `lovable-opus-form`; version `428512d8-0e7b-4615-a719-9c0459f7e3c9`; public/Worker HTTP 200 | PASS |
+| Billing send QA             | Quote, concurrent quote claim, final-bill, and corrected-logo sends succeeded; artifact hashes/bytes matched; fixtures cleaned | PASS |
+| Cloudflare deployment       | Worker `lovable-opus-form`; version `43f9fd77-e8cd-4931-9bc7-e4aaf9052789`; public/Worker HTTP 200 | PASS |
 | Independent critic          | Final source review PASS; environment and human release gates remain separate               | PASS / GATES PENDING |
 
 ## Critic review

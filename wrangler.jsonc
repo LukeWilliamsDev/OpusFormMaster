@@ -6,7 +6,7 @@
     "directory": ".output/public",
   },
   "build": {
-    "command": "npm run build",
+    "command": "node scripts/validate-worker-build-env.mjs && npm run build",
   },
   "observability": {
     "enabled": true,

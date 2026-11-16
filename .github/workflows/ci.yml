@@ -27,3 +27,7 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key
       - run: npm run check:build-assets
       - run: npx wrangler deploy --dry-run --config wrangler.jsonc
+        env:
+          WORKER_BUILD_ALLOW_PLACEHOLDER: "1"
+          VITE_SUPABASE_URL: https://placeholder.supabase.co
+          VITE_SUPABASE_PUBLISHABLE_KEY: placeholder-anon-key

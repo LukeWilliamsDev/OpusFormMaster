@@ -71,6 +71,9 @@ external services untouched until the required gates are explicitly verified.
 - `supabase/migrations/20261113124000_harden_public_upload_invariants.sql`
 - `supabase/migrations/20261113130000_add_billing_artifacts.sql`
 - `supabase/migrations/20261116111500_reconcile_job_document_request_tenant_scope.sql`
+- `scripts/validate-worker-build-env.mjs`
+- `wrangler.jsonc`
+- `.github/workflows/ci.yml`
 - `supabase/migrations/20261004115218_harden_billing_sender_permissions.sql`
 - `supabase/migrations/20261005021522_harden_final_bill_and_upload_integrity.sql`
 - `supabase/migrations/20261005130005_quote_conversion_claims.sql`

@@ -7,7 +7,7 @@
 **Source of truth:** 2026-11-13 read-only Opus Form audit, four independent domain audits, and two adversarial reconciliation reviews
 **Evidence base:** `promote-live@da1533d` versus clean `origin/main@d344fb1`; live schema and deployment reconciled through `2b4e489`
 **Evidence head:** `promote-live@2b4e489`
-**Evidence fingerprint:** 5b6307cad2a6db065bcc80506093fc9e04086883c16fc6cf6328155bdde19cbf
+**Evidence fingerprint:** 449f8dcaa8f14460006d3bbbe6711506efd9555c7e9e50eecce77bb0cf27777f
 
 ## Intent
 

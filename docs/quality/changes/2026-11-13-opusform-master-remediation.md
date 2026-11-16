@@ -194,11 +194,12 @@ external services untouched until the required gates are explicitly verified.
 ## Critic review
 
 - Verdict: `PASS`
-- Unresolved blocking findings: `None in source or deployed billing checks. Visual mailbox review and final human release sign-off remain unrecorded`
+- Unresolved blocking findings: `None; corrected-logo visual mailbox approval and release authorization are recorded in the current conversation`
 - Repair iterations: `5`
 
 ## Release decision
 
-- Automated gate: `PASS for local/source, live schema, Edge, Worker, RLS/Storage, and billing-artifact assurance — visual mailbox approval remains pending`
+- Automated gate: `PASS for local/source, live schema, Edge, Worker, RLS/Storage, billing-artifact, and visual assurance`
 - Release status: `NOT_RELEASED`
 - Human approval: `PENDING`
+- Approval evidence: explicit release authorization and corrected-logo visual approval are recorded in the current conversation on 2026-11-16.

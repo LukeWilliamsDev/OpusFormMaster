@@ -5,8 +5,8 @@
 **Change category:** cross-system-remediation
 **Accountable owner:** Luke Williams / Opus Form
 **Source of truth:** 2026-11-13 read-only Opus Form audit, four independent domain audits, and two adversarial reconciliation reviews
-**Evidence base:** `promote-live@da1533d` versus clean `origin/main@d344fb1`; live schema reconciled through `fbafb22`
-**Evidence head:** `promote-live@fbafb22`
+**Evidence base:** `promote-live@da1533d` versus clean `origin/main@d344fb1`; live schema and deployment reconciled through `1b68c2c`
+**Evidence head:** `promote-live@1b68c2c`
 **Evidence fingerprint:** 3462d34c7bfbb2dcf38f8b6fbf74db9346662e39a6ad7675d2928b034a0b5014
 
 ## Intent
@@ -182,20 +182,22 @@ external services untouched until the required gates are explicitly verified.
 | Lint                        | Focused changed-source lint — 0 errors, 14 existing warnings                                 | PASS                |
 | Formatting                  | Prettier check for changed TypeScript/Edge Function sources                                  | PASS                |
 | Build/assets                | `npm run build:budget && npm run check:build-assets`                                         | PASS                |
-| Edge Function syntax        | TypeScript parser over 8 changed Edge Function/shared sources; deployment token rejected with 401 | PASS / DEPLOY PENDING |
+| Edge Function/deployment    | `send-quote-pdf` active v56; `send-final-bill` active v21; both deployed 2026-11-16 | PASS                |
 | Migration ledger/SQL lint   | Supabase dry-run up to date; live `db lint` reports no schema errors                         | PASS                |
 | Artifact schema/Storage     | `billing_artifacts` exists; private `billing-artifacts` bucket verified                      | PASS                |
-| RLS/Storage/runtime        | Authenticated role, cross-tenant, artifact hash, and email-send checks not yet exercised     | PENDING             |
+| RLS/Storage/runtime        | All billing tables RLS-enabled; QA admin cross-tenant invoice read returned zero rows        | PASS / STORAGE PENDING |
+| Billing send QA             | Quote, concurrent quote claim, and final-bill sends succeeded; artifact hashes/bytes matched; fixtures cleaned | PASS |
+| Cloudflare deployment       | Worker `lovable-opus-form`; version `428512d8-0e7b-4615-a719-9c0459f7e3c9`; public/Worker HTTP 200 | PASS |
 | Independent critic          | Final source review PASS; environment and human release gates remain separate               | PASS / GATES PENDING |
 
 ## Critic review
 
 - Verdict: `PASS`
-- Unresolved blocking findings: `None in source. Edge deployment authentication, authenticated/cross-tenant runtime checks, artifact/email hash verification, visual approval, and human release gates remain unverified`
+- Unresolved blocking findings: `None in source or deployed billing checks. Private Storage negative-path and visual mailbox approval remain unverified`
 - Repair iterations: `5`
 
 ## Release decision
 
-- Automated gate: `PASS for local/source and live schema assurance — Edge deployment, runtime, artifact/email, visual, and approval gates remain pending`
+- Automated gate: `PASS for local/source, live schema, Edge, Worker, and billing-artifact assurance — visual mailbox approval remains pending`
 - Release status: `NOT_RELEASED`
 - Human approval: `PENDING`

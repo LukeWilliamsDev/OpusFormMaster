@@ -62,6 +62,7 @@ external services untouched until the required gates are explicitly verified.
 - `supabase/functions/send-compliance-email/index.ts`
 - `supabase/functions/send-final-bill/index.ts`
 - `supabase/functions/send-quote-pdf/index.ts`
+- `supabase/functions/_shared/email-theme.ts`
 - `supabase/functions/_shared/billing-pdf.ts`
 - `supabase/functions/_shared/billing-pdf-financials.ts`
 - `supabase/functions/_shared/__tests__/billing-pdf-financials.test.ts`

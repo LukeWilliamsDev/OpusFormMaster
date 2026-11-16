@@ -74,8 +74,8 @@ export function emailHeadStyles(): string {
 export function emailLogoBlock(): string {
   return (
     '<span class="text-title" style="font-family: \'Arial Black\', Arial, sans-serif; ' +
-    `font-weight: 900; font-size: 30px; letter-spacing: 3px;">OPUS` +
-    `<span style="color: ${EMAIL_COLORS.accent}; padding: 0 8px; font-size: 22px;">&bull;</span>` +
+    `font-weight: 900; font-size: 15px; letter-spacing: 1.5px;">OPUS` +
+    `<span style="color: ${EMAIL_COLORS.accent}; display: inline-block; padding: 0 4px; font-size: 11px; line-height: 1; vertical-align: middle;">&bull;</span>` +
     "FORM</span>"
   );
 }
@@ -120,7 +120,7 @@ export function emailShell(opts: EmailShellOptions): string {
 export function logoSvg(theme: "light" | "dark"): string {
   const textFill = theme === "dark" ? "#E9E6E1" : "#2B2F33";
   return (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" width="100%" height="100%">' +
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" width="240" height="60" preserveAspectRatio="xMidYMid meet">' +
     `<text x="40" y="76" font-family="'Inter', 'Arial Black', system-ui, -apple-system, sans-serif" font-weight="900" font-size="48" letter-spacing="6" fill="${textFill}">OPUS</text>` +
     `<circle cx="231" cy="59" r="5" fill="${EMAIL_COLORS.accent}"/>` +
     `<text x="246" y="76" font-family="'Inter', 'Arial Black', system-ui, -apple-system, sans-serif" font-weight="900" font-size="48" letter-spacing="6" fill="${textFill}">FORM</text>` +

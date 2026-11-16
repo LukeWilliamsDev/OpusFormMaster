@@ -169,19 +169,26 @@ export async function renderBillingPdf(
   let y = PAGE_HEIGHT - MARGIN;
 
   const drawPageHeader = () => {
+    const logoSize = 11;
+    const logoGap = 4;
+    const logoDotRadius = 1.5;
+    const logoY = PAGE_HEIGHT - 42;
+    const opusWidth = bold.widthOfTextAtSize("OPUS", logoSize);
+    const dotX = MARGIN + opusWidth + logoGap + logoDotRadius;
+    const formX = dotX + logoDotRadius + logoGap;
     page.drawRectangle({ x: 0, y: PAGE_HEIGHT - 88, width: PAGE_WIDTH, height: 88, color: DARK });
     page.drawText("OPUS", {
       x: MARGIN,
-      y: PAGE_HEIGHT - 42,
-      size: 22,
+      y: logoY,
+      size: logoSize,
       font: bold,
       color: rgb(0.91, 0.9, 0.87),
     });
-    page.drawCircle({ x: MARGIN + 61, y: PAGE_HEIGHT - 34, size: 3, color: ACCENT });
+    page.drawCircle({ x: dotX, y: logoY + logoSize * 0.36, size: logoDotRadius, color: ACCENT });
     page.drawText("FORM", {
-      x: MARGIN + 71,
-      y: PAGE_HEIGHT - 42,
-      size: 22,
+      x: formX,
+      y: logoY,
+      size: logoSize,
       font: bold,
       color: rgb(0.91, 0.9, 0.87),
     });

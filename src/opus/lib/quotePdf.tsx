@@ -105,9 +105,9 @@ export const QuotePdfDocument: React.FC<{
     >
       <div className="bg-[#1b1c20] px-8 sm:px-12 py-9 flex justify-between items-center">
         <div className="flex items-center">
-          <span className="text-[#E9E6E1] text-[22px] font-black tracking-[0.14em]">OPUS</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#B5651D] mx-1.5 inline-block" />
-          <span className="text-[#E9E6E1] text-[22px] font-black tracking-[0.14em]">FORM</span>
+          <span className="text-[#E9E6E1] text-[11px] font-black tracking-[0.07em]">OPUS</span>
+          <span className="w-[3px] h-[3px] rounded-full bg-[#B5651D] mx-[3px] inline-block" />
+          <span className="text-[#E9E6E1] text-[11px] font-black tracking-[0.07em]">FORM</span>
         </div>
         <div className="text-right">
           <div className="text-white text-[22px] sm:text-[26px] font-black tracking-[0.08em] leading-none mb-4">
@@ -695,28 +695,28 @@ export const QuotePdfVectorDocument: React.FC<{
             <Text
               style={{
                 color: "#E9E6E1",
-                fontSize: 22,
+                fontSize: 11,
                 fontWeight: "bold",
-                letterSpacing: 3,
+                letterSpacing: 1.5,
               }}
             >
               OPUS
             </Text>
             <View
               style={{
-                width: 5,
-                height: 5,
-                borderRadius: 2.5,
+                width: 2.5,
+                height: 2.5,
+                borderRadius: 1.25,
                 backgroundColor: "#B5651D",
-                marginHorizontal: 5,
+                marginHorizontal: 2.5,
               }}
             />
             <Text
               style={{
                 color: "#E9E6E1",
-                fontSize: 22,
+                fontSize: 11,
                 fontWeight: "bold",
-                letterSpacing: 3,
+                letterSpacing: 1.5,
               }}
             >
               FORM

@@ -1,0 +1,3 @@
+-- Remote migration marker.
+-- The schema change was already applied under this deployment-time version.
+-- Keep this file SQL-free so local reconciliation cannot replay historical SQL.

@@ -69,6 +69,12 @@ external services untouched until the required gates are explicitly verified.
 - `supabase/migrations/20261113123000_harden_quote_conversion_idempotency.sql`
 - `supabase/migrations/20261113124000_harden_public_upload_invariants.sql`
 - `supabase/migrations/20261113130000_add_billing_artifacts.sql`
+- `supabase/migrations/20261004115218_harden_billing_sender_permissions.sql`
+- `supabase/migrations/20261005021522_harden_final_bill_and_upload_integrity.sql`
+- `supabase/migrations/20261005130005_quote_conversion_claims.sql`
+- `supabase/migrations/20261005132534_fix_public_job_upload_tenant_drift.sql`
+- `supabase/migrations/20261005133704_allow_ops_cleanup_request_objects.sql`
+- `supabase/migrations/20261013134136_add_stable_document_references.sql`
 
 ## Master plan
 

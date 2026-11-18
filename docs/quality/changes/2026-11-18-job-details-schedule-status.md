@@ -6,8 +6,8 @@
 **Accountable owner:** Opus Form operations owner
 **Source of truth:** User request to make missing job schedule dates obvious on the selected job
 **Evidence base:** `0739120` / working tree
-**Evidence head:** working tree
-**Evidence fingerprint:** `1369ce7ca18eedb774945248928c05a0f7c127ab4c7e124df83a56c8c21fdfce`
+**Evidence head:** `3db8dd8` / Worker `12a5b6ea-11b3-403d-a481-ae7960737ada`
+**Evidence fingerprint:** `6a176a8482abcd794283f2a7ccaf6f247cdb62cfe2198629f24e2f15c2b21375`
 
 ## Intent
 
@@ -26,9 +26,8 @@ Show a clear selected-job warning when no valid start/end range exists, includin
 
 ### Changed files
 
-- `src/opus/components/JobDetails.tsx`
-- `docs/quality/changes/2026-11-18-job-details-schedule-status.md`
 - `.claude/completions/2026-11-18-job-details-schedule-status.md`
+- `docs/quality/changes/2026-11-18-job-details-schedule-status.md`
 
 ## Acceptance criteria
 
@@ -43,12 +42,14 @@ Show a clear selected-job warning when no valid start/end range exists, includin
 
 ## Verification evidence
 
-| Check                 | Exact command or evidence                                                  | Result         |
-| --------------------- | -------------------------------------------------------------------------- | -------------- |
-| Focused tests         | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts` | PASS — 4 tests |
-| Typecheck             | `npm run typecheck`                                                        | PASS           |
-| Changed-file lint     | `npx eslint src/opus/components/JobDetails.tsx`                            | PASS           |
-| Manual/external check | Fresh source review; production not yet deployed                           | PASS           |
+| Check                 | Exact command or evidence                                                                                                                         | Result                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Focused tests         | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                                                                        | PASS — 4 tests                                        |
+| Typecheck             | `npm run typecheck`                                                                                                                               | PASS                                                  |
+| Changed-file lint     | `npx eslint src/opus/components/JobDetails.tsx`                                                                                                   | PASS                                                  |
+| Worker deployment     | `npx wrangler@4.164.0 deploy --config wrangler.jsonc`                                                                                             | PASS — version `12a5b6ea-11b3-403d-a481-ae7960737ada` |
+| Public live checks    | `curl -L https://opusform.co.uk/`, `curl -L https://opusform.co.uk/portal`, Worker URL; live JobLedger bundle contains warning and period markers | PASS — HTTP 200 and byte-for-byte bundle match        |
+| Manual/external check | Fresh source review                                                                                                                               | PASS                                                  |
 
 ## Critic review
 
@@ -64,4 +65,4 @@ Show a clear selected-job warning when no valid start/end range exists, includin
 - Automated gate: `PASS`
 - Release status: `READY_FOR_HUMAN_APPROVAL`
 - Human approval: `PENDING`
-- Residual uncertainty or exception: Live deployment and authenticated browser verification remain pending.
+- Residual uncertainty or exception: Authenticated browser verification was not performed in this session.

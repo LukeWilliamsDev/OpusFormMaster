@@ -7,7 +7,7 @@
 **Source of truth:** User correction: calendar Sites entries must require an explicit job date range, followed by explicit approval to make the correction live
 **Evidence base:** `d5f2cad` / working tree
 **Evidence head:** `8b666ad` / Worker `f8275756-2164-4c18-9a32-6c6b3254e4ce`
-**Evidence fingerprint:** `9a6e09f1f46c7d1d07721566e9538531cae2e8174e6497ae54d39b60da499094`
+**Evidence fingerprint:** `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 
 ## Intent
 
@@ -29,11 +29,7 @@ Prevent jobs without an explicit start/end period from appearing as Sites entrie
 
 ### Changed files
 
-- `src/opus/components/calendar/jobPeriods.ts`
-- `src/opus/components/calendar/MonthCalendar.tsx`
-- `src/opus/components/calendar/__tests__/jobPeriods.test.ts`
 - `docs/quality/changes/2026-11-18-job-calendar-range-only.md`
-- `.claude/completions/2026-11-18-job-calendar-range-only.md`
 
 ## Acceptance criteria
 

@@ -6,8 +6,8 @@
 **Accountable owner:** Opus Form operations owner
 **Source of truth:** User correction: calendar Sites entries must require an explicit job date range, followed by explicit approval to make the correction live
 **Evidence base:** `d5f2cad` / working tree
-**Evidence head:** working tree
-**Evidence fingerprint:** `55fe6204f25c58ff396b733630dcb4a59507653a3cabef9580c0860f88a25adf`
+**Evidence head:** `8b666ad` / Worker `f8275756-2164-4c18-9a32-6c6b3254e4ce`
+**Evidence fingerprint:** `9a6e09f1f46c7d1d07721566e9538531cae2e8174e6497ae54d39b60da499094`
 
 ## Intent
 
@@ -50,12 +50,14 @@ Prevent jobs without an explicit start/end period from appearing as Sites entrie
 
 ## Verification evidence
 
-| Check                 | Exact command or evidence                                                                                                                                        | Result         |
-| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| Focused tests         | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                                                                                       | PASS — 4 tests |
-| Typecheck             | `npm run typecheck`                                                                                                                                              | PASS           |
-| Changed-file lint     | `npx eslint src/opus/components/calendar/jobPeriods.ts src/opus/components/calendar/MonthCalendar.tsx src/opus/components/calendar/__tests__/jobPeriods.test.ts` | PASS           |
-| Manual/external check | Fresh read-only critic against actual diff                                                                                                                       | PASS           |
+| Check                 | Exact command or evidence                                                                                                                                        | Result                                                |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Focused tests         | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                                                                                       | PASS — 4 tests                                        |
+| Typecheck             | `npm run typecheck`                                                                                                                                              | PASS                                                  |
+| Changed-file lint     | `npx eslint src/opus/components/calendar/jobPeriods.ts src/opus/components/calendar/MonthCalendar.tsx src/opus/components/calendar/__tests__/jobPeriods.test.ts` | PASS                                                  |
+| Worker deployment     | `npx wrangler@4.164.0 deploy --config wrangler.jsonc`                                                                                                            | PASS — version `f8275756-2164-4c18-9a32-6c6b3254e4ce` |
+| Public live checks    | `curl -L https://opusform.co.uk/`, `curl -L https://opusform.co.uk/portal`, Worker URL; live Calendar/PortalContext bundles checked                              | PASS — HTTP 200 and markers present                   |
+| Manual/external check | Fresh read-only critic against actual diff                                                                                                                       | PASS                                                  |
 
 ## Critic review
 
@@ -71,4 +73,4 @@ Prevent jobs without an explicit start/end period from appearing as Sites entrie
 - Automated gate: `PASS`
 - Release status: `READY_FOR_HUMAN_APPROVAL`
 - Human approval: `PENDING`
-- Residual uncertainty or exception: Live deployment and public bundle verification are the remaining release steps.
+- Residual uncertainty or exception: Authenticated management-browser/accessibility acceptance was not performed in this session.

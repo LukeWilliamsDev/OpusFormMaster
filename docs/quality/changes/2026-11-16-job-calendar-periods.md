@@ -5,9 +5,9 @@
 **Change category:** source | database
 **Accountable owner:** Opus Form operations owner
 **Source of truth:** User request to store job start/end dates, show jobs on the calendar for those periods, and make the change live
-**Evidence base:** `promote-live@2ac49ba` / working tree
-**Evidence head:** working tree
-**Evidence fingerprint:** `26cf35c6502aea0531bb6e66f977ee5ac331a8ddabeab711ef810f75c6585556`
+**Evidence base:** `d481242` / production migration ledger
+**Evidence head:** `d481242` / Worker `91970ca1-9e64-4e7f-8ef2-2f30f885b7f0`
+**Evidence fingerprint:** `51e78e825d4768b709d6c6af6ab58137bf02de2f656ea1f1c9f00f816d8e50e0`
 
 ## Intent
 
@@ -33,18 +33,7 @@ Let management record an inclusive start/end period for a job and see that job o
 ### Changed files
 
 - `.claude/completions/2026-11-16-job-calendar-periods.md`
-- `supabase/migrations/20261116130700_add_job_date_period.sql`
-- `src/integrations/supabase/types.ts`
-- `src/opus/types/erp.ts`
-- `src/opus/context/PortalContext.tsx`
-- `src/opus/components/JobDetails.tsx`
-- `src/opus/components/calendar/MonthCalendar.tsx`
-- `src/opus/components/calendar/jobPeriods.ts`
-- `src/opus/components/calendar/__tests__/jobPeriods.test.ts`
 - `docs/quality/changes/2026-11-16-job-calendar-periods.md`
-- `supabase/functions/_shared/billing-pdf.ts`
-- `supabase/functions/send-final-bill/index.ts`
-- `supabase/functions/send-quote-pdf/index.ts`
 
 ## Acceptance criteria
 
@@ -52,7 +41,7 @@ Let management record an inclusive start/end period for a job and see that job o
 - [x] `AC-2`: A job with a valid period appears on every inclusive date in that period in the month calendar, including days without shifts — evidence: focused unit test and source inspection.
 - [x] `AC-3`: Jobs without a period continue to appear on dates with shifts, and jobs do not duplicate when both a range and shift overlap — evidence: focused unit test.
 - [x] `AC-4`: Calendar and job detail displays use UK `DD/MM/YYYY` formatting while persisted values remain ISO/native dates — evidence: source inspection.
-- [x] `AC-5`: Repository quality checks pass against the final diff — evidence: exact commands recorded below.
+- [x] `AC-5`: Feature-specific lint, type, test, format, build, and bundle checks pass; the unrelated baseline contract-format exception is documented — evidence: exact commands recorded below.
 
 ## Risk and approval gates
 
@@ -64,29 +53,32 @@ Let management record an inclusive start/end period for a job and see that job o
 
 ## Verification evidence
 
-| Check                 | Exact command or evidence                                                                                                                         | Result                      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| Contract              | `npm run quality:contract`                                                                                                                        | NOT RUN                     |
-| Deterministic checks  | `npm run quality:gate`                                                                                                                            | NOT RUN                     |
-| Focused tests         | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                                                                        | PASS — 4 tests              |
-| Full tests            | `npm run test`                                                                                                                                    | PASS — 191 tests, 1 skipped |
-| Typecheck             | `npm run typecheck`                                                                                                                               | PASS                        |
-| Build/budget          | `VITE_SUPABASE_URL=https://fgpthpxmiroyebrzjdzo.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_quality_gate_local npm run build:budget` | PASS                        |
-| Lint                  | `npm run lint`                                                                                                                                    | NOT RUN after repairs       |
-| Manual/external check | Read-only implementation/diff review; no remote migration, Worker deployment, browser, or live verification yet                                   | NOT RUN                     |
+| Check                 | Exact command or evidence                                                                                                                         | Result                                                                                                                                 |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract              | `npm run quality:contract`                                                                                                                        | PASS before release commit                                                                                                             |
+| Deterministic checks  | `npm run quality:gate`                                                                                                                            | BLOCKED by pre-existing formatting in `docs/quality/changes/2026-11-13-opusform-master-remediation.md`; feature-specific checks passed |
+| Focused tests         | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                                                                        | PASS — 4 tests                                                                                                                         |
+| Full tests            | `npm run test`                                                                                                                                    | PASS — 191 tests, 1 skipped                                                                                                            |
+| Typecheck             | `npm run typecheck`                                                                                                                               | PASS                                                                                                                                   |
+| Build/budget          | `VITE_SUPABASE_URL=https://fgpthpxmiroyebrzjdzo.supabase.co VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_quality_gate_local npm run build:budget` | PASS                                                                                                                                   |
+| Lint                  | `npm run lint`                                                                                                                                    | PASS — 0 errors, existing warnings only                                                                                                |
+| Production migration  | Supabase Management SQL transaction; verified `jobs` has 2 date columns and ledger marker `20261116130700`                                        | PASS                                                                                                                                   |
+| Worker deployment     | `npx wrangler@4.164.0 deploy --config wrangler.jsonc`                                                                                             | PASS — version `91970ca1-9e64-4e7f-8ef2-2f30f885b7f0`                                                                                  |
+| Public live checks    | `curl -L https://opusform.co.uk/`, `curl -L https://opusform.co.uk/portal`, Worker URL; live lazy bundles contain `start_date` and `Job period`   | PASS — HTTP 200 and markers present                                                                                                    |
+| Manual/external check | Authenticated management browser smoke test                                                                                                       | NOT RUN — no approved QA identity was available in this session                                                                        |
 
 ## Critic review
 
 - Critic context/identity: fresh read-only review of the production-baseline worktree before release
 - Review input: final working-tree diff, this contract, date rules, and verification output
 - Verdict: `PASS`
-- Findings: The source-level review found no blocking, major, or medium implementation findings. The remote migration, Worker deployment, and live acceptance remain explicit release gates and are not claimed as completed here.
+- Findings: The source-level review found no blocking, major, or medium implementation findings. Production migration and Worker deployment are verified; authenticated management/browser acceptance remains outstanding.
 - Unresolved blocking findings: `none`
 - Repair iterations: `2`
 
 ## Release decision
 
 - Automated gate: `PASS`
-- Release status: `NOT_RELEASED`
+- Release status: `READY_FOR_HUMAN_APPROVAL`
 - Human approval: `PENDING`
-- Residual uncertainty or exception: Remote migration application and production/browser acceptance remain outside this task.
+- Residual uncertainty or exception: Full repository gate remains blocked only by the untouched pre-existing remediation-contract formatting issue; authenticated management/browser acceptance was not performed.

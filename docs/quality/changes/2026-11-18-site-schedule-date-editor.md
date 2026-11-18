@@ -6,8 +6,8 @@
 **Accountable owner:** Opus Form operations owner
 **Source of truth:** User correction: Schedule → Sites must use explicit site date ranges, with dates editable from the schedule surface
 **Evidence base:** `fa865de` / working tree
-**Evidence head:** working tree
-**Evidence fingerprint:** `ef25826d5b01ac4a0adf7697b3f0578fc6ee5f99c6b45870b7bdcce6c398a1ba`
+**Evidence head:** `6549106` / Worker `2d856775-fb5b-4c44-814a-968ee9ea7dbc`
+**Evidence fingerprint:** `7a8072e4096316942075651a491c2afa641be75f76da7dee493a39cab2c3b33d`
 
 ## Intent
 
@@ -28,12 +28,8 @@ Make the actual Schedule → Sites view range-driven and provide a schedule-leve
 
 ### Changed files
 
-- `src/opus/components/calendar/CalendarBoard.tsx`
-- `src/opus/components/calendar/ProjectDayList.tsx`
-- `src/opus/components/calendar/WeekGridProject.tsx`
-- `src/opus/pages/LaborRoster.tsx`
-- `docs/quality/changes/2026-11-18-site-schedule-date-editor.md`
 - `.claude/completions/2026-11-18-site-schedule-date-editor.md`
+- `docs/quality/changes/2026-11-18-site-schedule-date-editor.md`
 
 ## Acceptance criteria
 
@@ -51,12 +47,14 @@ Make the actual Schedule → Sites view range-driven and provide a schedule-leve
 
 ## Verification evidence
 
-| Check                 | Exact command or evidence                                                                                                                                                                   | Result         |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| Focused tests         | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                                                                                                                  | PASS — 4 tests |
-| Typecheck             | `npm run typecheck`                                                                                                                                                                         | PASS           |
-| Changed-file lint     | `npx eslint src/opus/components/calendar/CalendarBoard.tsx src/opus/components/calendar/ProjectDayList.tsx src/opus/components/calendar/WeekGridProject.tsx src/opus/pages/LaborRoster.tsx` | PASS           |
-| Manual/external check | Fresh read-only review and local schedule-surface verification                                                                                                                              | PASS           |
+| Check                 | Exact command or evidence                                                                                                                                                                   | Result                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| Focused tests         | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                                                                                                                  | PASS — 4 tests                                        |
+| Typecheck             | `npm run typecheck`                                                                                                                                                                         | PASS                                                  |
+| Changed-file lint     | `npx eslint src/opus/components/calendar/CalendarBoard.tsx src/opus/components/calendar/ProjectDayList.tsx src/opus/components/calendar/WeekGridProject.tsx src/opus/pages/LaborRoster.tsx` | PASS                                                  |
+| Worker deployment     | `npx wrangler@4.164.0 deploy --config wrangler.jsonc`                                                                                                                                       | PASS — version `2d856775-fb5b-4c44-814a-968ee9ea7dbc` |
+| Public live checks    | `curl -L https://opusform.co.uk/`, `curl -L https://opusform.co.uk/portal`, Worker URL; live LaborRoster bundle contains schedule editor markers                                            | PASS — HTTP 200 and byte-for-byte bundle match        |
+| Manual/external check | Fresh read-only review and local schedule-surface verification                                                                                                                              | PASS                                                  |
 
 ## Critic review
 
@@ -72,4 +70,4 @@ Make the actual Schedule → Sites view range-driven and provide a schedule-leve
 - Automated gate: `PASS`
 - Release status: `READY_FOR_HUMAN_APPROVAL`
 - Human approval: `PENDING`
-- Residual uncertainty or exception: Production deployment and authenticated schedule interaction remain unverified.
+- Residual uncertainty or exception: Authenticated management interaction and accessibility acceptance were not performed in this session.

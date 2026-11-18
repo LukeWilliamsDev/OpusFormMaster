@@ -45,17 +45,10 @@ describe("job periods", () => {
     expect(formatJobPeriod(job())).toBe("");
   });
 
-  it("merges period jobs with shift jobs without duplicating overlaps", () => {
+  it("excludes jobs without a period even when they have a shift", () => {
     const periodJob = job({ id: "period-job", startDate: "2026-11-10", endDate: "2026-11-12" });
     const shiftOnlyJob = job({ id: "shift-job", siteName: "Shift-only site" });
-    const shifts = [
-      { id: "shift-1", workerId: "worker-1", jobId: periodJob.id, date: "2026-11-11" },
-      { id: "shift-2", workerId: "worker-1", jobId: shiftOnlyJob.id, date: "2026-11-11" },
-    ];
 
-    expect(getJobsForDate([periodJob, shiftOnlyJob], shifts, "2026-11-11")).toEqual([
-      periodJob,
-      shiftOnlyJob,
-    ]);
+    expect(getJobsForDate([periodJob, shiftOnlyJob], "2026-11-11")).toEqual([periodJob]);
   });
 });

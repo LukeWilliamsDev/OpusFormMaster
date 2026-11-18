@@ -141,9 +141,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
     return map;
   }, [calendarEvents]);
 
-  const jobsForDate = (date: string): Job[] => {
-    return getJobsForDate(jobs, shiftsByDate.get(date) ?? [], date, jobsById);
-  };
+  const jobsForDate = (date: string): Job[] => getJobsForDate(jobs, date);
 
   const handleNavigateMonth = (delta: number) => {
     const next = new Date(anchor.getFullYear(), anchor.getMonth() + delta, 1);

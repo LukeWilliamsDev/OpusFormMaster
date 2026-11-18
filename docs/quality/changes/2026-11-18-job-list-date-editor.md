@@ -6,8 +6,8 @@
 **Accountable owner:** Opus Form operations owner
 **Source of truth:** User request to set site schedule dates directly from the Job Ledger list
 **Evidence base:** `f6a8ec1` / working tree
-**Evidence head:** working tree
-**Evidence fingerprint:** `b1d4446ed8bdcd20d528e69e849129e23fa8e2783aa6e9e5f13c2a9b011a3b76`
+**Evidence head:** `7e0ab9b` / Worker `e1352bdf-b42d-4983-ba27-23b151951db3`
+**Evidence fingerprint:** `f7aa1e4df47cf4d14ccaa78e1fa2f8a284b5fa64e0091d3f8333b07e0a9ae955`
 
 ## Intent
 
@@ -28,10 +28,8 @@ Allow management users to set, update, or clear a job's inclusive schedule dates
 
 ### Changed files
 
-- `src/opus/components/ActiveJobLedger.tsx`
-- `src/opus/pages/JobLedger.tsx`
-- `docs/quality/changes/2026-11-18-job-list-date-editor.md`
 - `.claude/completions/2026-11-18-job-list-date-editor.md`
+- `docs/quality/changes/2026-11-18-job-list-date-editor.md`
 
 ## Acceptance criteria
 
@@ -47,12 +45,14 @@ Allow management users to set, update, or clear a job's inclusive schedule dates
 
 ## Verification evidence
 
-| Check                 | Exact command or evidence                                                         | Result         |
-| --------------------- | --------------------------------------------------------------------------------- | -------------- |
-| Focused tests         | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`        | PASS — 4 tests |
-| Typecheck             | `npm run typecheck`                                                               | PASS           |
-| Changed-file lint     | `npx eslint src/opus/components/ActiveJobLedger.tsx src/opus/pages/JobLedger.tsx` | PASS           |
-| Manual/external check | Fresh read-only review after repair; production not changed                       | PASS           |
+| Check                 | Exact command or evidence                                                                                                                  | Result                                                |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------- |
+| Focused tests         | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                                                                 | PASS — 4 tests                                        |
+| Typecheck             | `npm run typecheck`                                                                                                                        | PASS                                                  |
+| Changed-file lint     | `npx eslint src/opus/components/ActiveJobLedger.tsx src/opus/pages/JobLedger.tsx`                                                          | PASS                                                  |
+| Worker deployment     | `npx wrangler@4.164.0 deploy --config wrangler.jsonc`                                                                                      | PASS — version `e1352bdf-b42d-4983-ba27-23b151951db3` |
+| Public live checks    | `curl -L https://opusform.co.uk/`, `curl -L https://opusform.co.uk/portal`, Worker URL; live JobLedger bundle contains date-editor markers | PASS — HTTP 200 and byte-for-byte bundle match        |
+| Manual/external check | Fresh read-only review after repair                                                                                                        | PASS                                                  |
 
 ## Critic review
 
@@ -68,4 +68,4 @@ Allow management users to set, update, or clear a job's inclusive schedule dates
 - Automated gate: `PASS`
 - Release status: `READY_FOR_HUMAN_APPROVAL`
 - Human approval: `PENDING`
-- Residual uncertainty or exception: Production deployment and authenticated Job Ledger interaction remain unverified.
+- Residual uncertainty or exception: Authenticated Job Ledger interaction and accessibility acceptance were not performed in this session.

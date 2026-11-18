@@ -8,7 +8,7 @@ import { defaultSelectedDay, isValidISODate } from "../utils/week";
 import { MyShiftsPage } from "./MyShiftsPage";
 
 export const LaborRosterPage: React.FC = () => {
-  const { jobs, workers, setWorkers, shifts, setShifts, role } = usePortal();
+  const { jobs, setJobs, workers, setWorkers, shifts, setShifts, role } = usePortal();
   const [searchParams, setSearchParams] = useSearchParams();
 
   if (role && ASSIGNED_SHIFT_ROLES.includes(role)) {
@@ -65,6 +65,7 @@ export const LaborRosterPage: React.FC = () => {
           date={selectedDate}
           onChangeGroup={handleChangeGroup}
           onChangeDate={handleChangeDate}
+          setJobs={setJobs}
           canEdit={!!role && MANAGEMENT_WRITE_ROLES.includes(role)}
         />
       )}

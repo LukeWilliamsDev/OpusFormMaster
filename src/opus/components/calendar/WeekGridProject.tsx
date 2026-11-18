@@ -6,6 +6,7 @@ import { DaySchedule } from "../../hooks/useDaySchedule";
 import { WeekDay } from "../../utils/week";
 import { getJobColorClasses } from "./jobColors";
 import { StaffCard } from "./StaffCard";
+import { getJobsForDate } from "./jobPeriods";
 
 const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) => {
   const { forecast } = useJobForecast(job.postcode);
@@ -71,12 +72,17 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
   onRemoveShift,
   canEdit = true,
 }) => {
-  const activeJobs = jobs.filter((j) => j.status !== "completed");
-
   return (
     <>
       {weekDays.map((day) => {
         const schedule = weekSchedule.get(day.date);
+        const activeJobs = getJobsForDate(jobs, day.date).filter(
+          (job) => job.status !== "completed",
+        );
+        const scheduledCrewCount = activeJobs.reduce(
+          (count, job) => count + (schedule?.byJob.get(job.id)?.length ?? 0),
+          0,
+        );
 
         return (
           <div key={day.date} className={`min-w-0 p-3 space-y-3 ${SITE_BORDER_R} ${SITE_STONE_BG}`}>
@@ -90,7 +96,7 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                 </span>
               </div>
               <span className={`text-[11px] font-black shrink-0 ${SITE_DEPLOYED_TEXT}`}>
-                {schedule?.deployedCount ? schedule.deployedCount : "0 deployed"}
+                {scheduledCrewCount ? scheduledCrewCount : "0 deployed"}
               </span>
             </div>
 

@@ -6,6 +6,7 @@ import { formatDayHeading } from "../../utils/week";
 import { DaySchedule } from "../../hooks/useDaySchedule";
 import { getJobColorClasses } from "./jobColors";
 import { StaffCard } from "./StaffCard";
+import { getJobsForDate } from "./jobPeriods";
 
 const WeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) => {
   const { forecast } = useJobForecast(job.postcode);
@@ -72,7 +73,11 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
   onRemoveShift,
   canEdit = true,
 }) => {
-  const activeJobs = jobs.filter((j) => j.status !== "completed");
+  const activeJobs = getJobsForDate(jobs, date).filter((j) => j.status !== "completed");
+  const scheduledCrewCount = activeJobs.reduce(
+    (count, job) => count + (schedule.byJob.get(job.id)?.length ?? 0),
+    0,
+  );
 
   return (
     <div className={`space-y-4 ${SITE_STONE_BG} p-4`}>
@@ -80,7 +85,7 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
         <span className={`font-bold ${SITE_HEADER_TEXT}`}>{formatDayHeading(date)}</span>
         <span className={SITE_HEADER_TEXT}>·</span>
         <span className={`font-black ${SITE_DEPLOYED_TEXT}`}>
-          {schedule.deployedCount} operatives deployed
+          {scheduledCrewCount} operatives deployed
         </span>
       </div>
 

@@ -1,17 +1,31 @@
 ﻿import React from "react";
 import { CardGrid } from "../components/CardGrid";
 import { motion, AnimatePresence } from "motion/react";
-import { CloudSun, AlertCircle, HardHat, DollarSign } from "lucide-react";
+import { CloudSun, AlertCircle, HardHat, CalendarRange } from "lucide-react";
 import { Job } from "../types/erp";
 import { useJobForecast, getWeatherOnDate } from "../utils/weather";
-import { toLocalISODate } from "../utils/week";
+import { formatUKDate, isValidISODate, toLocalISODate } from "../utils/week";
 import { PortalFilterGroup } from "./PortalNavigationPrimitives";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 interface ActiveJobLedgerProps {
   filteredJobs: Job[];
   filterStatus: Job["status"] | "all" | "archived";
   setFilterStatus: (status: Job["status"] | "all" | "archived") => void;
   onSelectJob: (id: string) => void;
+  onUpdateJobDates: (
+    jobId: string,
+    startDate: string | undefined,
+    endDate: string | undefined,
+  ) => void;
+  canEditDates: boolean;
   getJobFollowup: (job: Job) => { reason: string } | null;
 }
 
@@ -64,8 +78,48 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
   filterStatus,
   setFilterStatus,
   onSelectJob,
+  onUpdateJobDates,
+  canEditDates,
   getJobFollowup,
 }) => {
+  const [dateJob, setDateJob] = React.useState<Job | null>(null);
+  const [startDate, setStartDate] = React.useState("");
+  const [endDate, setEndDate] = React.useState("");
+  const [dateError, setDateError] = React.useState<string | null>(null);
+
+  const openDateEditor = (event: React.MouseEvent, job: Job) => {
+    event.stopPropagation();
+    setDateJob(job);
+    setStartDate(job.startDate ?? "");
+    setEndDate(job.endDate ?? "");
+    setDateError(null);
+  };
+
+  const closeDateEditor = () => {
+    setDateJob(null);
+    setDateError(null);
+  };
+
+  const saveDateEditor = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!dateJob) return;
+    if ((startDate && !endDate) || (!startDate && endDate)) {
+      setDateError("Set both dates, or clear both dates.");
+      return;
+    }
+    if ((startDate && !isValidISODate(startDate)) || (endDate && !isValidISODate(endDate))) {
+      setDateError("Enter valid calendar dates.");
+      return;
+    }
+    if (startDate && endDate && endDate < startDate) {
+      setDateError("The end date must be on or after the start date.");
+      return;
+    }
+
+    onUpdateJobDates(dateJob.id, startDate || undefined, endDate || undefined);
+    closeDateEditor();
+  };
+
   return (
     <div className="space-y-5">
       {/* Header controls & filter */}
@@ -181,6 +235,20 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
                       <div className="text-[12px] text-muted-foreground font-medium">
                         {job.mainContractor}
                       </div>
+                      {canEditDates && (
+                        <button
+                          type="button"
+                          onClick={(event) => openDateEditor(event, job)}
+                          onKeyDown={(event) => event.stopPropagation()}
+                          className="mt-1 inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-muted-foreground hover:border-primary hover:text-foreground"
+                          aria-label={`Set dates for ${job.siteName}`}
+                        >
+                          <CalendarRange className="size-3" />
+                          {job.startDate && job.endDate
+                            ? `${formatUKDate(job.startDate)} – ${formatUKDate(job.endDate)}`
+                            : "Set dates"}
+                        </button>
+                      )}
 
                       {/* Mobile-only warning badges & Value / Progress */}
                       <div className="lg:hidden space-y-2 mt-3 pt-2.5 border-t border-border">
@@ -251,6 +319,59 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
           </AnimatePresence>
         </div>
       </div>
+
+      <Dialog open={!!dateJob} onOpenChange={(open) => !open && closeDateEditor()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set job dates</DialogTitle>
+            <DialogDescription>
+              {dateJob?.siteName} will appear in the site schedule only within this inclusive range.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={saveDateEditor} className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <label className="space-y-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Start date
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(event) => setStartDate(event.target.value)}
+                  className="w-full rounded-lg border-2 border-border bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground"
+                />
+              </label>
+              <label className="space-y-1.5 text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                End date
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(event) => setEndDate(event.target.value)}
+                  className="w-full rounded-lg border-2 border-border bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground"
+                />
+              </label>
+            </div>
+            {dateError && (
+              <p className="text-xs font-semibold text-destructive" role="alert">
+                {dateError}
+              </p>
+            )}
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={closeDateEditor}
+                className="rounded-lg border-2 border-border px-4 py-2 text-xs font-bold uppercase tracking-wide text-muted-foreground hover:text-foreground"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="rounded-lg bg-primary px-4 py-2 text-xs font-bold uppercase tracking-wide text-primary-foreground hover:bg-primary/90"
+              >
+                Save dates
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

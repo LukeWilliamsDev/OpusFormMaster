@@ -10,6 +10,7 @@ import {
   Trash2,
   LayoutGrid,
   FileText,
+  CalendarRange,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -33,6 +34,7 @@ import { FinalBillList } from "./billing/FinalBillList";
 import { QuoteInvoiceBuilder } from "./QuoteInvoiceBuilder";
 import { ThirdPartyAttachmentsPanel } from "./ThirdPartyAttachmentsPanel";
 import { ThirdPartyNotesPanel } from "./ThirdPartyNotesPanel";
+import { hasValidJobPeriod } from "./calendar/jobPeriods";
 
 const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 100 * 1024 * 1024;
@@ -896,9 +898,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 {job.email}
               </a>
             )}
-            {job.startDate && job.endDate && (
+            {hasValidJobPeriod(job) ? (
               <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-secondary/50 border border-border rounded-md px-2.5 py-1.5 text-muted-foreground">
                 Job period: {formatUKDate(job.startDate)} – {formatUKDate(job.endDate)}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-md border border-warning/30 bg-warning/10 px-2.5 py-1.5 text-[11px] font-bold uppercase tracking-wider text-warning">
+                <CalendarRange className="size-3.5 shrink-0" />
+                No schedule dates set · Not shown in Sites
               </span>
             )}
           </div>

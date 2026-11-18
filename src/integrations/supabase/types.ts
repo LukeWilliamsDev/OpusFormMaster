@@ -690,8 +690,10 @@ export type Database = {
           postcode: string | null;
           schedule_value: number;
           site_name: string;
+          start_date: string | null;
           status: string;
           tenant_id: string;
+          end_date: string | null;
           updated_at: string;
         };
         Insert: {
@@ -705,8 +707,10 @@ export type Database = {
           postcode?: string | null;
           schedule_value?: number;
           site_name: string;
+          start_date?: string | null;
           status?: string;
           tenant_id: string;
+          end_date?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -720,8 +724,10 @@ export type Database = {
           postcode?: string | null;
           schedule_value?: number;
           site_name?: string;
+          start_date?: string | null;
           status?: string;
           tenant_id?: string;
+          end_date?: string | null;
           updated_at?: string;
         };
         Relationships: [

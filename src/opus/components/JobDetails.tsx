@@ -17,7 +17,7 @@ import { Job, Worker, ScheduledShift } from "../types/erp";
 import type { Database, Json } from "@/integrations/supabase/types";
 import { supabase } from "../../integrations/supabase/client";
 import { useJobForecast, getWeatherOnDate } from "../utils/weather";
-import { toLocalISODate } from "../utils/week";
+import { formatUKDate, toLocalISODate } from "../utils/week";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
@@ -125,6 +125,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const [editMainContractor, setEditMainContractor] = useState(job.mainContractor);
   const [editPostcode, setEditPostcode] = useState(job.postcode);
   const [editEmail, setEditEmail] = useState(job.email || "");
+  const [editStartDate, setEditStartDate] = useState(job.startDate || "");
+  const [editEndDate, setEditEndDate] = useState(job.endDate || "");
   const [editContractMaxPours, setEditContractMaxPours] = useState(
     String(job.contractMaxPours || 0),
   );
@@ -207,6 +209,16 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     { label: "Postcode", before: job.postcode, after: editPostcode },
     { label: "Email", before: job.email || "", after: editEmail },
     {
+      label: "Start Date",
+      before: formatUKDate(job.startDate) || "Not set",
+      after: formatUKDate(editStartDate) || "Not set",
+    },
+    {
+      label: "End Date",
+      before: formatUKDate(job.endDate) || "Not set",
+      after: formatUKDate(editEndDate) || "Not set",
+    },
+    {
       label: "Contract Max Pours",
       before: job.contractMaxPours,
       after: Number(editContractMaxPours) || 0,
@@ -221,6 +233,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
       mainContractor: editMainContractor,
       postcode: editPostcode,
       email: editEmail || undefined,
+      startDate: editStartDate || undefined,
+      endDate: editEndDate || undefined,
       contractMaxPours: Number(editContractMaxPours) || 0,
     });
     setContractMaxPours(Number(editContractMaxPours) || 0);
@@ -238,6 +252,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     setEditMainContractor(job.mainContractor);
     setEditPostcode(job.postcode);
     setEditEmail(job.email || "");
+    setEditStartDate(job.startDate || "");
+    setEditEndDate(job.endDate || "");
     setEditContractMaxPours(String(job.contractMaxPours || 0));
 
     // Fetch initial details
@@ -841,6 +857,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
               setEditMainContractor(job.mainContractor);
               setEditPostcode(job.postcode);
               setEditEmail(job.email || "");
+              setEditStartDate(job.startDate || "");
+              setEditEndDate(job.endDate || "");
               setEditContractMaxPours(String(job.contractMaxPours || 0));
               setIsEditingJob(true);
             }}
@@ -877,6 +895,11 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 <Mail className="w-3.5 h-3.5 shrink-0" />
                 {job.email}
               </a>
+            )}
+            {job.startDate && job.endDate && (
+              <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider bg-secondary/50 border border-border rounded-md px-2.5 py-1.5 text-muted-foreground">
+                Job period: {formatUKDate(job.startDate)} – {formatUKDate(job.endDate)}
+              </span>
             )}
           </div>
         </div>
@@ -926,6 +949,14 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         title="Edit Job Details"
         confirmLabel="Save Changes"
         onConfirm={() => {
+          if ((editStartDate && !editEndDate) || (!editStartDate && editEndDate)) {
+            toast.error("Set both a start date and an end date, or clear both dates.");
+            return;
+          }
+          if (editStartDate && editEndDate && editEndDate < editStartDate) {
+            toast.error("The end date must be on or after the start date.");
+            return;
+          }
           setIsEditingJob(false);
           if (editedJobFields.length > 0) setIsConfirmingJobSave(true);
         }}
@@ -961,6 +992,36 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 value={editEmail}
                 onChange={(e) => setEditEmail(e.target.value)}
               />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label
+                  htmlFor="job-start-date"
+                  className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground"
+                >
+                  Start Date
+                </label>
+                <Input
+                  id="job-start-date"
+                  type="date"
+                  value={editStartDate}
+                  onChange={(e) => setEditStartDate(e.target.value)}
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="job-end-date"
+                  className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground"
+                >
+                  End Date
+                </label>
+                <Input
+                  id="job-end-date"
+                  type="date"
+                  value={editEndDate}
+                  onChange={(e) => setEditEndDate(e.target.value)}
+                />
+              </div>
             </div>
             <div>
               <label className="text-[12px] font-bold uppercase tracking-wider text-muted-foreground">

@@ -67,14 +67,18 @@ function rateValue(value: unknown): number {
     return 0;
   }
   if (typeof value === "string") {
-    const parsed = Number(value.replace(/[£$€,	\s]/g, ""));
+    const parsed = Number(value.replace(/[£$€,\s]/g, ""));
     return Number.isFinite(parsed) ? parsed : 0;
   }
   return Number(value || 0);
 }
 
 function text(value: unknown, fallback = ""): string {
-  return typeof value === "string" ? value.trim().replace(/[^\u0000-\u00ff]/g, "?") : fallback;
+  return typeof value === "string"
+    ? Array.from(value.trim(), (character) =>
+        character.charCodeAt(0) <= 0xff ? character : "?",
+      ).join("")
+    : fallback;
 }
 
 function wrap(value: string, font: PDFFont, size: number, maxWidth: number): string[] {

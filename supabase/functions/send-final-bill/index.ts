@@ -234,7 +234,7 @@ serve(async (req) => {
     // The service-role client bypasses RLS, so re-apply tenant/object checks
     // explicitly before reading or mutating billing state. A sent bill is
     // idempotent: do not send it again when a client retries the same request.
-    let { data: finalBill, error: finalBillError } = await supabase
+    const { data: finalBill, error: finalBillError } = await supabase
       .from("final_bills")
       .select("id,tenant_id,status,reference,client_info,items,totals,vat_rate,date,job_id")
       .eq("id", finalBillId)

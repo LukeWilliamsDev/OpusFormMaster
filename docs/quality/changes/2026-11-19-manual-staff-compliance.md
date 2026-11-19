@@ -7,7 +7,7 @@
 **Source of truth:** User request to make manual staff compliance live and correct the missing live job schedule date-range behavior
 **Evidence base:** `origin/dev` at task start
 **Evidence head:** working tree after implementation
-**Evidence fingerprint:** `c8d7280f32f352a17a92bbe8acd3413884259657d102e61b4f64a5b75e6825be`
+**Evidence fingerprint:** `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 
 ## Intent
 
@@ -45,7 +45,6 @@ the database ledger.
 ### Changed files
 
 - `docs/quality/changes/2026-11-19-manual-staff-compliance.md`
-- `scripts/production-watchdog.mjs`
 
 ## Acceptance criteria
 
@@ -87,29 +86,33 @@ the database ledger.
 
 ## Verification evidence
 
-| Check                          | Exact command or evidence                                                                    | Result                                                                                         |
-| ------------------------------ | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| Contract                       | `npm run quality:contract`                                                                   | PASS — final contract validation                                                               |
-| Deterministic gate             | `set -a; . ../quote-creation-flow/.env.local; set +a; npm run quality:gate -- --staged-only` | PASS — 81 existing lint warnings, no errors; dependency audit passes                           |
-| Clean CI build reproduction    | Fresh `npm ci` followed by `npm run build:budget`                                            | PASS — application shell 46.0 KiB gzip; shared vendor 165.7 KiB gzip                           |
-| Clean CI typecheck             | Fresh `npm ci` followed by `npm run typecheck`                                               | PASS — TanStack router error boundary accepts `unknown` errors                                 |
-| Typecheck                      | `npm run typecheck`                                                                          | PASS — combined changes                                                                        |
-| Tests                          | `npm test`                                                                                   | PASS — 145 passed, 1 skipped                                                                   |
-| Focused job-period tests       | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                   | PASS — 4 tests                                                                                 |
-| Lint                           | `npm run lint`                                                                               | PASS — 0 errors; existing warnings only                                                        |
-| Production dependency audit    | `npm audit --omit=dev --audit-level=high`                                                    | PASS — 0 vulnerabilities                                                                       |
-| Local migration replay         | `npx supabase db reset --local --no-seed`                                                    | PASS — both migrations applied                                                                 |
-| Local schema lint              | `npx supabase db lint --local`                                                               | PASS — no schema errors                                                                        |
-| RPC execute grants             | Read-only local catalog query                                                                | PASS — anon denied, authenticated granted                                                      |
-| Job date columns               | Read-only local catalog query                                                                | PASS — `start_date`/`end_date` are native `date` columns                                       |
-| Preview smoke test             | `curl -fsS http://127.0.0.1:8082/`                                                           | PASS — local Vite page served                                                                  |
-| UI verification                | Read-only source review of responsive layout and Radix Dialog accessibility                  | PASS — browser visual acceptance pending                                                       |
-| Focused source/database review | Fresh independent read-only critic of the actual diff                                        | PASS — no blocking or major findings                                                           |
-| Hosted migration               | Supabase migration ledger and read-only schema/RPC inspection                                | PASS — migration applied; native date columns; anon execute denied, authenticated granted      |
-| Live/browser verification      | Authenticated multi-role acceptance                                                          | NOT RUN — browser/human acceptance gate                                                        |
-| First deploy attempt           | GitHub runs `44507567636` / `44507567953`                                                    | BLOCKED — CI audit failed; deploy rolled back after stale edge CSS reference                   |
-| Second deploy attempt          | GitHub runs `44510504049` / `44510504286`                                                    | BLOCKED — clean dependency audit passed; bundle budget failed before deploy                    |
-| Third deploy attempt           | GitHub run `44513742354`                                                                     | BLOCKED — public health passed; authenticated smoke saw one dynamic asset 404 and rollback ran |
+| Check                          | Exact command or evidence                                                                    | Result                                                                                                       |
+| ------------------------------ | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Contract                       | `npm run quality:contract`                                                                   | PASS — final contract validation                                                                             |
+| Deterministic gate             | `set -a; . ../quote-creation-flow/.env.local; set +a; npm run quality:gate -- --staged-only` | PASS — 81 existing lint warnings, no errors; dependency audit passes                                         |
+| Clean CI build reproduction    | Fresh `npm ci` followed by `npm run build:budget`                                            | PASS — application shell 46.0 KiB gzip; shared vendor 165.7 KiB gzip                                         |
+| Clean CI typecheck             | Fresh `npm ci` followed by `npm run typecheck`                                               | PASS — TanStack router error boundary accepts `unknown` errors                                               |
+| Typecheck                      | `npm run typecheck`                                                                          | PASS — combined changes                                                                                      |
+| Tests                          | `npm test`                                                                                   | PASS — 145 passed, 1 skipped                                                                                 |
+| Focused job-period tests       | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                   | PASS — 4 tests                                                                                               |
+| Lint                           | `npm run lint`                                                                               | PASS — 0 errors; existing warnings only                                                                      |
+| Production dependency audit    | `npm audit --omit=dev --audit-level=high`                                                    | PASS — 0 vulnerabilities                                                                                     |
+| Local migration replay         | `npx supabase db reset --local --no-seed`                                                    | PASS — both migrations applied                                                                               |
+| Local schema lint              | `npx supabase db lint --local`                                                               | PASS — no schema errors                                                                                      |
+| RPC execute grants             | Read-only local catalog query                                                                | PASS — anon denied, authenticated granted                                                                    |
+| Job date columns               | Read-only local catalog query                                                                | PASS — `start_date`/`end_date` are native `date` columns                                                     |
+| Preview smoke test             | `curl -fsS http://127.0.0.1:8082/`                                                           | PASS — local Vite page served                                                                                |
+| UI verification                | Read-only source review of responsive layout and Radix Dialog accessibility                  | PASS — browser visual acceptance pending                                                                     |
+| Focused source/database review | Fresh independent read-only critic of the actual diff                                        | PASS — no blocking or major findings                                                                         |
+| Hosted migration               | Supabase migration ledger and read-only schema/RPC inspection                                | PASS — migration applied; native date columns; anon execute denied, authenticated granted                    |
+| Live/browser verification      | Authenticated multi-role acceptance                                                          | PASS — guarded production smoke covered configured accounts/routes; manual visual acceptance remains pending |
+| First deploy attempt           | GitHub runs `44507567636` / `44507567953`                                                    | BLOCKED — CI audit failed; deploy rolled back after stale edge CSS reference                                 |
+| Second deploy attempt          | GitHub runs `44510504049` / `44510504286`                                                    | BLOCKED — clean dependency audit passed; bundle budget failed before deploy                                  |
+| Third deploy attempt           | GitHub run `44513742354`                                                                     | BLOCKED — public health passed; authenticated smoke saw one dynamic asset 404 and rollback ran               |
+| Final deploy attempt           | GitHub run `44514726285`; Worker version `7dbf881a-88d5-4de9-b269-ca0a7ebfc309`              | PASS — watchdog reported build `786fc97101d4216b8e94ac141ce4e7c506b3db4b`                                    |
+| Live health/readiness          | `curl` `/healthz` and `/readyz` on `https://opusform.co.uk`                                  | PASS — build identity and approved Supabase project `fgpthpxmiroyebrzjdzo`                                   |
+| Live shell cache policy        | `curl -I https://opusform.co.uk/`                                                            | PASS — HTML shell returns `cache-control: no-store`                                                          |
+| Live feature bundles           | Release manifest plus deployed App/LaborRoster/jobPeriods asset inspection                   | PASS — manifest matches build; compliance/date-range markers present                                         |
 
 ## Critic review
 
@@ -125,4 +128,4 @@ the database ledger.
 - Automated gate: PASS — staged final `npm run quality:gate -- --staged-only`; 81 existing lint warnings, no errors; `npm audit --omit=dev --audit-level=high` reports 0 vulnerabilities
 - Release status: READY_FOR_HUMAN_APPROVAL
 - Human approval: PENDING
-- Residual uncertainty: Authenticated browser acceptance, live role/RLS behavior for real users, and Worker provenance remain unverified; hosted migration and read-only schema/grant checks are complete.
+- Residual uncertainty: Manual visual approval, broader live role/RLS acceptance beyond guarded smoke accounts, and named human approval remain pending; Worker provenance, hosted migration, and read-only schema/grant checks are complete.

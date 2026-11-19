@@ -99,22 +99,23 @@ the database ledger.
 
 ## Verification evidence
 
-| Check                          | Exact command or evidence                                                                    | Result                                                   |
-| ------------------------------ | -------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Contract                       | `npm run quality:contract`                                                                   | PASS — final contract validation                         |
-| Deterministic gate             | `set -a; . ../quote-creation-flow/.env.local; set +a; npm run quality:gate -- --staged-only` | PASS — 81 existing lint warnings, no errors              |
-| Typecheck                      | `npm run typecheck`                                                                          | PASS — combined changes                                  |
-| Tests                          | `npm test`                                                                                   | PASS — 145 passed, 1 skipped                             |
-| Focused job-period tests       | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                   | PASS — 4 tests                                           |
-| Lint                           | `npm run lint`                                                                               | PASS — 0 errors; existing warnings only                  |
-| Local migration replay         | `npx supabase db reset --local --no-seed`                                                    | PASS — both migrations applied                           |
-| Local schema lint              | `npx supabase db lint --local`                                                               | PASS — no schema errors                                  |
-| RPC execute grants             | Read-only local catalog query                                                                | PASS — anon denied, authenticated granted                |
-| Job date columns               | Read-only local catalog query                                                                | PASS — `start_date`/`end_date` are native `date` columns |
-| Preview smoke test             | `curl -fsS http://127.0.0.1:8082/`                                                           | PASS — local Vite page served                            |
-| UI verification                | Read-only source review of responsive layout and Radix Dialog accessibility                  | PASS — browser visual acceptance pending                 |
-| Focused source/database review | Fresh independent read-only critic of the actual diff                                        | PASS — no blocking or major findings                     |
-| Live/browser verification      | Authenticated multi-role acceptance and migration application                                | NOT RUN — human/release gate                             |
+| Check                          | Exact command or evidence                                                                    | Result                                                                                    |
+| ------------------------------ | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Contract                       | `npm run quality:contract`                                                                   | PASS — final contract validation                                                          |
+| Deterministic gate             | `set -a; . ../quote-creation-flow/.env.local; set +a; npm run quality:gate -- --staged-only` | PASS — 81 existing lint warnings, no errors                                               |
+| Typecheck                      | `npm run typecheck`                                                                          | PASS — combined changes                                                                   |
+| Tests                          | `npm test`                                                                                   | PASS — 145 passed, 1 skipped                                                              |
+| Focused job-period tests       | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                   | PASS — 4 tests                                                                            |
+| Lint                           | `npm run lint`                                                                               | PASS — 0 errors; existing warnings only                                                   |
+| Local migration replay         | `npx supabase db reset --local --no-seed`                                                    | PASS — both migrations applied                                                            |
+| Local schema lint              | `npx supabase db lint --local`                                                               | PASS — no schema errors                                                                   |
+| RPC execute grants             | Read-only local catalog query                                                                | PASS — anon denied, authenticated granted                                                 |
+| Job date columns               | Read-only local catalog query                                                                | PASS — `start_date`/`end_date` are native `date` columns                                  |
+| Preview smoke test             | `curl -fsS http://127.0.0.1:8082/`                                                           | PASS — local Vite page served                                                             |
+| UI verification                | Read-only source review of responsive layout and Radix Dialog accessibility                  | PASS — browser visual acceptance pending                                                  |
+| Focused source/database review | Fresh independent read-only critic of the actual diff                                        | PASS — no blocking or major findings                                                      |
+| Hosted migration               | Supabase migration ledger and read-only schema/RPC inspection                                | PASS — migration applied; native date columns; anon execute denied, authenticated granted |
+| Live/browser verification      | Authenticated multi-role acceptance                                                          | NOT RUN — browser/human acceptance gate                                                   |
 
 ## Critic review
 
@@ -128,6 +129,6 @@ the database ledger.
 ## Release decision
 
 - Automated gate: PASS — staged final `npm run quality:gate -- --staged-only`; 81 existing lint warnings, no errors
-- Release status: NOT_RELEASED
+- Release status: READY_FOR_HUMAN_APPROVAL
 - Human approval: PENDING
-- Residual uncertainty: Live Supabase role/RLS behavior, migration application, Worker provenance, and authenticated browser acceptance remain unverified locally.
+- Residual uncertainty: Authenticated browser acceptance, live role/RLS behavior for real users, and Worker provenance remain unverified; hosted migration and read-only schema/grant checks are complete.

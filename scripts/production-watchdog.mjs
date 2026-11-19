@@ -156,7 +156,7 @@ async function checkPublicSurface() {
   return health.buildSha;
 }
 
-async function checkAuthenticatedScreens() {
+async function checkAuthenticatedScreensOnce() {
   let accounts;
   try {
     accounts = getSmokeAccounts();
@@ -276,6 +276,20 @@ async function checkAuthenticatedScreens() {
     }
   } finally {
     await browser.close();
+  }
+}
+
+async function checkAuthenticatedScreens() {
+  for (let attempt = 1; attempt <= 8; attempt += 1) {
+    try {
+      await checkAuthenticatedScreensOnce();
+      return;
+    } catch (error) {
+      const isRetryableFrontendFailure =
+        error instanceof WatchdogFailure && error.category === "frontend";
+      if (!isRetryableFrontendFailure || attempt === 8) throw error;
+      await wait(2_000);
+    }
   }
 }
 

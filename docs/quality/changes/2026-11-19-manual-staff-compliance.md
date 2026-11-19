@@ -7,7 +7,7 @@
 **Source of truth:** User request to make manual staff compliance live and correct the missing live job schedule date-range behavior
 **Evidence base:** `origin/dev` at task start
 **Evidence head:** working tree after implementation
-**Evidence fingerprint:** `40b7e2d34e37a3e701612a9689573c6a53692d8ce3eda67fbcfae9b86517be99`
+**Evidence fingerprint:** `c8d7280f32f352a17a92bbe8acd3413884259657d102e61b4f64a5b75e6825be`
 
 ## Intent
 
@@ -45,8 +45,7 @@ the database ledger.
 ### Changed files
 
 - `docs/quality/changes/2026-11-19-manual-staff-compliance.md`
-- `src/opus/App.tsx`
-- `src/routes/__root.tsx`
+- `scripts/production-watchdog.mjs`
 
 ## Acceptance criteria
 
@@ -88,37 +87,38 @@ the database ledger.
 
 ## Verification evidence
 
-| Check                          | Exact command or evidence                                                                    | Result                                                                                    |
-| ------------------------------ | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| Contract                       | `npm run quality:contract`                                                                   | PASS — final contract validation                                                          |
-| Deterministic gate             | `set -a; . ../quote-creation-flow/.env.local; set +a; npm run quality:gate -- --staged-only` | PASS — 81 existing lint warnings, no errors; dependency audit passes                      |
-| Clean CI build reproduction    | Fresh `npm ci` followed by `npm run build:budget`                                            | PASS — application shell 46.0 KiB gzip; shared vendor 165.7 KiB gzip                      |
-| Clean CI typecheck             | Fresh `npm ci` followed by `npm run typecheck`                                               | PASS — TanStack router error boundary accepts `unknown` errors                            |
-| Typecheck                      | `npm run typecheck`                                                                          | PASS — combined changes                                                                   |
-| Tests                          | `npm test`                                                                                   | PASS — 145 passed, 1 skipped                                                              |
-| Focused job-period tests       | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                   | PASS — 4 tests                                                                            |
-| Lint                           | `npm run lint`                                                                               | PASS — 0 errors; existing warnings only                                                   |
-| Production dependency audit    | `npm audit --omit=dev --audit-level=high`                                                    | PASS — 0 vulnerabilities                                                                  |
-| Local migration replay         | `npx supabase db reset --local --no-seed`                                                    | PASS — both migrations applied                                                            |
-| Local schema lint              | `npx supabase db lint --local`                                                               | PASS — no schema errors                                                                   |
-| RPC execute grants             | Read-only local catalog query                                                                | PASS — anon denied, authenticated granted                                                 |
-| Job date columns               | Read-only local catalog query                                                                | PASS — `start_date`/`end_date` are native `date` columns                                  |
-| Preview smoke test             | `curl -fsS http://127.0.0.1:8082/`                                                           | PASS — local Vite page served                                                             |
-| UI verification                | Read-only source review of responsive layout and Radix Dialog accessibility                  | PASS — browser visual acceptance pending                                                  |
-| Focused source/database review | Fresh independent read-only critic of the actual diff                                        | PASS — no blocking or major findings                                                      |
-| Hosted migration               | Supabase migration ledger and read-only schema/RPC inspection                                | PASS — migration applied; native date columns; anon execute denied, authenticated granted |
-| Live/browser verification      | Authenticated multi-role acceptance                                                          | NOT RUN — browser/human acceptance gate                                                   |
-| First deploy attempt           | GitHub runs `44507567636` / `44507567953`                                                    | BLOCKED — CI audit failed; deploy rolled back after stale edge CSS reference              |
-| Second deploy attempt          | GitHub runs `44510504049` / `44510504286`                                                    | BLOCKED — clean dependency audit passed; bundle budget failed before deploy               |
+| Check                          | Exact command or evidence                                                                    | Result                                                                                         |
+| ------------------------------ | -------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| Contract                       | `npm run quality:contract`                                                                   | PASS — final contract validation                                                               |
+| Deterministic gate             | `set -a; . ../quote-creation-flow/.env.local; set +a; npm run quality:gate -- --staged-only` | PASS — 81 existing lint warnings, no errors; dependency audit passes                           |
+| Clean CI build reproduction    | Fresh `npm ci` followed by `npm run build:budget`                                            | PASS — application shell 46.0 KiB gzip; shared vendor 165.7 KiB gzip                           |
+| Clean CI typecheck             | Fresh `npm ci` followed by `npm run typecheck`                                               | PASS — TanStack router error boundary accepts `unknown` errors                                 |
+| Typecheck                      | `npm run typecheck`                                                                          | PASS — combined changes                                                                        |
+| Tests                          | `npm test`                                                                                   | PASS — 145 passed, 1 skipped                                                                   |
+| Focused job-period tests       | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                   | PASS — 4 tests                                                                                 |
+| Lint                           | `npm run lint`                                                                               | PASS — 0 errors; existing warnings only                                                        |
+| Production dependency audit    | `npm audit --omit=dev --audit-level=high`                                                    | PASS — 0 vulnerabilities                                                                       |
+| Local migration replay         | `npx supabase db reset --local --no-seed`                                                    | PASS — both migrations applied                                                                 |
+| Local schema lint              | `npx supabase db lint --local`                                                               | PASS — no schema errors                                                                        |
+| RPC execute grants             | Read-only local catalog query                                                                | PASS — anon denied, authenticated granted                                                      |
+| Job date columns               | Read-only local catalog query                                                                | PASS — `start_date`/`end_date` are native `date` columns                                       |
+| Preview smoke test             | `curl -fsS http://127.0.0.1:8082/`                                                           | PASS — local Vite page served                                                                  |
+| UI verification                | Read-only source review of responsive layout and Radix Dialog accessibility                  | PASS — browser visual acceptance pending                                                       |
+| Focused source/database review | Fresh independent read-only critic of the actual diff                                        | PASS — no blocking or major findings                                                           |
+| Hosted migration               | Supabase migration ledger and read-only schema/RPC inspection                                | PASS — migration applied; native date columns; anon execute denied, authenticated granted      |
+| Live/browser verification      | Authenticated multi-role acceptance                                                          | NOT RUN — browser/human acceptance gate                                                        |
+| First deploy attempt           | GitHub runs `44507567636` / `44507567953`                                                    | BLOCKED — CI audit failed; deploy rolled back after stale edge CSS reference                   |
+| Second deploy attempt          | GitHub runs `44510504049` / `44510504286`                                                    | BLOCKED — clean dependency audit passed; bundle budget failed before deploy                    |
+| Third deploy attempt           | GitHub run `44513742354`                                                                     | BLOCKED — public health passed; authenticated smoke saw one dynamic asset 404 and rollback ran |
 
 ## Critic review
 
-- Critic context/identity: Fresh independent read-only critic task `task_116` reviewing the exact final corrected patch.
+- Critic context/identity: Fresh independent read-only critic task `task_117` reviewing the exact final watchdog-retry patch.
 - Review input: complete combined diff from baseline `1ac319b`, this contract, relevant role/RLS/date-range source, migration replay/lint output, dependency audit output, clean-install typecheck/build output, and validation output.
 - Verdict: `PASS`
-- Findings: No blocking or major findings remain. The review confirmed unique and suspended lazy routes, the TanStack `unknown` error boundary compatibility fix, the original compliance/date-range behavior, and the dependency, HTML cache, bounded asset-propagation, and bundle-budget repairs. Minor residuals are limited to focused test coverage for watchdog/cache headers and existing lint warnings.
+- Findings: No blocking or major findings remain. The review confirmed bounded frontend-only retries for authenticated smoke, immediate propagation of auth/configuration failures, and the prior compliance/date-range, dependency, cache, asset, lazy-route, error-boundary, and bundle-budget repairs. Minor residuals are limited to focused test coverage for watchdog/cache headers and existing lint warnings.
 - Unresolved blocking findings: `none`
-- Repair iterations: 7
+- Repair iterations: 8
 
 ## Release decision
 

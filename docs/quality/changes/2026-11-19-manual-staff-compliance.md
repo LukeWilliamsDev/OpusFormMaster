@@ -7,7 +7,7 @@
 **Source of truth:** User request to make manual staff compliance live and correct the missing live job schedule date-range behavior
 **Evidence base:** `origin/dev` at task start
 **Evidence head:** working tree after implementation
-**Evidence fingerprint:** `981cd2c0ee4648582a8f339d6a0eea7eaee6ce5371e98ca3cedb79feefbde6e9`
+**Evidence fingerprint:** `40b7e2d34e37a3e701612a9689573c6a53692d8ce3eda67fbcfae9b86517be99`
 
 ## Intent
 
@@ -45,10 +45,8 @@ the database ledger.
 ### Changed files
 
 - `docs/quality/changes/2026-11-19-manual-staff-compliance.md`
-- `package.json`
-- `package-lock.json`
-- `scripts/production-watchdog.mjs`
-- `src/server.ts`
+- `src/opus/App.tsx`
+- `src/routes/__root.tsx`
 
 ## Acceptance criteria
 
@@ -94,6 +92,8 @@ the database ledger.
 | ------------------------------ | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | Contract                       | `npm run quality:contract`                                                                   | PASS — final contract validation                                                          |
 | Deterministic gate             | `set -a; . ../quote-creation-flow/.env.local; set +a; npm run quality:gate -- --staged-only` | PASS — 81 existing lint warnings, no errors; dependency audit passes                      |
+| Clean CI build reproduction    | Fresh `npm ci` followed by `npm run build:budget`                                            | PASS — application shell 46.0 KiB gzip; shared vendor 165.7 KiB gzip                      |
+| Clean CI typecheck             | Fresh `npm ci` followed by `npm run typecheck`                                               | PASS — TanStack router error boundary accepts `unknown` errors                            |
 | Typecheck                      | `npm run typecheck`                                                                          | PASS — combined changes                                                                   |
 | Tests                          | `npm test`                                                                                   | PASS — 145 passed, 1 skipped                                                              |
 | Focused job-period tests       | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                   | PASS — 4 tests                                                                            |
@@ -109,15 +109,16 @@ the database ledger.
 | Hosted migration               | Supabase migration ledger and read-only schema/RPC inspection                                | PASS — migration applied; native date columns; anon execute denied, authenticated granted |
 | Live/browser verification      | Authenticated multi-role acceptance                                                          | NOT RUN — browser/human acceptance gate                                                   |
 | First deploy attempt           | GitHub runs `44507567636` / `44507567953`                                                    | BLOCKED — CI audit failed; deploy rolled back after stale edge CSS reference              |
+| Second deploy attempt          | GitHub runs `44510504049` / `44510504286`                                                    | BLOCKED — clean dependency audit passed; bundle budget failed before deploy               |
 
 ## Critic review
 
-- Critic context/identity: Fresh independent read-only critic task `task_113` reviewing the exact final remediation patch.
-- Review input: complete combined diff from baseline `1ac319b`, this contract, relevant role/RLS/date-range source, migration replay/lint output, dependency audit output, and validation output.
+- Critic context/identity: Fresh independent read-only critic task `task_116` reviewing the exact final corrected patch.
+- Review input: complete combined diff from baseline `1ac319b`, this contract, relevant role/RLS/date-range source, migration replay/lint output, dependency audit output, clean-install typecheck/build output, and validation output.
 - Verdict: `PASS`
-- Findings: No blocking or major findings remain. The review confirmed the original compliance/date-range behavior and the dependency, HTML cache, and bounded asset-propagation deployment repairs. Minor residuals are limited to focused test coverage for the watchdog/cache headers and expected continued CI coverage for the upgrades.
+- Findings: No blocking or major findings remain. The review confirmed unique and suspended lazy routes, the TanStack `unknown` error boundary compatibility fix, the original compliance/date-range behavior, and the dependency, HTML cache, bounded asset-propagation, and bundle-budget repairs. Minor residuals are limited to focused test coverage for watchdog/cache headers and existing lint warnings.
 - Unresolved blocking findings: `none`
-- Repair iterations: 4
+- Repair iterations: 7
 
 ## Release decision
 

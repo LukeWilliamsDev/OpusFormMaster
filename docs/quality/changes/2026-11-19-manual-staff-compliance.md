@@ -7,7 +7,7 @@
 **Source of truth:** User request to make manual staff compliance live and correct the missing live job schedule date-range behavior
 **Evidence base:** `origin/dev` at task start
 **Evidence head:** working tree after implementation
-**Evidence fingerprint:** `940597c6ff707210ab8a67f99c6b148f5167b4af0f9d42d7c6f559aba497a439`
+**Evidence fingerprint:** `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
 
 ## Intent
 
@@ -47,11 +47,6 @@ the database ledger.
 ### Changed files
 
 - `docs/quality/changes/2026-11-19-manual-staff-compliance.md`
-- `src/opus/components/PortalContextBar.tsx`
-- `src/opus/components/PortalNavigationPrimitives.tsx`
-- `src/opus/layouts/PortalLayout.tsx`
-- `src/opus/utils/portalNavigation.ts`
-- `src/styles.css`
 
 ## Acceptance criteria
 
@@ -123,7 +118,7 @@ the database ledger.
 | Live health/readiness          | `curl` `/healthz` and `/readyz` on `https://opusform.co.uk`                                  | PASS — build identity and approved Supabase project `fgpthpxmiroyebrzjdzo`                                   |
 | Live shell cache policy        | `curl -I https://opusform.co.uk/`                                                            | PASS — HTML shell returns `cache-control: no-store`                                                          |
 | Live feature bundles           | Release manifest plus deployed App/LaborRoster/jobPeriods asset inspection                   | PASS — manifest matches build; compliance/date-range markers present                                         |
-| Navigation correction deploy   | Guarded deploy of the staged `promote-live` navigation restoration                           | NOT RUN — pending this scoped correction                                                                     |
+| Navigation correction deploy   | GitHub run `44519745381`; Worker version `099f878b-1f53-45da-b6af-adb6fccfbab0`              | PASS — watchdog reported build `918d6e99f91d5d81501525337ae252967825af5f`                                    |
 
 ## Critic review
 

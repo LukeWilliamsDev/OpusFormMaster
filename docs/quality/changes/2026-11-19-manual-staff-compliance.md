@@ -7,7 +7,7 @@
 **Source of truth:** User request to make manual staff compliance live and correct the missing live job schedule date-range behavior
 **Evidence base:** `origin/dev` at task start
 **Evidence head:** working tree after implementation
-**Evidence fingerprint:** `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855`
+**Evidence fingerprint:** `940597c6ff707210ab8a67f99c6b148f5167b4af0f9d42d7c6f559aba497a439`
 
 ## Intent
 
@@ -34,6 +34,8 @@ the database ledger.
 - Focused contract and deterministic validation evidence.
 - Remediation of the production dependency audit gate and bounded edge-asset
   propagation checks required by the guarded deploy workflow.
+- Restoration of the `promote-live` portal navigation shell and shared portal
+  geometry without reverting the compliance or job-date functionality.
 
 ### Out of scope
 
@@ -45,6 +47,11 @@ the database ledger.
 ### Changed files
 
 - `docs/quality/changes/2026-11-19-manual-staff-compliance.md`
+- `src/opus/components/PortalContextBar.tsx`
+- `src/opus/components/PortalNavigationPrimitives.tsx`
+- `src/opus/layouts/PortalLayout.tsx`
+- `src/opus/utils/portalNavigation.ts`
+- `src/styles.css`
 
 ## Acceptance criteria
 
@@ -57,6 +64,7 @@ the database ledger.
 - [x] `AC-7`: Lint, formatting, typecheck, tests, production build, bundle budget, production dependency audit, and the repository quality gate pass, or each exception is recorded exactly.
 - [x] `AC-8`: A fresh read-only critic reviews the actual diff and records no unresolved blocking or major findings.
 - [x] `AC-9`: Validated job start/end dates persist, appear on every inclusive Sites date, exclude shift-only Sites entries, and remain available in day-detail shift assignments.
+- [x] `AC-10`: The portal shell and shared geometry match the `promote-live` navigation baseline while current compliance/date behavior remains intact.
 
 ## Invariants and risks
 
@@ -92,6 +100,8 @@ the database ledger.
 | Deterministic gate             | `set -a; . ../quote-creation-flow/.env.local; set +a; npm run quality:gate -- --staged-only` | PASS — 81 existing lint warnings, no errors; dependency audit passes                                         |
 | Clean CI build reproduction    | Fresh `npm ci` followed by `npm run build:budget`                                            | PASS — application shell 46.0 KiB gzip; shared vendor 165.7 KiB gzip                                         |
 | Clean CI typecheck             | Fresh `npm ci` followed by `npm run typecheck`                                               | PASS — TanStack router error boundary accepts `unknown` errors                                               |
+| Navigation baseline comparison | Read-only source comparison with `promote-live`                                              | PASS — restored shell, navigation data, primitives, and portal geometry only                                 |
+| Clean navigation build         | Fresh `npm ci` followed by `npm run build:budget`                                            | PASS — application shell 45.9 KiB gzip; shared vendor 165.7 KiB gzip                                         |
 | Typecheck                      | `npm run typecheck`                                                                          | PASS — combined changes                                                                                      |
 | Tests                          | `npm test`                                                                                   | PASS — 145 passed, 1 skipped                                                                                 |
 | Focused job-period tests       | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                   | PASS — 4 tests                                                                                               |
@@ -113,15 +123,16 @@ the database ledger.
 | Live health/readiness          | `curl` `/healthz` and `/readyz` on `https://opusform.co.uk`                                  | PASS — build identity and approved Supabase project `fgpthpxmiroyebrzjdzo`                                   |
 | Live shell cache policy        | `curl -I https://opusform.co.uk/`                                                            | PASS — HTML shell returns `cache-control: no-store`                                                          |
 | Live feature bundles           | Release manifest plus deployed App/LaborRoster/jobPeriods asset inspection                   | PASS — manifest matches build; compliance/date-range markers present                                         |
+| Navigation correction deploy   | Guarded deploy of the staged `promote-live` navigation restoration                           | NOT RUN — pending this scoped correction                                                                     |
 
 ## Critic review
 
-- Critic context/identity: Fresh independent read-only critic task `task_117` reviewing the exact final watchdog-retry patch.
-- Review input: complete combined diff from baseline `1ac319b`, this contract, relevant role/RLS/date-range source, migration replay/lint output, dependency audit output, clean-install typecheck/build output, and validation output.
+- Critic context/identity: Fresh independent read-only critic task `task_121` reviewing the exact staged navigation restoration.
+- Review input: staged navigation patch, `promote-live` baseline `2ac49ba`, current compliance/date source, typecheck/tests/lint output, and clean-install build output.
 - Verdict: `PASS`
-- Findings: No blocking or major findings remain. The review confirmed bounded frontend-only retries for authenticated smoke, immediate propagation of auth/configuration failures, and the prior compliance/date-range, dependency, cache, asset, lazy-route, error-boundary, and bundle-budget repairs. Minor residuals are limited to focused test coverage for watchdog/cache headers and existing lint warnings.
+- Findings: No blocking or major findings remain. The review confirmed that the restored shell matches `promote-live`, current compliance/date persistence remains intact, role/security boundaries are unchanged, and legacy query routes remain supported. Minor residuals are limited to existing lint warnings and the pending visual/live correction smoke.
 - Unresolved blocking findings: `none`
-- Repair iterations: 8
+- Repair iterations: 9
 
 ## Release decision
 

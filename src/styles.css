@@ -284,6 +284,59 @@
   }
 }
 
+/* Shared portal geometry: keep the content edge symmetrical from a narrow
+ * phone through wide desktop. Feature pages may opt into an intentionally
+ * narrower inner column, but the outer shell should use this same rhythm. */
+:root {
+  --portal-content-max: 90rem;
+  --portal-mobile-nav-space: calc(5rem + env(safe-area-inset-bottom));
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.portal-page-container,
+.portal-shell-container {
+  width: 100%;
+  max-width: var(--portal-content-max);
+  margin-inline: auto;
+  padding-inline: 1rem;
+}
+
+.portal-main-content {
+  min-width: 0;
+  overflow-x: clip;
+  padding-bottom: var(--portal-mobile-nav-space);
+}
+
+@media (min-width: 640px) {
+  .portal-page-container,
+  .portal-shell-container {
+    padding-inline: 1.5rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .portal-main-content {
+    padding-bottom: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .portal-page-container,
+  .portal-shell-container {
+    padding-inline: 2rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .portal-page-container,
+  .portal-shell-container {
+    padding-inline: 2.5rem;
+  }
+}
+
 @media print {
   @page {
     size: A4;

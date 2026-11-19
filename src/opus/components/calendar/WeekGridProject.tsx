@@ -6,6 +6,7 @@ import { DaySchedule } from "../../hooks/useDaySchedule";
 import { WeekDay } from "../../utils/week";
 import { getJobColorClasses } from "./jobColors";
 import { StaffCard } from "./StaffCard";
+import { getJobsForDate } from "./jobPeriods";
 
 const DenseWeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) => {
   const { forecast } = useJobForecast(job.postcode);
@@ -71,12 +72,74 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
   onRemoveShift,
   canEdit = true,
 }) => {
-  const activeJobs = jobs.filter((j) => j.status !== "completed");
-
   return (
     <>
       {weekDays.map((day) => {
         const schedule = weekSchedule.get(day.date);
+        const activeJobs = getJobsForDate(jobs, day.date).filter(
+          (job) => job.status !== "completed",
+        );
+        const scheduledCrewCount = schedule?.deployedCount ?? 0;
+        const shiftOnlyJobs = jobs.filter(
+          (job) =>
+            job.status !== "completed" &&
+            !activeJobs.some((activeJob) => activeJob.id === job.id) &&
+            (schedule?.byJob.get(job.id)?.length ?? 0) > 0,
+        );
+
+        const renderJobCard = (job: Job, shiftOnly = false) => {
+          const crew = schedule?.byJob.get(job.id) ?? [];
+          const colors = getJobColorClasses(job.id);
+
+          return (
+            <div key={job.id} className={SITE_JOB_CARD}>
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className={`w-2 h-2 rounded-full shrink-0 ${colors.bullet}`} />
+                  <h4 className={`text-[12px] font-bold truncate ${colors.text}`}>
+                    {job.siteName}
+                  </h4>
+                  {shiftOnly && (
+                    <span className="shrink-0 rounded-md border border-warning/30 bg-warning/10 px-1 py-0.5 text-[8px] font-black uppercase tracking-wider text-warning">
+                      Shift only
+                    </span>
+                  )}
+                </div>
+                <span className="flex items-center gap-1 text-[11px] font-black text-muted-foreground shrink-0">
+                  <Users className="w-3 h-3" /> {crew.length}
+                </span>
+              </div>
+
+              <DenseWeatherChip job={job} date={day.date} />
+
+              <div className="space-y-1.5">
+                {crew.map(({ worker, shift }) => (
+                  <StaffCard
+                    key={worker.id}
+                    worker={worker}
+                    job={job}
+                    shift={shift}
+                    onRemove={canEdit ? onRemoveShift : undefined}
+                    compact
+                    size="dense"
+                  />
+                ))}
+              </div>
+
+              {canEdit && onAddStaff && (
+                <button
+                  type="button"
+                  onClick={() => onAddStaff(job, day.date)}
+                  aria-label={`Add operatives to ${job.siteName}`}
+                  className={SITE_ADD_STAFF}
+                >
+                  <Plus className="w-3 h-3" />
+                  <span className="hidden xl:inline">ADD OPERATIVES</span>
+                </button>
+              )}
+            </div>
+          );
+        };
 
         return (
           <div key={day.date} className={`min-w-0 p-3 space-y-3 ${SITE_BORDER_R} ${SITE_STONE_BG}`}>
@@ -90,67 +153,31 @@ export const WeekGridProject: React.FC<WeekGridProjectProps> = ({
                 </span>
               </div>
               <span className={`text-[11px] font-black shrink-0 ${SITE_DEPLOYED_TEXT}`}>
-                {schedule?.deployedCount ? schedule.deployedCount : "0 deployed"}
+                {scheduledCrewCount ? scheduledCrewCount : "0 deployed"}
               </span>
             </div>
 
-            {activeJobs.length === 0 ? (
+            {activeJobs.length === 0 && shiftOnlyJobs.length === 0 ? (
               <div
                 className={`py-4 text-center text-[10px] font-bold uppercase tracking-wider ${SITE_EMPTY_TEXT}`}
               >
                 No sites active
               </div>
             ) : (
-              activeJobs.map((job) => {
-                const crew = schedule?.byJob.get(job.id) ?? [];
-                const colors = getJobColorClasses(job.id);
-
-                return (
-                  <div key={job.id} className={SITE_JOB_CARD}>
-                    <div className="flex items-center justify-between gap-1.5">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className={`w-2 h-2 rounded-full shrink-0 ${colors.bullet}`} />
-                        <h4 className={`text-[12px] font-bold truncate ${colors.text}`}>
-                          {job.siteName}
-                        </h4>
-                      </div>
-                      <span className="flex items-center gap-1 text-[11px] font-black text-muted-foreground shrink-0">
-                        <Users className="w-3 h-3" /> {crew.length}
-                      </span>
+              <>
+                {activeJobs.map((job) => renderJobCard(job))}
+                {shiftOnlyJobs.length > 0 && (
+                  <section className="space-y-2 border-t border-dashed border-border pt-3">
+                    <div>
+                      <h4 className="text-[9px] font-black uppercase tracking-widest text-warning">
+                        Shift-only assignments
+                      </h4>
+                      <p className="mt-1 text-[10px] text-muted-foreground">No site dates set</p>
                     </div>
-
-                    <DenseWeatherChip job={job} date={day.date} />
-
-                    {crew.length > 0 && (
-                      <div className="space-y-1.5">
-                        {crew.map(({ worker, shift }) => (
-                          <StaffCard
-                            key={worker.id}
-                            worker={worker}
-                            job={job}
-                            shift={shift}
-                            onRemove={canEdit ? onRemoveShift : undefined}
-                            compact
-                            size="dense"
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {canEdit && onAddStaff && (
-                      <button
-                        type="button"
-                        onClick={() => onAddStaff(job, day.date)}
-                        aria-label={`Add operatives to ${job.siteName}`}
-                        className={SITE_ADD_STAFF}
-                      >
-                        <Plus className="w-3 h-3" />
-                        <span className="hidden xl:inline">ADD OPERATIVES</span>
-                      </button>
-                    )}
-                  </div>
-                );
-              })
+                    {shiftOnlyJobs.map((job) => renderJobCard(job, true))}
+                  </section>
+                )}
+              </>
             )}
           </div>
         );

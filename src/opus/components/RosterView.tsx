@@ -53,9 +53,15 @@ import {
 } from "../../components/ui/accordion";
 import { supabase } from "../../integrations/supabase/client";
 import type { Json, Database } from "../../integrations/supabase/types";
-import { MANAGEMENT_WRITE_ROLES, workerToRow, usePortal } from "../context/PortalContext";
+import {
+  MANAGEMENT_WRITE_ROLES,
+  STAFF_COMPLIANCE_ROLES,
+  workerToRow,
+  usePortal,
+} from "../context/PortalContext";
 import { computeDiff, DiffEntry, getEventLabel, getActorName } from "../utils/auditDiff";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { TelegramLinkControl } from "./TelegramLinkControl";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -85,6 +91,8 @@ interface RosterEventDetails {
   expires_at?: string;
   completed_at?: string | null;
   uploadUrl?: string;
+  certificate_type?: string;
+  expiry_date?: string;
 }
 
 const STAFF_PRIORITY_ORDER = [
@@ -141,7 +149,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const { profile, role } = usePortal();
   const navigate = useNavigate();
   const canWrite = !!role && MANAGEMENT_WRITE_ROLES.includes(role);
-  // Logistics coordinators/assistants handle scheduling only — the compliance/audit trail is out of scope for them.
+  const canManageCompliance = !!role && STAFF_COMPLIANCE_ROLES.includes(role);
+  // Logistics coordinators/assistants do not see the dossier audit tab. Manual
+  // compliance entry is a separate, explicitly scoped capability.
   const canViewAuditLog = role !== "logistics_coordinator" && role !== "logistics_assistant";
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -210,6 +220,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [editTickets, setEditTickets] = useState<Ticket[]>([]);
   const [editError, setEditError] = useState<string | null>(null);
   const [showReminderConfirm, setShowReminderConfirm] = useState(false);
+  const [showManualCompliance, setShowManualCompliance] = useState(false);
+  const [manualComplianceType, setManualComplianceType] = useState("");
+  const [manualComplianceExpiry, setManualComplianceExpiry] = useState("");
+  const [manualComplianceTicketNumber, setManualComplianceTicketNumber] = useState("");
+  const [manualComplianceError, setManualComplianceError] = useState<string | null>(null);
+  const [savingManualCompliance, setSavingManualCompliance] = useState(false);
 
   const [activeDossierTab, setActiveDossierTab] = useState<"general" | "assignments" | "audit_log">(
     "general",
@@ -657,6 +673,65 @@ export const RosterView: React.FC<RosterViewProps> = ({
       // Roll back the optimistic update
       setWorkers((prev) => prev.map((w) => (w.id === workerId ? worker : w)));
     }
+  };
+
+  const handleManualComplianceSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!canManageCompliance || !selectedWorkerDetails || savingManualCompliance) return;
+
+    const certificateType = manualComplianceType.trim();
+    if (!certificateType) {
+      setManualComplianceError("Enter a compliance type.");
+      toast.error("Enter a compliance type");
+      return;
+    }
+    if (!manualComplianceExpiry) {
+      setManualComplianceError("Select an expiry date.");
+      toast.error("Select an expiry date");
+      return;
+    }
+
+    setManualComplianceError(null);
+    setSavingManualCompliance(true);
+    try {
+      const { data, error } = await supabase.rpc("add_manual_staff_compliance", {
+        p_staff_id: selectedWorkerDetails.id,
+        p_certificate_type: certificateType,
+        p_expiry_date: manualComplianceExpiry,
+        p_ticket_number: manualComplianceTicketNumber.trim() || null,
+      });
+
+      if (error) throw error;
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error("Compliance was not returned by the server");
+      }
+
+      const addedTicket = data as unknown as Ticket;
+      setWorkers((prev) =>
+        prev.map((worker) =>
+          worker.id === selectedWorkerDetails.id
+            ? { ...worker, tickets: [...worker.tickets, addedTicket] }
+            : worker,
+        ),
+      );
+      closeManualCompliance();
+      fetchLogsAndRequests();
+      toast.success(`${certificateType} added to ${selectedWorkerDetails.name}`);
+    } catch (error) {
+      const { message } = handleError(error, { message: "Unable to add compliance" });
+      setManualComplianceError(message);
+      toast.error("Failed to add compliance", { description: message });
+    } finally {
+      setSavingManualCompliance(false);
+    }
+  };
+
+  const closeManualCompliance = () => {
+    setShowManualCompliance(false);
+    setManualComplianceType("");
+    setManualComplianceExpiry("");
+    setManualComplianceTicketNumber("");
+    setManualComplianceError(null);
   };
 
   const handleSendReminder = () => {
@@ -1345,7 +1420,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     return (
       <div className="space-y-4 animate-in fade-in duration-200">
         {/* Tab Buttons */}
-        <div className="flex border-b border-border pb-0 gap-6 mb-4">
+        <div className="flex flex-wrap items-center border-b border-border pb-0 gap-x-6 gap-y-2 mb-4">
           <button
             type="button"
             onClick={() => setActiveDossierTab("general")}
@@ -1391,6 +1466,22 @@ export const RosterView: React.FC<RosterViewProps> = ({
             <BadgeCheck className="h-3.5 w-3.5" />
             Check certificate
           </button>
+          {canManageCompliance && (
+            <button
+              type="button"
+              onClick={() => {
+                setManualComplianceType("");
+                setManualComplianceExpiry("");
+                setManualComplianceTicketNumber("");
+                setManualComplianceError(null);
+                setShowManualCompliance(true);
+              }}
+              className="inline-flex items-center gap-1.5 pb-3 text-[10px] font-black uppercase tracking-wider text-primary hover:text-foreground"
+            >
+              <FilePlus className="h-3.5 w-3.5" />
+              Add compliance
+            </button>
+          )}
         </div>
 
         {/* Tab 1: Compliance */}
@@ -1467,6 +1558,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             {statusText}
                           </span>
                         )}
+                        {ticket.manual && (
+                          <span className="rounded-md border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-primary">
+                            Manual entry
+                          </span>
+                        )}
                         {!isExpired && (
                           <span className="text-[10px] font-medium text-muted-foreground">
                             Expires: {formattedDate}
@@ -1499,17 +1595,23 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         </div>
                       ) : (
                         <div className="flex gap-2 w-full sm:w-auto">
-                          <button
-                            type="button"
-                            onClick={() =>
-                              ticket.documentUrl
-                                ? handleViewDocument(ticket.documentUrl, ticket)
-                                : toast("No document attached")
-                            }
-                            className="w-full sm:w-auto px-3 py-1 border border-border hover:bg-secondary text-foreground rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
-                          >
-                            View File
-                          </button>
+                          {ticket.manual ? (
+                            <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                              No file
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                ticket.documentUrl
+                                  ? handleViewDocument(ticket.documentUrl, ticket)
+                                  : toast("No document attached")
+                              }
+                              className="w-full sm:w-auto px-3 py-1 border border-border hover:bg-secondary text-foreground rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer text-center"
+                            >
+                              View File
+                            </button>
+                          )}
                           {isPending && canWrite && (
                             <>
                               <button
@@ -1784,9 +1886,14 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         }
                       } else {
                         const action = event.action;
-                        if (action === "APPROVE_DOCUMENT" || action === "SUBMIT_DOCUMENTS") {
+                        if (
+                          action === "APPROVE_DOCUMENT" ||
+                          action === "SUBMIT_DOCUMENTS" ||
+                          action === "MANUAL_COMPLIANCE_ADDED"
+                        ) {
                           bulletColor = "bg-success";
-                          LogIcon = CheckCircle2;
+                          LogIcon =
+                            action === "MANUAL_COMPLIANCE_ADDED" ? BadgeCheck : CheckCircle2;
                           iconColorClass = "text-success";
                         } else if (action === "REJECT_DOCUMENT") {
                           bulletColor = "bg-destructive";
@@ -1823,7 +1930,11 @@ export const RosterView: React.FC<RosterViewProps> = ({
                             ? computeDiff(event.details.old, event.details.new)
                             : [];
                         }
-                        if (action === "APPROVE_DOCUMENT" || action === "SUBMIT_DOCUMENTS") {
+                        if (
+                          action === "APPROVE_DOCUMENT" ||
+                          action === "SUBMIT_DOCUMENTS" ||
+                          action === "MANUAL_COMPLIANCE_ADDED"
+                        ) {
                           badgeColor = "bg-success/10 border-success/20 text-success";
                         } else if (action === "REJECT_DOCUMENT" || action === "REMOVE_STAFF") {
                           badgeColor = "bg-destructive/10 border-destructive/20 text-destructive";
@@ -1840,6 +1951,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           badgeColor = "bg-primary/5 border-primary/20 text-primary";
                         }
                         summaryText = `${getEventLabel(action)} · ${getActorName(event.actor)}`;
+                        if (action === "MANUAL_COMPLIANCE_ADDED") {
+                          summaryText = `${getEventLabel(action)}: ${event.details?.certificate_type || "certificate"} · ${getActorName(event.actor)}`;
+                        }
                       }
 
                       // Single-line badge + summary shown in the header row
@@ -1963,6 +2077,132 @@ export const RosterView: React.FC<RosterViewProps> = ({
             onClose={() => setShowReminderConfirm(false)}
             worker={selectedWorkerDetails}
           />
+        )}
+
+        {selectedWorkerDetails && canManageCompliance && (
+          <Dialog
+            open={showManualCompliance}
+            onOpenChange={(open) => {
+              if (!open) closeManualCompliance();
+            }}
+          >
+            <DialogContent className="overflow-hidden border-border bg-card p-0 text-card-foreground [&>button]:hidden">
+              <form onSubmit={handleManualComplianceSubmit} className="space-y-5 p-5 sm:p-6">
+                <div className="flex items-start justify-between gap-4 border-b border-border pb-4">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-primary">
+                      {selectedWorkerDetails.name}
+                    </p>
+                    <DialogTitle className="mt-1 text-lg font-black">
+                      Add compliance manually
+                    </DialogTitle>
+                    <DialogDescription className="mt-1 text-xs text-muted-foreground">
+                      Use this when the evidence was checked outside the upload flow. The entry will
+                      be recorded as an internal, verified compliance record.
+                    </DialogDescription>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={closeManualCompliance}
+                    aria-label="Close manual compliance form"
+                    className="rounded-lg p-2 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  <label
+                    className="block text-xs font-bold text-muted-foreground"
+                    htmlFor="manual-compliance-type"
+                  >
+                    Compliance type
+                    <input
+                      id="manual-compliance-type"
+                      required
+                      autoFocus
+                      aria-invalid={!!manualComplianceError}
+                      aria-describedby={
+                        manualComplianceError ? "manual-compliance-error" : undefined
+                      }
+                      list="staff-compliance-types"
+                      value={manualComplianceType}
+                      onChange={(event) => setManualComplianceType(event.target.value)}
+                      placeholder="e.g. CSCS Labourer Card"
+                      className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-3 text-sm text-foreground"
+                    />
+                    <datalist id="staff-compliance-types">
+                      {ON_SITE_CERTIFICATIONS.map((certificate) => (
+                        <option key={certificate} value={certificate} />
+                      ))}
+                    </datalist>
+                  </label>
+                  <label
+                    className="block text-xs font-bold text-muted-foreground"
+                    htmlFor="manual-compliance-expiry"
+                  >
+                    Expiry date
+                    <input
+                      id="manual-compliance-expiry"
+                      required
+                      type="date"
+                      aria-invalid={!!manualComplianceError}
+                      aria-describedby={
+                        manualComplianceError ? "manual-compliance-error" : undefined
+                      }
+                      value={manualComplianceExpiry}
+                      onChange={(event) => setManualComplianceExpiry(event.target.value)}
+                      className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-3 text-sm text-foreground"
+                    />
+                  </label>
+                  <label
+                    className="block text-xs font-bold text-muted-foreground"
+                    htmlFor="manual-compliance-number"
+                  >
+                    Card or reference number <span className="font-normal">(optional)</span>
+                    <input
+                      id="manual-compliance-number"
+                      aria-invalid={!!manualComplianceError}
+                      aria-describedby={
+                        manualComplianceError ? "manual-compliance-error" : undefined
+                      }
+                      value={manualComplianceTicketNumber}
+                      onChange={(event) => setManualComplianceTicketNumber(event.target.value)}
+                      placeholder="Optional reference"
+                      className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-3 text-sm text-foreground"
+                    />
+                  </label>
+                </div>
+
+                {manualComplianceError && (
+                  <p
+                    id="manual-compliance-error"
+                    className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive"
+                    role="alert"
+                  >
+                    {manualComplianceError}
+                  </p>
+                )}
+
+                <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
+                  <button
+                    type="button"
+                    onClick={closeManualCompliance}
+                    className="min-h-11 rounded-lg border border-border px-4 py-3 text-xs font-black uppercase tracking-widest text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingManualCompliance}
+                    className="min-h-11 rounded-lg bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground disabled:opacity-50"
+                  >
+                    {savingManualCompliance ? "Saving..." : "Add compliance"}
+                  </button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
         )}
 
         {/* Archive Confirmation Modal */}

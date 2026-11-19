@@ -634,8 +634,10 @@ export type Database = {
           postcode: string | null;
           schedule_value: number;
           site_name: string;
+          start_date: string | null;
           status: string;
           tenant_id: string;
+          end_date: string | null;
           updated_at: string;
         };
         Insert: {
@@ -649,8 +651,10 @@ export type Database = {
           postcode?: string | null;
           schedule_value?: number;
           site_name: string;
+          start_date?: string | null;
           status?: string;
           tenant_id: string;
+          end_date?: string | null;
           updated_at?: string;
         };
         Update: {
@@ -664,8 +668,10 @@ export type Database = {
           postcode?: string | null;
           schedule_value?: number;
           site_name?: string;
+          start_date?: string | null;
           status?: string;
           tenant_id?: string;
+          end_date?: string | null;
           updated_at?: string;
         };
         Relationships: [
@@ -1105,6 +1111,15 @@ export type Database = {
     };
     Functions: {
       admin_delete_user: { Args: { target_id: string }; Returns: undefined };
+      add_manual_staff_compliance: {
+        Args: {
+          p_certificate_type: string;
+          p_expiry_date: string;
+          p_staff_id: string;
+          p_ticket_number?: string | null;
+        };
+        Returns: Json;
+      };
       check_email_registered: { Args: { _email: string }; Returns: boolean };
       check_expired_tickets: { Args: never; Returns: undefined };
       complete_job_document_request: {

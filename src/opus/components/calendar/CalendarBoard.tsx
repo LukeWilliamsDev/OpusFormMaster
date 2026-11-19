@@ -5,7 +5,8 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Calendar as CalendarIcon,
+  CalendarPlus,
+  X,
 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { Job, Worker, ScheduledShift } from "../../types/erp";
@@ -13,6 +14,7 @@ import {
   addWeeks,
   getMonday,
   getWeekDays,
+  isValidISODate,
   parseLocalISODate,
   toLocalISODate,
 } from "../../utils/week";
@@ -38,7 +40,18 @@ interface CalendarBoardProps {
   date: string;
   onChangeGroup: (group: CalendarGroup) => void;
   onChangeDate: (date: string) => void;
+  onSaveSiteSchedule: (
+    jobId: string,
+    startDate: string | undefined,
+    endDate: string | undefined,
+  ) => Promise<{ error: string | null }>;
   canEdit?: boolean;
+}
+
+interface SiteScheduleForm {
+  jobId: string;
+  startDate: string;
+  endDate: string;
 }
 
 export const CalendarBoard: React.FC<CalendarBoardProps> = ({
@@ -50,11 +63,16 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   date,
   onChangeGroup,
   onChangeDate,
+  onSaveSiteSchedule,
   canEdit = true,
 }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [assignTarget, setAssignTarget] = useState<AssignTarget | null>(null);
+  const [siteScheduleForm, setSiteScheduleForm] = useState<SiteScheduleForm | null>(null);
+  const [siteScheduleError, setSiteScheduleError] = useState<string | null>(null);
+  const [savingSiteSchedule, setSavingSiteSchedule] = useState(false);
+  const activeJobs = useMemo(() => jobs.filter((job) => job.status !== "completed"), [jobs]);
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
@@ -79,6 +97,55 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
 
   const handleNavigateWeek = (deltaWeeks: number) => {
     onChangeDate(addWeeks(date, deltaWeeks));
+  };
+
+  const openSiteScheduleForm = () => {
+    const job = activeJobs[0];
+    if (!job) return;
+    setSiteScheduleForm({
+      jobId: job.id,
+      startDate: job.startDate ?? "",
+      endDate: job.endDate ?? "",
+    });
+    setSiteScheduleError(null);
+  };
+
+  const handleSiteScheduleJobChange = (jobId: string) => {
+    const job = activeJobs.find((candidate) => candidate.id === jobId);
+    if (!job) return;
+    setSiteScheduleForm({
+      jobId,
+      startDate: job.startDate ?? "",
+      endDate: job.endDate ?? "",
+    });
+    setSiteScheduleError(null);
+  };
+
+  const saveSiteSchedule = async () => {
+    if (!siteScheduleForm) return;
+    const { jobId, startDate, endDate } = siteScheduleForm;
+    if ((startDate && !endDate) || (!startDate && endDate)) {
+      setSiteScheduleError("Set both dates, or clear both dates.");
+      return;
+    }
+    if ((startDate && !isValidISODate(startDate)) || (endDate && !isValidISODate(endDate))) {
+      setSiteScheduleError("Enter valid calendar dates.");
+      return;
+    }
+    if (startDate && endDate && endDate < startDate) {
+      setSiteScheduleError("The end date must be on or after the start date.");
+      return;
+    }
+
+    setSavingSiteSchedule(true);
+    const { error } = await onSaveSiteSchedule(jobId, startDate || undefined, endDate || undefined);
+    setSavingSiteSchedule(false);
+    if (error) {
+      setSiteScheduleError(error);
+      return;
+    }
+    setSiteScheduleForm(null);
+    setSiteScheduleError(null);
   };
 
   // --- Site Office Design Constants ---
@@ -129,8 +196,99 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
               className={`w-full ${SITE_CARD} pl-9 pr-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-schedule-action transition-colors`}
             />
           </div>
+          {canEdit && (
+            <button
+              type="button"
+              onClick={openSiteScheduleForm}
+              disabled={activeJobs.length === 0}
+              className="inline-flex items-center justify-center gap-1.5 rounded-lg border-2 border-border bg-card px-3 py-2 text-[10px] font-black uppercase tracking-wider text-foreground transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CalendarPlus className="size-3.5" />
+              Set site dates
+            </button>
+          )}
         </div>
       </div>
+
+      {siteScheduleForm && (
+        <section
+          aria-labelledby="site-schedule-dates-title"
+          className="space-y-3 rounded-xl border-2 border-border bg-card p-4"
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <h2
+                id="site-schedule-dates-title"
+                className="text-xs font-black uppercase tracking-widest text-foreground"
+              >
+                Site schedule dates
+              </h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                A site appears here only within this inclusive date range.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSiteScheduleForm(null)}
+              className="rounded-md p-1 text-muted-foreground hover:bg-background hover:text-foreground"
+              aria-label="Close site schedule dates"
+            >
+              <X className="size-4" />
+            </button>
+          </div>
+          <div className="grid gap-3 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_minmax(0,1fr)_auto] md:items-end">
+            <label className="space-y-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              Site
+              <select
+                value={siteScheduleForm.jobId}
+                onChange={(event) => handleSiteScheduleJobChange(event.target.value)}
+                className="w-full rounded-lg border-2 border-border bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground"
+              >
+                {activeJobs.map((job) => (
+                  <option key={job.id} value={job.id}>
+                    {job.siteName} · {job.jobRef}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="space-y-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              Start date
+              <input
+                type="date"
+                value={siteScheduleForm.startDate}
+                onChange={(event) =>
+                  setSiteScheduleForm({ ...siteScheduleForm, startDate: event.target.value })
+                }
+                className="w-full rounded-lg border-2 border-border bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground"
+              />
+            </label>
+            <label className="space-y-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+              End date
+              <input
+                type="date"
+                value={siteScheduleForm.endDate}
+                onChange={(event) =>
+                  setSiteScheduleForm({ ...siteScheduleForm, endDate: event.target.value })
+                }
+                className="w-full rounded-lg border-2 border-border bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={saveSiteSchedule}
+              disabled={savingSiteSchedule}
+              className="rounded-lg bg-schedule-action px-4 py-2 text-[10px] font-black uppercase tracking-wider text-schedule-action-foreground hover:bg-schedule-action-hover disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {savingSiteSchedule ? "Saving…" : "Save dates"}
+            </button>
+          </div>
+          {siteScheduleError && (
+            <p className="text-xs font-semibold text-destructive" role="alert">
+              {siteScheduleError}
+            </p>
+          )}
+        </section>
+      )}
 
       <WeekHeader weekDays={weekDays} onNavigate={handleNavigateWeek} />
 

@@ -13,6 +13,7 @@ import { useShiftActions } from "../../hooks/useShiftActions";
 import { useCalendarEventActions } from "../../hooks/useCalendarEventActions";
 import { AssignSheet, AssignTarget } from "./AssignSheet";
 import { getJobColorClasses } from "./jobColors";
+import { formatJobPeriod, getJobsForDate, isJobScheduledOnDate } from "./jobPeriods";
 
 interface MonthCalendarProps {
   jobs: Job[];
@@ -139,18 +140,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
     return map;
   }, [calendarEvents]);
 
-  const jobsForDate = (date: string): Job[] => {
-    const dayShifts = shiftsByDate.get(date) ?? [];
-    const seen = new Set<string>();
-    const result: Job[] = [];
-    for (const shift of dayShifts) {
-      if (seen.has(shift.jobId)) continue;
-      seen.add(shift.jobId);
-      const job = jobsById.get(shift.jobId);
-      if (job) result.push(job);
-    }
-    return result;
-  };
+  const jobsForDate = (date: string): Job[] => getJobsForDate(jobs, date);
 
   const handleNavigateMonth = (delta: number) => {
     const next = new Date(anchor.getFullYear(), anchor.getMonth() + delta, 1);
@@ -159,6 +149,9 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
 
   const detailShifts = detailDate ? (shiftsByDate.get(detailDate) ?? []) : [];
   const detailEvents = detailDate ? (eventsByDate.get(detailDate) ?? []) : [];
+  const detailPeriodJobs = detailDate
+    ? jobs.filter((job) => isJobScheduledOnDate(job, detailDate))
+    : [];
   const activeJobs = jobs.filter((j) => j.status !== "completed");
 
   const closeDetail = () => {
@@ -302,7 +295,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                           type="button"
                           onClick={() => setDetailDate(cell.date)}
                           className={`truncate text-left text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${colors.bg} cursor-pointer`}
-                          title={job.siteName}
+                          title={`${job.siteName}${formatJobPeriod(job) ? ` · ${formatJobPeriod(job)}` : ""}`}
                         >
                           {job.siteName}
                         </button>
@@ -360,6 +353,34 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                 <X className="w-4 h-4" />
               </button>
             </div>
+
+            {detailPeriodJobs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  Job periods
+                </p>
+                <ul className="space-y-2">
+                  {detailPeriodJobs.map((job) => {
+                    const colors = getJobColorClasses(job.id);
+                    return (
+                      <li
+                        key={job.id}
+                        className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border ${SITE_BORDER}`}
+                      >
+                        <span className="text-xs font-semibold text-foreground truncate">
+                          {job.siteName}
+                        </span>
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${colors.bg}`}
+                        >
+                          {formatJobPeriod(job)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
 
             {detailShifts.length === 0 ? (
               <p className="text-xs text-muted-foreground">No shifts scheduled.</p>

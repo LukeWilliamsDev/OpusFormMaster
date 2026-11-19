@@ -6,6 +6,7 @@ import { formatDayHeading } from "../../utils/week";
 import { DaySchedule } from "../../hooks/useDaySchedule";
 import { getJobColorClasses } from "./jobColors";
 import { StaffCard } from "./StaffCard";
+import { getJobsForDate } from "./jobPeriods";
 
 const WeatherChip: React.FC<{ job: Job; date: string }> = ({ job, date }) => {
   const { forecast } = useJobForecast(job.postcode);
@@ -72,7 +73,67 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
   onRemoveShift,
   canEdit = true,
 }) => {
-  const activeJobs = jobs.filter((j) => j.status !== "completed");
+  const activeJobs = getJobsForDate(jobs, date).filter((j) => j.status !== "completed");
+  const scheduledCrewCount = schedule.deployedCount;
+  const shiftOnlyJobs = jobs.filter(
+    (job) =>
+      job.status !== "completed" &&
+      !activeJobs.some((activeJob) => activeJob.id === job.id) &&
+      (schedule.byJob.get(job.id)?.length ?? 0) > 0,
+  );
+
+  const renderJobCard = (job: Job, shiftOnly = false) => {
+    const crew = schedule.byJob.get(job.id) ?? [];
+    const colors = getJobColorClasses(job.id);
+
+    return (
+      <div key={job.id} className={SITE_JOB_CARD}>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 ${colors.bullet}`} />
+            <h3 className={`text-[11px] sm:text-sm font-bold truncate ${colors.text}`}>
+              {job.siteName}
+            </h3>
+            {shiftOnly && (
+              <span className="shrink-0 rounded-md border border-warning/30 bg-warning/10 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-warning">
+                Shift only
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <span className="text-[9px] sm:text-[10px] font-black font-mono uppercase tracking-wider text-muted-foreground">
+              {job.jobRef.split("-").slice(0, 2).join("-")}
+            </span>
+            <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-black text-muted-foreground">
+              <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {crew.length}
+            </span>
+          </div>
+        </div>
+
+        <WeatherChip job={job} date={date} />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {crew.map(({ worker, shift }) => (
+            <StaffCard
+              key={worker.id}
+              worker={worker}
+              job={job}
+              shift={shift}
+              onRemove={canEdit ? onRemoveShift : undefined}
+              compact
+            />
+          ))}
+        </div>
+
+        {canEdit && onAddStaff && (
+          <button type="button" onClick={() => onAddStaff(job)} className={SITE_ADD_STAFF}>
+            <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            ADD OPERATIVES
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className={`space-y-4 ${SITE_STONE_BG} p-4`}>
@@ -80,11 +141,11 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
         <span className={`font-bold ${SITE_HEADER_TEXT}`}>{formatDayHeading(date)}</span>
         <span className={SITE_HEADER_TEXT}>·</span>
         <span className={`font-black ${SITE_DEPLOYED_TEXT}`}>
-          {schedule.deployedCount} operatives deployed
+          {scheduledCrewCount} operatives deployed
         </span>
       </div>
 
-      {activeJobs.length === 0 ? (
+      {activeJobs.length === 0 && shiftOnlyJobs.length === 0 ? (
         <div className="flex flex-col items-center gap-2 py-10 text-center border-2 border-dashed border-border rounded-xl">
           <Users className="w-6 h-6 text-muted-foreground" />
           <span className={`text-xs font-bold uppercase tracking-wider ${SITE_EMPTY_TEXT}`}>
@@ -92,57 +153,23 @@ export const ProjectDayList: React.FC<ProjectDayListProps> = ({
           </span>
         </div>
       ) : (
-        activeJobs.map((job) => {
-          const crew = schedule.byJob.get(job.id) ?? [];
-          const colors = getJobColorClasses(job.id);
-
-          return (
-            <div key={job.id} className={SITE_JOB_CARD}>
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full shrink-0 ${colors.bullet}`}
-                  />
-                  <h3 className={`text-[11px] sm:text-sm font-bold truncate ${colors.text}`}>
-                    {job.siteName}
-                  </h3>
-                </div>
-                <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-                  <span className="text-[9px] sm:text-[10px] font-black font-mono uppercase tracking-wider text-muted-foreground">
-                    {job.jobRef.split("-").slice(0, 2).join("-")}
-                  </span>
-                  <span className="flex items-center gap-1 text-[10px] sm:text-[11px] font-black text-muted-foreground">
-                    <Users className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> {crew.length}
-                  </span>
-                </div>
+        <>
+          {activeJobs.map((job) => renderJobCard(job))}
+          {shiftOnlyJobs.length > 0 && (
+            <section className="space-y-3 border-t-2 border-dashed border-border pt-4">
+              <div>
+                <h3 className="text-[10px] font-black uppercase tracking-widest text-warning">
+                  Shift assignments without site dates
+                </h3>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  These assignments remain visible here until the site receives an explicit date
+                  range.
+                </p>
               </div>
-
-              <WeatherChip job={job} date={date} />
-
-              {crew.length > 0 && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {crew.map(({ worker, shift }) => (
-                    <StaffCard
-                      key={worker.id}
-                      worker={worker}
-                      job={job}
-                      shift={shift}
-                      onRemove={canEdit ? onRemoveShift : undefined}
-                      compact
-                    />
-                  ))}
-                </div>
-              )}
-
-              {canEdit && onAddStaff && (
-                <button type="button" onClick={() => onAddStaff(job)} className={SITE_ADD_STAFF}>
-                  <Plus className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  ADD OPERATIVES
-                </button>
-              )}
-            </div>
-          );
-        })
+              {shiftOnlyJobs.map((job) => renderJobCard(job, true))}
+            </section>
+          )}
+        </>
       )}
     </div>
   );

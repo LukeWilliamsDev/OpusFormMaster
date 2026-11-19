@@ -150,6 +150,10 @@ export const MANAGEMENT_ROLES: AppRole[] = [
   "logistics_coordinator",
   "logistics_assistant",
 ];
+// Manual compliance entries follow the Staff and Certificate Checker access
+// boundary. The database RPC applies the same allowlist and does not grant
+// these roles general staff-edit permissions.
+export const STAFF_COMPLIANCE_ROLES: AppRole[] = [...MANAGEMENT_ROLES];
 // Full ops write access — mirrors private.can_write_ops() in the DB.
 export const MANAGEMENT_WRITE_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
 // Document sending is an operational management action, not a field-user action.
@@ -219,6 +223,8 @@ export const jobToRow = (j: Job, tenantId?: string) =>
     main_contractor: j.mainContractor ?? null,
     postcode: j.postcode ?? null,
     email: j.email ?? null,
+    start_date: j.startDate ?? null,
+    end_date: j.endDate ?? null,
     current_pours: j.currentPours ?? 0,
     contract_max_pours: j.contractMaxPours ?? 0,
     status: j.status,
@@ -233,6 +239,8 @@ type JobRow = Pick<
   | "main_contractor"
   | "postcode"
   | "email"
+  | "start_date"
+  | "end_date"
   | "current_pours"
   | "contract_max_pours"
   | "status"
@@ -241,7 +249,7 @@ type JobRow = Pick<
 >;
 
 const JOB_SELECT =
-  "id, job_ref, site_name, main_contractor, postcode, email, current_pours, contract_max_pours, status, schedule_value, updated_at";
+  "id, job_ref, site_name, main_contractor, postcode, email, start_date, end_date, current_pours, contract_max_pours, status, schedule_value, updated_at";
 
 const rowToJob = (r: JobRow): Job => ({
   id: r.id,
@@ -250,6 +258,8 @@ const rowToJob = (r: JobRow): Job => ({
   mainContractor: r.main_contractor ?? "",
   postcode: r.postcode ?? "",
   email: r.email ?? undefined,
+  startDate: r.start_date ?? undefined,
+  endDate: r.end_date ?? undefined,
   currentPours: r.current_pours ?? 0,
   contractMaxPours: r.contract_max_pours ?? 0,
   status: r.status as Job["status"],
@@ -318,6 +328,11 @@ interface PortalContextType {
   setCalendarEvents: React.Dispatch<React.SetStateAction<CalendarEvent[]>>;
   jobs: Job[];
   setJobs: React.Dispatch<React.SetStateAction<Job[]>>;
+  updateJobDates: (
+    jobId: string,
+    startDate: string | undefined,
+    endDate: string | undefined,
+  ) => Promise<{ error: string | null }>;
   handleReloadDemoData: () => void;
   isAuthenticated: boolean;
   authLoading: boolean;
@@ -1318,6 +1333,37 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return { error: error?.message ?? null };
   };
 
+  const updateJobDates = async (
+    jobId: string,
+    startDate: string | undefined,
+    endDate: string | undefined,
+  ): Promise<{ error: string | null }> => {
+    if (!user || !profile?.tenant_id || !role || !MANAGEMENT_WRITE_ROLES.includes(role)) {
+      return { error: "You do not have permission to update job dates." };
+    }
+
+    const { data, error } = await supabase
+      .from("jobs")
+      .update({ start_date: startDate ?? null, end_date: endDate ?? null })
+      .eq("id", jobId)
+      .eq("tenant_id", profile.tenant_id)
+      .select(JOB_SELECT)
+      .single();
+
+    if (error || !data) return { error: error?.message ?? "Job date update failed." };
+
+    const updatedJob = rowToJob(data as unknown as JobRow);
+    setJobs((previousJobs) => {
+      const nextJobs = previousJobs.map((job) => (job.id === jobId ? updatedJob : job));
+      prevJobIdsRef.current = new Set(nextJobs.map((job) => job.id));
+      lastSavedJobsRef.current = stableStringify(
+        nextJobs.map((job) => jobToRow(job, profile.tenant_id)),
+      );
+      return nextJobs;
+    });
+    return { error: null };
+  };
+
   return (
     <PortalContext.Provider
       value={{
@@ -1329,6 +1375,7 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setCalendarEvents,
         jobs,
         setJobs,
+        updateJobDates,
         handleReloadDemoData,
         isAuthenticated: !!session,
         authLoading,

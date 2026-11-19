@@ -7,7 +7,7 @@
 **Source of truth:** User request to make manual staff compliance live and correct the missing live job schedule date-range behavior
 **Evidence base:** `origin/dev` at task start
 **Evidence head:** working tree after implementation
-**Evidence fingerprint:** `ad6e50671dbee2e9cbd3a4e45c827f0d6ff5fb65377a07f68d54d0928754181c`
+**Evidence fingerprint:** `981cd2c0ee4648582a8f339d6a0eea7eaee6ce5371e98ca3cedb79feefbde6e9`
 
 ## Intent
 
@@ -32,32 +32,23 @@ the database ledger.
   and date-range-driven Sites calendar rendering.
 - Focused job-period regression tests and production release evidence.
 - Focused contract and deterministic validation evidence.
+- Remediation of the production dependency audit gate and bounded edge-asset
+  propagation checks required by the guarded deploy workflow.
 
 ### Out of scope
 
 - Changes to third-party staff uploads, document requests, or certificate checker results.
 - Broadening general staff profile, roster, archive, or deletion permissions.
-- Automatic evidence verification, external checker calls, or production changes.
+- Automatic evidence verification, external checker calls, or unrelated production changes.
 - Changing shift assignment persistence or the underlying Staff/Schedule RLS model.
 
 ### Changed files
 
 - `docs/quality/changes/2026-11-19-manual-staff-compliance.md`
-- `src/integrations/supabase/types.ts`
-- `src/opus/components/JobDetails.tsx`
-- `src/opus/components/RosterView.tsx`
-- `src/opus/components/calendar/CalendarBoard.tsx`
-- `src/opus/components/calendar/MonthCalendar.tsx`
-- `src/opus/components/calendar/ProjectDayList.tsx`
-- `src/opus/components/calendar/WeekGridProject.tsx`
-- `src/opus/components/calendar/__tests__/jobPeriods.test.ts`
-- `src/opus/components/calendar/jobPeriods.ts`
-- `src/opus/context/PortalContext.tsx`
-- `src/opus/pages/LaborRoster.tsx`
-- `src/opus/types/erp.ts`
-- `src/opus/utils/auditDiff.ts`
-- `supabase/migrations/20261116130700_add_job_date_period.sql`
-- `supabase/migrations/20261119010000_add_manual_staff_compliance.sql`
+- `package.json`
+- `package-lock.json`
+- `scripts/production-watchdog.mjs`
+- `src/server.ts`
 
 ## Acceptance criteria
 
@@ -67,7 +58,7 @@ the database ledger.
 - [x] `AC-4`: Direct RPC calls require the same approved role allowlist, active profile, current tenant, and an existing tenant-scoped staff record; they cannot grant general staff mutation access.
 - [x] `AC-5`: The manual entry is recorded as an auditable compliance change and does not alter existing certificates or documents.
 - [x] `AC-6`: Loading, validation, error, success, keyboard, and narrow-screen states remain usable.
-- [x] `AC-7`: Lint, formatting, typecheck, tests, production build, bundle budget, and the repository quality gate pass, or each exception is recorded exactly.
+- [x] `AC-7`: Lint, formatting, typecheck, tests, production build, bundle budget, production dependency audit, and the repository quality gate pass, or each exception is recorded exactly.
 - [x] `AC-8`: A fresh read-only critic reviews the actual diff and records no unresolved blocking or major findings.
 - [x] `AC-9`: Validated job start/end dates persist, appear on every inclusive Sites date, exclude shift-only Sites entries, and remain available in day-detail shift assignments.
 
@@ -102,11 +93,12 @@ the database ledger.
 | Check                          | Exact command or evidence                                                                    | Result                                                                                    |
 | ------------------------------ | -------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
 | Contract                       | `npm run quality:contract`                                                                   | PASS — final contract validation                                                          |
-| Deterministic gate             | `set -a; . ../quote-creation-flow/.env.local; set +a; npm run quality:gate -- --staged-only` | PASS — 81 existing lint warnings, no errors                                               |
+| Deterministic gate             | `set -a; . ../quote-creation-flow/.env.local; set +a; npm run quality:gate -- --staged-only` | PASS — 81 existing lint warnings, no errors; dependency audit passes                      |
 | Typecheck                      | `npm run typecheck`                                                                          | PASS — combined changes                                                                   |
 | Tests                          | `npm test`                                                                                   | PASS — 145 passed, 1 skipped                                                              |
 | Focused job-period tests       | `npx vitest run src/opus/components/calendar/__tests__/jobPeriods.test.ts`                   | PASS — 4 tests                                                                            |
 | Lint                           | `npm run lint`                                                                               | PASS — 0 errors; existing warnings only                                                   |
+| Production dependency audit    | `npm audit --omit=dev --audit-level=high`                                                    | PASS — 0 vulnerabilities                                                                  |
 | Local migration replay         | `npx supabase db reset --local --no-seed`                                                    | PASS — both migrations applied                                                            |
 | Local schema lint              | `npx supabase db lint --local`                                                               | PASS — no schema errors                                                                   |
 | RPC execute grants             | Read-only local catalog query                                                                | PASS — anon denied, authenticated granted                                                 |
@@ -116,19 +108,20 @@ the database ledger.
 | Focused source/database review | Fresh independent read-only critic of the actual diff                                        | PASS — no blocking or major findings                                                      |
 | Hosted migration               | Supabase migration ledger and read-only schema/RPC inspection                                | PASS — migration applied; native date columns; anon execute denied, authenticated granted |
 | Live/browser verification      | Authenticated multi-role acceptance                                                          | NOT RUN — browser/human acceptance gate                                                   |
+| First deploy attempt           | GitHub runs `44507567636` / `44507567953`                                                    | BLOCKED — CI audit failed; deploy rolled back after stale edge CSS reference              |
 
 ## Critic review
 
-- Critic context/identity: Fresh independent read-only critic task `task_112` reviewing the exact final combined patch.
-- Review input: final combined diff, this contract, relevant role/RLS/date-range source, migration replay/lint output, and validation output.
+- Critic context/identity: Fresh independent read-only critic task `task_113` reviewing the exact final remediation patch.
+- Review input: complete combined diff from baseline `1ac319b`, this contract, relevant role/RLS/date-range source, migration replay/lint output, dependency audit output, and validation output.
 - Verdict: `PASS`
-- Findings: No blocking or major findings remain. The review confirmed explicit tenant-scoped job-date persistence, range-only Sites rendering with preserved shift-only assignment details, correct deployed counts, accessible compliance errors, and the scoped compliance RPC/audit path.
+- Findings: No blocking or major findings remain. The review confirmed the original compliance/date-range behavior and the dependency, HTML cache, and bounded asset-propagation deployment repairs. Minor residuals are limited to focused test coverage for the watchdog/cache headers and expected continued CI coverage for the upgrades.
 - Unresolved blocking findings: `none`
-- Repair iterations: 3
+- Repair iterations: 4
 
 ## Release decision
 
-- Automated gate: PASS — staged final `npm run quality:gate -- --staged-only`; 81 existing lint warnings, no errors
+- Automated gate: PASS — staged final `npm run quality:gate -- --staged-only`; 81 existing lint warnings, no errors; `npm audit --omit=dev --audit-level=high` reports 0 vulnerabilities
 - Release status: READY_FOR_HUMAN_APPROVAL
 - Human approval: PENDING
 - Residual uncertainty: Authenticated browser acceptance, live role/RLS behavior for real users, and Worker provenance remain unverified; hosted migration and read-only schema/grant checks are complete.

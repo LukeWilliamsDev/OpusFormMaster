@@ -117,36 +117,42 @@ async function checkPublicSurface() {
     throw new WatchdogFailure("supabase", "readyz did not report ready");
   }
 
-  try {
-    const response = await fetch(`${baseUrl}/`, { signal: AbortSignal.timeout(10_000) });
-    const html = await response.text();
-    if (!response.ok) throw new Error(`homepage returned HTTP ${response.status}`);
-    if (!html.includes("<html") || !html.includes("<script"))
-      throw new Error("homepage shell is incomplete");
-    const assets = [...html.matchAll(/(?:src|href)=["']([^"']+\.(?:js|css))["']/g)].map(
-      (match) => match[1],
-    );
-    for (const asset of assets) {
-      const assetResponse = await fetch(new URL(asset, `${baseUrl}/`), {
-        signal: AbortSignal.timeout(10_000),
-      });
-      const contentType = assetResponse.headers.get("content-type") || "";
-      const assetBody = await assetResponse.text();
-      if (!assetResponse.ok) throw new Error(`${asset} returned HTTP ${assetResponse.status}`);
-      if (asset.endsWith(".js") && !contentType.includes("javascript")) {
-        throw new Error(`${asset} returned ${contentType || "no content type"}, not JavaScript`);
+  let lastAssetError = new Error("homepage assets did not become available");
+  for (let attempt = 1; attempt <= 8; attempt += 1) {
+    try {
+      const response = await fetch(`${baseUrl}/`, { signal: AbortSignal.timeout(10_000) });
+      const html = await response.text();
+      if (!response.ok) throw new Error(`homepage returned HTTP ${response.status}`);
+      if (!html.includes("<html") || !html.includes("<script"))
+        throw new Error("homepage shell is incomplete");
+      const assets = [...html.matchAll(/(?:src|href)=["']([^"']+\.(?:js|css))["']/g)].map(
+        (match) => match[1],
+      );
+      for (const asset of assets) {
+        const assetResponse = await fetch(new URL(asset, `${baseUrl}/`), {
+          signal: AbortSignal.timeout(10_000),
+        });
+        const contentType = assetResponse.headers.get("content-type") || "";
+        const assetBody = await assetResponse.text();
+        if (!assetResponse.ok) throw new Error(`${asset} returned HTTP ${assetResponse.status}`);
+        if (asset.endsWith(".js") && !contentType.includes("javascript")) {
+          throw new Error(`${asset} returned ${contentType || "no content type"}, not JavaScript`);
+        }
+        if (asset.endsWith(".css") && !contentType.includes("css")) {
+          throw new Error(`${asset} returned ${contentType || "no content type"}, not CSS`);
+        }
+        if (/^\s*<!doctype html|<html[\s>]/i.test(assetBody)) {
+          throw new Error(`${asset} returned the HTML fallback instead of its asset`);
+        }
       }
-      if (asset.endsWith(".css") && !contentType.includes("css")) {
-        throw new Error(`${asset} returned ${contentType || "no content type"}, not CSS`);
-      }
-      if (/^\s*<!doctype html|<html[\s>]/i.test(assetBody)) {
-        throw new Error(`${asset} returned the HTML fallback instead of its asset`);
-      }
+      lastAssetError = null;
+      break;
+    } catch (error) {
+      lastAssetError = error instanceof Error ? error : new Error(String(error));
+      if (attempt < 8) await wait(2_000);
     }
-  } catch (error) {
-    if (error instanceof WatchdogFailure) throw error;
-    throw new WatchdogFailure("frontend", error instanceof Error ? error.message : String(error));
   }
+  if (lastAssetError) throw new WatchdogFailure("frontend", lastAssetError.message);
   return health.buildSha;
 }
 

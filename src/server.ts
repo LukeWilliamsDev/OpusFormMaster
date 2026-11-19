@@ -115,6 +115,11 @@ function withSecurityHeaders(response: Response, request: Request): Response {
   const headers = new Headers(response.headers);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) headers.set(name, value);
 
+  // HTML must not be cached across Worker versions: immutable assets are
+  // content-hashed, so a cached shell from the previous release can otherwise
+  // reference assets that no longer exist in the active manifest.
+  if (!isStaticAssetRequest(request)) headers.set("Cache-Control", "no-store");
+
   if (new URL(request.url).protocol === "https:" && !isLocalRequest(request)) {
     headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   }

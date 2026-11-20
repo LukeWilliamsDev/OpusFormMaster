@@ -66,6 +66,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { TelegramLinkControl } from "./TelegramLinkControl";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { getManualComplianceFilename } from "../utils/complianceFilename";
 
 // Only these fields count as a real "profile change" worth surfacing a
 // generic "Staff Details Have Been Updated" entry + Revert button for.
@@ -740,7 +741,28 @@ export const RosterView: React.FC<RosterViewProps> = ({
     let uploadedPath: string | null = null;
     try {
       const extension = manualComplianceFile.name.split(".").pop()?.toLowerCase() || "bin";
-      uploadedPath = `manual/${selectedWorkerDetails.id}/${crypto.randomUUID()}.${extension}`;
+      const folder = `manual/${selectedWorkerDetails.id}`;
+      const baseFilename = getManualComplianceFilename(
+        selectedWorkerDetails.name,
+        certificateType,
+        extension,
+      );
+      const { data: existingFiles, error: listError } = await supabase.storage
+        .from("compliance-documents")
+        .list(folder, { search: baseFilename.split(".")[0], limit: 100 });
+      if (listError) throw listError;
+
+      const existingNames = new Set((existingFiles ?? []).map((file) => file.name));
+      const baseExtension = `.${extension}`;
+      const baseStem = baseFilename.slice(0, -baseExtension.length);
+      let filename = baseFilename;
+      let collisionNumber = 2;
+      while (existingNames.has(filename)) {
+        filename = `${baseStem}_${collisionNumber}${baseExtension}`;
+        collisionNumber += 1;
+      }
+
+      uploadedPath = `${folder}/${filename}`;
       const { error: uploadError } = await supabase.storage
         .from("compliance-documents")
         .upload(uploadedPath, manualComplianceFile, { cacheControl: "3600", upsert: false });
@@ -2273,7 +2295,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                   </label>
                   <label
                     htmlFor="manual-compliance-file"
-                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-primary/60 bg-primary/5 px-4 py-4 text-sm text-primary hover:bg-primary/10 focus-within:ring-2 focus-within:ring-primary/50"
+                    className={`flex items-center gap-3 rounded-xl border border-dashed border-primary/60 bg-primary/5 px-4 py-4 text-sm text-primary focus-within:ring-2 focus-within:ring-primary/50 ${manualComplianceType.trim() ? "cursor-pointer hover:bg-primary/10" : "cursor-not-allowed opacity-60"}`}
                   >
                     <FileUp className="h-5 w-5" />
                     <span>
@@ -2281,7 +2303,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         {manualComplianceFile?.name || "Choose compliance evidence"}
                       </strong>
                       <small className="text-xs text-muted-foreground">
-                        Required · PDF, JPG, JPEG, or PNG · maximum 10 MB
+                        {manualComplianceType.trim()
+                          ? `Required · PDF, JPG, JPEG, or PNG · maximum 10 MB · saved as ${getManualComplianceFilename(selectedWorkerDetails.name, manualComplianceType, manualComplianceFile?.name.split(".").pop() || "pdf")}`
+                          : "Choose a compliance type first to enable upload"}
                       </small>
                     </span>
                     <input
@@ -2293,6 +2317,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       aria-describedby={
                         manualComplianceError ? "manual-compliance-error" : undefined
                       }
+                      disabled={!manualComplianceType.trim()}
                       accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
                       className="sr-only"
                       onChange={(event) => {

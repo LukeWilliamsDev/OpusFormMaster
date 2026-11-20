@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Phone, ShieldAlert, CheckCircle2, Clock, FileText, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
-import { Worker } from "../types/erp";
+import { Ticket, Worker } from "../types/erp";
 import { getTicketStatus } from "../utils/workerValidation";
 import { supabase } from "../../integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -31,24 +31,69 @@ function initials(name: string): string {
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase();
 }
 
-async function viewTicketDocument(documentUrl: string) {
+async function logTicketDocumentView(staffId: string, ticket: Ticket) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { error } = await supabase.rpc("log_anonymous_audit", {
+    p_user_email: user?.email || "admin@opusform.co.uk",
+    p_action: "VIEW_DOCUMENT",
+    p_target_type: "staff",
+    p_target_id: staffId,
+    p_details: {
+      ticket_id: ticket.id,
+      ticket_type: ticket.type,
+      ticket_number: ticket.ticketNumber,
+    },
+  });
+  if (error) console.error("Failed to log document view:", error);
+}
+
+async function viewTicketDocument(documentUrl: string, staffId: string, ticket: Ticket) {
   const newTab = window.open("", "_blank");
-  if (documentUrl.includes("/compliance-documents/")) {
+  const isComplianceDocument =
+    documentUrl.startsWith("manual/") || documentUrl.includes("/compliance-documents/");
+  if (isComplianceDocument) {
     try {
-      const filePath = documentUrl.split("/compliance-documents/")[1];
+      const filePath = documentUrl.includes("/compliance-documents/")
+        ? documentUrl.split("/compliance-documents/")[1]
+        : documentUrl;
       const { data, error } = await supabase.storage
         .from("compliance-documents")
         .createSignedUrl(filePath, 60);
       if (error) throw error;
-      if (data?.signedUrl) {
-        if (newTab) newTab.location.href = data.signedUrl;
+      if (!data?.signedUrl) throw new Error("A signed evidence URL was not returned");
+      const opened = newTab
+        ? ((newTab.location.href = data.signedUrl), true)
+        : !!window.open(data.signedUrl, "_blank");
+      if (!opened) {
+        toast.error("Unable to open compliance evidence", {
+          description: "The browser blocked the document window.",
+        });
         return;
       }
+      await logTicketDocumentView(staffId, ticket);
+      return;
     } catch (err) {
       console.error("Failed to generate signed URL:", err);
+      if (newTab) newTab.close();
+      toast.error("Unable to open compliance evidence");
+      return;
     }
   }
-  if (newTab) newTab.location.href = documentUrl;
+  // Older uploaded records may still contain a public URL from the original
+  // worker-upload flow. Preserve that compatibility path; manual records never
+  // reach it because their bucket-relative path is signed above.
+  const opened = newTab
+    ? ((newTab.location.href = documentUrl), true)
+    : !!window.open(documentUrl, "_blank");
+  if (!opened) {
+    toast.error("Unable to open compliance evidence", {
+      description: "The browser blocked the document window.",
+    });
+    return;
+  }
+  await logTicketDocumentView(staffId, ticket);
 }
 
 export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({ groupedStaff }) => {
@@ -206,7 +251,7 @@ export const PersistentJobHeader: React.FC<PersistentJobHeaderProps> = ({ groupe
                           type="button"
                           onClick={() =>
                             ticket.documentUrl
-                              ? viewTicketDocument(ticket.documentUrl)
+                              ? viewTicketDocument(ticket.documentUrl, selectedWorker.id, ticket)
                               : toast("No document attached")
                           }
                           className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors shrink-0"

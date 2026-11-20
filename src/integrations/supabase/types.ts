@@ -1114,6 +1114,7 @@ export type Database = {
       add_manual_staff_compliance: {
         Args: {
           p_certificate_type: string;
+          p_document_url: string;
           p_expiry_date: string;
           p_staff_id: string;
           p_ticket_number?: string | null;

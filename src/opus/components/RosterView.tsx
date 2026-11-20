@@ -29,6 +29,7 @@ import {
   Eye,
   PencilLine,
   BadgeCheck,
+  FileUp,
 } from "lucide-react";
 import {
   Worker,
@@ -224,6 +225,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const [manualComplianceType, setManualComplianceType] = useState("");
   const [manualComplianceExpiry, setManualComplianceExpiry] = useState("");
   const [manualComplianceTicketNumber, setManualComplianceTicketNumber] = useState("");
+  const [manualComplianceFile, setManualComplianceFile] = useState<File | null>(null);
   const [manualComplianceError, setManualComplianceError] = useState<string | null>(null);
   const [savingManualCompliance, setSavingManualCompliance] = useState(false);
 
@@ -485,7 +487,8 @@ export const RosterView: React.FC<RosterViewProps> = ({
     // blocked by popup blockers since the async gap breaks the gesture link.
     const newTab = window.open("", "_blank");
 
-    if (selectedWorkerDetailsId) {
+    const logDocumentView = () => {
+      if (!selectedWorkerDetailsId) return;
       supabase.auth.getUser().then(({ data: { user } }) => {
         supabase
           .rpc("log_anonymous_audit", {
@@ -501,34 +504,47 @@ export const RosterView: React.FC<RosterViewProps> = ({
           })
           .then(() => fetchLogsAndRequests());
       });
-    }
+    };
 
-    if (documentUrl.includes("/compliance-documents/")) {
+    const isComplianceDocument =
+      documentUrl.startsWith("manual/") || documentUrl.includes("/compliance-documents/");
+    if (isComplianceDocument) {
       try {
-        const parts = documentUrl.split("/compliance-documents/");
-        const filePath = parts[1];
+        const filePath = documentUrl.includes("/compliance-documents/")
+          ? documentUrl.split("/compliance-documents/")[1]
+          : documentUrl;
 
         const { data, error } = await supabase.storage
           .from("compliance-documents")
           .createSignedUrl(filePath, 60);
 
         if (error) throw error;
-        if (data?.signedUrl) {
-          if (newTab) newTab.location.href = data.signedUrl;
-          else window.open(data.signedUrl, "_blank");
-          return;
-        }
+        if (!data?.signedUrl) throw new Error("A signed evidence URL was not returned");
+        const opened = newTab
+          ? ((newTab.location.href = data.signedUrl), true)
+          : !!window.open(data.signedUrl, "_blank");
+        if (!opened) throw new Error("The browser blocked the evidence window");
+        logDocumentView();
+        return;
       } catch (err) {
         console.error("Failed to generate signed URL:", err);
         const { message } = handleError(err, { message: "Failed to generate signed URL" });
-        if (newTab) newTab.location.href = documentUrl;
-        else window.open(documentUrl, "_blank");
+        if (newTab) newTab.close();
+        toast.error("Unable to open compliance evidence", { description: message });
         return;
       }
     }
 
-    if (newTab) newTab.location.href = documentUrl;
-    else window.open(documentUrl, "_blank");
+    const opened = newTab
+      ? ((newTab.location.href = documentUrl), true)
+      : !!window.open(documentUrl, "_blank");
+    if (!opened) {
+      toast.error("Unable to open compliance evidence", {
+        description: "The browser blocked the document window.",
+      });
+      return;
+    }
+    logDocumentView();
   };
 
   const executeRevertUpdate = async (oldDetails: Record<string, unknown>, workerId: string) => {
@@ -652,7 +668,29 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
       if (dbError) throw dbError;
 
-      await supabase.rpc("log_anonymous_audit", {
+      const manualEvidencePath =
+        ticket.manual && ticket.documentUrl?.startsWith(`manual/${workerId}/`)
+          ? ticket.documentUrl
+          : null;
+      if (manualEvidencePath) {
+        const { error: removeError } = await supabase.storage
+          .from("compliance-documents")
+          .remove([manualEvidencePath]);
+        if (removeError) {
+          const { error: rollbackError } = await supabase
+            .from("staff")
+            .update({ tickets: worker.tickets as unknown as Json[] })
+            .eq("id", workerId);
+          if (rollbackError) {
+            throw new Error(
+              `Evidence cleanup failed and the compliance rollback also failed: ${rollbackError.message}`,
+            );
+          }
+          throw new Error(`Evidence cleanup failed: ${removeError.message}`);
+        }
+      }
+
+      const { error: auditError } = await supabase.rpc("log_anonymous_audit", {
         p_user_email: "admin@opusform.co.uk",
         p_action: "REMOVE_DOCUMENT",
         p_target_type: "staff",
@@ -663,6 +701,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           ticket_number: ticket.ticketNumber,
         },
       });
+      if (auditError) console.error("Failed to log removed compliance record:", auditError);
 
       fetchLogsAndRequests();
       toast.success(`${ticket.type} removed from compliance record`);
@@ -690,15 +729,29 @@ export const RosterView: React.FC<RosterViewProps> = ({
       toast.error("Select an expiry date");
       return;
     }
+    if (!manualComplianceFile) {
+      setManualComplianceError("Upload the compliance evidence file.");
+      toast.error("Upload the compliance evidence file");
+      return;
+    }
 
     setManualComplianceError(null);
     setSavingManualCompliance(true);
+    let uploadedPath: string | null = null;
     try {
+      const extension = manualComplianceFile.name.split(".").pop()?.toLowerCase() || "bin";
+      uploadedPath = `manual/${selectedWorkerDetails.id}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage
+        .from("compliance-documents")
+        .upload(uploadedPath, manualComplianceFile, { cacheControl: "3600", upsert: false });
+      if (uploadError) throw uploadError;
+
       const { data, error } = await supabase.rpc("add_manual_staff_compliance", {
         p_staff_id: selectedWorkerDetails.id,
         p_certificate_type: certificateType,
         p_expiry_date: manualComplianceExpiry,
         p_ticket_number: manualComplianceTicketNumber.trim() || null,
+        p_document_url: uploadedPath,
       });
 
       if (error) throw error;
@@ -718,9 +771,54 @@ export const RosterView: React.FC<RosterViewProps> = ({
       fetchLogsAndRequests();
       toast.success(`${certificateType} added to ${selectedWorkerDetails.name}`);
     } catch (error) {
+      let cleanupError: string | null = null;
+      if (uploadedPath) {
+        let canSafelyRemoveEvidence = false;
+        try {
+          const { data: reconciledWorker, error: reconciliationError } = await supabase
+            .from("staff")
+            .select("tickets")
+            .eq("id", selectedWorkerDetails.id)
+            .maybeSingle();
+          if (reconciliationError) throw reconciliationError;
+
+          const committedTicket = Array.isArray(reconciledWorker?.tickets)
+            ? (reconciledWorker.tickets as unknown as Ticket[]).find(
+                (ticket) => ticket.documentUrl === uploadedPath,
+              )
+            : undefined;
+          if (committedTicket) {
+            setWorkers((prev) =>
+              prev.map((worker) =>
+                worker.id === selectedWorkerDetails.id
+                  ? { ...worker, tickets: [...worker.tickets, committedTicket] }
+                  : worker,
+              ),
+            );
+            closeManualCompliance();
+            fetchLogsAndRequests();
+            toast.success(`${certificateType} added to ${selectedWorkerDetails.name}`);
+            return;
+          }
+          canSafelyRemoveEvidence = true;
+        } catch (reconciliationError) {
+          cleanupError = `Unable to confirm the saved compliance record; evidence was retained. ${handleError(reconciliationError, { message: "Reconciliation failed" }).message}`;
+        }
+
+        if (canSafelyRemoveEvidence) {
+          const { error: removeError } = await supabase.storage
+            .from("compliance-documents")
+            .remove([uploadedPath]);
+          if (removeError) {
+            cleanupError = `Evidence cleanup also failed; contact support. ${removeError.message}`;
+            console.error("Failed to remove orphaned compliance evidence", removeError);
+          }
+        }
+      }
       const { message } = handleError(error, { message: "Unable to add compliance" });
-      setManualComplianceError(message);
-      toast.error("Failed to add compliance", { description: message });
+      const finalMessage = cleanupError ? `${message}. ${cleanupError}` : message;
+      setManualComplianceError(finalMessage);
+      toast.error("Failed to add compliance", { description: finalMessage });
     } finally {
       setSavingManualCompliance(false);
     }
@@ -731,6 +829,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     setManualComplianceType("");
     setManualComplianceExpiry("");
     setManualComplianceTicketNumber("");
+    setManualComplianceFile(null);
     setManualComplianceError(null);
   };
 
@@ -1595,7 +1694,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         </div>
                       ) : (
                         <div className="flex gap-2 w-full sm:w-auto">
-                          {ticket.manual ? (
+                          {ticket.manual && !ticket.documentUrl ? (
                             <span className="px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
                               No file
                             </span>
@@ -2170,6 +2269,50 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       onChange={(event) => setManualComplianceTicketNumber(event.target.value)}
                       placeholder="Optional reference"
                       className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-3 text-sm text-foreground"
+                    />
+                  </label>
+                  <label
+                    htmlFor="manual-compliance-file"
+                    className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-primary/60 bg-primary/5 px-4 py-4 text-sm text-primary hover:bg-primary/10 focus-within:ring-2 focus-within:ring-primary/50"
+                  >
+                    <FileUp className="h-5 w-5" />
+                    <span>
+                      <strong className="block">
+                        {manualComplianceFile?.name || "Choose compliance evidence"}
+                      </strong>
+                      <small className="text-xs text-muted-foreground">
+                        Required · PDF, JPG, JPEG, or PNG · maximum 10 MB
+                      </small>
+                    </span>
+                    <input
+                      id="manual-compliance-file"
+                      type="file"
+                      required
+                      aria-label="Compliance evidence file"
+                      aria-invalid={!!manualComplianceError}
+                      aria-describedby={
+                        manualComplianceError ? "manual-compliance-error" : undefined
+                      }
+                      accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                      className="sr-only"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        const allowedTypes = ["application/pdf", "image/jpeg", "image/png"];
+                        if (file && !allowedTypes.includes(file.type)) {
+                          setManualComplianceFile(null);
+                          setManualComplianceError("Evidence must be a PDF, JPG, or PNG file.");
+                          event.currentTarget.value = "";
+                          return;
+                        }
+                        if (file && file.size > 10 * 1024 * 1024) {
+                          setManualComplianceFile(null);
+                          setManualComplianceError("Evidence files must be 10 MB or smaller.");
+                          event.currentTarget.value = "";
+                          return;
+                        }
+                        setManualComplianceError(null);
+                        setManualComplianceFile(file);
+                      }}
                     />
                   </label>
                 </div>

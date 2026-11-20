@@ -1,23 +1,45 @@
-// Re-encodes image files via canvas at quality 0.82, same resolution, before upload.
-// Skips non-images and any file canvas can't decode (falls back to original).
+const MAX_PHOTO_DIMENSION = 2560;
+
+// Re-encodes ordinary JPEG photos client-side at high quality and caps very
+// large photos at a 2,560 px longest edge. Evidence upload paths do not call
+// this helper and retain their original files.
+// PNGs are left untouched because canvas PNG output is usually not smaller and
+// converting them can damage transparency or evidence detail. Any unsupported
+// image format, decode failure, or non-beneficial result falls back to original.
 export async function compressImageFile(file: File): Promise<File> {
-  if (!file.type.startsWith("image/") || file.type === "image/svg+xml") return file;
+  if (file.type !== "image/jpeg" && file.type !== "image/jpg") return file;
 
   try {
     const bitmap = await createImageBitmap(file);
     const canvas = document.createElement("canvas");
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
+    const scale = Math.min(1, MAX_PHOTO_DIMENSION / Math.max(bitmap.width, bitmap.height));
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
     const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.drawImage(bitmap, 0, 0);
+    if (!ctx) {
+      bitmap.close();
+      return file;
+    }
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    bitmap.close();
 
-    const outType = file.type === "image/png" ? "image/png" : "image/jpeg";
-    const blob: Blob | null = await new Promise((resolve) => canvas.toBlob(resolve, outType, 0.82));
+    const blob: Blob | null = await new Promise((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", 0.9),
+    );
     if (!blob || blob.size >= file.size) return file;
 
-    return new File([blob], file.name, { type: outType });
+    return new File([blob], file.name, { type: "image/jpeg", lastModified: file.lastModified });
   } catch {
     return file;
   }
+}
+
+export function isVideoFile(file: Pick<File, "type" | "name">): boolean {
+  return (
+    file.type === "video/mp4" || file.type === "video/webm" || /\.(mp4|webm)$/i.test(file.name)
+  );
+}
+
+export function isVideoAttachment(fileName: string): boolean {
+  return /\.(mp4|webm)$/i.test(fileName);
 }

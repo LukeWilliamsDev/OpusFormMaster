@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
+import { isVideoAttachment } from "../lib/compressImage";
 
 interface MediaTabProps {
   readOnly?: boolean;
@@ -175,7 +176,7 @@ export function MediaTab({
                         {label} <span className="opacity-70">{count}</span>
                         <input
                           type="file"
-                          accept="image/*"
+                          accept="image/*,video/mp4,video/webm"
                           onChange={(e) =>
                             e.target.files?.[0] && uploadAttachment(e.target.files[0], type)
                           }
@@ -207,13 +208,23 @@ export function MediaTab({
                       onClick={() => setGallery({ photos: allPhotos, index: i })}
                       className="relative group rounded-lg overflow-hidden border border-border cursor-pointer"
                     >
-                      <img
-                        src={p.thumb_url || p.file_url}
-                        alt={p.type === "image_before" ? "before" : "after"}
-                        loading="lazy"
-                        decoding="async"
-                        className="w-full aspect-[4/3] object-cover"
-                      />
+                      {isVideoAttachment(p.file_name) ? (
+                        <video
+                          src={p.thumb_url || p.file_url}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="w-full aspect-[4/3] object-cover"
+                        />
+                      ) : (
+                        <img
+                          src={p.thumb_url || p.file_url}
+                          alt={p.type === "image_before" ? "before" : "after"}
+                          loading="lazy"
+                          decoding="async"
+                          className="w-full aspect-[4/3] object-cover"
+                        />
+                      )}
                       <span
                         className={`absolute top-1.5 left-1.5 px-1.5 py-0.5 rounded shadow-sm text-[9px] font-bold uppercase tracking-wider ${p.type === "image_before" ? "bg-black/80 text-white" : "bg-primary text-primary-foreground"}`}
                       >

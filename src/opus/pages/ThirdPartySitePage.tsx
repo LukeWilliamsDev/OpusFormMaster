@@ -12,9 +12,10 @@ import { formatUKDate, toLondonISODate } from "../utils/week";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
 import { getSiteState, siteStateLabel, siteStateStyles } from "../utils/siteStatus";
 import { PortalPageHeader } from "../components/PortalNavigationPrimitives";
+import { compressImageFile, isVideoAttachment, isVideoFile } from "../lib/compressImage";
 
 const db = supabase as any;
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
 
 export const ThirdPartySitePage: React.FC = () => {
   const { jobId } = useParams<{ jobId: string }>();
@@ -173,15 +174,19 @@ export const ThirdPartySitePage: React.FC = () => {
   };
   const uploadAttachment = async (file: File) => {
     if (!user) return;
+    if (file.type.startsWith("video/") && !isVideoFile(file)) {
+      return toast.error("Upload a JPG, PNG, MP4, or WebM file");
+    }
     if (file.size > MAX_UPLOAD_BYTES) {
-      return toast.error("Attachments must be 10 MB or smaller");
+      return toast.error("Attachments must be 100 MB or smaller");
     }
     setUploadingAttachment(true);
+    const uploadFile = await compressImageFile(file);
     const extension = file.name.split(".").pop() || "bin";
     const path = `${user.id}/${job.id}/${crypto.randomUUID()}.${extension}`;
     const { error: uploadError } = await supabase.storage
       .from("third-party-attachments")
-      .upload(path, file);
+      .upload(path, uploadFile);
     if (uploadError) {
       setUploadingAttachment(false);
       return toast.error("We couldn’t upload that file. Check the size and try again.");
@@ -193,7 +198,7 @@ export const ThirdPartySitePage: React.FC = () => {
       file_name: file.name,
       file_path: path,
       mime_type: file.type || "application/octet-stream",
-      file_size_bytes: file.size,
+      file_size_bytes: uploadFile.size,
     });
     setUploadingAttachment(false);
     if (error)
@@ -335,13 +340,25 @@ export const ThirdPartySitePage: React.FC = () => {
                   className="group relative aspect-[4/3] overflow-hidden rounded-lg border border-border bg-card text-left"
                 >
                   {photo.preview_url ? (
-                    <img
-                      src={photo.preview_url}
-                      alt={photo.type === "image_before" ? "Before site photo" : "After site photo"}
-                      loading="lazy"
-                      decoding="async"
-                      className="h-full w-full object-cover"
-                    />
+                    isVideoAttachment(photo.file_name) ? (
+                      <video
+                        src={photo.preview_url}
+                        muted
+                        playsInline
+                        preload="metadata"
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={photo.preview_url}
+                        alt={
+                          photo.type === "image_before" ? "Before site photo" : "After site photo"
+                        }
+                        loading="lazy"
+                        decoding="async"
+                        className="h-full w-full object-cover"
+                      />
+                    )
                   ) : (
                     <span className="flex h-full items-center justify-center p-3 text-center text-[10px] font-bold text-muted-foreground">
                       {photo.file_name}
@@ -448,7 +465,7 @@ export const ThirdPartySitePage: React.FC = () => {
               {uploadingAttachment ? "Uploading..." : "Upload file"}
               <input
                 type="file"
-                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt"
+                accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.mp4,.webm"
                 className="hidden"
                 onChange={(event) =>
                   event.target.files?.[0] && uploadAttachment(event.target.files[0])
@@ -485,21 +502,33 @@ export const ThirdPartySitePage: React.FC = () => {
               <DialogDescription className="sr-only">
                 {gallery.index + 1} of {gallery.photos.length} site photos for {job.siteName}
               </DialogDescription>
-              <img
-                src={
-                  gallery.photos[gallery.index].preview_url ||
-                  gallery.photos[gallery.index].file_url
-                }
-                alt={
-                  gallery.photos[gallery.index].type === "image_before"
-                    ? "Before site photo"
-                    : "After site photo"
-                }
-                loading="eager"
-                decoding="async"
-                fetchPriority="high"
-                className="max-h-[70vh] w-full bg-black object-contain"
-              />
+              {isVideoAttachment(gallery.photos[gallery.index].file_name) ? (
+                <video
+                  src={
+                    gallery.photos[gallery.index].preview_url ||
+                    gallery.photos[gallery.index].file_url
+                  }
+                  controls
+                  playsInline
+                  className="max-h-[70vh] w-full bg-black object-contain"
+                />
+              ) : (
+                <img
+                  src={
+                    gallery.photos[gallery.index].preview_url ||
+                    gallery.photos[gallery.index].file_url
+                  }
+                  alt={
+                    gallery.photos[gallery.index].type === "image_before"
+                      ? "Before site photo"
+                      : "After site photo"
+                  }
+                  loading="eager"
+                  decoding="async"
+                  fetchPriority="high"
+                  className="max-h-[70vh] w-full bg-black object-contain"
+                />
+              )}
               {gallery.photos.length > 1 && (
                 <>
                   <button

@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
-import { compressImageFile } from "../lib/compressImage";
+import { compressImageFile, isVideoFile } from "../lib/compressImage";
 import { usePortal } from "../context/PortalContext";
 import type { Job, ScheduledShift, Worker } from "../types/erp";
 import { PortalPageHeader } from "../components/PortalNavigationPrimitives";
@@ -36,7 +36,7 @@ type DiaryRow = Pick<
   | "submitted_at"
 >;
 
-const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+const MAX_MEDIA_BYTES = 100 * 1024 * 1024;
 const LOCAL_FOREMAN_JOB_PREFIX = "local-foreman-";
 
 function londonToday(): string {
@@ -345,8 +345,12 @@ export const ForemanWorkspacePage: React.FC = () => {
 
   const uploadPhoto = async (file: File) => {
     if (!currentJob) return;
-    if (file.size > MAX_PHOTO_BYTES) {
-      toast.error("Photos must be 10MB or smaller");
+    if (!file.type.startsWith("image/") && !isVideoFile(file)) {
+      toast.error("Upload a JPG, PNG, MP4, or WebM file");
+      return;
+    }
+    if (file.size > MAX_MEDIA_BYTES) {
+      toast.error("Photos and videos must be 100MB or smaller");
       return;
     }
 
@@ -383,7 +387,7 @@ export const ForemanWorkspacePage: React.FC = () => {
       });
       if (insertError) throw insertError;
 
-      toast.success("Site photo uploaded");
+      toast.success(isVideoFile(file) ? "Site video uploaded" : "Site photo uploaded");
       await loadSiteData();
     } catch (error) {
       console.error("Failed to upload site photo", error);

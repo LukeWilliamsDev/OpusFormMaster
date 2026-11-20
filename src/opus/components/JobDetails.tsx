@@ -21,7 +21,7 @@ import { toLocalISODate } from "../utils/week";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { compressImageFile } from "../lib/compressImage";
+import { compressImageFile, isVideoFile } from "../lib/compressImage";
 import { getSignedJobAttachmentUrl, getSignedJobAttachmentUrlsBatch } from "../lib/attachmentUrl";
 import { HistoryTab } from "./HistoryTab";
 import { FeedTab } from "./FeedTab";
@@ -34,7 +34,7 @@ import { QuoteInvoiceBuilder } from "./QuoteInvoiceBuilder";
 import { ThirdPartyAttachmentsPanel } from "./ThirdPartyAttachmentsPanel";
 import { ThirdPartyNotesPanel } from "./ThirdPartyNotesPanel";
 
-const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 100 * 1024 * 1024;
 
 const STATUS_LABELS: Record<string, string> = {
@@ -363,8 +363,12 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
     type: "image_before" | "image_after" | "document",
   ) => {
     if (!canWrite) return;
+    if (type !== "document" && !file.type.startsWith("image/") && !isVideoFile(file)) {
+      toast.error("Upload a JPG, PNG, MP4, or WebM file");
+      return;
+    }
     if (file.size > MAX_ATTACHMENT_BYTES) {
-      toast.error(`"${file.name}" is over the 10MB per-file limit`);
+      toast.error(`"${file.name}" is over the 100MB per-file limit`);
       return;
     }
     const existingTotal = attachments.reduce((sum, a) => sum + (a.file_size_bytes || 0), 0);

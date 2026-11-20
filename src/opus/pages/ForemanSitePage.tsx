@@ -22,7 +22,7 @@ import { ForemanJobNotesPanel } from "../components/ForemanJobNotesPanel";
 import { ForemanTodaySiteUpdate } from "../components/ForemanTodaySiteUpdate";
 import { PortalPageHeader, PortalTabRail } from "../components/PortalNavigationPrimitives";
 import type { ScheduledShift, Worker } from "../types/erp";
-import { compressImageFile } from "../lib/compressImage";
+import { compressImageFile, isVideoAttachment, isVideoFile } from "../lib/compressImage";
 import { getSignedJobAttachmentUrl } from "../lib/attachmentUrl";
 import { formatUKDate, toLondonISODate } from "../utils/week";
 
@@ -42,7 +42,7 @@ type AttachmentRow = Pick<
   "id" | "job_id" | "type" | "file_name" | "file_url" | "file_size_bytes" | "uploaded_at"
 >;
 type ForemanAttachmentRow = AttachmentRow & { foreman_visible?: boolean };
-const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+const MAX_MEDIA_BYTES = 100 * 1024 * 1024;
 
 function londonToday(): string {
   return toLondonISODate();
@@ -353,8 +353,12 @@ export const ForemanSitePage: React.FC = () => {
     type: "image_before" | "image_after" = photoUploadType,
   ) => {
     if (!jobId) return;
-    if (file.size > MAX_PHOTO_BYTES) {
-      toast.error("Photos must be 10MB or smaller");
+    if (!file.type.startsWith("image/") && !isVideoFile(file)) {
+      toast.error("Upload a JPG, PNG, MP4, or WebM file");
+      return;
+    }
+    if (file.size > MAX_MEDIA_BYTES) {
+      toast.error("Photos and videos must be 100MB or smaller");
       return;
     }
     if (isLocalFixture) {
@@ -407,7 +411,7 @@ export const ForemanSitePage: React.FC = () => {
       });
       if (insertError) throw insertError;
       await loadSiteContent();
-      toast.success("Site photo uploaded");
+      toast.success(isVideoFile(file) ? "Site video uploaded" : "Site photo uploaded");
     } catch (uploadError) {
       console.error("Failed to upload Foreman site photo", uploadError);
       if (uploadedPath) await supabase.storage.from("job-attachments").remove([uploadedPath]);
@@ -688,7 +692,7 @@ export const ForemanSitePage: React.FC = () => {
               <input
                 ref={photoInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,video/mp4,video/webm"
                 className="hidden"
                 onChange={(event) => {
                   const file = event.target.files?.[0];
@@ -755,12 +759,22 @@ export const ForemanSitePage: React.FC = () => {
                       aria-label={`${photo.type === "image_before" ? "Before" : "After"} site photo`}
                     >
                       {previewUrl ? (
-                        <img
-                          src={previewUrl}
-                          alt=""
-                          loading="lazy"
-                          className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
-                        />
+                        isVideoAttachment(photo.file_name) ? (
+                          <video
+                            src={previewUrl}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
+                          />
+                        ) : (
+                          <img
+                            src={previewUrl}
+                            alt=""
+                            loading="lazy"
+                            className="aspect-square w-full object-cover transition-transform group-hover:scale-105"
+                          />
+                        )
                       ) : (
                         <div className="grid aspect-square place-items-center text-xs text-muted-foreground">
                           Preview unavailable
@@ -792,15 +806,24 @@ export const ForemanSitePage: React.FC = () => {
                 View-only {gallery.index + 1} of {gallery.photos.length} site photos.
               </DialogDescription>
               {galleryPreviewUrl ? (
-                <img
-                  src={galleryPreviewUrl}
-                  alt={
-                    gallery.photos[gallery.index].type === "image_before"
-                      ? "Before site photo"
-                      : "After site photo"
-                  }
-                  className="max-h-[70vh] w-full bg-black object-contain"
-                />
+                isVideoAttachment(gallery.photos[gallery.index].file_name) ? (
+                  <video
+                    src={galleryPreviewUrl}
+                    controls
+                    playsInline
+                    className="max-h-[70vh] w-full bg-black object-contain"
+                  />
+                ) : (
+                  <img
+                    src={galleryPreviewUrl}
+                    alt={
+                      gallery.photos[gallery.index].type === "image_before"
+                        ? "Before site photo"
+                        : "After site photo"
+                    }
+                    className="max-h-[70vh] w-full bg-black object-contain"
+                  />
+                )
               ) : (
                 <div className="flex h-64 w-full items-center justify-center bg-black text-sm text-white/70">
                   Preview unavailable

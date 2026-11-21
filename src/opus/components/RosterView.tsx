@@ -70,6 +70,10 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { TelegramLinkControl } from "./TelegramLinkControl";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { AssignSheet, AssignTarget } from "./calendar/AssignSheet";
+import { useDaySchedule } from "../hooks/useDaySchedule";
+import { useShiftActions } from "../hooks/useShiftActions";
+import { toLocalISODate } from "../utils/week";
 
 // The server-side revert RPC intentionally restores only profile fields. It
 // never replays compliance tickets or uploaded certificate snapshots.
@@ -127,6 +131,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const { profile, role } = usePortal();
   const navigate = useNavigate();
   const canWrite = !!role && MANAGEMENT_WRITE_ROLES.includes(role);
+  const [dossierAssignmentDate, setDossierAssignmentDate] = useState(() =>
+    toLocalISODate(new Date()),
+  );
+  const [dossierAssignTarget, setDossierAssignTarget] = useState<AssignTarget | null>(null);
   // The staff audit trail is restricted to the same roles as the global audit
   // route; the database policy remains the authoritative tenant boundary.
   const canViewAuditLog = role === "admin" || role === "director";
@@ -212,6 +220,21 @@ export const RosterView: React.FC<RosterViewProps> = ({
     { id: string; workerId: string; jobId: string; date: string }[]
   >([]);
   const [loadingDossierShifts, setLoadingDossierShifts] = useState(false);
+  const dossierConflictShifts = dossierShifts.map((shift) => ({
+    id: shift.id,
+    workerId: shift.workerId,
+    jobId: shift.jobId,
+    date: shift.date,
+  }));
+  const dossierConflictSource = loadingDossierShifts ? shifts : dossierConflictShifts;
+  const dossierSchedule = useDaySchedule(workers, jobs, shifts, dossierAssignmentDate, "");
+  const { assignWorker, confirmReallocate } = useShiftActions(
+    workers,
+    jobs,
+    shifts,
+    setShifts,
+    dossierConflictSource,
+  );
   const [loadingDossierLogs, setLoadingDossierLogs] = useState(false);
   const [resendingRequestMap, setResendingRequestMap] = useState<Record<string, boolean>>({});
   const [auditLogPage, setAuditLogPage] = useState(1);
@@ -334,7 +357,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     return () => {
       cancelled = true;
     };
-  }, [selectedWorkerDetailsId]);
+  }, [selectedWorkerDetailsId, shifts]);
 
   const handleResendRequest = async (request: {
     id: string;
@@ -1521,11 +1544,41 @@ export const RosterView: React.FC<RosterViewProps> = ({
           <div className="space-y-5 animate-in fade-in duration-200">
             {/* Active Deployments */}
             <div className="space-y-3">
-              <div className="flex items-center gap-2 border-b border-border pb-2">
-                <Calendar className="h-4 w-4 text-warning" />
-                <h3 className="text-xs font-bold uppercase tracking-wide text-foreground">
-                  Current site assignments
-                </h3>
+              <div className="flex flex-col gap-3 border-b border-border pb-2 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-warning" />
+                  <h3 className="text-xs font-bold uppercase tracking-wide text-foreground">
+                    Current site assignments
+                  </h3>
+                </div>
+                {canWrite && (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <label className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Date
+                      <input
+                        type="date"
+                        value={dossierAssignmentDate}
+                        onChange={(event) => setDossierAssignmentDate(event.target.value)}
+                        className="rounded-lg border border-border bg-card px-2 py-1.5 text-xs font-medium normal-case tracking-normal text-foreground focus:border-primary focus:outline-none"
+                        aria-label="Assignment date"
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDossierAssignTarget({
+                          mode: "pickProject",
+                          worker: selectedWorkerDetails,
+                          date: dossierAssignmentDate,
+                        })
+                      }
+                      className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary-foreground transition-colors hover:bg-primary/90"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Assign to site
+                    </button>
+                  </div>
+                )}
               </div>
               {loadingDossierShifts ? (
                 <div className="flex items-center justify-center py-6">
@@ -1669,6 +1722,19 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
+
+            {canWrite && (
+              <AssignSheet
+                target={dossierAssignTarget}
+                jobs={jobs}
+                schedule={dossierSchedule}
+                onAssign={(workerId, jobId) => assignWorker(workerId, jobId, dossierAssignmentDate)}
+                onConfirmReallocate={(workerId, jobId, existingShiftId) =>
+                  confirmReallocate(workerId, jobId, dossierAssignmentDate, existingShiftId)
+                }
+                onClose={() => setDossierAssignTarget(null)}
+              />
+            )}
           </div>
         )}
 

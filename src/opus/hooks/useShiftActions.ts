@@ -54,6 +54,7 @@ export const useShiftActions = (
   jobs: Job[],
   shifts: ScheduledShift[],
   setShifts: React.Dispatch<React.SetStateAction<ScheduledShift[]>>,
+  conflictShifts: ScheduledShift[] = shifts,
 ) => {
   const assignWorker = useCallback(
     (workerId: string, jobId: string, date: string): AssignResult => {
@@ -69,7 +70,7 @@ export const useShiftActions = (
         return { status: "blocked", reason: validation.reason ?? "Compliance check failed" };
       }
 
-      const busyElsewhere = shifts.find((s) => s.workerId === workerId && s.date === date);
+      const busyElsewhere = conflictShifts.find((s) => s.workerId === workerId && s.date === date);
       if (busyElsewhere) {
         const otherJob = jobs.find((j) => j.id === busyElsewhere.jobId);
         return {
@@ -88,7 +89,7 @@ export const useShiftActions = (
       );
       return { status: "ok" };
     },
-    [workers, jobs, shifts, setShifts],
+    [workers, jobs, shifts, conflictShifts, setShifts],
   );
 
   const confirmReallocate = useCallback(
@@ -97,6 +98,18 @@ export const useShiftActions = (
         ...prev.filter((s) => s.id !== existingShiftId),
         createShift(workerId, jobId, date),
       ]);
+      // Dossier assignment uses the worker's complete history, while the
+      // calendar state is intentionally windowed. Remove a conflicting
+      // historical row directly when it is not present in that window.
+      if (!shifts.some((shift) => shift.id === existingShiftId)) {
+        supabase
+          .from("shifts")
+          .delete()
+          .eq("id", existingShiftId)
+          .then(({ error }) => {
+            if (error) console.error("delete reallocated shift", error);
+          });
+      }
       logAssignmentAudit(
         "REALLOCATE_STAFF",
         workers.find((w) => w.id === workerId),
@@ -104,7 +117,7 @@ export const useShiftActions = (
         date,
       );
     },
-    [workers, jobs, setShifts],
+    [workers, jobs, shifts, setShifts],
   );
 
   const removeShift = useCallback(

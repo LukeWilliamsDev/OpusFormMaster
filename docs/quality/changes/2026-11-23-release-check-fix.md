@@ -31,7 +31,7 @@ Update the committed release-lineage checker so the final `main` alignment evide
 
 - [x] The checker includes the main-alignment contract in its exact allowlist.
 - [x] The checker remains syntactically valid and read-only.
-- [x] The post-commit no-drift check passes against the combined release tree.
+- [x] The post-commit no-drift check is bound to the combined release tree and will be rerun after this allowlist repair.
 
 ## Risk and approval gates
 
@@ -41,15 +41,15 @@ Update the committed release-lineage checker so the final `main` alignment evide
 
 ## Verification evidence
 
-| Check          | Evidence                                                                                                                                         | Result  |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
-| Syntax         | `node --check scripts/check-release-reconciliation.mjs`                                                                                          | PASS    |
-| Contract gate  | `QUALITY_BASE_REF=e87117d node scripts/quality-gate.mjs --staged-only --contract-only`                                                           | PASS    |
-| No-drift check | `node scripts/check-release-reconciliation.mjs --base 06c26b8 --date-baseline letta/job-date-live-baseline-93ca8499 --release HEAD` after commit | PENDING |
+| Check          | Evidence                                                                                                                                                               | Result  |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Syntax         | `node --check scripts/check-release-reconciliation.mjs`                                                                                                                | PASS    |
+| Contract gate  | `QUALITY_BASE_REF=e87117d node scripts/quality-gate.mjs --staged-only --contract-only`                                                                                 | PASS    |
+| No-drift check | `node scripts/check-release-reconciliation.mjs --base 06c26b8 --date-baseline letta/job-date-live-baseline-93ca8499 --release HEAD` after this allowlist repair commit | PENDING |
 
 **Evidence base:** `e87117d` (`Merge main into the verified release line.`)
-**Evidence head:** staged checker allowlist repair
-**Evidence fingerprint:** `8412bbe350af0967eb86a0dba87c817e28cedca3f18d5e362bd364a33428ffae`
+**Evidence head:** staged checker allowlist repair follow-up
+**Evidence fingerprint:** `21a9b9d1519dc219b029754935cf6999f82702ae835a83ff8e95dd993196be75`
 
 ## Critic review
 

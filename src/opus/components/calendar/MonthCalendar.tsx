@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from "react";
-import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Trash2, X } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
 import { CalendarEvent, Job, Worker, ScheduledShift } from "../../types/erp";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   formatDayHeading,
   formatUKDate,
@@ -13,6 +14,7 @@ import { useShiftActions } from "../../hooks/useShiftActions";
 import { useCalendarEventActions } from "../../hooks/useCalendarEventActions";
 import { AssignSheet, AssignTarget } from "./AssignSheet";
 import { getJobColorClasses } from "./jobColors";
+import { formatJobPeriod, getJobsForDate, isJobScheduledOnDate } from "./jobPeriods";
 
 interface MonthCalendarProps {
   jobs: Job[];
@@ -139,18 +141,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
     return map;
   }, [calendarEvents]);
 
-  const jobsForDate = (date: string): Job[] => {
-    const dayShifts = shiftsByDate.get(date) ?? [];
-    const seen = new Set<string>();
-    const result: Job[] = [];
-    for (const shift of dayShifts) {
-      if (seen.has(shift.jobId)) continue;
-      seen.add(shift.jobId);
-      const job = jobsById.get(shift.jobId);
-      if (job) result.push(job);
-    }
-    return result;
-  };
+  const jobsForDate = (date: string): Job[] => getJobsForDate(jobs, date);
 
   const handleNavigateMonth = (delta: number) => {
     const next = new Date(anchor.getFullYear(), anchor.getMonth() + delta, 1);
@@ -159,6 +150,9 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
 
   const detailShifts = detailDate ? (shiftsByDate.get(detailDate) ?? []) : [];
   const detailEvents = detailDate ? (eventsByDate.get(detailDate) ?? []) : [];
+  const detailPeriodJobs = detailDate
+    ? jobs.filter((job) => isJobScheduledOnDate(job, detailDate))
+    : [];
   const activeJobs = jobs.filter((j) => j.status !== "completed");
 
   const closeDetail = () => {
@@ -269,17 +263,23 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                   } ${cell.inMonth ? "bg-background hover:bg-card/40" : "bg-card/50"} flex flex-col gap-1 cursor-pointer transition-colors lg:overflow-hidden`}
                 >
                   <div className="flex items-center justify-between">
-                    <span
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setDetailDate(cell.date);
+                      }}
+                      aria-label={`Open ${formatDayHeading(cell.date)}`}
                       className={`inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full text-[10px] sm:text-xs font-bold ${
                         isToday
                           ? SITE_AMBER
                           : cell.inMonth
                             ? "text-foreground"
                             : "text-muted-foreground/50"
-                      }`}
+                      } cursor-pointer`}
                     >
                       {cell.dayNum}
-                    </span>
+                    </button>
                     {/* Mobile compact activity dot indicator */}
                     {hasActivity && (
                       <div className="flex md:hidden items-center gap-0.5">
@@ -302,7 +302,7 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                           type="button"
                           onClick={() => setDetailDate(cell.date)}
                           className={`truncate text-left text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${colors.bg} cursor-pointer`}
-                          title={job.siteName}
+                          title={`${job.siteName}${formatJobPeriod(job) ? ` · ${formatJobPeriod(job)}` : ""}`}
                         >
                           {job.siteName}
                         </button>
@@ -338,29 +338,46 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
         </div>
       </div>
 
-      {detailDate && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
-          onClick={closeDetail}
+      <Dialog open={!!detailDate} onOpenChange={(open) => !open && closeDetail()}>
+        <DialogContent
+          className={`w-full max-w-md max-h-[80vh] overflow-y-auto rounded-xl border-2 ${SITE_BORDER} bg-background p-5 space-y-3`}
         >
-          <div
-            className={`w-full max-w-md max-h-[80vh] overflow-y-auto rounded-xl border-2 ${SITE_BORDER} bg-background p-5 space-y-3`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black uppercase tracking-widest text-foreground">
-                {formatDayHeading(detailDate)}
-              </h3>
-              <button
-                type="button"
-                onClick={closeDetail}
-                className="p-1 rounded-lg hover:bg-card cursor-pointer"
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
+          <DialogTitle className="text-sm font-black uppercase tracking-widest text-foreground">
+            {detailDate ? formatDayHeading(detailDate) : "Calendar day"}
+          </DialogTitle>
 
+          {detailPeriodJobs.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Job periods
+              </p>
+              <ul className="space-y-2">
+                {detailPeriodJobs.map((job) => {
+                  const colors = getJobColorClasses(job.id);
+                  return (
+                    <li
+                      key={job.id}
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg border ${SITE_BORDER}`}
+                    >
+                      <span className="text-xs font-semibold text-foreground truncate">
+                        {job.siteName}
+                      </span>
+                      <span
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${colors.bg}`}
+                      >
+                        {formatJobPeriod(job)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+              Shift assignments
+            </p>
             {detailShifts.length === 0 ? (
               <p className="text-xs text-muted-foreground">No shifts scheduled.</p>
             ) : (
@@ -401,114 +418,114 @@ export const MonthCalendar: React.FC<MonthCalendarProps> = ({
                 })}
               </ul>
             )}
+          </div>
 
-            <div className="space-y-2 pt-1 border-t border-border/60">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
-                  Events
-                </p>
-                {canEdit && !eventForm && (
-                  <button
-                    type="button"
-                    onClick={openNewEventForm}
-                    className="flex items-center gap-1 text-[11px] font-black text-schedule-action hover:text-schedule-action-hover uppercase tracking-wider cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    Add Event
-                  </button>
-                )}
-              </div>
-              {detailEvents.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No events.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {detailEvents.map((event) => (
-                    <li
-                      key={event.id}
-                      className={`flex items-start justify-between gap-2 px-3 py-2 rounded-lg border ${SITE_BORDER}`}
-                    >
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold text-foreground truncate">
-                          {event.title}
-                        </p>
-                        {event.description && (
-                          <p className="text-[11px] text-muted-foreground truncate">
-                            {event.description}
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {canEdit && (
-                          <>
-                            <button
-                              type="button"
-                              onClick={() => openEditEventForm(event)}
-                              className="p-1 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
-                              aria-label="Edit event"
-                            >
-                              <Pencil className="size-4" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setEventToDelete(event)}
-                              className="p-1 rounded-md text-muted-foreground hover:text-destructive cursor-pointer"
-                              aria-label="Delete event"
-                            >
-                              <Trash2 className="size-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-
-              {eventForm && (
-                <div className={`space-y-2 p-3 rounded-lg border ${SITE_BORDER}`}>
-                  <input
-                    type="text"
-                    value={eventForm.title}
-                    onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
-                    placeholder="Event title"
-                    className={`w-full text-xs px-2.5 py-1.5 rounded-lg border-2 ${SITE_BORDER} bg-background text-foreground`}
-                  />
-                  <textarea
-                    value={eventForm.description}
-                    onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
-                    placeholder="Description (optional)"
-                    rows={2}
-                    className={`w-full text-xs px-2.5 py-1.5 rounded-lg border-2 ${SITE_BORDER} bg-background text-foreground resize-none`}
-                  />
-                  <input
-                    type="date"
-                    value={eventForm.date}
-                    onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
-                    className={`w-full text-xs px-2.5 py-1.5 rounded-lg border-2 ${SITE_BORDER} bg-background text-foreground`}
-                  />
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={saveEventForm}
-                      disabled={!eventForm.title.trim()}
-                      className="flex-1 px-2.5 py-1.5 rounded-lg bg-schedule-action text-schedule-action-foreground text-[11px] font-black uppercase tracking-wider cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-schedule-action-hover"
-                    >
-                      {eventForm.id ? "Save" : "Add"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setEventForm(null)}
-                      className={`px-2.5 py-1.5 rounded-lg border-2 ${SITE_BORDER} ${SITE_STONE} text-[11px] font-black uppercase tracking-wider cursor-pointer`}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
+          <div className="space-y-2 pt-1 border-t border-border/60">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                Events
+              </p>
+              {canEdit && !eventForm && (
+                <button
+                  type="button"
+                  onClick={openNewEventForm}
+                  className="flex items-center gap-1 text-[11px] font-black text-schedule-action hover:text-schedule-action-hover uppercase tracking-wider cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Event
+                </button>
               )}
             </div>
+            {detailEvents.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No events.</p>
+            ) : (
+              <ul className="space-y-2">
+                {detailEvents.map((event) => (
+                  <li
+                    key={event.id}
+                    className={`flex items-start justify-between gap-2 px-3 py-2 rounded-lg border ${SITE_BORDER}`}
+                  >
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground truncate">
+                        {event.title}
+                      </p>
+                      {event.description && (
+                        <p className="text-[11px] text-muted-foreground truncate">
+                          {event.description}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {canEdit && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => openEditEventForm(event)}
+                            className="p-1 rounded-md text-muted-foreground hover:text-foreground cursor-pointer"
+                            aria-label="Edit event"
+                          >
+                            <Pencil className="size-4" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setEventToDelete(event)}
+                            className="p-1 rounded-md text-muted-foreground hover:text-destructive cursor-pointer"
+                            aria-label="Delete event"
+                          >
+                            <Trash2 className="size-4" />
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {eventForm && (
+              <div className={`space-y-2 p-3 rounded-lg border ${SITE_BORDER}`}>
+                <input
+                  type="text"
+                  value={eventForm.title}
+                  onChange={(e) => setEventForm({ ...eventForm, title: e.target.value })}
+                  placeholder="Event title"
+                  className={`w-full text-xs px-2.5 py-1.5 rounded-lg border-2 ${SITE_BORDER} bg-background text-foreground`}
+                />
+                <textarea
+                  value={eventForm.description}
+                  onChange={(e) => setEventForm({ ...eventForm, description: e.target.value })}
+                  placeholder="Description (optional)"
+                  rows={2}
+                  className={`w-full text-xs px-2.5 py-1.5 rounded-lg border-2 ${SITE_BORDER} bg-background text-foreground resize-none`}
+                />
+                <input
+                  type="date"
+                  value={eventForm.date}
+                  onChange={(e) => setEventForm({ ...eventForm, date: e.target.value })}
+                  className={`w-full text-xs px-2.5 py-1.5 rounded-lg border-2 ${SITE_BORDER} bg-background text-foreground`}
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={saveEventForm}
+                    disabled={!eventForm.title.trim()}
+                    className="flex-1 px-2.5 py-1.5 rounded-lg bg-schedule-action text-schedule-action-foreground text-[11px] font-black uppercase tracking-wider cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-schedule-action-hover"
+                  >
+                    {eventForm.id ? "Save" : "Add"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEventForm(null)}
+                    className={`px-2.5 py-1.5 rounded-lg border-2 ${SITE_BORDER} ${SITE_STONE} text-[11px] font-black uppercase tracking-wider cursor-pointer`}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {canEdit && (
         <AssignSheet

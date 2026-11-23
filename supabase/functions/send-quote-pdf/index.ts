@@ -118,7 +118,7 @@ serve(async (req) => {
             .eq("id", quoteId)
             .eq("tenant_id", profile.tenant_id)
             .maybeSingle();
-    let { data: document, error: documentError } = await documentQuery;
+    const { data: document, error: documentError } = await documentQuery;
     if (documentError || !document) return jsonError(req, "Quotation not found.", 404);
     let storedClientInfo =
       document.client_info && typeof document.client_info === "object"

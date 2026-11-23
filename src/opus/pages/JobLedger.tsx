@@ -71,6 +71,17 @@ export const JobLedgerPage: React.FC = () => {
     setJobs((prevJobs) => prevJobs.map((job) => (job.id === updatedJob.id ? updatedJob : job)));
   };
 
+  const handleUpdateJobDates = (
+    jobId: string,
+    startDate: string | undefined,
+    endDate: string | undefined,
+  ) => {
+    if (!canWrite) return;
+    setJobs((prevJobs) =>
+      prevJobs.map((job) => (job.id === jobId ? { ...job, startDate, endDate } : job)),
+    );
+  };
+
   const handleSelectJob = (id: string | null) => {
     setSearchParams((current) => {
       if (id) current.set("jobId", id);
@@ -110,6 +121,8 @@ export const JobLedgerPage: React.FC = () => {
         filterStatus={filterStatus}
         setFilterStatus={setFilterStatus}
         onSelectJob={handleSelectJob}
+        onUpdateJobDates={handleUpdateJobDates}
+        canEditDates={canWrite}
         getJobFollowup={getJobFollowup}
       />
     </div>

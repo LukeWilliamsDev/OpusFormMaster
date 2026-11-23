@@ -219,6 +219,8 @@ export const jobToRow = (j: Job, tenantId?: string) =>
     main_contractor: j.mainContractor ?? null,
     postcode: j.postcode ?? null,
     email: j.email ?? null,
+    start_date: j.startDate ?? null,
+    end_date: j.endDate ?? null,
     current_pours: j.currentPours ?? 0,
     contract_max_pours: j.contractMaxPours ?? 0,
     status: j.status,
@@ -233,6 +235,8 @@ type JobRow = Pick<
   | "main_contractor"
   | "postcode"
   | "email"
+  | "start_date"
+  | "end_date"
   | "current_pours"
   | "contract_max_pours"
   | "status"
@@ -241,7 +245,7 @@ type JobRow = Pick<
 >;
 
 const JOB_SELECT =
-  "id, job_ref, site_name, main_contractor, postcode, email, current_pours, contract_max_pours, status, schedule_value, updated_at";
+  "id, job_ref, site_name, main_contractor, postcode, email, start_date, end_date, current_pours, contract_max_pours, status, schedule_value, updated_at";
 
 const rowToJob = (r: JobRow): Job => ({
   id: r.id,
@@ -250,6 +254,8 @@ const rowToJob = (r: JobRow): Job => ({
   mainContractor: r.main_contractor ?? "",
   postcode: r.postcode ?? "",
   email: r.email ?? undefined,
+  startDate: r.start_date ?? undefined,
+  endDate: r.end_date ?? undefined,
   currentPours: r.current_pours ?? 0,
   contractMaxPours: r.contract_max_pours ?? 0,
   status: r.status as Job["status"],

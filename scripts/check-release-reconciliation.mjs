@@ -33,6 +33,7 @@ const gitStatus = (...gitArgs) => {
 };
 
 const expectedDateFiles = [
+  "docs/quality/changes/2026-11-23-main-branch-alignment.md",
   "src/integrations/supabase/types.ts",
   "src/opus/components/ActiveJobLedger.tsx",
   "src/opus/components/JobDetails.tsx",

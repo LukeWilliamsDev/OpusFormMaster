@@ -110,11 +110,16 @@ export const buildEligibleSuggestions = (records: EligibleQuoteRecord[]) => {
     const entity = asText(clientInfo.entity);
     const email = asText(clientInfo.email).toLowerCase();
     if (entity && email) {
-      const recipientKey = `${entity.toLowerCase()}\u0000${email}`;
+      // Email is the selectable recipient identity. Different historical client
+      // names must not create duplicate options in either recipient picker.
+      const recipientKey = email;
       const existing = recipients.get(recipientKey);
       if (existing) {
         existing.recordCount += 1;
-        if (isLater(createdAt, existing.lastUsed)) existing.lastUsed = createdAt;
+        if (isLater(createdAt, existing.lastUsed)) {
+          existing.entity = entity;
+          existing.lastUsed = createdAt;
+        }
       } else {
         recipients.set(recipientKey, { entity, email, recordCount: 1, lastUsed: createdAt });
       }

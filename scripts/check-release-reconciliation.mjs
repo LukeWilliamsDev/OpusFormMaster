@@ -43,6 +43,8 @@ const expectedDateFiles = [
   "src/opus/components/calendar/__tests__/jobPeriods.test.ts",
   "src/opus/components/calendar/jobPeriods.ts",
   "src/opus/context/PortalContext.tsx",
+  "src/opus/lib/__tests__/eligibleQuoteData.test.ts",
+  "src/opus/lib/eligibleQuoteData.ts",
   "src/opus/pages/JobLedger.tsx",
   "src/opus/pages/LaborRoster.tsx",
   "src/opus/types/erp.ts",

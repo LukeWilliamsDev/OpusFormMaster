@@ -20,9 +20,14 @@ import { getSiteState, siteStateLabel } from "../utils/siteStatus";
 import { ThirdPartyDataError } from "../components/ThirdPartyDataState";
 import { PortalFilterGroup } from "../components/PortalNavigationPrimitives";
 import { supabase } from "../../integrations/supabase/client";
+import {
+  certificateUploadContentType,
+  getCertificateFileExtension,
+  validateCertificateFile,
+} from "../lib/certificateUpload";
+import { cleanupStaffUpload } from "../lib/staffUploadCleanup";
 
 const db = supabase as any;
-const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
 const isStaffFilter = (value: string | null): value is "all" | "attention" =>
   value === "all" || value === "attention";
 
@@ -324,66 +329,92 @@ export const ThirdPartyPortalPage: React.FC = () => {
     if (!ticketType.trim()) {
       return toast.error("Enter the certificate name");
     }
-    if (ticketFile.size > MAX_UPLOAD_BYTES) {
-      return toast.error("Certificate files must be 10 MB or smaller");
+    if (!ticketExpiry) {
+      return toast.error("Enter the certificate expiry date");
     }
+    const validationError = validateCertificateFile(ticketFile);
+    if (validationError) return toast.error(validationError);
+
+    const selectedFile = ticketFile;
+    let path: string | null = null;
+    let objectNeedsCleanup = false;
     setUploadingTicket(true);
-    const extension = ticketFile.name.split(".").pop() || "bin";
-    const path = `${user.id}/${submissionId}/${crypto.randomUUID()}.${extension}`;
-    const { error: uploadError } = await supabase.storage
-      .from("third-party-staff-documents")
-      .upload(path, ticketFile);
-    if (uploadError) {
-      setUploadingTicket(false);
-      return toast.error("We couldn’t upload that certificate. Check the file size and try again.");
-    }
-    const { error } = await db.from("third_party_staff_documents").insert({
-      tenant_id: profile.tenant_id,
-      submission_id: submissionId,
-      staff_id: staffId,
-      uploaded_by: user.id,
-      ticket_type: ticketType.trim(),
-      ticket_number: ticketNumber || null,
-      expiry_date: ticketExpiry || null,
-      file_name: ticketFile.name,
-      file_path: path,
-      mime_type: ticketFile.type || "application/octet-stream",
-      file_size_bytes: ticketFile.size,
-    });
-    setUploadingTicket(false);
-    if (error)
-      return toast.error("The certificate uploaded but could not be recorded. Contact IT.");
-    setTicketFile(null);
-    setTicketType("");
-    setTicketNumber("");
-    setTicketExpiry("");
-    closeCertificatePanel();
-    if (staffId) {
-      const { data: refreshedStaff } = await db
-        .from("staff")
-        .select("id, name, role, email, phone, postcode, tickets, uploaded_certificates")
-        .eq("id", staffId)
-        .single();
-      if (refreshedStaff) {
-        setWorkers((current) =>
-          current.map((worker) =>
-            worker.id === staffId
-              ? {
-                  ...worker,
-                  tickets: refreshedStaff.tickets ?? [],
-                  uploadedCertificates: refreshedStaff.uploaded_certificates ?? [],
-                }
-              : worker,
-          ),
-        );
+    try {
+      const extension = getCertificateFileExtension(selectedFile);
+      path = `${user.id}/${submissionId}/${crypto.randomUUID()}.${extension}`;
+      objectNeedsCleanup = true;
+      const { error: uploadError } = await supabase.storage
+        .from("third-party-staff-documents")
+        .upload(path, selectedFile, {
+          cacheControl: "3600",
+          contentType: certificateUploadContentType(selectedFile),
+          upsert: false,
+        });
+      if (uploadError) throw new Error(uploadError.message);
+
+      const { error: metadataError } = await db.from("third_party_staff_documents").insert({
+        tenant_id: profile.tenant_id,
+        submission_id: submissionId,
+        staff_id: staffId,
+        uploaded_by: user.id,
+        ticket_type: ticketType.trim(),
+        ticket_number: ticketNumber || null,
+        expiry_date: ticketExpiry,
+        file_name: selectedFile.name,
+        file_path: path,
+        mime_type: certificateUploadContentType(selectedFile),
+        file_size_bytes: selectedFile.size,
+      });
+      if (metadataError) {
+        throw new Error(`The certificate could not be recorded: ${metadataError.message}`);
       }
+      objectNeedsCleanup = false;
+
+      setTicketFile(null);
+      setTicketType("");
+      setTicketNumber("");
+      setTicketExpiry("");
+      closeCertificatePanel();
+      if (staffId) {
+        const { data: refreshedStaff, error: refreshError } = await db
+          .from("staff")
+          .select("id, name, role, email, phone, postcode, tickets, uploaded_certificates")
+          .eq("id", staffId)
+          .single();
+        if (refreshError) console.error("Failed to refresh staff certificate data", refreshError);
+        if (refreshedStaff) {
+          setWorkers((current) =>
+            current.map((worker) =>
+              worker.id === staffId
+                ? {
+                    ...worker,
+                    tickets: refreshedStaff.tickets ?? [],
+                    uploadedCertificates: refreshedStaff.uploaded_certificates ?? [],
+                  }
+                : worker,
+            ),
+          );
+        }
+      }
+      setConfirmation(
+        staffId
+          ? "Certificate replaced and saved to the staff record."
+          : "Certificate uploaded and attached to the pending submission.",
+      );
+      toast.success("Certificate uploaded");
+    } catch (error) {
+      console.error("Certificate upload failed", error);
+      if (objectNeedsCleanup && path) {
+        try {
+          await cleanupStaffUpload({ bucket: "third-party-staff-documents", path });
+        } catch (cleanupError) {
+          console.error("Failed to clean up orphaned certificate", cleanupError);
+        }
+      }
+      toast.error(error instanceof Error ? error.message : "Unable to save certificate");
+    } finally {
+      setUploadingTicket(false);
     }
-    setConfirmation(
-      staffId
-        ? "Certificate replaced and saved to the staff record."
-        : "Certificate uploaded and attached to the pending submission.",
-    );
-    toast.success("Certificate uploaded");
   };
 
   const saveWorker = async () => {

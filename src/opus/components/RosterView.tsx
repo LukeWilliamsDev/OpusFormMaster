@@ -29,6 +29,7 @@ import {
   Eye,
   PencilLine,
   BadgeCheck,
+  FileUp,
 } from "lucide-react";
 import {
   Worker,
@@ -52,9 +53,15 @@ import {
   AccordionTrigger,
   AccordionContent,
 } from "../../components/ui/accordion";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "../../components/ui/dialog";
 import { supabase } from "../../integrations/supabase/client";
-import type { Json, Database } from "../../integrations/supabase/types";
-import { MANAGEMENT_WRITE_ROLES, workerToRow, usePortal } from "../context/PortalContext";
+import type { Database } from "../../integrations/supabase/types";
+import {
+  MANAGEMENT_WRITE_ROLES,
+  STAFF_COMPLIANCE_ROLES,
+  workerToRow,
+  usePortal,
+} from "../context/PortalContext";
 import {
   AUDIT_CATEGORY_LABELS,
   computeDiff,
@@ -74,6 +81,12 @@ import { AssignSheet, AssignTarget } from "./calendar/AssignSheet";
 import { useDaySchedule } from "../hooks/useDaySchedule";
 import { useShiftActions } from "../hooks/useShiftActions";
 import { toLocalISODate } from "../utils/week";
+import {
+  certificateUploadContentType,
+  getCertificateFileExtension,
+  validateCertificateFile,
+} from "../lib/certificateUpload";
+import { cleanupStaffUpload } from "../lib/staffUploadCleanup";
 
 // The server-side revert RPC intentionally restores only profile fields. It
 // never replays compliance tickets or uploaded certificate snapshots.
@@ -131,6 +144,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   const { profile, role } = usePortal();
   const navigate = useNavigate();
   const canWrite = !!role && MANAGEMENT_WRITE_ROLES.includes(role);
+  const canManageCompliance = !!role && STAFF_COMPLIANCE_ROLES.includes(role);
   const [dossierAssignmentDate, setDossierAssignmentDate] = useState(() =>
     toLocalISODate(new Date()),
   );
@@ -185,6 +199,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
   } | null>(null);
 
   const [workerToEdit, setWorkerToEdit] = useState<Worker | null>(null);
+  const [savingWorkerProfile, setSavingWorkerProfile] = useState(false);
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState<StaffRole>("Concrete Operative");
 
@@ -203,9 +218,15 @@ export const RosterView: React.FC<RosterViewProps> = ({
 
   const [editPhone, setEditPhone] = useState("");
   const [editEmail, setEditEmail] = useState("");
-  const [editTickets, setEditTickets] = useState<Ticket[]>([]);
   const [editError, setEditError] = useState<string | null>(null);
   const [showReminderConfirm, setShowReminderConfirm] = useState(false);
+  const [showComplianceUpload, setShowComplianceUpload] = useState(false);
+  const [complianceUploadType, setComplianceUploadType] = useState("");
+  const [complianceUploadExpiry, setComplianceUploadExpiry] = useState("");
+  const [complianceUploadNumber, setComplianceUploadNumber] = useState("");
+  const [complianceUploadFile, setComplianceUploadFile] = useState<File | null>(null);
+  const [complianceUploadError, setComplianceUploadError] = useState<string | null>(null);
+  const [savingComplianceUpload, setSavingComplianceUpload] = useState(false);
 
   const [activeDossierTab, setActiveDossierTab] = useState<"general" | "assignments" | "audit_log">(
     "general",
@@ -499,26 +520,28 @@ export const RosterView: React.FC<RosterViewProps> = ({
       });
     }
 
-    if (documentUrl.includes("/compliance-documents/")) {
+    const isComplianceDocument =
+      documentUrl.startsWith("manual/") || documentUrl.includes("/compliance-documents/");
+    if (isComplianceDocument) {
       try {
-        const parts = documentUrl.split("/compliance-documents/");
-        const filePath = parts[1];
+        const filePath = documentUrl.includes("/compliance-documents/")
+          ? documentUrl.split("/compliance-documents/")[1]
+          : documentUrl;
 
         const { data, error } = await supabase.storage
           .from("compliance-documents")
           .createSignedUrl(filePath, 60);
 
         if (error) throw error;
-        if (data?.signedUrl) {
-          if (newTab) newTab.location.href = data.signedUrl;
-          else window.open(data.signedUrl, "_blank");
-          return;
-        }
+        if (!data?.signedUrl) throw new Error("A signed evidence URL was not returned");
+        if (newTab) newTab.location.href = data.signedUrl;
+        else window.open(data.signedUrl, "_blank");
+        return;
       } catch (err) {
         console.error("Failed to generate signed URL:", err);
         const { message } = handleError(err, { message: "Failed to generate signed URL" });
-        if (newTab) newTab.location.href = documentUrl;
-        else window.open(documentUrl, "_blank");
+        if (newTab) newTab.close();
+        toast.error("Unable to open certificate evidence", { description: message });
         return;
       }
     }
@@ -586,29 +609,19 @@ export const RosterView: React.FC<RosterViewProps> = ({
     const worker = workers.find((w) => w.id === workerId);
     if (!worker) return;
 
-    let updatedTickets = [];
-    if (approve) {
-      updatedTickets = worker.tickets.map((t) =>
-        t.id === ticketId ? { ...t, verified: true } : t,
-      );
-    } else {
-      updatedTickets = worker.tickets.filter((t) => t.id !== ticketId);
-    }
-
-    const updatedWorker = {
-      ...worker,
-      tickets: updatedTickets,
-    };
-
-    setWorkers((prev) => prev.map((w) => (w.id === workerId ? updatedWorker : w)));
-
     try {
-      const { error: dbError } = await supabase
-        .from("staff")
-        .update({ tickets: updatedTickets as unknown as Json[] })
-        .eq("id", workerId);
-
-      if (dbError) throw dbError;
+      const { data, error } = await supabase.rpc("mutate_staff_certificate_ticket", {
+        p_staff_id: workerId,
+        p_ticket_id: ticketId,
+        p_action: approve ? "approve" : "remove",
+      });
+      if (error) throw error;
+      const updatedTickets = Array.isArray((data as { tickets?: unknown } | null)?.tickets)
+        ? ((data as { tickets: unknown }).tickets as Ticket[])
+        : worker.tickets;
+      setWorkers((prev) =>
+        prev.map((w) => (w.id === workerId ? { ...w, tickets: updatedTickets } : w)),
+      );
 
       const ticket = worker.tickets.find((t) => t.id === ticketId);
       await supabase.rpc("log_anonymous_audit", {
@@ -636,20 +649,42 @@ export const RosterView: React.FC<RosterViewProps> = ({
     const worker = workers.find((w) => w.id === workerId);
     if (!worker) return;
 
-    const updatedTickets = worker.tickets.filter((t) => t.id !== ticket.id);
-    const updatedWorker = { ...worker, tickets: updatedTickets };
-
-    setWorkers((prev) => prev.map((w) => (w.id === workerId ? updatedWorker : w)));
-
     try {
-      const { error: dbError } = await supabase
-        .from("staff")
-        .update({ tickets: updatedTickets as unknown as Json[] })
-        .eq("id", workerId);
+      const { data, error } = await supabase.rpc("mutate_staff_certificate_ticket", {
+        p_staff_id: workerId,
+        p_ticket_id: ticket.id,
+        p_action: "remove",
+      });
+      if (error) throw error;
 
-      if (dbError) throw dbError;
+      const result = data as { tickets?: unknown; recovery_id?: unknown } | null;
+      const updatedTickets = Array.isArray(result?.tickets)
+        ? (result.tickets as Ticket[])
+        : worker.tickets.filter((current) => current.id !== ticket.id);
+      const recoveryId = typeof result?.recovery_id === "string" ? result.recovery_id : null;
 
-      await supabase.rpc("log_anonymous_audit", {
+      if (ticket.manual && ticket.documentUrl?.startsWith(`manual/${workerId}/`)) {
+        const { error: removeError } = await supabase.storage
+          .from("compliance-documents")
+          .remove([ticket.documentUrl]);
+        if (removeError) {
+          if (recoveryId) {
+            await supabase.rpc("mutate_staff_certificate_ticket", {
+              p_staff_id: workerId,
+              p_ticket_id: ticket.id,
+              p_action: "restore",
+              p_recovery_id: recoveryId,
+            });
+          }
+          throw removeError;
+        }
+      }
+
+      setWorkers((prev) =>
+        prev.map((w) => (w.id === workerId ? { ...w, tickets: updatedTickets } : w)),
+      );
+
+      const { error: auditError } = await supabase.rpc("log_anonymous_audit", {
         p_user_email: "admin@opusform.co.uk",
         p_action: "REMOVE_DOCUMENT",
         p_target_type: "staff",
@@ -660,6 +695,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
           ticket_number: ticket.ticketNumber,
         },
       });
+      if (auditError) console.error("Failed to log removed compliance record:", auditError);
 
       fetchLogsAndRequests();
       toast.success(`${ticket.type} removed from compliance record`);
@@ -667,8 +703,95 @@ export const RosterView: React.FC<RosterViewProps> = ({
       const { message } = handleError(e, { message: "Failed to remove compliance record" });
       console.error("Failed to remove certificate or log audit:", e);
       toast.error("Failed to remove compliance record", { description: message });
-      // Roll back the optimistic update
-      setWorkers((prev) => prev.map((w) => (w.id === workerId ? worker : w)));
+    }
+  };
+
+  const closeComplianceUpload = () => {
+    setShowComplianceUpload(false);
+    setComplianceUploadType("");
+    setComplianceUploadExpiry("");
+    setComplianceUploadNumber("");
+    setComplianceUploadFile(null);
+    setComplianceUploadError(null);
+  };
+
+  const handleComplianceUpload = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!canManageCompliance || !selectedWorkerDetails || savingComplianceUpload) return;
+
+    const certificateType = complianceUploadType.trim();
+    if (!certificateType) {
+      setComplianceUploadError("Enter a certificate type.");
+      return;
+    }
+    if (!complianceUploadExpiry) {
+      setComplianceUploadError("Select an expiry date.");
+      return;
+    }
+    if (!complianceUploadFile) {
+      setComplianceUploadError("Choose a certificate file.");
+      return;
+    }
+    const validationError = validateCertificateFile(complianceUploadFile);
+    if (validationError) {
+      setComplianceUploadError(validationError);
+      return;
+    }
+
+    setComplianceUploadError(null);
+    setSavingComplianceUpload(true);
+    let uploadedPath: string | null = null;
+    let objectNeedsCleanup = false;
+    try {
+      const selectedFile = complianceUploadFile;
+      uploadedPath = `manual/${selectedWorkerDetails.id}/${crypto.randomUUID()}.${getCertificateFileExtension(selectedFile)}`;
+      const { error: uploadError } = await supabase.storage
+        .from("compliance-documents")
+        .upload(uploadedPath, selectedFile, {
+          cacheControl: "3600",
+          contentType: certificateUploadContentType(selectedFile),
+          upsert: false,
+        });
+      if (uploadError) throw uploadError;
+      objectNeedsCleanup = true;
+
+      const { data, error } = await supabase.rpc("add_manual_staff_compliance", {
+        p_staff_id: selectedWorkerDetails.id,
+        p_certificate_type: certificateType,
+        p_expiry_date: complianceUploadExpiry,
+        p_ticket_number: complianceUploadNumber.trim() || null,
+        p_document_url: uploadedPath,
+      });
+      if (error) throw error;
+      if (!data || typeof data !== "object" || Array.isArray(data)) {
+        throw new Error("The certificate was not returned by the server.");
+      }
+
+      const addedTicket = data as unknown as Ticket;
+      objectNeedsCleanup = false;
+      setWorkers((prev) =>
+        prev.map((worker) =>
+          worker.id === selectedWorkerDetails.id
+            ? { ...worker, tickets: [...worker.tickets, addedTicket] }
+            : worker,
+        ),
+      );
+      closeComplianceUpload();
+      fetchLogsAndRequests();
+      toast.success(`${certificateType} added to ${selectedWorkerDetails.name}`);
+    } catch (error) {
+      if (objectNeedsCleanup && uploadedPath) {
+        try {
+          await cleanupStaffUpload({ bucket: "compliance-documents", path: uploadedPath });
+        } catch (cleanupError) {
+          console.error("Failed to clean up certificate evidence", cleanupError);
+        }
+      }
+      const { message } = handleError(error, { message: "Unable to add certificate" });
+      setComplianceUploadError(message);
+      toast.error("Failed to add certificate", { description: message });
+    } finally {
+      setSavingComplianceUpload(false);
     }
   };
 
@@ -859,10 +982,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
       nameParts.length > 1 ? `${nameParts[0][0]}${nameParts[1][0]}` : `${nameParts[0][0] || ""}`;
 
     return (
-      <div
+      <button
+        type="button"
         key={worker.id}
         onClick={() => setSelectedWorkerDetailsId(worker.id)}
-        className="bg-card hover:bg-secondary border border-border rounded-2xl p-4 flex flex-col justify-between gap-3 cursor-pointer transition-all duration-150"
+        aria-label={`Open ${worker.name} profile`}
+        className="w-full bg-card hover:bg-secondary border border-border rounded-2xl p-4 flex flex-col justify-between gap-3 cursor-pointer text-left transition-all duration-150"
       >
         <div className="flex items-center space-x-3 min-w-0">
           <div
@@ -892,7 +1017,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             </span>
           )}
         </div>
-      </div>
+      </button>
     );
   };
 
@@ -928,10 +1053,12 @@ export const RosterView: React.FC<RosterViewProps> = ({
       nameParts.length > 1 ? `${nameParts[0][0]}${nameParts[1][0]}` : `${nameParts[0][0] || ""}`;
 
     return (
-      <div
+      <button
+        type="button"
         key={worker.id}
         onClick={() => setSelectedWorkerDetailsId(worker.id)}
-        className="bg-card hover:bg-secondary border border-border rounded-xl px-4 py-3 flex items-center justify-between gap-4 cursor-pointer transition-all duration-150"
+        aria-label={`Open ${worker.name} profile`}
+        className="w-full bg-card hover:bg-secondary border border-border rounded-xl px-4 py-3 flex items-center justify-between gap-4 cursor-pointer text-left transition-all duration-150"
       >
         <div className="flex items-center gap-3 min-w-0">
           <div
@@ -961,7 +1088,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
             {statusText}
           </span>
         </div>
-      </div>
+      </button>
     );
   };
 
@@ -969,24 +1096,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
     if (!workerToEdit) return null;
     return (
       <form
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
+          if (savingWorkerProfile) return;
           setEditError(null);
           if (!editName.trim()) {
             setEditError("Please enter worker name");
             return;
-          }
-
-          // Validate tickets if any
-          for (const ticket of editTickets) {
-            if (!ticket.type.trim()) {
-              setEditError("Certificate Type cannot be empty");
-              return;
-            }
-            if (!ticket.expiryDate) {
-              setEditError("Expiry Date cannot be empty");
-              return;
-            }
           }
 
           const updatedWorker: Worker = {
@@ -996,35 +1112,48 @@ export const RosterView: React.FC<RosterViewProps> = ({
             phone: editPhone.trim() || undefined,
             email: editEmail.trim() || undefined,
             postcode: workerToEdit.postcode,
-            tickets: editTickets,
           };
 
-          // Save to Supabase to trigger automatic audit log capturing
-          supabase
-            .from("staff")
-            .update({
-              name: updatedWorker.name,
-              role: updatedWorker.role,
-              phone: updatedWorker.phone,
-              email: updatedWorker.email,
-              postcode: updatedWorker.postcode,
-              tickets: updatedWorker.tickets as unknown as Json[],
-            })
-            .eq("id", workerToEdit.id)
-            .then(({ error }) => {
-              if (error) {
-                console.error("Failed to persist staff changes to Supabase:", error);
-                // Trigger toast on DB failure
-                toast.error("Failed to save staff changes", { description: "Please try again." });
-              } else {
-                // Update UI state and close modal only after successful persistence
-                setWorkers((prev) =>
-                  prev.map((w) => (w.id === workerToEdit.id ? updatedWorker : w)),
-                );
-                setWorkerToEdit(null);
-                fetchLogsAndRequests();
-              }
-            });
+          setSavingWorkerProfile(true);
+          try {
+            const { error } = await supabase
+              .from("staff")
+              .update({
+                name: updatedWorker.name,
+                role: updatedWorker.role,
+                phone: updatedWorker.phone,
+                email: updatedWorker.email,
+                postcode: updatedWorker.postcode,
+              })
+              .eq("id", workerToEdit.id);
+            if (error) throw error;
+
+            // Update only profile fields, preserving any certificate state that
+            // arrived while this editor was open.
+            setWorkers((prev) =>
+              prev.map((w) =>
+                w.id === workerToEdit.id
+                  ? {
+                      ...w,
+                      name: updatedWorker.name,
+                      role: updatedWorker.role,
+                      phone: updatedWorker.phone,
+                      email: updatedWorker.email,
+                      postcode: updatedWorker.postcode,
+                    }
+                  : w,
+              ),
+            );
+            setWorkerToEdit(null);
+            fetchLogsAndRequests();
+          } catch (error) {
+            console.error("Failed to persist staff changes to Supabase:", error);
+            const { message } = handleError(error, { message: "Please try again." });
+            setEditError(message);
+            toast.error("Failed to save staff changes", { description: message });
+          } finally {
+            setSavingWorkerProfile(false);
+          }
         }}
         className="space-y-6"
       >
@@ -1102,70 +1231,13 @@ export const RosterView: React.FC<RosterViewProps> = ({
             </div>
           </div>
 
-          {/* Certificates Info */}
-          <div className="flex flex-col">
-            <div className="bg-card border border-border rounded-xl overflow-hidden shadow-2xl flex-1 flex flex-col h-full">
-              <div className="p-3 sm:p-4 pb-3 sm:pb-4 border-b border-border/5 bg-secondary flex items-center space-x-3 shrink-0">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-foreground">
-                  Certificates
-                </span>
-              </div>
-              <div className="p-3 sm:p-4 space-y-3">
-                {editTickets.map((ticket, index) => (
-                  <div
-                    key={ticket.id}
-                    className="flex flex-col gap-2 sm:grid sm:grid-cols-12 sm:gap-2 bg-secondary p-2 rounded-xl border border-border"
-                  >
-                    <div className="sm:col-span-5">
-                      <input
-                        type="text"
-                        value={ticket.type}
-                        onChange={(e) => {
-                          const newTickets = [...editTickets];
-                          newTickets[index].type = e.target.value;
-                          setEditTickets(newTickets);
-                        }}
-                        className="w-full bg-transparent border-none text-[10px] font-bold text-foreground uppercase px-1 py-1 focus:ring-0"
-                        placeholder="Certificate Type"
-                      />
-                    </div>
-                    <div className="flex items-center gap-2 sm:contents">
-                      <div className="flex-1 sm:col-span-5">
-                        <input
-                          type="date"
-                          value={ticket.expiryDate}
-                          onChange={(e) => {
-                            const newTickets = [...editTickets];
-                            newTickets[index].expiryDate = e.target.value;
-                            setEditTickets(newTickets);
-                          }}
-                          className="w-full bg-transparent border-none text-[10px] text-muted-foreground px-1 py-1 focus:ring-0"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setEditTickets(editTickets.filter((_, i) => i !== index))}
-                        className="sm:col-span-2 text-destructive hover:text-destructive/80 flex items-center justify-center shrink-0"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setEditTickets([
-                      ...editTickets,
-                      { id: `new-${Date.now()}`, type: "", expiryDate: "", ticketNumber: "" },
-                    ])
-                  }
-                  className="w-full py-2 border border-dashed border-border hover:border-primary/50 text-muted-foreground hover:text-primary rounded-xl text-[10px] font-bold uppercase tracking-wider transition-all"
-                >
-                  + Add New Certificate
-                </button>
-              </div>
-            </div>
+          <div className="flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 text-xs text-muted-foreground">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p>
+              Certificate records are managed separately so saving profile details cannot replace
+              evidence added by another person or workflow. Use the certificate upload action on the
+              staff profile to add a new record.
+            </p>
           </div>
         </div>
 
@@ -1179,9 +1251,10 @@ export const RosterView: React.FC<RosterViewProps> = ({
           </button>
           <button
             type="submit"
-            className="w-full sm:flex-1 py-3.5 bg-primary hover:bg-primary text-primary-foreground transition-all rounded-xl text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20"
+            disabled={savingWorkerProfile}
+            className="w-full sm:flex-1 py-3.5 bg-primary hover:bg-primary text-primary-foreground transition-all rounded-xl text-[11px] font-bold uppercase tracking-wider shadow-lg shadow-primary/20 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Save & Apply
+            {savingWorkerProfile ? "Saving..." : "Save & Apply"}
           </button>
         </div>
       </form>
@@ -1334,7 +1407,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
     return (
       <div className="space-y-4 animate-in fade-in duration-200">
         {/* Tab Buttons */}
-        <div className="flex border-b border-border pb-0 gap-6 mb-4">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-border pb-0 mb-4">
           <button
             type="button"
             onClick={() => setActiveDossierTab("general")}
@@ -1375,11 +1448,28 @@ export const RosterView: React.FC<RosterViewProps> = ({
             onClick={() =>
               navigate(`/portal/certificate-checker?staffId=${selectedWorkerDetails.id}`)
             }
-            className="ml-auto inline-flex items-center gap-1.5 pb-3 text-[10px] font-black uppercase tracking-wider text-primary hover:text-foreground"
+            className="inline-flex items-center gap-1.5 pb-3 text-[10px] font-black uppercase tracking-wider text-primary hover:text-foreground sm:ml-auto"
           >
             <BadgeCheck className="h-3.5 w-3.5" />
             Check certificate
           </button>
+          {canManageCompliance && (
+            <button
+              type="button"
+              onClick={() => {
+                setComplianceUploadType("");
+                setComplianceUploadExpiry("");
+                setComplianceUploadNumber("");
+                setComplianceUploadFile(null);
+                setComplianceUploadError(null);
+                setShowComplianceUpload(true);
+              }}
+              className="inline-flex items-center gap-1.5 pb-3 text-[10px] font-black uppercase tracking-wider text-primary hover:text-foreground"
+            >
+              <FileUp className="h-3.5 w-3.5" />
+              Upload certificate
+            </button>
+          )}
         </div>
 
         {/* Tab 1: Compliance */}
@@ -1437,9 +1527,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
                 return (
                   <div
                     key={ticket.id}
-                    className={`flex items-center justify-between p-2 rounded-lg border gap-2 ${cardBg} transition-all duration-150`}
+                    className={`flex flex-wrap items-center justify-between p-2 rounded-lg border gap-2 ${cardBg} transition-all duration-150`}
                   >
-                    <div className="flex items-center space-x-2 min-w-0">
+                    <div className="flex min-w-0 flex-1 items-center space-x-2">
                       <div
                         className={`w-6 h-6 rounded-md border flex items-center justify-center shrink-0 ${iconBox}`}
                       >
@@ -1464,9 +1554,9 @@ export const RosterView: React.FC<RosterViewProps> = ({
                       </div>
                     </div>
 
-                    <div className="flex shrink-0">
+                    <div className="flex min-w-0 flex-wrap justify-end gap-2">
                       {isExpired ? (
-                        <div className="flex gap-1.5">
+                        <div className="flex flex-wrap justify-end gap-1.5">
                           {canWrite && (
                             <button
                               type="button"
@@ -1487,7 +1577,7 @@ export const RosterView: React.FC<RosterViewProps> = ({
                           )}
                         </div>
                       ) : (
-                        <div className="flex gap-2 w-full sm:w-auto">
+                        <div className="flex flex-wrap justify-end gap-2">
                           <button
                             type="button"
                             onClick={() =>
@@ -2100,12 +2190,19 @@ export const RosterView: React.FC<RosterViewProps> = ({
             )
           }
           confirmLabel="Restore Record"
-          onConfirm={() => {
+          onConfirm={async () => {
             if (!selectedWorkerToRestore) return;
+            const targetId = selectedWorkerToRestore.id;
+            const { error } = await supabase
+              .from("staff")
+              .update({ is_archived: false })
+              .eq("id", targetId);
+            if (error) {
+              toast.error("Failed to restore profile", { description: error.message });
+              return;
+            }
             setWorkers((prev) =>
-              prev.map((w) =>
-                w.id === selectedWorkerToRestore.id ? { ...w, isArchived: false } : w,
-              ),
+              prev.map((w) => (w.id === targetId ? { ...w, isArchived: false } : w)),
             );
             setSelectedWorkerToRestore(null);
           }}
@@ -2144,7 +2241,6 @@ export const RosterView: React.FC<RosterViewProps> = ({
                         setEditRole(selectedWorkerDetails.role);
                         setEditPhone(selectedWorkerDetails.phone || "");
                         setEditEmail(selectedWorkerDetails.email || "");
-                        setEditTickets([...selectedWorkerDetails.tickets]);
                         setEditError(null);
                       }}
                       className="flex items-center justify-center gap-1 w-full sm:w-auto px-3 py-1.5 border border-border hover:bg-secondary rounded-lg text-[11px] font-bold text-foreground uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap"
@@ -2489,6 +2585,123 @@ export const RosterView: React.FC<RosterViewProps> = ({
             )}
           </div>
         </>
+      )}
+
+      {selectedWorkerDetails && canManageCompliance && (
+        <Dialog
+          open={showComplianceUpload}
+          onOpenChange={(open) => {
+            if (!open) closeComplianceUpload();
+          }}
+        >
+          <DialogContent className="border-border bg-card text-card-foreground sm:max-w-lg">
+            <form onSubmit={handleComplianceUpload} className="space-y-5">
+              <div>
+                <DialogTitle className="text-lg font-black">Upload certificate</DialogTitle>
+                <DialogDescription className="mt-1 text-xs text-muted-foreground">
+                  Add a new certificate to {selectedWorkerDetails.name}. Existing records stay in
+                  the staff history and are not replaced by this upload.
+                </DialogDescription>
+              </div>
+
+              <div className="space-y-4">
+                <label className="block text-xs font-bold text-muted-foreground">
+                  Certificate type
+                  <input
+                    required
+                    list="staff-certificate-types"
+                    value={complianceUploadType}
+                    onChange={(event) => setComplianceUploadType(event.target.value)}
+                    placeholder="e.g. CSCS Labourer Card"
+                    className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-3 text-sm text-foreground"
+                  />
+                  <datalist id="staff-certificate-types">
+                    {ON_SITE_CERTIFICATIONS.map((certificate) => (
+                      <option key={certificate} value={certificate} />
+                    ))}
+                  </datalist>
+                </label>
+
+                <label className="block text-xs font-bold text-muted-foreground">
+                  Expiry date
+                  <input
+                    required
+                    type="date"
+                    value={complianceUploadExpiry}
+                    onChange={(event) => setComplianceUploadExpiry(event.target.value)}
+                    className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-3 text-sm text-foreground"
+                  />
+                </label>
+
+                <label className="block text-xs font-bold text-muted-foreground">
+                  Certificate or reference number <span className="font-normal">(optional)</span>
+                  <input
+                    value={complianceUploadNumber}
+                    onChange={(event) => setComplianceUploadNumber(event.target.value)}
+                    placeholder="Optional reference"
+                    className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-3 text-sm text-foreground"
+                  />
+                </label>
+
+                <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-primary/60 bg-primary/5 px-4 py-4 text-sm text-primary hover:bg-primary/10 focus-within:ring-2 focus-within:ring-primary/50">
+                  <FileUp className="h-5 w-5 shrink-0" />
+                  <span className="min-w-0">
+                    <strong className="block truncate">
+                      {complianceUploadFile?.name || "Choose certificate evidence"}
+                    </strong>
+                    <small className="text-xs text-muted-foreground">
+                      PDF, JPG, JPEG, or PNG · maximum 10 MB
+                    </small>
+                  </span>
+                  <input
+                    type="file"
+                    required
+                    accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                    className="sr-only"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      const error = file ? validateCertificateFile(file) : null;
+                      if (error) {
+                        setComplianceUploadFile(null);
+                        setComplianceUploadError(error);
+                        event.currentTarget.value = "";
+                        return;
+                      }
+                      setComplianceUploadError(null);
+                      setComplianceUploadFile(file);
+                    }}
+                  />
+                </label>
+              </div>
+
+              {complianceUploadError && (
+                <p
+                  className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-semibold text-destructive"
+                  role="alert"
+                >
+                  {complianceUploadError}
+                </p>
+              )}
+
+              <div className="flex flex-col-reverse gap-2 border-t border-border pt-4 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeComplianceUpload}
+                  className="min-h-11 rounded-lg border border-border px-4 py-3 text-xs font-black uppercase tracking-widest text-muted-foreground hover:bg-secondary hover:text-foreground"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingComplianceUpload}
+                  className="min-h-11 rounded-lg bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground disabled:opacity-50"
+                >
+                  {savingComplianceUpload ? "Uploading..." : "Save certificate"}
+                </button>
+              </div>
+            </form>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

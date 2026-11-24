@@ -1179,6 +1179,16 @@ export type Database = {
     };
     Functions: {
       admin_delete_user: { Args: { target_id: string }; Returns: undefined };
+      add_manual_staff_compliance: {
+        Args: {
+          p_certificate_type: string;
+          p_document_url?: string | null;
+          p_expiry_date: string;
+          p_staff_id: string;
+          p_ticket_number?: string | null;
+        };
+        Returns: Json;
+      };
       allocate_document_number: {
         Args: { p_document_kind: string; p_scope_id?: string | null };
         Returns: number;
@@ -1212,6 +1222,15 @@ export type Database = {
           p_user_email: string;
         };
         Returns: undefined;
+      };
+      mutate_staff_certificate_ticket: {
+        Args: {
+          p_action: string;
+          p_recovery_id?: string | null;
+          p_staff_id: string;
+          p_ticket_id: string;
+        };
+        Returns: Json;
       };
       revoke_telegram_link: {
         Args: { p_target_id: string };

@@ -162,6 +162,14 @@ export const MANAGEMENT_ROLES: AppRole[] = [
 ];
 // Full ops write access — mirrors private.can_write_ops() in the DB.
 export const MANAGEMENT_WRITE_ROLES: AppRole[] = ["admin", "director", "logistics_coordinator"];
+// These roles may add or verify staff compliance evidence. Certificate writes
+// go through dedicated workflows rather than the general staff synchronizer.
+export const STAFF_COMPLIANCE_ROLES: AppRole[] = [
+  "admin",
+  "director",
+  "logistics_coordinator",
+  "logistics_assistant",
+];
 // Document sending is an operational management action, not a field-user action.
 export const DOCUMENT_SEND_ROLES: AppRole[] = MANAGEMENT_WRITE_ROLES;
 // Field users are intentionally restricted to the dedicated foreman workspace;
@@ -190,6 +198,7 @@ export const workerToRow = (w: Worker, tenantId?: string) =>
     // time rather than us silently guessing a tenant.
     ...(tenantId ? { tenant_id: tenantId } : {}),
   }) as StaffInsertRow;
+
 type StaffRow = Pick<
   Database["public"]["Tables"]["staff"]["Row"],
   | "id"
@@ -417,7 +426,6 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [theme]);
 
   // Track previous ids per table so we can compute deletions on sync.
-  const prevWorkerIdsRef = useRef<Set<string>>(new Set());
   const prevJobIdsRef = useRef<Set<string>>(new Set());
   const prevShiftIdsRef = useRef<Set<string>>(new Set());
   const prevCalendarEventIdsRef = useRef<Set<string>>(new Set());
@@ -425,7 +433,6 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const hydratedRef = useRef(false);
 
   // Track last saved state to prevent redundant updates (and initial load-time auto-saves)
-  const lastSavedWorkersRef = useRef<string>("");
   const lastSavedJobsRef = useRef<string>("");
   const lastSavedShiftsRef = useRef<string>("");
   const lastSavedCalendarEventsRef = useRef<string>("");
@@ -503,7 +510,6 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setProfileState(null);
         // Clear cached data on sign-out to avoid leaking one user's view.
         hydratedRef.current = false;
-        prevWorkerIdsRef.current = new Set();
         prevJobIdsRef.current = new Set();
         prevShiftIdsRef.current = new Set();
         setWorkers([]);
@@ -825,14 +831,10 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (import.meta.env.DEV && role === "site_foreman" && user.email) {
         setCurrentStaffId(LOCAL_FOREMAN_WORKER_ID);
       }
-      prevWorkerIdsRef.current = new Set(wList.map((w) => w.id));
       prevJobIdsRef.current = new Set(jList.map((j) => j.id));
       prevShiftIdsRef.current = new Set(sList.map((s) => s.id));
       prevCalendarEventIdsRef.current = new Set(ceList.map((e) => e.id));
 
-      lastSavedWorkersRef.current = stableStringify(
-        wList.map((w) => workerToRow(w, profile?.tenant_id)),
-      );
       lastSavedJobsRef.current = stableStringify(jList.map((j) => jobToRow(j, profile?.tenant_id)));
       lastSavedShiftsRef.current = stableStringify(
         sList.map((s) => shiftToRow(s, profile?.tenant_id)),
@@ -883,8 +885,10 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [user, role]);
 
   // Keep the roster live: anonymous submissions (e.g. the credential portal)
-  // write to `staff` outside this session's own upsert loop below, so without
-  // this the compliance tab only refreshes on next login.
+  // and explicit profile actions write to `staff` outside this session, so
+  // without this the compliance tab only refreshes on next login. Staff writes
+  // intentionally stay explicit; do not add a generic workers sync effect here
+  // because a stale worker snapshot can erase a newer certificate change.
   useEffect(() => {
     if (!user || !profile?.tenant_id || role === "site_foreman") return;
     const channel = supabase
@@ -910,12 +914,6 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                       : prev.map((w, i) => (i === idx ? updated : w));
                   })();
 
-            // Mark this state as already persisted so the auto-save effect
-            // below doesn't immediately echo it back as a redundant upsert.
-            prevWorkerIdsRef.current = new Set(next.map((w) => w.id));
-            lastSavedWorkersRef.current = stableStringify(
-              next.map((w) => workerToRow(w, profile?.tenant_id)),
-            );
             return next;
           });
         },
@@ -1065,43 +1063,6 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       !MANAGEMENT_WRITE_ROLES.includes(role)
     )
       return;
-    const rows = workers.map((w) => workerToRow(w, profile?.tenant_id));
-    const serialized = stableStringify(rows);
-    if (serialized === lastSavedWorkersRef.current) return;
-
-    const currentIds = new Set(workers.map((w) => w.id));
-    const removed = [...prevWorkerIdsRef.current].filter((id) => !currentIds.has(id));
-    (async () => {
-      let writeError: unknown = null;
-      if (workers.length > 0) {
-        const { error } = await supabase.from("staff").upsert(rows);
-        if (error) writeError = error;
-      }
-      if (!writeError && removed.length > 0) {
-        const { error } = await supabase.from("staff").delete().in("id", removed);
-        if (error) writeError = error;
-      }
-      if (writeError) {
-        console.error("persist staff", writeError);
-        reportWriteFailure("staff", writeError);
-        return;
-      }
-      lastSavedWorkersRef.current = serialized;
-      prevWorkerIdsRef.current = currentIds;
-      writeRetryAttemptsRef.current = 0;
-      setDataRefreshError(null);
-    })();
-  }, [workers, user, profile?.tenant_id, role, writeRetryNonce]);
-
-  useEffect(() => {
-    if (
-      !hydratedRef.current ||
-      !user ||
-      !profile?.tenant_id ||
-      !role ||
-      !MANAGEMENT_WRITE_ROLES.includes(role)
-    )
-      return;
     const rows = jobs.map((j) => jobToRow(j, profile?.tenant_id));
     const serialized = stableStringify(rows);
     if (serialized === lastSavedJobsRef.current) return;
@@ -1241,7 +1202,6 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
     // Reflect the seeded state locally without re-triggering sync-back.
     hydratedRef.current = false;
-    prevWorkerIdsRef.current = new Set(INITIAL_ROSTER.map((w) => w.id));
     prevJobIdsRef.current = new Set(INITIAL_JOBS.map((j) => j.id));
     prevShiftIdsRef.current = new Set(INITIAL_SHIFTS.map((s) => s.id));
     setWorkers(INITIAL_ROSTER);

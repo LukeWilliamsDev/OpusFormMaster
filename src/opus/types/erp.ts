@@ -23,6 +23,7 @@ export interface Ticket {
   ticketNumber: string;
   isValid?: boolean;
   verified?: boolean;
+  manual?: boolean;
   documentUrl?: string;
   createdAt?: string;
 }

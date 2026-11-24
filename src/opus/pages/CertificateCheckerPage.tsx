@@ -5,6 +5,12 @@ import { toast } from "sonner";
 import { usePortal } from "../context/PortalContext";
 import { supabase } from "../../integrations/supabase/client";
 import { formatUKDate } from "../utils/week";
+import {
+  certificateUploadContentType,
+  getCertificateFileExtension,
+  validateCertificateFile,
+} from "../lib/certificateUpload";
+import { cleanupStaffUpload } from "../lib/staffUploadCleanup";
 
 const db = supabase as any;
 const OFFICIAL_CSCS_CHECKER = "https://www.cscs.uk.com/checkcards/";
@@ -46,8 +52,11 @@ export const CertificateCheckerPage: React.FC = () => {
     [workers, staffId],
   );
 
-  const loadChecks = async () => {
-    if (!staffId) return setChecks([]);
+  const loadChecks = async (): Promise<boolean> => {
+    if (!staffId) {
+      setChecks([]);
+      return true;
+    }
     setLoadingChecks(true);
     const { data, error } = await db
       .from("staff_certificate_checks")
@@ -57,7 +66,10 @@ export const CertificateCheckerPage: React.FC = () => {
       .eq("staff_id", staffId)
       .order("created_at", { ascending: false });
     setLoadingChecks(false);
-    if (error) return toast.error(error.message || "Unable to load check history");
+    if (error) {
+      toast.error(error.message || "Unable to load check history");
+      return false;
+    }
     setChecks(data ?? []);
 
     const actorIds: string[] = Array.from(
@@ -72,7 +84,7 @@ export const CertificateCheckerPage: React.FC = () => {
     );
     if (actorIds.length === 0) {
       setCheckActors({});
-      return;
+      return true;
     }
     const { data: actors } = await supabase
       .from("profiles")
@@ -83,6 +95,7 @@ export const CertificateCheckerPage: React.FC = () => {
         (actors ?? []).map((actor) => [actor.id, actor.full_name || actor.email || actor.id]),
       ),
     );
+    return true;
   };
 
   useEffect(() => {
@@ -102,37 +115,57 @@ export const CertificateCheckerPage: React.FC = () => {
     if (!staffId || !certificateNumber.trim() || !result || !user || !profile?.tenant_id) return;
     setSaving(true);
     let evidencePath: string | null = null;
-    if (evidence) {
-      const extension = evidence.name.split(".").pop() || "bin";
-      evidencePath = `${profile.tenant_id}/${user.id}/${crypto.randomUUID()}.${extension}`;
-      const { error } = await supabase.storage
-        .from("certificate-check-evidence")
-        .upload(evidencePath, evidence);
-      if (error) {
-        setSaving(false);
-        return toast.error(error.message || "Unable to upload evidence");
+    let evidenceNeedsCleanup = false;
+    try {
+      if (evidence) {
+        const validationError = validateCertificateFile(evidence);
+        if (validationError) return toast.error(validationError);
+        const extension = getCertificateFileExtension(evidence);
+        evidencePath = `${profile.tenant_id}/${user.id}/${crypto.randomUUID()}.${extension}`;
+        evidenceNeedsCleanup = true;
+        const { error } = await supabase.storage
+          .from("certificate-check-evidence")
+          .upload(evidencePath, evidence, {
+            cacheControl: "3600",
+            contentType: certificateUploadContentType(evidence),
+            upsert: false,
+          });
+        if (error) throw error;
       }
+
+      const { error } = await db.from("staff_certificate_checks").insert({
+        tenant_id: profile.tenant_id,
+        staff_id: staffId,
+        checked_by: user.id,
+        certificate_type: "CSCS",
+        certificate_number: certificateNumber.trim(),
+        result,
+        expiry_date: expiryDate || null,
+        notes: notes.trim() || null,
+        evidence_path: evidencePath,
+      });
+      if (error) throw error;
+      evidenceNeedsCleanup = false;
+      setCertificateNumber("");
+      setDateOfBirth("");
+      setExpiryDate("");
+      setNotes("");
+      setEvidence(null);
+      const refreshed = await loadChecks();
+      toast.success(refreshed ? "CSCS check recorded" : "CSCS check recorded; refresh failed");
+    } catch (error) {
+      console.error("Failed to record certificate check", error);
+      if (evidenceNeedsCleanup && evidencePath) {
+        try {
+          await cleanupStaffUpload({ bucket: "certificate-check-evidence", path: evidencePath });
+        } catch (cleanupError) {
+          console.error("Failed to clean up certificate evidence", cleanupError);
+        }
+      }
+      toast.error(error instanceof Error ? error.message : "Unable to save certificate check");
+    } finally {
+      setSaving(false);
     }
-    const { error } = await db.from("staff_certificate_checks").insert({
-      tenant_id: profile.tenant_id,
-      staff_id: staffId,
-      checked_by: user.id,
-      certificate_type: "CSCS",
-      certificate_number: certificateNumber.trim(),
-      result,
-      expiry_date: expiryDate || null,
-      notes: notes.trim() || null,
-      evidence_path: evidencePath,
-    });
-    setSaving(false);
-    if (error) return toast.error(error.message || "Unable to save certificate check");
-    setCertificateNumber("");
-    setDateOfBirth("");
-    setExpiryDate("");
-    setNotes("");
-    setEvidence(null);
-    await loadChecks();
-    toast.success("CSCS check recorded");
   };
 
   return (

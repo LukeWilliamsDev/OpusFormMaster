@@ -25,6 +25,13 @@ import {
   createAsyncState,
 } from "../utils/stateGrouping";
 import { handleError } from "../utils/errorHandler";
+import {
+  certificateUploadContentType,
+  getCertificateFileExtension,
+  sanitizeUploadPathSegment,
+  validateCertificateFile,
+} from "../lib/certificateUpload";
+import { cleanupStaffUpload } from "../lib/staffUploadCleanup";
 
 /* ────────────────────────────── Types ────────────────────────────── */
 
@@ -62,11 +69,14 @@ const emptySlot = (): UploadSlot => ({
 
 /** Derive initials from a name, e.g. "Luke Williams" → "LW" */
 const getInitials = (name: string): string =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((w) => w[0].toUpperCase())
-    .join("");
+  sanitizeUploadPathSegment(
+    name
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w) => w[0].toUpperCase())
+      .join(""),
+    "XX",
+  );
 
 /** Derive a slug from a cert name, e.g. "CSCS Labourer Card" → "CSCS-LABOURER-CARD" */
 const certSlug = (cert: string): string =>
@@ -486,16 +496,9 @@ export const SubmitCredentialsPage: React.FC = () => {
   const handleFileSelected = async (index: number, file: File) => {
     if (!file) return;
 
-    // Validate type
-    const allowedTypes = ["application/pdf", "image/png", "image/jpeg", "image/jpg"];
-    if (!allowedTypes.includes(file.type)) {
-      updateSlot(index, { error: "Only PDF and image files (PNG, JPG) are allowed." });
-      return;
-    }
-
-    // Validate size (10MB max; storage enforces the same limit server-side)
-    if (file.size > 10 * 1024 * 1024) {
-      updateSlot(index, { error: "File size must be under 10 MB." });
+    const validationError = validateCertificateFile(file);
+    if (validationError) {
+      updateSlot(index, { error: validationError });
       return;
     }
 
@@ -506,7 +509,7 @@ export const SubmitCredentialsPage: React.FC = () => {
     }
 
     // Build the auto-renamed filename
-    const fileExt = file.name.split(".").pop() || "pdf";
+    const fileExt = getCertificateFileExtension(file);
     const displayFilename = buildFilename(staffName, slots[index].cert, fileExt);
 
     updateSlot(index, {
@@ -565,6 +568,7 @@ export const SubmitCredentialsPage: React.FC = () => {
 
     setSubmitState((prev) => ({ ...prev, loading: true, success: false, error: null }));
 
+    const uploadedPaths: string[] = [];
     try {
       const uploadedTickets = [];
 
@@ -575,10 +579,11 @@ export const SubmitCredentialsPage: React.FC = () => {
         // If it was already uploaded, we can skip it, but since we defer, upload now:
         updateSlot(i, { uploading: true, progress: 10 });
 
-        const fileExt = slot.file!.name.split(".").pop() || "pdf";
+        const fileExt = getCertificateFileExtension(slot.file!);
         const slug = certSlug(slot.cert);
         const initials = getInitials(staffName) || "XX";
         const filePath = `requests/${token}/${crypto.randomUUID()}_${initials}_${slug}.${fileExt.toLowerCase()}`;
+        uploadedPaths.push(filePath);
 
         // Simulate progress for visual feedback
         let simProgress = 10;
@@ -587,14 +592,19 @@ export const SubmitCredentialsPage: React.FC = () => {
           updateSlot(i, { progress: simProgress });
         }, 150);
 
-        const { error: uploadError } = await supabase.storage
-          .from("compliance-documents")
-          .upload(filePath, slot.file!, {
-            cacheControl: "3600",
-            upsert: false,
-          });
-
-        clearInterval(progressInterval);
+        let uploadError: { message: string } | null = null;
+        try {
+          const result = await supabase.storage
+            .from("compliance-documents")
+            .upload(filePath, slot.file!, {
+              cacheControl: "3600",
+              contentType: certificateUploadContentType(slot.file!),
+              upsert: false,
+            });
+          uploadError = result.error;
+        } finally {
+          clearInterval(progressInterval);
+        }
 
         if (uploadError) {
           updateSlot(i, { uploading: false, progress: 0, error: uploadError.message });
@@ -630,6 +640,24 @@ export const SubmitCredentialsPage: React.FC = () => {
       setSubmitState((prev) => ({ ...prev, loading: false, success: true }));
     } catch (err) {
       console.error("Submit error:", err);
+      setSlots((current) =>
+        current.map((slot) => (slot.uploading ? { ...slot, uploading: false, progress: 0 } : slot)),
+      );
+      if (uploadedPaths.length > 0) {
+        await Promise.all(
+          uploadedPaths.map(async (path) => {
+            try {
+              await cleanupStaffUpload({
+                bucket: "compliance-documents",
+                path,
+                requestId: token ?? undefined,
+              });
+            } catch (cleanupError) {
+              console.error("Failed to clean up credential upload", cleanupError);
+            }
+          }),
+        );
+      }
       const { message } = handleError(err, { message: "Submission failed" });
       setSubmitState((prev) => ({ ...prev, loading: false, error: message }));
       setErrorMsg(message);

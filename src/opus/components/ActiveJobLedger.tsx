@@ -103,8 +103,8 @@ export const ActiveJobLedger: React.FC<ActiveJobLedgerProps> = ({
   const saveDateEditor = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!dateJob) return;
-    if ((startDate && !endDate) || (!startDate && endDate)) {
-      setDateError("Set both dates, or clear both dates.");
+    if (dateJob.status !== "completed" && (!startDate || !endDate)) {
+      setDateError("Set both a start date and an end date.");
       return;
     }
     if ((startDate && !isValidISODate(startDate)) || (endDate && !isValidISODate(endDate))) {

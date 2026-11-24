@@ -32,6 +32,8 @@ type RevertedJobRow = Pick<
   | "current_pours"
   | "contract_max_pours"
   | "status"
+  | "start_date"
+  | "end_date"
   | "schedule_value"
   | "updated_at"
 >;
@@ -43,6 +45,7 @@ interface HistoryTabProps {
   setAuditSearch: (value: string) => void;
   jobName?: string;
   onAuditRefresh?: () => Promise<void> | void;
+  onBeforeJobRevert?: (auditLog: AuditLogRow) => boolean;
   onJobReverted?: (job: RevertedJobRow) => void;
 }
 
@@ -53,6 +56,7 @@ export function HistoryTab({
   setAuditSearch,
   jobName,
   onAuditRefresh,
+  onBeforeJobRevert,
   onJobReverted,
 }: HistoryTabProps) {
   const { role } = usePortal();
@@ -81,6 +85,10 @@ export function HistoryTab({
 
   const executeRevert = async () => {
     if (!revertTarget) return;
+    if (onBeforeJobRevert && !onBeforeJobRevert(revertTarget)) {
+      setRevertTarget(null);
+      return;
+    }
     setRevertingId(revertTarget.id);
     const { error } = await supabase.rpc("revert_audit_log", {
       p_audit_log_id: revertTarget.id,
@@ -94,7 +102,7 @@ export function HistoryTab({
     const { data: revertedJob, error: refreshError } = await supabase
       .from("jobs")
       .select(
-        "id, job_ref, site_name, main_contractor, postcode, email, current_pours, contract_max_pours, status, schedule_value, updated_at",
+        "id, job_ref, site_name, main_contractor, postcode, email, start_date, end_date, current_pours, contract_max_pours, status, schedule_value, updated_at",
       )
       .eq("id", revertTarget.target_id)
       .maybeSingle();

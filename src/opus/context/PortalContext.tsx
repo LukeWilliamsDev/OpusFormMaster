@@ -22,6 +22,11 @@ function stableStringify(value: unknown): string {
   return JSON.stringify(value);
 }
 
+const demoJobPeriod = (startOffset: number, durationDays: number) => {
+  const startDate = addDays(localLondonDate(), startOffset);
+  return { startDate, endDate: addDays(startDate, durationDays) };
+};
+
 const INITIAL_JOBS: Job[] = [
   {
     id: "1",
@@ -33,6 +38,7 @@ const INITIAL_JOBS: Job[] = [
     contractMaxPours: 4,
     status: "in-progress",
     scheduleValue: 42500,
+    ...demoJobPeriod(-2, 7),
   },
   {
     id: "2",
@@ -44,6 +50,7 @@ const INITIAL_JOBS: Job[] = [
     contractMaxPours: 6,
     status: "pending",
     scheduleValue: 18200,
+    ...demoJobPeriod(3, 7),
   },
   {
     id: "3",
@@ -55,6 +62,7 @@ const INITIAL_JOBS: Job[] = [
     contractMaxPours: 8,
     status: "completed",
     scheduleValue: 65400,
+    ...demoJobPeriod(-14, 5),
   },
   {
     id: "4",
@@ -66,6 +74,7 @@ const INITIAL_JOBS: Job[] = [
     contractMaxPours: 10,
     status: "in-progress",
     scheduleValue: 89000,
+    ...demoJobPeriod(1, 8),
   },
   {
     id: "5",
@@ -77,6 +86,7 @@ const INITIAL_JOBS: Job[] = [
     contractMaxPours: 10,
     status: "in-progress",
     scheduleValue: 54000,
+    ...demoJobPeriod(7, 7),
   },
 ];
 
@@ -723,6 +733,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           contractMaxPours: 6,
           status: "in-progress",
           scheduleValue: 0,
+          startDate: addDays(today, -1),
+          endDate: addDays(today, 4),
         });
         jList.push(
           {
@@ -735,6 +747,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             contractMaxPours: 4,
             status: "pending",
             scheduleValue: 0,
+            startDate: addDays(today, 1),
+            endDate: addDays(today, 8),
           },
           {
             id: LOCAL_FOREMAN_BLOCKED_JOB_ID,
@@ -746,6 +760,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             contractMaxPours: 4,
             status: "on-hold",
             scheduleValue: 0,
+            startDate: addDays(today, 2),
+            endDate: addDays(today, 9),
           },
           {
             id: LOCAL_FOREMAN_COMPLETED_JOB_ID,
@@ -757,6 +773,8 @@ export const PortalProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             contractMaxPours: 6,
             status: "completed",
             scheduleValue: 0,
+            startDate: addDays(today, -4),
+            endDate: addDays(today, -1),
           },
         );
         sList.push(

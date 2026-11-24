@@ -11,6 +11,7 @@ import { getPostcodeCoordinates, calculateDistance } from "../../utils/geo";
 import { Button } from "@/components/ui/button";
 import { RoleAccordion } from "./RoleAccordion";
 import { groupWorkersByCategory } from "./roleCategories";
+import { isJobScheduledOnDate } from "./jobPeriods";
 
 export type AssignTarget =
   | { mode: "pickProject"; worker: Worker; date: string }
@@ -85,7 +86,11 @@ export const AssignSheet: React.FC<AssignSheetProps> = ({
     }
   };
 
-  const activeJobs = jobs.filter((j) => j.status !== "completed");
+  const activeJobs = jobs.filter(
+    (job) =>
+      job.status !== "completed" &&
+      (target?.mode !== "pickProject" || isJobScheduledOnDate(job, target.date)),
+  );
 
   // Sort and calculate distances of unassigned workers if target mode is pickWorker
   const unassignedWorkersWithDistance = useMemo(() => {

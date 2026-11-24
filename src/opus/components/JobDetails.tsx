@@ -35,6 +35,7 @@ import { QuoteInvoiceBuilder } from "./QuoteInvoiceBuilder";
 import { ThirdPartyAttachmentsPanel } from "./ThirdPartyAttachmentsPanel";
 import { ThirdPartyNotesPanel } from "./ThirdPartyNotesPanel";
 import { hasValidJobPeriod } from "./calendar/jobPeriods";
+import { getAuditDetails } from "../utils/auditDiff";
 
 const MAX_ATTACHMENT_BYTES = 100 * 1024 * 1024;
 const MAX_TOTAL_ATTACHMENT_BYTES = 100 * 1024 * 1024;
@@ -602,6 +603,13 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
   const executeStatusChange = () => {
     if (!canWrite) return;
     if (!pendingStatus) return;
+    if (pendingStatus !== "completed" && !hasValidJobPeriod(job)) {
+      toast.error(
+        "Set both site dates before making this job active. Active jobs appear in Sites only within that period.",
+      );
+      setPendingStatus(null);
+      return;
+    }
     setStatus(pendingStatus);
     onUpdateJob({ ...job, status: pendingStatus });
     setPendingStatus(null);
@@ -960,8 +968,10 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
         title="Edit Job Details"
         confirmLabel="Save Changes"
         onConfirm={() => {
-          if ((editStartDate && !editEndDate) || (!editStartDate && editEndDate)) {
-            toast.error("Set both a start date and an end date, or clear both dates.");
+          if (job.status !== "completed" && (!editStartDate || !editEndDate)) {
+            toast.error(
+              "Set both a start date and an end date. Active jobs need a site period to appear in Sites.",
+            );
             return;
           }
           if (
@@ -1439,6 +1449,21 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
             setAuditSearch={setAuditSearch}
             jobName={job.siteName}
             onAuditRefresh={fetchJobAuditLogs}
+            onBeforeJobRevert={(auditLog) => {
+              const details = getAuditDetails(auditLog.details);
+              const oldSnapshot =
+                details?.old && typeof details.old === "object" && !Array.isArray(details.old)
+                  ? (details.old as Record<string, unknown>)
+                  : null;
+              const revertedStatus = oldSnapshot?.status;
+              if (revertedStatus && revertedStatus !== "completed" && !hasValidJobPeriod(job)) {
+                toast.error(
+                  "This job cannot be reverted to active until it has both site dates set.",
+                );
+                return false;
+              }
+              return true;
+            }}
             onJobReverted={(revertedJob) => {
               const validStatuses: Job["status"][] = [
                 "active",
@@ -1454,6 +1479,8 @@ export const JobDetails: React.FC<JobDetailsProps> = ({
                 mainContractor: revertedJob.main_contractor ?? "",
                 postcode: revertedJob.postcode ?? "",
                 email: revertedJob.email ?? undefined,
+                startDate: revertedJob.start_date ?? job.startDate,
+                endDate: revertedJob.end_date ?? job.endDate,
                 currentPours: revertedJob.current_pours ?? 0,
                 contractMaxPours: revertedJob.contract_max_pours ?? 0,
                 status: validStatuses.includes(revertedJob.status as Job["status"])

@@ -22,6 +22,7 @@ import { generateQuotePdfBlob } from "../lib/quotePdf";
 import { computeDocumentLabel, formatJobReference } from "../lib/documentNaming";
 import { toast } from "sonner";
 import { derivePoursFromQuote } from "../utils/pourDerivation";
+import { isValidISODate } from "../utils/week";
 
 interface MeasuredItem {
   id: string;
@@ -73,8 +74,19 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedQuoteToDelete, setSelectedQuoteToDelete] = useState<Quote | null>(null);
   const [convertingQuote, setConvertingQuote] = useState<Quote | null>(null);
+  const [conversionStartDate, setConversionStartDate] = useState("");
+  const [conversionEndDate, setConversionEndDate] = useState("");
   const [selectedQuoteForControl, setSelectedQuoteForControl] = useState<Quote | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const conversionDateError =
+    !conversionStartDate || !conversionEndDate
+      ? "Set both dates before creating the job."
+      : !isValidISODate(conversionStartDate) || !isValidISODate(conversionEndDate)
+        ? "Enter valid calendar dates."
+        : conversionEndDate < conversionStartDate
+          ? "The end date must be on or after the start date."
+          : null;
 
   // Sort states
   const [sortField, setSortField] = useState<"ref" | "client" | "date" | "value" | "status">(
@@ -155,6 +167,10 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
 
   const handleConvertToJob = async () => {
     if (!convertingQuote) return;
+    if (conversionDateError) {
+      toast.error(conversionDateError);
+      return;
+    }
     if (!profile?.tenant_id) {
       toast.error("Your profile is still loading. Please try again in a moment.");
       return;
@@ -201,6 +217,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
       contractMaxPours: derivedPours.length > 0 ? derivedPours.length : 10,
       status: "pending",
       scheduleValue: convertingQuote.totals?.grossTotal || 0,
+      startDate: conversionStartDate,
+      endDate: conversionEndDate,
     };
 
     // Prepend new job and persist through the portal context (Supabase-backed).
@@ -667,6 +685,8 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
         onOpenChange={(open) => {
           if (!open) {
             setConvertingQuote(null);
+            setConversionStartDate("");
+            setConversionEndDate("");
             setSelectedQuoteForControl(null);
           }
         }}
@@ -700,9 +720,40 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                 </span>
               </div>
             </div>
+            <div className="mt-3 rounded-lg border border-border bg-card p-4 space-y-3">
+              <p className="text-xs font-semibold text-foreground">
+                Set the inclusive site period. A job without dates will not appear in Sites.
+              </p>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="space-y-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Start date
+                  <input
+                    type="date"
+                    value={conversionStartDate}
+                    onChange={(event) => setConversionStartDate(event.target.value)}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground"
+                  />
+                </label>
+                <label className="space-y-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  End date
+                  <input
+                    type="date"
+                    value={conversionEndDate}
+                    onChange={(event) => setConversionEndDate(event.target.value)}
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm font-normal normal-case tracking-normal text-foreground"
+                  />
+                </label>
+              </div>
+              {conversionDateError && (
+                <p className="text-xs font-semibold text-warning" role="alert">
+                  {conversionDateError}
+                </p>
+              )}
+            </div>
           </>
         }
         confirmLabel="Create job"
+        confirmDisabled={!!conversionDateError}
         onConfirm={handleConvertToJob}
       />
 
@@ -872,7 +923,11 @@ export const PipelineRegistry: React.FC<PipelineRegistryProps> = ({
                     Edit Quote
                   </button>
                   <button
-                    onClick={() => setConvertingQuote(selectedQuoteForControl)}
+                    onClick={() => {
+                      setConversionStartDate("");
+                      setConversionEndDate("");
+                      setConvertingQuote(selectedQuoteForControl);
+                    }}
                     className="flex-1 py-3 bg-primary hover:brightness-110 text-primary-foreground rounded-lg text-[11px] font-black uppercase tracking-widest transition-all text-center focus:outline-none"
                   >
                     Convert to Job

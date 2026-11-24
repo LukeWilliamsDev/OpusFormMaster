@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { Job, Worker, ScheduledShift } from "../types/erp";
 import { validateWorkerForDeployment } from "../utils/workerValidation";
+import { isJobScheduledOnDate } from "../components/calendar/jobPeriods";
 import { supabase } from "../../integrations/supabase/client";
 
 export type AssignResult =
@@ -61,6 +62,15 @@ export const useShiftActions = (
       const worker = workers.find((w) => w.id === workerId);
       if (!worker) return { status: "blocked", reason: "Staff member not found" };
 
+      const job = jobs.find((candidate) => candidate.id === jobId);
+      if (!job) return { status: "blocked", reason: "Site not found" };
+      if (!isJobScheduledOnDate(job, date)) {
+        return {
+          status: "blocked",
+          reason: "Set a site date range covering this day before assigning staff",
+        };
+      }
+
       if (shifts.some((s) => s.workerId === workerId && s.jobId === jobId && s.date === date)) {
         return { status: "ok" }; // already deployed here — nothing to do
       }
@@ -81,12 +91,7 @@ export const useShiftActions = (
       }
 
       setShifts((prev) => [...prev, createShift(workerId, jobId, date)]);
-      logAssignmentAudit(
-        "ASSIGN_STAFF",
-        worker,
-        jobs.find((j) => j.id === jobId),
-        date,
-      );
+      logAssignmentAudit("ASSIGN_STAFF", worker, job, date);
       return { status: "ok" };
     },
     [workers, jobs, shifts, conflictShifts, setShifts],
@@ -94,6 +99,11 @@ export const useShiftActions = (
 
   const confirmReallocate = useCallback(
     (workerId: string, jobId: string, date: string, existingShiftId: string) => {
+      const job = jobs.find((candidate) => candidate.id === jobId);
+      if (!job || !isJobScheduledOnDate(job, date)) {
+        console.warn("Blocked reallocation outside the site's date range", { jobId, date });
+        return;
+      }
       setShifts((prev) => [
         ...prev.filter((s) => s.id !== existingShiftId),
         createShift(workerId, jobId, date),
@@ -113,7 +123,7 @@ export const useShiftActions = (
       logAssignmentAudit(
         "REALLOCATE_STAFF",
         workers.find((w) => w.id === workerId),
-        jobs.find((j) => j.id === jobId),
+        job,
         date,
       );
     },

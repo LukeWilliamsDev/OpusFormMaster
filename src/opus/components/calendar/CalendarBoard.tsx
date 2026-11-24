@@ -21,6 +21,7 @@ import { WeekGridProject } from "./WeekGridProject";
 import { WeekGridStaff } from "./WeekGridStaff";
 import { WeekHeader } from "./WeekHeader";
 import { PortalTabRail } from "../PortalNavigationPrimitives";
+import { hasValidJobPeriod } from "./jobPeriods";
 
 export type CalendarGroup = "staff" | "project";
 
@@ -62,6 +63,10 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   const [siteScheduleError, setSiteScheduleError] = useState<string | null>(null);
 
   const activeJobs = useMemo(() => jobs.filter((job) => job.status !== "completed"), [jobs]);
+  const jobsMissingDates = useMemo(
+    () => activeJobs.filter((job) => !hasValidJobPeriod(job)),
+    [activeJobs],
+  );
 
   useEffect(() => {
     const timeout = setTimeout(() => setDebouncedSearchQuery(searchQuery), 300);
@@ -113,8 +118,8 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
   const saveSiteSchedule = () => {
     if (!siteScheduleForm) return;
     const { jobId, startDate, endDate } = siteScheduleForm;
-    if ((startDate && !endDate) || (!startDate && endDate)) {
-      setSiteScheduleError("Set both dates, or clear both dates.");
+    if (!startDate || !endDate) {
+      setSiteScheduleError("Set both a start date and an end date.");
       return;
     }
     if ((startDate && !isValidISODate(startDate)) || (endDate && !isValidISODate(endDate))) {
@@ -127,11 +132,7 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
     }
 
     setJobs((currentJobs) =>
-      currentJobs.map((job) =>
-        job.id === jobId
-          ? { ...job, startDate: startDate || undefined, endDate: endDate || undefined }
-          : job,
-      ),
+      currentJobs.map((job) => (job.id === jobId ? { ...job, startDate, endDate } : job)),
     );
     setSiteScheduleForm(null);
     setSiteScheduleError(null);
@@ -182,6 +183,32 @@ export const CalendarBoard: React.FC<CalendarBoardProps> = ({
           )}
         </div>
       </div>
+
+      {group === "project" && jobsMissingDates.length > 0 && (
+        <section
+          aria-labelledby="site-schedule-missing-dates-title"
+          className="rounded-xl border border-warning/30 bg-warning/10 p-4 text-warning"
+        >
+          <h2
+            id="site-schedule-missing-dates-title"
+            className="text-xs font-black uppercase tracking-widest"
+          >
+            {jobsMissingDates.length} active job{jobsMissingDates.length === 1 ? "" : "s"} need site
+            dates
+          </h2>
+          <p className="mt-1 text-xs font-medium">
+            Jobs without a valid start and end date stay out of Sites until their inclusive schedule
+            period is set. Use “Set site dates” above.
+          </p>
+          <ul className="mt-3 grid gap-1 text-xs font-semibold sm:grid-cols-2">
+            {jobsMissingDates.map((job) => (
+              <li key={job.id}>
+                {job.siteName} · {job.jobRef}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {siteScheduleForm && (
         <section

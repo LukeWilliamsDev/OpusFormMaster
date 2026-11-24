@@ -90,28 +90,31 @@ and a failed metadata write must not claim success or leave an untracked object.
 ## Risk and approval gates
 
 - Storage/RLS/function migrations require named human review before remote apply.
-- Live authenticated upload, cross-tenant isolation, deployment provenance, and
-  production release remain pending until approved QA identities and the
-  connected Supabase/Composio action are available.
-- No migration, Edge Function, production data, or release branch is changed by
-  this local implementation task.
+- Live authenticated upload, cross-tenant isolation, and private-file acceptance
+  remain pending until an approved QA identity completes the role matrix.
+- Production migration, Edge Function, and frontend deployment were applied only
+  after explicit release-owner instruction through the approved service actions;
+  authenticated role-matrix acceptance remains open.
 - Rollback is a reviewed forward-only corrective migration or source revert; no
   destructive reset, force push, or manual production cleanup is permitted.
 
 ## Verification evidence
 
-| Check                 | Evidence                                                | Result                                                                                                                                                                                                                            |
-| --------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Contract              | `npm run quality:contract`                              | PASS                                                                                                                                                                                                                              |
-| Typecheck             | `npm run typecheck`                                     | PASS                                                                                                                                                                                                                              |
-| Tests                 | `npm test` plus focused upload tests                    | PASS — 22 files, 197 passed, 1 skipped                                                                                                                                                                                            |
-| Focused lint          | Changed client/helper sources                           | PASS — 0 errors, 20 existing warnings                                                                                                                                                                                             |
-| Build                 | `npm run build`                                         | PASS                                                                                                                                                                                                                              |
-| Supabase schema       | `npx supabase db lint --local`                          | PASS — no schema errors                                                                                                                                                                                                           |
-| Edge Function syntax  | Deno check                                              | NOT_RUN — Deno unavailable; source reviewed                                                                                                                                                                                       |
-| Quality gate          | `npm run quality:gate`                                  | BLOCKED — repository-wide Prettier check fails on two pre-existing unchanged contracts: `docs/quality/changes/2026-11-13-opusform-master-remediation.md` and `docs/quality/changes/2026-11-19-job-media-video-and-compression.md` |
-| Live/QA upload matrix | Requires approved identity and connected service action | PENDING                                                                                                                                                                                                                           |
-| Independent critic    | Fresh read-only review of final diff                    | PASS — no blocking/major findings                                                                                                                                                                                                 |
+| Check                   | Evidence                                            | Result                                                                                                                                                                                                                            |
+| ----------------------- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Contract                | `npm run quality:contract`                          | PASS                                                                                                                                                                                                                              |
+| Typecheck               | `npm run typecheck`                                 | PASS                                                                                                                                                                                                                              |
+| Tests                   | `npm test` plus focused upload tests                | PASS — 22 files, 197 passed, 1 skipped                                                                                                                                                                                            |
+| Focused lint            | Changed client/helper sources                       | PASS — 0 errors, 20 existing warnings                                                                                                                                                                                             |
+| Build                   | `npm run build`                                     | PASS                                                                                                                                                                                                                              |
+| Supabase schema         | `npx supabase db lint --local`                      | PASS — no schema errors                                                                                                                                                                                                           |
+| Live Supabase migration | Composio migration apply + read-only verification   | PASS — `staff_certificate_integrity` recorded as `20261124215020`; recovery table, RPCs, policies, and profile-only grants verified                                                                                               |
+| Live cleanup function   | Composio Supabase MCP deployment + function listing | PASS — `cleanup-staff-upload` version 2, ACTIVE, `verify_jwt=false`                                                                                                                                                               |
+| Cloudflare Worker       | `wrangler deploy --config wrangler.jsonc`           | PASS — version `9e948566-d471-4652-9103-1cc3a3f471e3`; public domain serves new `RosterView` and cleanup assets                                                                                                                   |
+| Edge Function syntax    | Deno check                                          | NOT_RUN — Deno unavailable; source reviewed                                                                                                                                                                                       |
+| Quality gate            | `npm run quality:gate`                              | BLOCKED — repository-wide Prettier check fails on two pre-existing unchanged contracts: `docs/quality/changes/2026-11-13-opusform-master-remediation.md` and `docs/quality/changes/2026-11-19-job-media-video-and-compression.md` |
+| Live/QA upload matrix   | Requires approved authenticated staff identity      | PARTIAL — public bundle/function/schema verified; authenticated upload, cross-tenant, and private-file acceptance remain pending                                                                                                  |
+| Independent critic      | Fresh read-only review of final diff                | PASS — no blocking/major findings                                                                                                                                                                                                 |
 
 ## Critic review
 
@@ -121,6 +124,7 @@ and a failed metadata write must not claim success or leave an untracked object.
 
 ## Release decision
 
-- Automated gate: BLOCKED_BY_BASELINE_FORMAT_DEBT
-- Release status: NOT_RELEASED
+- Automated gate: BLOCKED_BY_BASELINE_FORMAT_DEBT; deployment completed under explicit release-owner instruction
+- Release status: READY_FOR_HUMAN_APPROVAL
 - Human approval: PENDING
+- Authenticated production acceptance remains the final open gate.
